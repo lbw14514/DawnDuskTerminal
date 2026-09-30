@@ -31,14 +31,12 @@ public record ChronoLine(double originX, double originZ, double normalX, double 
                 }
             }
         }
-        double base = random.nextBoolean() ? Math.PI / 2.0D : -Math.PI / 2.0D;
         double jitter = (random.nextDouble() - 0.5D) * Math.toRadians(60.0D);
-        double angle = base + jitter;
-        return new ChronoLine(0.0D, 0.0D, Math.cos(angle), Math.sin(angle));
+        return new ChronoLine(0.0D, 0.0D, Math.cos(jitter), Math.sin(jitter));
     }
 
     public static ChronoLine fallback() {
-        return new ChronoLine(0.0D, 0.0D, 0.0D, 1.0D);
+        return new ChronoLine(0.0D, 0.0D, 1.0D, 0.0D);
     }
 
     public double distance(double x, double z) {
