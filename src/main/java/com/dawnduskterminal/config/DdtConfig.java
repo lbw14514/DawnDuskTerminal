@@ -31,7 +31,7 @@ public final class DdtConfig {
 
         b.push("lighting");
         SUN_ANGLE_MAX = b.comment("max sun height angle in degrees")
-            .defineInRange("sun_angle_max", 30.0D, 0.0D, 90.0D);
+            .defineInRange("sun_angle_max", 15.0D, 0.0D, 90.0D);
         SKY_LIGHT_BY_DISTANCE = b.comment("let sky light fall off across the terminator instead of being 15 everywhere")
             .define("sky_light_by_distance", true);
         SKY_LIGHT_DAY = b.comment("sky light at the full day side")
