@@ -33,7 +33,7 @@ neoForge {
     }
 
     mods {
-        "ysm" {
+        "dawnduskterminal" {
             sourceSet sourceSets.main
         }
     }
@@ -54,7 +54,7 @@ if (twilightFile.exists()) {
 }
 
 if (!twilightFile.exists()) {
-    logger.lifecycle("YSM: libs/twilightforest-1.21.1.jar not found, the mod will build without a compile time dependency on Twilight Forest")
+    logger.lifecycle("DawnDuskTerminal: libs/twilightforest-1.21.1.jar not found, the mod will build without a compile time dependency on Twilight Forest")
 }
 
 def replaceProperties = [

@@ -1,0 +1,48 @@
+{
+  "block.dawnduskterminal.portal_fluid": "传送门水体",
+  "block.dawnduskterminal.chrono_crust": "晨昏地壳",
+  "block.dawnduskterminal.sky_soil": "浮空壤土",
+
+  "item.dawnduskterminal.hydra_trophy": "九头蛇战利品",
+  "item.dawnduskterminal.ur_ghast_trophy": "暮色恶魂战利品",
+  "item.dawnduskterminal.snow_queen_trophy": "冰雪女王战利品",
+  "item.dawnduskterminal.portal_bucket": "传送门水桶",
+
+  "fluid_type.dawnduskterminal.portal_fluid": "传送门水体",
+
+  "effect.dawnduskterminal.portal_sickness": "传送门病",
+
+  "itemGroup.dawnduskterminal.main": "晨昏线维度",
+
+  "dimension.dawnduskterminal.chrono": "晨昏线维度",
+
+  "biome.dawnduskterminal.polar_day": "极昼平原",
+  "biome.dawnduskterminal.day": "昼区平原",
+  "biome.dawnduskterminal.normal": "晨昏平原",
+  "biome.dawnduskterminal.night": "夜区平原",
+  "biome.dawnduskterminal.polar_night": "极夜平原",
+
+  "message.dawnduskterminal.gate_unlocked": "已击败暮色森林的领主之一，晨昏线之门向你敞开",
+  "message.dawnduskterminal.shader_warning": "检测到光影模组 %s，本模组自绘天空不保证兼容",
+
+  "death.attack.dawnduskterminal.portal": "%1$s 被晨昏线吞没",
+
+  "advancements.dawnduskterminal.root.title": "晨昏线",
+  "advancements.dawnduskterminal.root.description": "世界被一条线切成昼与夜",
+  "advancements.dawnduskterminal.defeat_boss.title": "暮色征服者",
+  "advancements.dawnduskterminal.defeat_boss.description": "击败九头蛇 暮色恶魂 冰雪女王其中之一",
+  "advancements.dawnduskterminal.obtain_fuel.title": "投料在手",
+  "advancements.dawnduskterminal.obtain_fuel.description": "获得任意一种战利品",
+  "advancements.dawnduskterminal.build_gate.title": "开一条缝",
+  "advancements.dawnduskterminal.build_gate.description": "在水池中投入战利品 让池水变成传送门",
+  "advancements.dawnduskterminal.enter_chrono.title": "跨过晨昏线",
+  "advancements.dawnduskterminal.enter_chrono.description": "进入晨昏线维度",
+  "advancements.dawnduskterminal.noon.title": "正午那头",
+  "advancements.dawnduskterminal.noon.description": "走到昼侧深处",
+  "advancements.dawnduskterminal.midnight.title": "午夜那头",
+  "advancements.dawnduskterminal.midnight.description": "走到夜侧深处",
+  "advancements.dawnduskterminal.polar_day.title": "极昼",
+  "advancements.dawnduskterminal.polar_day.description": "抵达极昼群系",
+  "advancements.dawnduskterminal.polar_night.title": "极夜",
+  "advancements.dawnduskterminal.polar_night.description": "抵达极夜群系"
+}

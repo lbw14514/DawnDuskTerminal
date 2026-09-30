@@ -1,0 +1,48 @@
+{
+  "block.dawnduskterminal.portal_fluid": "Portal Fluid",
+  "block.dawnduskterminal.chrono_crust": "Chrono Crust",
+  "block.dawnduskterminal.sky_soil": "Sky Soil",
+
+  "item.dawnduskterminal.hydra_trophy": "Hydra Trophy",
+  "item.dawnduskterminal.ur_ghast_trophy": "Ur Ghast Trophy",
+  "item.dawnduskterminal.snow_queen_trophy": "Snow Queen Trophy",
+  "item.dawnduskterminal.portal_bucket": "Portal Bucket",
+
+  "fluid_type.dawnduskterminal.portal_fluid": "Portal Fluid",
+
+  "effect.dawnduskterminal.portal_sickness": "Portal Sickness",
+
+  "itemGroup.dawnduskterminal.main": "Chrono Dimension",
+
+  "dimension.dawnduskterminal.chrono": "Chrono Dimension",
+
+  "biome.dawnduskterminal.polar_day": "Polar Day Plains",
+  "biome.dawnduskterminal.day": "Day Plains",
+  "biome.dawnduskterminal.normal": "Chrono Plains",
+  "biome.dawnduskterminal.night": "Night Plains",
+  "biome.dawnduskterminal.polar_night": "Polar Night Plains",
+
+  "message.dawnduskterminal.gate_unlocked": "One of the Twilight lords has fallen, the gate is open",
+  "message.dawnduskterminal.shader_warning": "Shader mod %s detected, the custom sky is not guaranteed to work",
+
+  "death.attack.dawnduskterminal.portal": "%1$s was swallowed by the terminator",
+
+  "advancements.dawnduskterminal.root.title": "Chrono",
+  "advancements.dawnduskterminal.root.description": "A single line splits the world into day and night",
+  "advancements.dawnduskterminal.defeat_boss.title": "Twilight Conqueror",
+  "advancements.dawnduskterminal.defeat_boss.description": "Defeat the Hydra, the Ur Ghast or the Snow Queen",
+  "advancements.dawnduskterminal.obtain_fuel.title": "Fuel In Hand",
+  "advancements.dawnduskterminal.obtain_fuel.description": "Obtain any trophy",
+  "advancements.dawnduskterminal.build_gate.title": "A Seam Opened",
+  "advancements.dawnduskterminal.build_gate.description": "Throw a trophy into a pool to turn it into a portal",
+  "advancements.dawnduskterminal.enter_chrono.title": "Crossing The Terminator",
+  "advancements.dawnduskterminal.enter_chrono.description": "Enter the chrono dimension",
+  "advancements.dawnduskterminal.noon.title": "Noon Side",
+  "advancements.dawnduskterminal.noon.description": "Walk deep into the day side",
+  "advancements.dawnduskterminal.midnight.title": "Midnight Side",
+  "advancements.dawnduskterminal.midnight.description": "Walk deep into the night side",
+  "advancements.dawnduskterminal.polar_day.title": "Polar Day",
+  "advancements.dawnduskterminal.polar_day.description": "Reach the polar day biome",
+  "advancements.dawnduskterminal.polar_night.title": "Polar Night",
+  "advancements.dawnduskterminal.polar_night.description": "Reach the polar night biome"
+}
