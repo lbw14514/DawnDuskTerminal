@@ -59,6 +59,10 @@ public final class ChronoLineState extends SavedData {
         return serverLine != null ? serverLine : ChronoLine.fallback();
     }
 
+    public static boolean hasServerLine() {
+        return serverLine != null;
+    }
+
     public static void setServerLine(ChronoLine line) {
         serverLine = line;
     }

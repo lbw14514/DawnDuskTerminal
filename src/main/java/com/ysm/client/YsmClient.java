@@ -3,8 +3,8 @@ package com.ysm.client;
 import com.ysm.Ysm;
 import com.ysm.registry.ModFluids;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.client.event.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 public final class YsmClient {

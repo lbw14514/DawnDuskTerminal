@@ -38,7 +38,7 @@ public final class Ysm {
 
         modBus.addListener(ModNetwork::registerPayloads);
 
-        NeoForge.EVENT_BUS.addListener(YsmServerEvents::onServerAboutToStart);
+        NeoForge.EVENT_BUS.addListener(YsmServerEvents::onServerStarted);
         NeoForge.EVENT_BUS.addListener(YsmServerEvents::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(YsmServerEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(YsmServerEvents::onLivingDeath);

@@ -68,6 +68,17 @@ public class PortalBlock extends LiquidBlock {
         } else {
             item.setItem(stack);
         }
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            awardGate(serverPlayer);
+        }
+    }
+
+    private static void awardGate(net.minecraft.server.level.ServerPlayer player) {
+        net.minecraft.advancements.AdvancementHolder holder =
+            player.server.getAdvancements().get(com.ysm.Ysm.id("build_gate"));
+        if (holder != null) {
+            player.getAdvancements().award(holder, "built");
+        }
     }
 
     public static boolean isFuel(ItemStack stack) {

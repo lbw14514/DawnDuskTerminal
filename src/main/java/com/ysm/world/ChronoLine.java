@@ -15,6 +15,22 @@ public record ChronoLine(double originX, double originZ, double normalX, double 
     ).apply(inst, ChronoLine::new));
 
     public static ChronoLine create(RandomSource random) {
+        String override = YsmConfig.lineNormalOverride();
+        if (override != null && !override.isBlank()) {
+            String[] parts = override.split(",");
+            if (parts.length == 2) {
+                try {
+                    double nx = Double.parseDouble(parts[0].trim());
+                    double nz = Double.parseDouble(parts[1].trim());
+                    double length = Math.hypot(nx, nz);
+                    if (length > 1.0E-6D) {
+                        return new ChronoLine(0.0D, 0.0D, nx / length, nz / length);
+                    }
+                } catch (NumberFormatException ignored) {
+                    // fall through to the random direction
+                }
+            }
+        }
         double base = random.nextBoolean() ? Math.PI / 2.0D : -Math.PI / 2.0D;
         double jitter = (random.nextDouble() - 0.5D) * Math.toRadians(60.0D);
         double angle = base + jitter;

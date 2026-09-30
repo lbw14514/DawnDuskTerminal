@@ -8,6 +8,7 @@ public final class YsmConfig {
     private static final ModConfigSpec.DoubleValue SUN_ANGLE_MAX;
     private static final ModConfigSpec.DoubleValue MAX_DISTANCE;
     private static final ModConfigSpec.DoubleValue BAND_HALF_WIDTH;
+    private static final ModConfigSpec.ConfigValue<String> NORMAL_OVERRIDE;
     private static final ModConfigSpec.IntValue PORTAL_COOLDOWN_TICKS;
     private static final ModConfigSpec.BooleanValue WATER_IS_PORTAL;
     private static final ModConfigSpec.BooleanValue CONVERT_WATER;
@@ -29,6 +30,8 @@ public final class YsmConfig {
             .defineInRange("max_distance", 5000.0D, 16.0D, 1000000.0D);
         BAND_HALF_WIDTH = b.comment("half width of the band that keeps the delegate biome rules")
             .defineInRange("band_half_width", 1000.0D, 0.0D, 1000000.0D);
+        NORMAL_OVERRIDE = b.comment("pin the terminator normal, format x,z, empty means pick a random direction per world")
+            .define("normal_override", "");
         b.pop();
 
         b.push("portal");
@@ -77,6 +80,14 @@ public final class YsmConfig {
             return BAND_HALF_WIDTH.get();
         } catch (IllegalStateException e) {
             return 1000.0D;
+        }
+    }
+
+    public static String lineNormalOverride() {
+        try {
+            return NORMAL_OVERRIDE.get();
+        } catch (IllegalStateException e) {
+            return "";
         }
     }
 

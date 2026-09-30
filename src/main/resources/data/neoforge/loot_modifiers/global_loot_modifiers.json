@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "entries": [
+    "ysm:hydra_trophy_drop",
+    "ysm:ur_ghast_trophy_drop",
+    "ysm:snow_queen_trophy_drop"
+  ]
+}

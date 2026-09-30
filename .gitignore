@@ -4,6 +4,7 @@ run/
 logs/
 *.log
 build-log.txt
+server-test.log
 .idea/
 *.iml
 .vscode/

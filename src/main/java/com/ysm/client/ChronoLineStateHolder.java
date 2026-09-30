@@ -2,13 +2,14 @@ package com.ysm.client;
 
 import com.ysm.world.ChronoLine;
 import com.ysm.world.ChronoLineState;
-import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 public final class ChronoLineStateHolder {
     private ChronoLineStateHolder() {}
 
-    public static Vec3 normal() {
+    public static Vector3f normal() {
         ChronoLine line = ChronoLineState.clientLine();
-        return new Vec3(line.normalX(), 0.0D, line.normalZ()).normalize();
+        Vector3f vector = new Vector3f((float) line.normalX(), 0.0F, (float) line.normalZ());
+        return vector.normalize();
     }
 }

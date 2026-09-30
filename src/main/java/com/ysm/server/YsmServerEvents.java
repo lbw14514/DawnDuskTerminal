@@ -6,8 +6,14 @@ import com.ysm.portal.PortalBlock;
 import com.ysm.portal.PortalTeleporter;
 import com.ysm.portal.PortalTrigger;
 import com.ysm.progression.BossProgressTracker;
+import com.ysm.structure.StructureExclusions;
+import com.ysm.structure.StructurePlacements;
 import com.ysm.world.ChronoLineState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,7 +22,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -27,8 +33,12 @@ public final class YsmServerEvents {
 
     private YsmServerEvents() {}
 
-    public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+    public static void onServerStarted(ServerStartedEvent event) {
         ServerLevel overworld = event.getServer().overworld();
+        if (overworld == null) {
+            Ysm.LOGGER.warn("YSM overworld is not available, the chrono line stays at its fallback value");
+            return;
+        }
         ChronoLineState state = ChronoLineState.get(overworld);
         ChronoLineState.setServerLine(state.line());
         Ysm.LOGGER.info("YSM chrono line origin=({}, {}) normal=({}, {})",
@@ -41,8 +51,20 @@ public final class YsmServerEvents {
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            ensureLine(player.server);
             PacketDistributor.sendToPlayer(player, new ChronoLinePayload(ChronoLineState.serverLine()));
         }
+    }
+
+    private static void ensureLine(MinecraftServer server) {
+        if (ChronoLineState.hasServerLine()) {
+            return;
+        }
+        ServerLevel overworld = server.overworld();
+        if (overworld == null) {
+            return;
+        }
+        ChronoLineState.setServerLine(ChronoLineState.get(overworld).line());
     }
 
     public static void onPlayerTick(PlayerTickEvent.Post event) {

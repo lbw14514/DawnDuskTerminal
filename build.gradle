@@ -43,9 +43,18 @@ repositories {
     mavenLocal()
 }
 
-dependencies {
-    compileOnly files("libs/twilightforest-1.21.1.jar")
-    runtimeOnly files("libs/twilightforest-1.21.1.jar")
+def twilightDependency = providers.gradleProperty('twilight_dependency').getOrElse('required')
+def twilightFile = file("libs/twilightforest-1.21.1.jar")
+
+if (twilightFile.exists()) {
+    dependencies {
+        compileOnly files(twilightFile)
+        runtimeOnly files(twilightFile)
+    }
+}
+
+if (!twilightFile.exists()) {
+    logger.lifecycle("YSM: libs/twilightforest-1.21.1.jar not found, the mod will build without a compile time dependency on Twilight Forest")
 }
 
 def replaceProperties = [
@@ -60,6 +69,7 @@ def replaceProperties = [
     mod_version            : mod_version,
     mod_authors            : mod_authors,
     mod_description        : mod_description,
+    twilight_dependency    : twilightDependency,
 ]
 
 tasks.named('processResources', ProcessResources).configure {

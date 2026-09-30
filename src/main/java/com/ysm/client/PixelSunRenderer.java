@@ -10,8 +10,8 @@ import com.ysm.Ysm;
 import com.ysm.config.YsmConfig;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public final class PixelSunRenderer implements SunRenderer {
     public static final ResourceLocation SUN_TEXTURE = Ysm.id("textures/environment/sun_disc.png");
@@ -21,13 +21,13 @@ public final class PixelSunRenderer implements SunRenderer {
         float size = YsmConfig.sunTextureSize() / 64.0F * 30.0F;
         float half = size * 0.5F;
         double angle = Math.toRadians(context.sunAngleDegrees());
-        Vec3 normal = ChronoLineStateHolder.normal();
+        Vector3f normal = ChronoLineStateHolder.normal();
         double cx = normal.x * Math.cos(angle) * 100.0D;
         double cy = Math.sin(angle) * 100.0D;
         double cz = normal.z * Math.cos(angle) * 100.0D;
 
-        Vec3 up = context.camera().getUpVector();
-        Vec3 left = context.camera().getLeftVector();
+        Vector3f up = context.camera().getUpVector();
+        Vector3f left = context.camera().getLeftVector();
         double rx = -left.x * half;
         double ry = -left.y * half;
         double rz = -left.z * half;
