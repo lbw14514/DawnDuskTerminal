@@ -21,12 +21,21 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public final class ChronoBiomeSource extends BiomeSource {
+    public record SideShift(ResourceKey<Biome> from, HolderSet<Biome> hot, HolderSet<Biome> cold) {
+        public static final Codec<SideShift> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            ResourceKey.codec(Registries.BIOME).fieldOf("from").forGetter(SideShift::from),
+            RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("hot").forGetter(SideShift::hot),
+            RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("cold").forGetter(SideShift::cold)
+        ).apply(inst, SideShift::new));
+    }
+
     public static final MapCodec<ChronoBiomeSource> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
         BiomeSource.CODEC.fieldOf("delegate").forGetter(ChronoBiomeSource::delegate),
         RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("bands").forGetter(ChronoBiomeSource::bands),
         RegistryCodecs.homogeneousList(Registries.BIOME).optionalFieldOf("line_biome").forGetter(ChronoBiomeSource::lineBiomeSet),
         BiomeReplacement.CODEC.listOf().optionalFieldOf("replacements", List.of()).forGetter(ChronoBiomeSource::replacements),
         RegistryCodecs.homogeneousList(Registries.BIOME).optionalFieldOf("fallback").forGetter(ChronoBiomeSource::fallbackSet),
+        SideShift.CODEC.listOf().optionalFieldOf("side_shift", List.of()).forGetter(ChronoBiomeSource::sideShift),
         Codec.DOUBLE.optionalFieldOf("line_half_width", 200.0D).forGetter(ChronoBiomeSource::lineHalfWidth),
         Codec.DOUBLE.optionalFieldOf("band_half_width", 1000.0D).forGetter(ChronoBiomeSource::bandHalfWidth),
         Codec.DOUBLE.optionalFieldOf("max_distance", 5000.0D).forGetter(ChronoBiomeSource::maxDistance)
@@ -40,6 +49,7 @@ public final class ChronoBiomeSource extends BiomeSource {
     private final Map<ResourceKey<Biome>, List<Holder<Biome>>> replacementMap;
     private final Optional<HolderSet<Biome>> fallbackSet;
     private final List<Holder<Biome>> fallbackList;
+    private final List<SideShift> sideShift;
     private final double lineHalfWidth;
     private final double bandHalfWidth;
     private final double maxDistance;
@@ -47,6 +57,7 @@ public final class ChronoBiomeSource extends BiomeSource {
 
     public ChronoBiomeSource(BiomeSource delegate, HolderSet<Biome> bands, Optional<HolderSet<Biome>> lineBiomeSet,
                              List<BiomeReplacement> replacements, Optional<HolderSet<Biome>> fallbackSet,
+                             List<SideShift> sideShift,
                              double lineHalfWidth, double bandHalfWidth, double maxDistance) {
         this.delegate = delegate;
         this.bands = bands;
@@ -60,10 +71,15 @@ public final class ChronoBiomeSource extends BiomeSource {
         this.replacementMap = Map.copyOf(map);
         this.fallbackSet = fallbackSet;
         this.fallbackList = fallbackSet.map(set -> set.stream().toList()).orElse(List.of());
+        this.sideShift = sideShift;
         this.lineHalfWidth = lineHalfWidth;
         this.bandHalfWidth = bandHalfWidth;
         this.maxDistance = maxDistance;
         this.bandList = bands.stream().toList();
+    }
+
+    public List<SideShift> sideShift() {
+        return this.sideShift;
     }
 
     public BiomeSource delegate() {
@@ -183,11 +199,27 @@ public final class ChronoBiomeSource extends BiomeSource {
         double param = Mth.clamp(signed / max, -1.0D, 1.0D);
         double magnitude = Math.abs(param);
         if (magnitude <= innerLimit) {
-            return applyReplacement(this.delegate.getNoiseBiome(quartX, quartY, quartZ, sampler), quartX, quartZ);
+            Holder<Biome> base = this.delegate.getNoiseBiome(quartX, quartY, quartZ, sampler);
+            return applyReplacement(shiftBySide(base, param), quartX, quartZ);
         }
         double t = (magnitude - innerLimit) / Math.max(1.0E-6D, 1.0D - innerLimit);
         boolean outer = t >= 0.5D;
         int index = param > 0.0D ? (outer ? 3 : 2) : (outer ? 0 : 1);
         return this.bandList.get(Math.min(index, this.bandList.size() - 1));
+    }
+
+    private Holder<Biome> shiftBySide(Holder<Biome> base, double param) {
+        if (this.sideShift.isEmpty()) {
+            return base;
+        }
+        boolean hot = param > 0.0D;
+        for (SideShift shift : this.sideShift) {
+            if (!shift.from().equals(base.unwrapKey().orElse(null))) {
+                continue;
+            }
+            HolderSet<Biome> targets = hot ? shift.hot() : shift.cold();
+            return targets.stream().findFirst().orElse(base);
+        }
+        return base;
     }
 }
