@@ -25,6 +25,7 @@ public final class ChronoBiomeSource extends BiomeSource {
         RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("bands").forGetter(ChronoBiomeSource::bands),
         RegistryCodecs.homogeneousList(Registries.BIOME).optionalFieldOf("line_biome").forGetter(ChronoBiomeSource::lineBiomeSet),
         BiomeReplacement.CODEC.listOf().optionalFieldOf("replacements", List.of()).forGetter(ChronoBiomeSource::replacements),
+        RegistryCodecs.homogeneousList(Registries.BIOME).optionalFieldOf("fallback").forGetter(ChronoBiomeSource::fallbackSet),
         Codec.DOUBLE.optionalFieldOf("line_half_width", 200.0D).forGetter(ChronoBiomeSource::lineHalfWidth),
         Codec.DOUBLE.optionalFieldOf("band_half_width", 1000.0D).forGetter(ChronoBiomeSource::bandHalfWidth),
         Codec.DOUBLE.optionalFieldOf("max_distance", 5000.0D).forGetter(ChronoBiomeSource::maxDistance)
@@ -36,14 +37,16 @@ public final class ChronoBiomeSource extends BiomeSource {
     private final Optional<Holder<Biome>> lineBiome;
     private final List<BiomeReplacement> replacements;
     private final Map<ResourceKey<Biome>, List<Holder<Biome>>> replacementMap;
+    private final Optional<HolderSet<Biome>> fallbackSet;
+    private final List<Holder<Biome>> fallbackList;
     private final double lineHalfWidth;
     private final double bandHalfWidth;
     private final double maxDistance;
     private final List<Holder<Biome>> bandList;
 
     public ChronoBiomeSource(BiomeSource delegate, HolderSet<Biome> bands, Optional<HolderSet<Biome>> lineBiomeSet,
-                             List<BiomeReplacement> replacements, double lineHalfWidth, double bandHalfWidth,
-                             double maxDistance) {
+                             List<BiomeReplacement> replacements, Optional<HolderSet<Biome>> fallbackSet,
+                             double lineHalfWidth, double bandHalfWidth, double maxDistance) {
         this.delegate = delegate;
         this.bands = bands;
         this.lineBiomeSet = lineBiomeSet;
@@ -54,6 +57,8 @@ public final class ChronoBiomeSource extends BiomeSource {
             map.put(replacement.from(), replacement.targets());
         }
         this.replacementMap = Map.copyOf(map);
+        this.fallbackSet = fallbackSet;
+        this.fallbackList = fallbackSet.map(set -> set.stream().toList()).orElse(List.of());
         this.lineHalfWidth = lineHalfWidth;
         this.bandHalfWidth = bandHalfWidth;
         this.maxDistance = maxDistance;
@@ -80,6 +85,10 @@ public final class ChronoBiomeSource extends BiomeSource {
         return this.replacements;
     }
 
+    public Optional<HolderSet<Biome>> fallbackSet() {
+        return this.fallbackSet;
+    }
+
     public double lineHalfWidth() {
         return this.lineHalfWidth;
     }
@@ -102,7 +111,9 @@ public final class ChronoBiomeSource extends BiomeSource {
         Stream<Holder<Biome>> replaced = this.replacementMap.values().stream().flatMap(List::stream);
         return Stream.concat(
             Stream.concat(this.bandList.stream(), this.lineBiome.stream()),
-            Stream.concat(this.delegate.possibleBiomes().stream(), replaced));
+            Stream.concat(
+                Stream.concat(this.delegate.possibleBiomes().stream(), replaced),
+                this.fallbackList.stream()));
     }
 
     private static int mix(int x, int z) {
@@ -112,19 +123,19 @@ public final class ChronoBiomeSource extends BiomeSource {
     }
 
     private Holder<Biome> applyReplacement(Holder<Biome> biome, int quartX, int quartZ) {
-        if (this.replacementMap.isEmpty()) {
-            return biome;
-        }
         ResourceKey<Biome> key = biome.unwrapKey().orElse(null);
-        if (key == null) {
+        if (key != null) {
+            List<Holder<Biome>> targets = this.replacementMap.get(key);
+            if (targets != null && !targets.isEmpty()) {
+                int index = Math.floorMod(mix(quartX, quartZ), targets.size());
+                return targets.get(index);
+            }
+        }
+        if (this.fallbackList.isEmpty()) {
             return biome;
         }
-        List<Holder<Biome>> targets = this.replacementMap.get(key);
-        if (targets == null || targets.isEmpty()) {
-            return biome;
-        }
-        int index = Math.floorMod(mix(quartX, quartZ), targets.size());
-        return targets.get(index);
+        int index = Math.floorMod(mix(quartX, quartZ), this.fallbackList.size());
+        return this.fallbackList.get(index);
     }
 
     @Override

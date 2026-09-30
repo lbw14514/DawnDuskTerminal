@@ -29,6 +29,10 @@ public final class ModItems {
         () -> new BucketItem(ModFluids.PORTAL_FLUID.get(),
             new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
 
+    public static final DeferredItem<Item> CHRONO_CORE = ITEMS.registerSimpleItem(
+        "chrono_core",
+        new Item.Properties().rarity(Rarity.EPIC).fireResistant().stacksTo(16));
+
     private ModItems() {}
 
     public static void register(IEventBus bus) {

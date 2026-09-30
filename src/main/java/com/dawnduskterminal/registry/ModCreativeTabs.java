@@ -21,6 +21,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.HYDRA_TROPHY.get());
                 output.accept(ModItems.UR_GHAST_TROPHY.get());
                 output.accept(ModItems.SNOW_QUEEN_TROPHY.get());
+                output.accept(ModItems.CHRONO_CORE.get());
                 output.accept(ModItems.PORTAL_BUCKET.get());
                 output.accept(ModBlocks.PORTAL_FLUID.get());
                 output.accept(ModBlocks.SKY_SOIL.get());

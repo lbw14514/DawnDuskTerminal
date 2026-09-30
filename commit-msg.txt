@@ -1,0 +1,18 @@
+feat 群系全替换 开门改暮色森林规则 落点安全搜索
+
+- 群系源新增 fallback 兜底 未显式映射的原版群系一律换成暮色群系
+- 维度映射表扩到 47 条 覆盖全部地表与海洋群系
+- 新增 chrono_surface 群系标签 并用 has_structure 标签让原版结构回归
+- 新增 add_spawns 生物修饰器 把主世界怪物加回暮色群系
+- 新增晨昏核心物品 由三个战利品无序合成 作为开门引子
+- 开门判定改为标签驱动 对齐暮色森林的 portal/fluid edge decoration
+- 水池上限从 8 放宽到 64 并加上下方坚实检查
+- 取消开门的击败 boss 进度门槛
+- 开门时打雷加粒子
+- 落点改为坐标对齐 半径 16 内全高度搜索最近安全站立点 找不到才建平台
+
+验证
+- 服务端自检全绿
+- locate biome minecraft:plains ocean taiga 全部失败 说明内层已全替换
+- locate structure minecraft:village_plains mineshaft ruined_portal 全部成功
+- locate biome twilightforest:forest clearing highlands 全部成功

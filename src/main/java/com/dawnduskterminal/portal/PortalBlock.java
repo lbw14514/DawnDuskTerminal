@@ -1,13 +1,16 @@
 package com.dawnduskterminal.portal;
 
 import com.dawnduskterminal.config.DdtConfig;
-import com.dawnduskterminal.progression.BossProgressTracker;
 import com.dawnduskterminal.registry.ModEffects;
 import com.dawnduskterminal.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -51,14 +54,11 @@ public class PortalBlock extends LiquidBlock {
             return;
         }
         ItemStack stack = item.getItem();
-        if (!isFuel(stack)) {
+        if (!isCatalyst(stack)) {
             return;
         }
         Entity owner = item.getOwner();
         Player player = owner instanceof Player p ? p : null;
-        if (player != null && !BossProgressTracker.unlocked(player)) {
-            return;
-        }
         if (!PortalBuilder.build(serverLevel, pos)) {
             return;
         }
@@ -71,8 +71,27 @@ public class PortalBlock extends LiquidBlock {
         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             awardGate(serverPlayer);
         }
+        causeLightning(serverLevel, pos);
+        emitParticles(serverLevel, pos);
         serverLevel.playSound(null, pos, com.dawnduskterminal.registry.ModSounds.PORTAL_OPEN.get(),
             net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+    }
+
+    private static void causeLightning(ServerLevel level, BlockPos pos) {
+        LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
+        bolt.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
+        bolt.setVisualOnly(true);
+        level.addFreshEntity(bolt);
+    }
+
+    private static void emitParticles(ServerLevel level, BlockPos pos) {
+        double x = pos.getX() + 0.5D;
+        double y = pos.getY() + 1.0D;
+        double z = pos.getZ() + 0.5D;
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y, z, 160, 1.6D, 1.2D, 1.6D, 0.15D);
+        level.sendParticles(ParticleTypes.END_ROD, x, y, z, 48, 1.2D, 1.0D, 1.2D, 0.08D);
+        level.sendParticles(ParticleTypes.FLASH, x, y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, x, y, z, 64, 1.0D, 0.8D, 1.0D, 0.25D);
     }
 
     private static void awardGate(net.minecraft.server.level.ServerPlayer player) {
@@ -83,9 +102,7 @@ public class PortalBlock extends LiquidBlock {
         }
     }
 
-    public static boolean isFuel(ItemStack stack) {
-        return stack.is(ModItems.HYDRA_TROPHY.get())
-            || stack.is(ModItems.UR_GHAST_TROPHY.get())
-            || stack.is(ModItems.SNOW_QUEEN_TROPHY.get());
+    public static boolean isCatalyst(ItemStack stack) {
+        return stack.is(ModItems.CHRONO_CORE.get());
     }
 }

@@ -94,7 +94,7 @@ public final class DdtServerEvents {
         List<ItemEntity> items = player.level().getEntitiesOfClass(
             ItemEntity.class,
             player.getBoundingBox().inflate(ITEM_SCAN_RADIUS),
-            item -> PortalBlock.isFuel(item.getItem()));
+            item -> PortalBlock.isCatalyst(item.getItem()));
         for (ItemEntity item : items) {
             BlockPos pos = item.blockPosition();
             if (item.level().getBlockState(pos).is(Blocks.WATER)) {

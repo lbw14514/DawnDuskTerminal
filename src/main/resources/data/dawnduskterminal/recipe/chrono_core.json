@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "dawnduskterminal",
+  "ingredients": [
+    {
+      "item": "dawnduskterminal:hydra_trophy"
+    },
+    {
+      "item": "dawnduskterminal:ur_ghast_trophy"
+    },
+    {
+      "item": "dawnduskterminal:snow_queen_trophy"
+    }
+  ],
+  "result": {
+    "id": "dawnduskterminal:chrono_core",
+    "count": 1
+  }
+}

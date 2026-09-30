@@ -1,16 +1,14 @@
 package com.dawnduskterminal.portal;
 
-import com.dawnduskterminal.config.DdtConfig;
+import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.tags.BlockTags;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Fluids;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -22,7 +20,16 @@ import java.util.Set;
 
 public final class PortalShape {
     public static final int MIN_WATER = 4;
-    public static final int MAX_SIDE = 8;
+    public static final int MAX_WATER = 64;
+
+    public static final TagKey<Block> PORTAL_FLUID_TAG =
+        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/fluid"));
+
+    public static final TagKey<Block> PORTAL_EDGE_TAG =
+        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/edge"));
+
+    public static final TagKey<Block> PORTAL_DECO_TAG =
+        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/decoration"));
 
     private final List<BlockPos> waterBlocks;
     private final List<BlockPos> frameBlocks;
@@ -50,36 +57,20 @@ public final class PortalShape {
         return state.is(ModBlocks.PORTAL_FLUID.get());
     }
 
+    public static boolean isPoolBlock(BlockState state) {
+        return state.is(PORTAL_FLUID_TAG);
+    }
+
     public static boolean isPoolWater(BlockGetter level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (isPortalFluid(state)) {
-            return true;
-        }
-        if (!state.is(Blocks.WATER)) {
-            return false;
-        }
-        return DdtConfig.waterIsPortal() && level.getFluidState(pos).isSourceOfType(Fluids.WATER);
+        return isPoolBlock(level.getBlockState(pos));
     }
 
     public static boolean isPlantable(BlockState state) {
-        return state.is(BlockTags.DIRT)
-            || state.is(Blocks.FARMLAND)
-            || state.is(Blocks.SOUL_SOIL)
-            || state.is(Blocks.MOSS_BLOCK)
-            || state.is(Blocks.CLAY);
+        return state.is(PORTAL_EDGE_TAG);
     }
 
     public static boolean isPlant(BlockState state) {
-        if (state.isAir()) {
-            return false;
-        }
-        Block block = state.getBlock();
-        return block instanceof BushBlock
-            || state.is(BlockTags.CROPS)
-            || state.is(BlockTags.FLOWERS)
-            || state.is(BlockTags.SAPLINGS)
-            || state.is(BlockTags.LEAVES)
-            || state.is(BlockTags.REPLACEABLE);
+        return state.is(PORTAL_DECO_TAG);
     }
 
     public static Optional<PortalShape> find(BlockGetter level, BlockPos seed) {
@@ -93,22 +84,14 @@ public final class PortalShape {
         BlockPos start = new BlockPos(seed.getX(), y, seed.getZ());
         queue.add(start);
         visited.add(start);
-        int minX = seed.getX();
-        int maxX = seed.getX();
-        int minZ = seed.getZ();
-        int maxZ = seed.getZ();
 
         while (!queue.isEmpty()) {
             BlockPos current = queue.poll();
             water.add(current);
-            if (water.size() > MAX_SIDE * MAX_SIDE) {
+            if (water.size() > MAX_WATER) {
                 return Optional.empty();
             }
-            minX = Math.min(minX, current.getX());
-            maxX = Math.max(maxX, current.getX());
-            minZ = Math.min(minZ, current.getZ());
-            maxZ = Math.max(maxZ, current.getZ());
-            if (maxX - minX + 1 > MAX_SIDE || maxZ - minZ + 1 > MAX_SIDE) {
+            if (!level.getBlockState(current.below()).isFaceSturdy(level, current, Direction.UP)) {
                 return Optional.empty();
             }
             for (Direction direction : Direction.Plane.HORIZONTAL) {
@@ -135,7 +118,7 @@ public final class PortalShape {
                 if (visited.contains(side)) {
                     continue;
                 }
-                if (isPortalFluid(level.getBlockState(side))) {
+                if (isPoolWater(level, side)) {
                     continue;
                 }
                 BlockState frameState = level.getBlockState(side);
