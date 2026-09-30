@@ -29,6 +29,8 @@ public final class ChronoSkyRenderer {
 
     public static final ResourceLocation SUN_TEXTURE =
         com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/sun_disc.png");
+    public static final ResourceLocation MOON_TEXTURE =
+        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/moon_disc.png");
 
     private static boolean logged;
 
@@ -66,8 +68,13 @@ public final class ChronoSkyRenderer {
         poseStack.mulPose(modelViewMatrix);
         Matrix4f celestialMatrix = poseStack.last().pose();
         float sunSize = DdtConfig.sunTextureSize() / 64.0F * 18.0F;
+        float moonSize = DdtConfig.sunTextureSize() / 64.0F * 15.0F;
+        float moonAngle = -sunAngle;
         if (sunAngle >= -SUN_HIDE_DEGREES) {
             drawCelestial(celestialMatrix, camera, sunAngle, SUN_TEXTURE, sunSize, 1.0F, 1.0F, 1.0F, 1.0F);
+        }
+        if (moonAngle >= -SUN_HIDE_DEGREES) {
+            drawCelestial(celestialMatrix, camera, moonAngle, MOON_TEXTURE, moonSize, 0.68F, 0.72F, 0.86F, 1.0F);
         }
 
         RenderSystem.setShaderFogStart(savedFogStart);
