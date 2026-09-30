@@ -29,9 +29,9 @@ public final class ChronoSkyRenderer {
     private static final float SUN_HIDE_DEGREES = 2.0F;
 
     public static final ResourceLocation SUN_TEXTURE =
-        ResourceLocation.withDefaultNamespace("textures/environment/sun.png");
+        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/sun.png");
     public static final ResourceLocation MOON_TEXTURE =
-        ResourceLocation.withDefaultNamespace("textures/environment/moon_phases.png");
+        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/moon_phases.png");
     private static final float VANILLA_SUN_HALF = 30.0F;
     private static final float VANILLA_MOON_HALF = 20.0F;
 
