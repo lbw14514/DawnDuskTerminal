@@ -2,14 +2,33 @@
   "block.dawnduskterminal.portal_fluid": "Portal Fluid",
   "block.dawnduskterminal.chrono_crust": "Chrono Crust",
   "block.dawnduskterminal.sky_soil": "Sky Soil",
+  "block.dawnduskterminal.scorching_twilight": "Scorching Twilight",
+
+  "block.dawnduskterminal.ember_soil": "Ember Soil",
+  "block.dawnduskterminal.sky_stone": "Sky Stone",
+  "block.dawnduskterminal.ochre": "Ochre",
+  "block.dawnduskterminal.greenschist": "Greenschist",
+  "block.dawnduskterminal.eclogite": "Eclogite",
+  "block.dawnduskterminal.peridotite": "Peridotite",
+  "block.dawnduskterminal.twilight_stone": "Twilight Stone",
+  "block.dawnduskterminal.road_sand": "Road Sand",
+  "block.dawnduskterminal.sleepless_sand": "Sleepless Sand",
+  "block.dawnduskterminal.siltstone": "Siltstone",
+  "block.dawnduskterminal.frozen_canopy": "Frozen Canopy",
+  "block.dawnduskterminal.fragile_canopy": "Fragile Canopy",
+  "block.dawnduskterminal.chaos_stone": "Chaos Stone",
+  "block.dawnduskterminal.aurora_block": "Aurora Block",
+  "block.dawnduskterminal.blazing_block": "Blazing Block",
 
   "item.dawnduskterminal.hydra_trophy": "Hydra Trophy",
   "item.dawnduskterminal.ur_ghast_trophy": "Ur Ghast Trophy",
   "item.dawnduskterminal.snow_queen_trophy": "Snow Queen Trophy",
   "item.dawnduskterminal.portal_bucket": "Portal Bucket",
+  "item.dawnduskterminal.scorching_twilight_bucket": "Scorching Twilight Bucket",
   "item.dawnduskterminal.chrono_core": "Chrono Core",
 
   "fluid_type.dawnduskterminal.portal_fluid": "Portal Fluid",
+  "fluid_type.dawnduskterminal.scorching_twilight": "Scorching Twilight",
 
   "effect.dawnduskterminal.portal_sickness": "Lost in Twilight",
 

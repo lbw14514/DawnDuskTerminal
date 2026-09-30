@@ -26,6 +26,12 @@ public class PortalBlock extends LiquidBlock {
     }
 
     @Override
+    protected void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level,
+            BlockPos pos, net.minecraft.util.RandomSource random) {
+        com.dawnduskterminal.world.FluidReactions.handle(level, pos);
+    }
+
+    @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         super.entityInside(state, level, pos, entity);
         if (level.isClientSide) {

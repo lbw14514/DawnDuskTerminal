@@ -16,6 +16,7 @@ import com.dawnduskterminal.command.DdtCommands;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModSounds;
+import com.dawnduskterminal.registry.ModTerrainBlocks;
 import com.dawnduskterminal.server.DdtServerEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -37,6 +38,7 @@ public final class DawnDuskTerminal {
         ModFluids.register(modBus);
         ModScorchingTwilight.register(modBus);
         ModBlocks.register(modBus);
+        ModTerrainBlocks.register(modBus);
         ModItems.register(modBus);
         ModEffects.register(modBus);
         ModEntities.register(modBus);

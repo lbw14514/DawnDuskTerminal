@@ -3,8 +3,6 @@ package com.dawnduskterminal.world;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,13 +11,12 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
 
 public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
-    public record Config(int minY, int maxY, int minRadius, int maxRadius, int floorY) implements FeatureConfiguration {
+    public record Config(int minChunks, int maxChunks, int floorY, int topY) implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-            Codec.INT.fieldOf("min_y").forGetter(Config::minY),
-            Codec.INT.fieldOf("max_y").forGetter(Config::maxY),
-            Codec.INT.fieldOf("min_radius").forGetter(Config::minRadius),
-            Codec.INT.fieldOf("max_radius").forGetter(Config::maxRadius),
-            Codec.INT.fieldOf("floor_y").forGetter(Config::floorY)
+            Codec.INT.fieldOf("min_chunks").forGetter(Config::minChunks),
+            Codec.INT.fieldOf("max_chunks").forGetter(Config::maxChunks),
+            Codec.INT.fieldOf("floor_y").forGetter(Config::floorY),
+            Codec.INT.fieldOf("top_y").forGetter(Config::topY)
         ).apply(inst, Config::new));
     }
 
@@ -32,34 +29,16 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         Config config = context.config();
-        RandomSource random = context.random();
-        int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
-        int y0 = Mth.clamp(origin.getY(), config.minY(), config.maxY());
-        int y1 = Mth.clamp(y0 + Mth.nextInt(random, 24, 56), config.minY(), config.maxY());
-        int bottom = config.floorY();
-        if (y0 < bottom) {
-            y0 = bottom;
-        }
-        if (y1 < bottom) {
-            y1 = bottom;
-        }
-        if (y1 < y0) {
-            return false;
-        }
-        int cx = origin.getX();
-        int cz = origin.getZ();
+        int x0 = origin.getX() & ~15;
+        int z0 = origin.getZ() & ~15;
+        int y0 = config.floorY();
+        int y1 = config.topY();
         BlockState air = Blocks.AIR.defaultBlockState();
-        long seedX = random.nextLong();
-        long seedZ = random.nextLong();
         boolean changed = false;
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                double edge = wobble(seedX, seedZ, x, z, radius);
-                if (edge <= 0.0D) {
-                    continue;
-                }
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
                 for (int y = y0; y <= y1; y++) {
-                    BlockPos pos = new BlockPos(cx + x, y, cz + z);
+                    BlockPos pos = new BlockPos(x0 + x, y, z0 + z);
                     if (level.getBlockState(pos).isAir()) {
                         continue;
                     }
@@ -69,14 +48,5 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
             }
         }
         return changed;
-    }
-
-    private static double wobble(long seedX, long seedZ, int x, int z, int radius) {
-        double dist = Math.sqrt((double) (x * x + z * z));
-        double angle = Math.atan2(z, x);
-        double noise = Math.sin(angle * 3.0D + (seedX & 0xFF) * 0.1D) * 0.18D
-            + Math.sin(angle * 5.0D + (seedZ & 0xFF) * 0.13D) * 0.11D
-            + Math.sin(angle * 8.0D + ((seedX >> 8) & 0xFF) * 0.07D) * 0.07D;
-        return radius * (1.0D + noise) - dist;
     }
 }

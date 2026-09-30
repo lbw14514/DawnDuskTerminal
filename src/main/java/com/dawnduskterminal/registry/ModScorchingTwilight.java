@@ -58,7 +58,7 @@ public final class ModScorchingTwilight {
 
     public static final DeferredBlock<LiquidBlock> BLOCK = BLOCKS.registerBlock(
         "scorching_twilight",
-        props -> new LiquidBlock(SOURCE.get(), props),
+        props -> new com.dawnduskterminal.block.ScorchingTwilightBlock(SOURCE.get(), props),
         BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_ORANGE)
             .replaceable()
