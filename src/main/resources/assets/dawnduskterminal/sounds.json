@@ -2,26 +2,37 @@
   "portal_open": {
     "subtitle": "subtitles.dawnduskterminal.portal_open",
     "sounds": [
-      "minecraft:block/portal/travel"
+      {
+        "name": "minecraft:block.portal.travel",
+        "type": "event"
+      }
     ]
   },
   "portal_enter": {
     "subtitle": "subtitles.dawnduskterminal.portal_enter",
     "sounds": [
-      "minecraft:block/portal/travel"
+      {
+        "name": "minecraft:block.portal.travel",
+        "type": "event"
+      }
     ]
   },
   "portal_exit": {
     "subtitle": "subtitles.dawnduskterminal.portal_exit",
     "sounds": [
-      "minecraft:block/portal/trigger"
+      {
+        "name": "minecraft:block.portal.trigger",
+        "type": "event"
+      }
     ]
   },
   "chrono_ambient": {
     "subtitle": "subtitles.dawnduskterminal.chrono_ambient",
     "sounds": [
-      "minecraft:ambient/cave/cave1",
-      "minecraft:ambient/cave/cave2"
+      {
+        "name": "minecraft:ambient.cave",
+        "type": "event"
+      }
     ]
   }
 }
