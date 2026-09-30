@@ -9,6 +9,7 @@ import net.minecraft.core.QuartPos;
 import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
@@ -122,6 +123,33 @@ public final class ChronoBiomeSource extends BiomeSource {
         return h ^ (h >> 16);
     }
 
+    private static final double BOUNDARY_JITTER = 60.0D;
+
+    private static final double BOUNDARY_SCALE = 128.0D;
+
+    private static double lattice(int x, int z) {
+        return (double) (mix(x, z) & 0xFFFF) / 65535.0D;
+    }
+
+    private static double boundaryJitter(double x, double z) {
+        double fx = x / BOUNDARY_SCALE;
+        double fz = z / BOUNDARY_SCALE;
+        int ix = (int) Math.floor(fx);
+        int iz = (int) Math.floor(fz);
+        double tx = fx - ix;
+        double tz = fz - iz;
+        double sx = tx * tx * (3.0D - 2.0D * tx);
+        double sz = tz * tz * (3.0D - 2.0D * tz);
+        double v00 = lattice(ix, iz);
+        double v10 = lattice(ix + 1, iz);
+        double v01 = lattice(ix, iz + 1);
+        double v11 = lattice(ix + 1, iz + 1);
+        double a = v00 + (v10 - v00) * sx;
+        double b = v01 + (v11 - v01) * sx;
+        double v = a + (b - a) * sz;
+        return (v * 2.0D - 1.0D) * BOUNDARY_JITTER;
+    }
+
     private Holder<Biome> applyReplacement(Holder<Biome> biome, int quartX, int quartZ) {
         ResourceKey<Biome> key = biome.unwrapKey().orElse(null);
         if (key != null) {
@@ -146,12 +174,13 @@ public final class ChronoBiomeSource extends BiomeSource {
         double blockX = QuartPos.toBlock(quartX);
         double blockZ = QuartPos.toBlock(quartZ);
         double max = Math.max(1.0D, this.maxDistance);
-        double distance = Math.abs(ChronoLineState.serverLine().distance(blockX, blockZ));
+        double signed = ChronoLineState.serverLine().distance(blockX, blockZ) + boundaryJitter(blockX, blockZ);
+        double distance = Math.abs(signed);
         if (this.lineBiome.isPresent() && distance <= this.lineHalfWidth) {
             return this.lineBiome.get();
         }
         double innerLimit = Math.min(0.95D, this.bandHalfWidth / max);
-        double param = ChronoLineState.serverLine().param(blockX, blockZ);
+        double param = Mth.clamp(signed / max, -1.0D, 1.0D);
         double magnitude = Math.abs(param);
         if (magnitude <= innerLimit) {
             return applyReplacement(this.delegate.getNoiseBiome(quartX, quartY, quartZ, sampler), quartX, quartZ);
