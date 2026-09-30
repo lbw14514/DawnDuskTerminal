@@ -13,6 +13,15 @@ public final class ShaderGuard {
 
     private ShaderGuard() {}
 
+    public static boolean shaderModLoaded() {
+        for (String modId : SHADER_MODS) {
+            if (ModList.get().isLoaded(modId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void onClientLogin(ClientPlayerNetworkEvent.LoggingIn event) {
         if (warned || !DdtConfig.shaderWarning()) {
             return;

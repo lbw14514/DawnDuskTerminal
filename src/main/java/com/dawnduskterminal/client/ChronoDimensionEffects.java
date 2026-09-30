@@ -40,7 +40,7 @@ public final class ChronoDimensionEffects extends DimensionSpecialEffects {
         if (!DdtConfig.customSky()) {
             return false;
         }
-        setupFog.run();
+        ChronoSkyRenderer.render(level, partialTick, modelViewMatrix, camera, projectionMatrix, setupFog);
         return true;
     }
 

@@ -33,8 +33,11 @@ public final class DdtClient {
         if (level == null || !level.dimension().equals(ModDimensions.CHRONO)) {
             return;
         }
+        if (!ShaderGuard.shaderModLoaded()) {
+            return;
+        }
         ChronoSkyRenderer.render(level, event.getPartialTick().getGameTimeDeltaPartialTick(false),
-            event.getModelViewMatrix(), event.getCamera(), event.getProjectionMatrix());
+            event.getModelViewMatrix(), event.getCamera(), event.getProjectionMatrix(), null);
     }
 
     private static void registerDimensionEffects(RegisterDimensionSpecialEffectsEvent event) {

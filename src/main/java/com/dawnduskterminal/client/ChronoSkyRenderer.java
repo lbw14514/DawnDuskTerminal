@@ -23,6 +23,8 @@ public final class ChronoSkyRenderer {
 
     private static SunRenderer sunRenderer = new PixelSunRenderer();
 
+    private static boolean logged;
+
     private ChronoSkyRenderer() {}
 
     public static void setSunRenderer(SunRenderer renderer) {
@@ -30,7 +32,7 @@ public final class ChronoSkyRenderer {
     }
 
     public static void render(ClientLevel level, float partialTick, Matrix4f modelViewMatrix, Camera camera,
-                              Matrix4f projectionMatrix) {
+                              Matrix4f projectionMatrix, Runnable setupFog) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) {
@@ -39,6 +41,10 @@ public final class ChronoSkyRenderer {
         ChronoLine line = ChronoLineState.clientLine();
         float param = (float) line.param(player.getX(), player.getZ());
         float sunAngle = (float) (param * DdtConfig.sunAngleMax());
+
+        if (setupFog != null) {
+            setupFog.run();
+        }
 
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
@@ -72,6 +78,11 @@ public final class ChronoSkyRenderer {
 
         int top = sampleColor(DdtConfig.skyTopColors(), param);
         int horizon = sampleColor(DdtConfig.skyHorizonColors(), param);
+        if (!logged) {
+            logged = true;
+            com.dawnduskterminal.DawnDuskTerminal.LOGGER.info(
+                "DDT_SKY param={} top={} horizon={} radius={}", param, top, horizon, RADIUS);
+        }
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
