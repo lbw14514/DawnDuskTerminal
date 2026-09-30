@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -32,6 +33,10 @@ public final class ModItems {
     public static final DeferredItem<Item> CHRONO_CORE = ITEMS.registerSimpleItem(
         "chrono_core",
         new Item.Properties().rarity(Rarity.EPIC).fireResistant().stacksTo(16));
+
+    public static final DeferredItem<BlockItem> SKY_SOIL = ITEMS.registerSimpleBlockItem(ModBlocks.SKY_SOIL);
+
+    public static final DeferredItem<BlockItem> CHRONO_CRUST = ITEMS.registerSimpleBlockItem(ModBlocks.CHRONO_CRUST);
 
     private ModItems() {}
 

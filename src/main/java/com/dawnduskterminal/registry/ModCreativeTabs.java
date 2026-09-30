@@ -5,6 +5,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ItemLike;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -18,15 +20,23 @@ public final class ModCreativeTabs {
             .title(Component.translatable("itemGroup.dawnduskterminal.main"))
             .icon(() -> new ItemStack(ModItems.HYDRA_TROPHY.get()))
             .displayItems((params, output) -> {
-                output.accept(ModItems.HYDRA_TROPHY.get());
-                output.accept(ModItems.UR_GHAST_TROPHY.get());
-                output.accept(ModItems.SNOW_QUEEN_TROPHY.get());
-                output.accept(ModItems.CHRONO_CORE.get());
-                output.accept(ModItems.PORTAL_BUCKET.get());
-                output.accept(ModBlocks.SKY_SOIL.get());
-                output.accept(ModBlocks.CHRONO_CRUST.get());
+                accept(output, ModItems.HYDRA_TROPHY.get());
+                accept(output, ModItems.UR_GHAST_TROPHY.get());
+                accept(output, ModItems.SNOW_QUEEN_TROPHY.get());
+                accept(output, ModItems.CHRONO_CORE.get());
+                accept(output, ModItems.PORTAL_BUCKET.get());
+                accept(output, ModItems.SKY_SOIL.get());
+                accept(output, ModItems.CHRONO_CRUST.get());
             })
             .build());
+
+    private static void accept(CreativeModeTab.Output output, ItemLike item) {
+        if (item == null || item.asItem() == Items.AIR) {
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal creative entry skipped, no item is registered for {}", item);
+            return;
+        }
+        output.accept(item);
+    }
 
     private ModCreativeTabs() {}
 
