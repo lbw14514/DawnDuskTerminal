@@ -110,8 +110,7 @@
         {
           "from": "minecraft:sparse_jungle",
           "hot": [
-            "twilightforest:enchanted_forest",
-            "twilightforest:forest"
+            "twilightforest:enchanted_forest"
           ],
           "cold": [
             "twilightforest:spooky_forest"
@@ -129,8 +128,7 @@
         {
           "from": "minecraft:swamp",
           "hot": [
-            "twilightforest:fire_swamp",
-            "twilightforest:swamp"
+            "twilightforest:fire_swamp"
           ],
           "cold": [
             "twilightforest:swamp"
@@ -157,8 +155,7 @@
         {
           "from": "minecraft:savanna_plateau",
           "hot": [
-            "twilightforest:oak_savannah",
-            "twilightforest:highlands"
+            "twilightforest:oak_savannah"
           ],
           "cold": [
             "twilightforest:glacier"
@@ -167,8 +164,7 @@
         {
           "from": "minecraft:windswept_savanna",
           "hot": [
-            "twilightforest:oak_savannah",
-            "twilightforest:thornlands"
+            "twilightforest:oak_savannah"
           ],
           "cold": [
             "twilightforest:glacier"
@@ -180,7 +176,7 @@
             "minecraft:desert"
           ],
           "cold": [
-            "minecraft:stony_peaks"
+            "minecraft:snowy_plains"
           ]
         },
         {
@@ -198,7 +194,7 @@
             "minecraft:eroded_badlands"
           ],
           "cold": [
-            "minecraft:stony_peaks"
+            "minecraft:frozen_peaks"
           ]
         },
         {
@@ -207,7 +203,7 @@
             "minecraft:wooded_badlands"
           ],
           "cold": [
-            "minecraft:snowy_slopes"
+            "minecraft:frozen_peaks"
           ]
         },
         {
@@ -225,7 +221,7 @@
             "minecraft:stony_shore"
           ],
           "cold": [
-            "minecraft:snowy_slopes"
+            "minecraft:snowy_beach"
           ]
         },
         {
@@ -241,7 +237,6 @@
         {
           "from": "minecraft:windswept_hills",
           "hot": [
-            "twilightforest:highlands",
             "twilightforest:thornlands"
           ],
           "cold": [
@@ -251,7 +246,7 @@
         {
           "from": "minecraft:windswept_gravelly_hills",
           "hot": [
-            "twilightforest:highlands"
+            "twilightforest:thornlands"
           ],
           "cold": [
             "twilightforest:glacier"
@@ -260,40 +255,37 @@
         {
           "from": "minecraft:windswept_forest",
           "hot": [
-            "twilightforest:highlands",
-            "twilightforest:dense_forest"
+            "twilightforest:thornlands"
           ],
           "cold": [
-            "twilightforest:snowy_forest"
+            "twilightforest:glacier"
           ]
         },
         {
           "from": "minecraft:jagged_peaks",
           "hot": [
-            "twilightforest:highlands"
+            "twilightforest:clearing"
           ],
           "cold": [
-            "minecraft:jagged_peaks"
+            "twilightforest:glacier"
           ]
         },
         {
           "from": "minecraft:meadow",
           "hot": [
-            "twilightforest:clearing",
-            "twilightforest:firefly_forest"
+            "twilightforest:clearing"
           ],
           "cold": [
-            "twilightforest:snowy_forest"
+            "twilightforest:glacier"
           ]
         },
         {
           "from": "minecraft:cherry_grove",
           "hot": [
-            "twilightforest:firefly_forest",
-            "twilightforest:enchanted_forest"
+            "twilightforest:clearing"
           ],
           "cold": [
-            "twilightforest:snowy_forest"
+            "twilightforest:glacier"
           ]
         },
         {
@@ -302,7 +294,7 @@
             "twilightforest:clearing"
           ],
           "cold": [
-            "twilightforest:snowy_forest"
+            "twilightforest:glacier"
           ]
         },
         {
@@ -311,7 +303,6 @@
             "twilightforest:clearing"
           ],
           "cold": [
-            "twilightforest:snowy_forest",
             "twilightforest:glacier"
           ]
         },
@@ -321,13 +312,13 @@
             "twilightforest:clearing"
           ],
           "cold": [
-            "twilightforest:snowy_forest"
+            "twilightforest:glacier"
           ]
         },
         {
           "from": "minecraft:snowy_taiga",
           "hot": [
-            "twilightforest:forest"
+            "twilightforest:dense_forest"
           ],
           "cold": [
             "twilightforest:snowy_forest"
@@ -345,7 +336,7 @@
         {
           "from": "minecraft:frozen_peaks",
           "hot": [
-            "twilightforest:highlands"
+            "twilightforest:clearing"
           ],
           "cold": [
             "twilightforest:glacier"
@@ -354,7 +345,7 @@
         {
           "from": "minecraft:taiga",
           "hot": [
-            "twilightforest:forest"
+            "twilightforest:dense_forest"
           ],
           "cold": [
             "twilightforest:snowy_forest"
@@ -366,7 +357,7 @@
             "twilightforest:dense_forest"
           ],
           "cold": [
-            "twilightforest:spooky_forest"
+            "twilightforest:snowy_forest"
           ]
         },
         {
@@ -375,7 +366,7 @@
             "twilightforest:dense_forest"
           ],
           "cold": [
-            "twilightforest:spooky_forest"
+            "twilightforest:snowy_forest"
           ]
         },
         {
@@ -399,8 +390,7 @@
         {
           "from": "minecraft:ocean",
           "hot": [
-            "twilightforest:lake",
-            "twilightforest:swamp"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -409,7 +399,7 @@
         {
           "from": "minecraft:deep_ocean",
           "hot": [
-            "twilightforest:lake"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -418,8 +408,7 @@
         {
           "from": "minecraft:warm_ocean",
           "hot": [
-            "twilightforest:swamp",
-            "twilightforest:lake"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -428,7 +417,7 @@
         {
           "from": "minecraft:lukewarm_ocean",
           "hot": [
-            "twilightforest:swamp"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -437,7 +426,7 @@
         {
           "from": "minecraft:deep_lukewarm_ocean",
           "hot": [
-            "twilightforest:lake"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -446,7 +435,7 @@
         {
           "from": "minecraft:cold_ocean",
           "hot": [
-            "twilightforest:lake"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -455,7 +444,7 @@
         {
           "from": "minecraft:deep_cold_ocean",
           "hot": [
-            "twilightforest:glacier"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -464,7 +453,7 @@
         {
           "from": "minecraft:frozen_ocean",
           "hot": [
-            "twilightforest:glacier"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
@@ -473,7 +462,7 @@
         {
           "from": "minecraft:deep_frozen_ocean",
           "hot": [
-            "twilightforest:glacier"
+            "dawnduskterminal:refusal_ocean"
           ],
           "cold": [
             "dawnduskterminal:solidcanopy_ocean"
