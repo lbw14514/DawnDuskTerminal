@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -14,7 +15,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 
 public class RootPillarFeature extends Feature<NoneFeatureConfiguration> {
     private static final int MIN_GAP = 2;
-    private static final int MAX_PILLAR = 40;
+    private static final int MAX_PILLAR = 64;
 
     public RootPillarFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -70,7 +71,8 @@ public class RootPillarFeature extends Feature<NoneFeatureConfiguration> {
             y--;
             gap++;
             if (gap > MAX_PILLAR) {
-                return false;
+                level.setBlock(logPos, Blocks.AIR.defaultBlockState(), 2);
+                return true;
             }
         }
         if (gap < MIN_GAP) {
