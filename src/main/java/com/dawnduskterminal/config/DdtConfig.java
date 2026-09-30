@@ -76,12 +76,12 @@ public final class DdtConfig {
             .defineInRange("sun_texture_size", 64, 8, 512);
         SKY_TOP_COLORS = b.comment("sky zenith gradient stops from polar night to polar day, 6 digit hex without the hash")
             .defineListAllowEmpty("sky_top_colors",
-                () -> List.of("05050C", "101A38", "2E3A6E", "4A90D9", "3E7BD8"),
+                () -> List.of("06070F", "0C1430", "2A1E4A", "2F6FC8", "4FA0E8"),
                 () -> "FFFFFF",
                 entry -> entry instanceof String text && text.matches("[0-9A-Fa-f]{6}"));
         SKY_HORIZON_COLORS = b.comment("sky horizon gradient stops from polar night to polar day, 6 digit hex without the hash")
             .defineListAllowEmpty("sky_horizon_colors",
-                () -> List.of("131026", "2A2350", "8A6BB8", "A8CFFF", "FFD9A0"),
+                () -> List.of("0A0E20", "1A2248", "C8703C", "9CC4EE", "FFE6BC"),
                 () -> "FFFFFF",
                 entry -> entry instanceof String text && text.matches("[0-9A-Fa-f]{6}"));
         b.pop();
@@ -219,8 +219,8 @@ public final class DdtConfig {
         }
     }
 
-    private static final int[] DEFAULT_TOP = {0x05050C, 0x101A38, 0x2E3A6E, 0x4A90D9, 0x3E7BD8};
-    private static final int[] DEFAULT_HORIZON = {0x131026, 0x2A2350, 0x8A6BB8, 0xA8CFFF, 0xFFD9A0};
+    private static final int[] DEFAULT_TOP = {0x06070F, 0x0C1430, 0x2A1E4A, 0x2F6FC8, 0x4FA0E8};
+    private static final int[] DEFAULT_HORIZON = {0x0A0E20, 0x1A2248, 0xC8703C, 0x9CC4EE, 0xFFE6BC};
 
     private static List<? extends String> cachedTopRaw;
     private static int[] cachedTop = DEFAULT_TOP;

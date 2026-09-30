@@ -1,5 +1,6 @@
 package com.dawnduskterminal.portal;
 
+import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.config.DdtConfig;
 import com.dawnduskterminal.registry.ModAttachments;
 import com.dawnduskterminal.registry.ModBlocks;
@@ -15,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,10 +24,15 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class PortalTeleporter {
-    public static final int LANDING_SEARCH_RADIUS = 16;
+    public static final int LANDING_SEARCH_RADIUS = 500;
     public static final int COLUMN_SCAN_DEPTH = 48;
+    private static final int FINE_RADIUS = 32;
+    private static final int MID_RADIUS = 160;
+    private static final int MAX_CHUNK_LOADS = 400;
 
     private PortalTeleporter() {}
 
@@ -88,24 +95,51 @@ public final class PortalTeleporter {
     public static Vec3 findSafeLanding(ServerLevel level, double originX, double originZ, int originY) {
         int baseX = Mth.floor(originX);
         int baseZ = Mth.floor(originZ);
-        for (int radius = 0; radius <= LANDING_SEARCH_RADIUS; radius++) {
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    int squared = dx * dx + dz * dz;
-                    if (squared > radius * radius) {
+        Set<Long> loaded = new HashSet<>();
+        for (int ring = 0; ring <= LANDING_SEARCH_RADIUS; ring += stepFor(ring)) {
+            int step = stepFor(ring);
+            for (int dx = -ring; dx <= ring; dx += step) {
+                for (int dz = -ring; dz <= ring; dz += step) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) < ring) {
                         continue;
                     }
-                    if (radius > 0 && squared <= (radius - 1) * (radius - 1)) {
-                        continue;
+                    if (loaded.size() > MAX_CHUNK_LOADS) {
+                        DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal landing search gave up after {} chunks",
+                            loaded.size());
+                        return buildFallbackPlatform(level, baseX, originY, baseZ);
                     }
-                    Vec3 found = scanColumn(level, baseX + dx, baseZ + dz, originY);
+                    Vec3 found = probe(level, loaded, baseX + dx, baseZ + dz, originY);
                     if (found != null) {
+                        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal landing found at {} {} after {} chunks",
+                            (int) found.x, (int) found.y, loaded.size());
                         return found;
                     }
                 }
             }
         }
+        DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal landing search found nothing within {} blocks, building a platform",
+            LANDING_SEARCH_RADIUS);
         return buildFallbackPlatform(level, baseX, originY, baseZ);
+    }
+
+    private static int stepFor(int ring) {
+        if (ring <= FINE_RADIUS) {
+            return 1;
+        }
+        if (ring <= MID_RADIUS) {
+            return 4;
+        }
+        return 16;
+    }
+
+    @Nullable
+    private static Vec3 probe(ServerLevel level, Set<Long> loaded, int x, int z, int originY) {
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        if (loaded.add(ChunkPos.asLong(chunkX, chunkZ))) {
+            level.getChunk(chunkX, chunkZ);
+        }
+        return scanColumn(level, x, z, originY);
     }
 
     @Nullable
@@ -153,16 +187,22 @@ public final class PortalTeleporter {
     }
 
     private static Vec3 buildFallbackPlatform(ServerLevel level, int x, int y, int z) {
-        int landed = Mth.clamp(y, level.getMinBuildHeight() + 1, level.getMaxBuildHeight() - 4);
+        int landed = Mth.clamp(y, level.getMinBuildHeight() + 4, level.getMaxBuildHeight() - 8);
         BlockPos center = new BlockPos(x, landed, z);
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
+        int radius = 6;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                if (dx * dx + dz * dz > radius * radius) {
+                    continue;
+                }
                 level.setBlockAndUpdate(center.offset(dx, -1, dz), ModBlocks.SKY_SOIL.get().defaultBlockState());
+                level.setBlockAndUpdate(center.offset(dx, -2, dz), Blocks.STONE.defaultBlockState());
+                level.setBlockAndUpdate(center.offset(dx, -3, dz), Blocks.STONE.defaultBlockState());
             }
         }
-        for (int dy = 0; dy <= 3; dy++) {
-            for (int dx = -2; dx <= 2; dx++) {
-                for (int dz = -2; dz <= 2; dz++) {
+        for (int dy = 0; dy <= 4; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = center.offset(dx, dy, dz);
                     if (!level.getBlockState(pos).isAir()) {
                         level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
