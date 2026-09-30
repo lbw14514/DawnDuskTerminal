@@ -20,8 +20,12 @@ public final class ChronoDimensionEffects extends DimensionSpecialEffects {
         double x = minecraft.player != null ? minecraft.player.getX() : 0.0D;
         double z = minecraft.player != null ? minecraft.player.getZ() : 0.0D;
         float param = (float) ChronoLineState.clientLine().param(x, z);
-        double factor = 0.60D + 0.40D * (param + 1.0D) * 0.5D;
-        return color.multiply(factor, factor * 0.98D, factor * 1.06D);
+        double warm = (param + 1.0D) * 0.5D;
+        double factor = 0.55D + 0.45D * warm;
+        return new Vec3(
+            color.x * factor * (1.0D + 0.12D * warm),
+            color.y * factor * (1.0D + 0.02D * warm),
+            color.z * factor * (1.0D - 0.10D * warm));
     }
 
     @Override

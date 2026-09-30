@@ -18,7 +18,7 @@ public final class PixelSunRenderer implements SunRenderer {
 
     @Override
     public void render(SkyContext context) {
-        float size = DdtConfig.sunTextureSize() / 64.0F * 30.0F;
+        float size = DdtConfig.sunTextureSize() / 64.0F * 18.0F;
         float half = size * 0.5F;
         double angle = Math.toRadians(context.sunAngleDegrees());
         Vector3f normal = ChronoLineStateHolder.normal();

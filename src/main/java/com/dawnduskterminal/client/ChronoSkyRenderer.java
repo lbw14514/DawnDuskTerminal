@@ -78,27 +78,42 @@ public final class ChronoSkyRenderer {
 
         int top = sampleColor(DdtConfig.skyTopColors(), param);
         int horizon = sampleColor(DdtConfig.skyHorizonColors(), param);
+        int mid = lerpColor(top, horizon, 0.55F);
         if (!logged) {
             logged = true;
             com.dawnduskterminal.DawnDuskTerminal.LOGGER.info(
-                "DDT_SKY param={} top={} horizon={} radius={}", param, top, horizon, RADIUS);
+                "DDT_SKY param={} top={} mid={} horizon={}", param, top, mid, horizon);
         }
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        builder.addVertex(matrix, 0.0F, RADIUS, 0.0F)
-            .setColor(red(top), green(top), blue(top), 1.0F);
-        float ringY = -RADIUS;
+
+        float capRadius = RADIUS * 0.86F;
+        float capY = RADIUS * 0.50F;
         float ringRadius = RADIUS * 1.05F;
+        float ringY = -RADIUS;
+
+        BufferBuilder cap = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        cap.addVertex(matrix, 0.0F, RADIUS, 0.0F).setColor(red(top), green(top), blue(top), 1.0F);
         for (int i = 0; i <= SEGMENTS; i++) {
             double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
-            float x = (float) (Math.cos(theta) * ringRadius);
-            float z = (float) (Math.sin(theta) * ringRadius);
-            builder.addVertex(matrix, x, ringY, z)
+            cap.addVertex(matrix, (float) (Math.cos(theta) * capRadius), capY, (float) (Math.sin(theta) * capRadius))
+                .setColor(red(mid), green(mid), blue(mid), 1.0F);
+        }
+        BufferUploader.drawWithShader(cap.buildOrThrow());
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        BufferBuilder band = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        for (int i = 0; i <= SEGMENTS; i++) {
+            double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
+            double cos = Math.cos(theta);
+            double sin = Math.sin(theta);
+            band.addVertex(matrix, (float) (cos * capRadius), capY, (float) (sin * capRadius))
+                .setColor(red(mid), green(mid), blue(mid), 1.0F);
+            band.addVertex(matrix, (float) (cos * ringRadius), ringY, (float) (sin * ringRadius))
                 .setColor(red(horizon), green(horizon), blue(horizon), 1.0F);
         }
-        BufferUploader.drawWithShader(builder.buildOrThrow());
+        BufferUploader.drawWithShader(band.buildOrThrow());
     }
 
     private static int sampleColor(int[] stops, float param) {

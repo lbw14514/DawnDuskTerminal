@@ -12,6 +12,7 @@ import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModFeatures;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.advancement.ModCriteria;
+import com.dawnduskterminal.command.DdtCommands;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModSounds;
 import com.dawnduskterminal.server.DdtServerEvents;
@@ -51,6 +52,7 @@ public final class DawnDuskTerminal {
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onSpawnPlacement);
+        NeoForge.EVENT_BUS.addListener(DdtCommands::register);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             DdtClient.init(modBus);
