@@ -3,8 +3,6 @@ package com.dawnduskterminal.world;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,16 +11,14 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
 
 public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
-    public record Config(int minRadius, int maxRadius, int floorY, int topY) implements FeatureConfiguration {
+    public record Config(int gridChunks, int pocketChunks, int floorY, int topY) implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-            Codec.INT.fieldOf("min_radius").forGetter(Config::minRadius),
-            Codec.INT.fieldOf("max_radius").forGetter(Config::maxRadius),
+            Codec.INT.fieldOf("grid_chunks").forGetter(Config::gridChunks),
+            Codec.INT.fieldOf("pocket_chunks").forGetter(Config::pocketChunks),
             Codec.INT.fieldOf("floor_y").forGetter(Config::floorY),
             Codec.INT.fieldOf("top_y").forGetter(Config::topY)
         ).apply(inst, Config::new));
     }
-
-    private static final int CHUNK = 16;
 
     public HollowPocketFeature(Codec<Config> codec) {
         super(codec);
@@ -33,28 +29,31 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         Config config = context.config();
-        RandomSource random = context.random();
-        int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
-        int cx = origin.getX();
-        int cz = origin.getZ();
+        int chunkX = origin.getX() >> 4;
+        int chunkZ = origin.getZ() >> 4;
+        int grid = config.gridChunks();
+        int pocket = config.pocketChunks();
+        long cellX = Math.floorDiv(chunkX, grid);
+        long cellZ = Math.floorDiv(chunkZ, grid);
+        long hash = cellHash(cellX, cellZ);
+        int offsetX = (int) Math.floorMod(hash, grid - pocket + 1);
+        int offsetZ = (int) Math.floorMod(hash >>> 20, grid - pocket + 1);
+        int startX = (int) (cellX * grid) + offsetX;
+        int startZ = (int) (cellZ * grid) + offsetZ;
+        if (chunkX < startX || chunkX >= startX + pocket
+            || chunkZ < startZ || chunkZ >= startZ + pocket) {
+            return false;
+        }
+        int x0 = chunkX << 4;
+        int z0 = chunkZ << 4;
         int y0 = config.floorY();
         int y1 = config.topY();
-        long seedX = random.nextLong();
-        long seedZ = random.nextLong();
         BlockState air = Blocks.AIR.defaultBlockState();
         boolean changed = false;
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                if (wobble(seedX, seedZ, x, z, radius) <= 0.0D) {
-                    continue;
-                }
-                int bx = cx + x;
-                int bz = cz + z;
-                if (bx >> 4 != cx >> 4 || bz >> 4 != cz >> 4) {
-                    continue;
-                }
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
                 for (int y = y0; y <= y1; y++) {
-                    BlockPos pos = new BlockPos(bx, y, bz);
+                    BlockPos pos = new BlockPos(x0 + x, y, z0 + z);
                     if (level.getBlockState(pos).isAir()) {
                         continue;
                     }
@@ -66,13 +65,13 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         return changed;
     }
 
-    private static double wobble(long seedX, long seedZ, int x, int z, int radius) {
-        double dist = Math.sqrt((double) (x * x + z * z));
-        double angle = Math.atan2(z, x);
-        double noise = Math.sin(angle * 3.0D + (seedX & 0xFF) * 0.1D) * 0.20D
-            + Math.sin(angle * 5.0D + (seedZ & 0xFF) * 0.13D) * 0.13D
-            + Math.sin(angle * 8.0D + ((seedX >> 8) & 0xFF) * 0.07D) * 0.08D
-            + Math.sin(angle * 13.0D + ((seedZ >> 8) & 0xFF) * 0.11D) * 0.05D;
-        return radius * (1.0D + noise) - dist;
+    private static long cellHash(long x, long z) {
+        long h = x * 341873128712L + z * 132897987541L;
+        h ^= h >>> 33;
+        h *= 0xff51afd7ed558ccdL;
+        h ^= h >>> 33;
+        h *= 0xc4ceb9fe1a85ec53L;
+        h ^= h >>> 33;
+        return h & 0x7FFFFFFFFFFFFFFFL;
     }
 }

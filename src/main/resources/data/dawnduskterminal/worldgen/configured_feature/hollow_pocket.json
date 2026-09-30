@@ -1,8 +1,8 @@
 {
   "type": "dawnduskterminal:hollow_pocket",
   "config": {
-    "min_radius": 70,
-    "max_radius": 90,
+    "grid_chunks": 250,
+    "pocket_chunks": 10,
     "floor_y": -64,
     "top_y": 320
   }
