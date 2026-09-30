@@ -30,6 +30,8 @@ import java.util.Set;
 public final class PortalTeleporter {
     public static final int LANDING_SEARCH_RADIUS = 500;
     public static final int COLUMN_SCAN_DEPTH = 48;
+    public static final int LANDING_MIN_Y = 0;
+    public static final int LANDING_MAX_Y = 176;
     private static final int FINE_RADIUS = 32;
     private static final int MID_RADIUS = 160;
     private static final int MAX_CHUNK_LOADS = 400;
@@ -84,6 +86,8 @@ public final class PortalTeleporter {
         if (chrono == null) {
             return;
         }
+        player.displayClientMessage(
+            net.minecraft.network.chat.Component.translatable("message.dawnduskterminal.searching"), false);
         Vec3 landing = findSafeLanding(chrono, player.getX(), player.getZ(), Mth.floor(player.getY()));
         PortalState remembered = state.withReturn(
             current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
@@ -150,18 +154,14 @@ public final class PortalTeleporter {
         if (surface <= minY) {
             return null;
         }
-        int floor = Math.max(minY, surface - COLUMN_SCAN_DEPTH);
-        for (int y = surface; y >= floor; y--) {
+        if (surface < LANDING_MIN_Y || surface > LANDING_MAX_Y) {
+            return null;
+        }
+        int top = Math.min(surface + 2, LANDING_MAX_Y);
+        int bottom = Math.max(surface - 3, LANDING_MIN_Y);
+        for (int y = top; y >= bottom; y--) {
             if (isSafeStanding(level, new BlockPos(x, y, z))) {
                 return new Vec3(x + 0.5D, y, z + 0.5D);
-            }
-        }
-        if (originY > surface) {
-            int ceiling = Math.min(level.getMaxBuildHeight() - 2, originY);
-            for (int y = ceiling; y > surface; y--) {
-                if (isSafeStanding(level, new BlockPos(x, y, z))) {
-                    return new Vec3(x + 0.5D, y, z + 0.5D);
-                }
             }
         }
         return null;
@@ -188,7 +188,7 @@ public final class PortalTeleporter {
     }
 
     private static Vec3 buildFallbackPlatform(ServerLevel level, int x, int y, int z) {
-        int landed = Mth.clamp(y, level.getMinBuildHeight() + 4, level.getMaxBuildHeight() - 8);
+        int landed = Mth.clamp(y, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
         BlockPos center = new BlockPos(x, landed, z);
         int radius = 6;
         for (int dx = -radius; dx <= radius; dx++) {
@@ -228,14 +228,15 @@ public final class PortalTeleporter {
             return false;
         }
         BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
+        BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         for (int dx = 0; dx < 2; dx++) {
             for (int dz = 0; dz < 2; dz++) {
-                BlockPos floor = new BlockPos(baseX + dx, y - 1, baseZ + dz);
-                if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) {
-                    level.setBlockAndUpdate(floor, ModBlocks.SKY_SOIL.get().defaultBlockState());
-                }
-                level.setBlockAndUpdate(floor.above(), portal);
-                level.setBlockAndUpdate(floor.above(2), Blocks.AIR.defaultBlockState());
+                BlockPos top = new BlockPos(baseX + dx, y - 1, baseZ + dz);
+                level.setBlockAndUpdate(top, Blocks.AIR.defaultBlockState());
+                level.setBlockAndUpdate(top.below(), bedrock);
+                level.setBlockAndUpdate(top.below(2), bedrock);
+                level.setBlockAndUpdate(top, portal);
+                level.setBlockAndUpdate(top.above(), Blocks.AIR.defaultBlockState());
             }
         }
         DawnDuskTerminal.LOGGER.info("DawnDuskTerminal arrival portal built at {} {} {}", baseX, y, baseZ);

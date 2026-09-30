@@ -28,6 +28,21 @@ public final class ModCreativeTabs {
                 accept(output, ModScorchingTwilight.BUCKET.get());
                 accept(output, ModItems.SKY_SOIL.get());
                 accept(output, ModItems.CHRONO_CRUST.get());
+                accept(output, ModTerrainBlocks.EMBER_SOIL_ITEM.get());
+                accept(output, ModTerrainBlocks.SKY_STONE_ITEM.get());
+                accept(output, ModTerrainBlocks.OCHRE_ITEM.get());
+                accept(output, ModTerrainBlocks.GREENSCHIST_ITEM.get());
+                accept(output, ModTerrainBlocks.ECLOGITE_ITEM.get());
+                accept(output, ModTerrainBlocks.PERIDOTITE_ITEM.get());
+                accept(output, ModTerrainBlocks.TWILIGHT_STONE_ITEM.get());
+                accept(output, ModTerrainBlocks.ROAD_SAND_ITEM.get());
+                accept(output, ModTerrainBlocks.SLEEPLESS_SAND_ITEM.get());
+                accept(output, ModTerrainBlocks.SILTSTONE_ITEM.get());
+                accept(output, ModTerrainBlocks.FROZEN_CANOPY_ITEM.get());
+                accept(output, ModTerrainBlocks.FRAGILE_CANOPY_ITEM.get());
+                accept(output, ModTerrainBlocks.CHAOS_STONE_ITEM.get());
+                accept(output, ModTerrainBlocks.AURORA_BLOCK_ITEM.get());
+                accept(output, ModTerrainBlocks.BLAZING_BLOCK_ITEM.get());
             })
             .build());
 
