@@ -7,6 +7,8 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class StructureExclusions {
     public static final Map<String, ResourceLocation> EXCLUDED_TF = new LinkedHashMap<>();
@@ -60,5 +62,19 @@ public final class StructureExclusions {
 
     public static List<ResourceLocation> excludedStructureIds() {
         return List.copyOf(EXCLUDED_TF.values());
+    }
+
+    private static final Set<ResourceLocation> EXCLUDED_TF_IDS = Set.copyOf(EXCLUDED_TF.values());
+
+    private static final Set<ResourceLocation> LOGGED = ConcurrentHashMap.newKeySet();
+
+    public static boolean isExcluded(ResourceLocation id) {
+        return EXCLUDED_TF_IDS.contains(id);
+    }
+
+    public static void logSuppressed(ResourceLocation id) {
+        if (LOGGED.add(id)) {
+            DawnDuskTerminal.LOGGER.info("DawnDuskTerminal landmark {} is suppressed in the chrono dimension", id);
+        }
     }
 }
