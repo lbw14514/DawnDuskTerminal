@@ -1,5 +1,6 @@
 package com.dawnduskterminal.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -28,9 +29,11 @@ public final class ChronoSkyRenderer {
     private static final float SUN_HIDE_DEGREES = 2.0F;
 
     public static final ResourceLocation SUN_TEXTURE =
-        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/sun_disc.png");
+        ResourceLocation.withDefaultNamespace("textures/environment/sun.png");
     public static final ResourceLocation MOON_TEXTURE =
-        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/moon_disc.png");
+        ResourceLocation.withDefaultNamespace("textures/environment/moon_phases.png");
+    private static final float VANILLA_SUN_HALF = 30.0F;
+    private static final float VANILLA_MOON_HALF = 20.0F;
 
     private static boolean logged;
 
@@ -67,14 +70,22 @@ public final class ChronoSkyRenderer {
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(modelViewMatrix);
         Matrix4f celestialMatrix = poseStack.last().pose();
-        float sunSize = DdtConfig.sunTextureSize() / 64.0F * 18.0F;
-        float moonSize = DdtConfig.sunTextureSize() / 64.0F * 15.0F;
+        float sizeScale = DdtConfig.sunTextureSize() / 64.0F;
+        int moonPhase = level.getMoonPhase();
+        int phaseX = moonPhase % 4;
+        int phaseY = moonPhase / 4 % 2;
+        float u0 = (float) phaseX / 4.0F;
+        float u1 = (float) (phaseX + 1) / 4.0F;
+        float v0 = (float) phaseY / 2.0F;
+        float v1 = (float) (phaseY + 1) / 2.0F;
         float moonAngle = -sunAngle;
         if (sunAngle >= -SUN_HIDE_DEGREES) {
-            drawCelestial(celestialMatrix, camera, sunAngle, SUN_TEXTURE, sunSize, 1.0F, 1.0F, 1.0F, 1.0F);
+            drawCelestial(celestialMatrix, camera, sunAngle, false, SUN_TEXTURE,
+                VANILLA_SUN_HALF * sizeScale, 0.0F, 0.0F, 1.0F, 1.0F);
         }
         if (moonAngle >= -SUN_HIDE_DEGREES) {
-            drawCelestial(celestialMatrix, camera, moonAngle, MOON_TEXTURE, moonSize, 0.68F, 0.72F, 0.86F, 1.0F);
+            drawCelestial(celestialMatrix, camera, moonAngle, true, MOON_TEXTURE,
+                VANILLA_MOON_HALF * sizeScale, u0, v0, u1, v1);
         }
 
         RenderSystem.setShaderFogStart(savedFogStart);
@@ -86,36 +97,37 @@ public final class ChronoSkyRenderer {
         RenderSystem.depthMask(true);
     }
 
-    private static void drawCelestial(Matrix4f matrix, Camera camera, float angleDegrees, ResourceLocation texture,
-                                      float size, float r, float g, float b, float alpha) {
+    private static void drawCelestial(Matrix4f matrix, Camera camera, float angleDegrees, boolean oppositeSide,
+                                      ResourceLocation texture, float halfSize,
+                                      float u0, float v0, float u1, float v1) {
         double angle = Math.toRadians(angleDegrees);
         Vector3f normal = ChronoLineStateHolder.normal();
-        double cx = normal.x * Math.cos(angle) * RADIUS;
+        double side = oppositeSide ? -1.0D : 1.0D;
+        double cx = normal.x * side * Math.cos(angle) * RADIUS;
         double cy = Math.sin(angle) * RADIUS;
-        double cz = normal.z * Math.cos(angle) * RADIUS;
-        float half = size * 0.5F;
+        double cz = normal.z * side * Math.cos(angle) * RADIUS;
         Vector3f up = camera.getUpVector();
         Vector3f left = camera.getLeftVector();
-        double rx = -left.x * half;
-        double ry = -left.y * half;
-        double rz = -left.z * half;
-        double ux = up.x * half;
-        double uy = up.y * half;
-        double uz = up.z * half;
+        double rx = -left.x * halfSize;
+        double ry = -left.y * halfSize;
+        double rz = -left.z * halfSize;
+        double ux = up.x * halfSize;
+        double uy = up.y * halfSize;
+        double uz = up.z * halfSize;
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, texture);
-        RenderSystem.setShaderColor(r, g, b, alpha);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        builder.addVertex(matrix, (float) (cx - rx - ux), (float) (cy - ry - uy), (float) (cz - rz - uz)).setUv(0.0F, 1.0F);
-        builder.addVertex(matrix, (float) (cx + rx - ux), (float) (cy + ry - uy), (float) (cz + rz - uz)).setUv(1.0F, 1.0F);
-        builder.addVertex(matrix, (float) (cx + rx + ux), (float) (cy + ry + uy), (float) (cz + rz + uz)).setUv(1.0F, 0.0F);
-        builder.addVertex(matrix, (float) (cx - rx + ux), (float) (cy - ry + uy), (float) (cz - rz + uz)).setUv(0.0F, 0.0F);
+        builder.addVertex(matrix, (float) (cx - rx - ux), (float) (cy - ry - uy), (float) (cz - rz - uz)).setUv(u0, v1);
+        builder.addVertex(matrix, (float) (cx + rx - ux), (float) (cy + ry - uy), (float) (cz + rz - uz)).setUv(u1, v1);
+        builder.addVertex(matrix, (float) (cx + rx + ux), (float) (cy + ry + uy), (float) (cz + rz + uz)).setUv(u1, v0);
+        builder.addVertex(matrix, (float) (cx - rx + ux), (float) (cy - ry + uy), (float) (cz - rz + uz)).setUv(u0, v0);
         BufferUploader.drawWithShader(builder.buildOrThrow());
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
     }
 
     private static void drawStars(Matrix4f modelViewMatrix, float param) {

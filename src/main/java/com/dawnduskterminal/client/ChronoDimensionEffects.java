@@ -10,8 +10,12 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 public final class ChronoDimensionEffects extends DimensionSpecialEffects {
+    private static final float CLOUD_LEVEL = 300.0F;
+
+    private static boolean cloudLogged;
+
     public ChronoDimensionEffects() {
-        super(192.0F, true, SkyType.NORMAL, false, false);
+        super(CLOUD_LEVEL, true, SkyType.NORMAL, false, false);
     }
 
     @Override
@@ -51,6 +55,12 @@ public final class ChronoDimensionEffects extends DimensionSpecialEffects {
     @Override
     public boolean renderClouds(ClientLevel level, int ticks, float partialTick, com.mojang.blaze3d.vertex.PoseStack poseStack,
                                 double camX, double camY, double camZ, Matrix4f modelViewMatrix, Matrix4f projectionMatrix) {
+        if (!cloudLogged) {
+            cloudLogged = true;
+            com.dawnduskterminal.DawnDuskTerminal.LOGGER.info(
+                "DDT_CLOUD cloudsType={} cloudHeight={}",
+                Minecraft.getInstance().options.getCloudsType(), getCloudHeight());
+        }
         return false;
     }
 }

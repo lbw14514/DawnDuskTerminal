@@ -3,7 +3,7 @@
   "argument1": {
     "type": "minecraft:noise",
     "noise": "dawnduskterminal:island",
-    "xz_scale": 0.7,
+    "xz_scale": 0.85,
     "y_scale": 0.8
   },
   "argument2": {
@@ -39,6 +39,6 @@
       },
       "argument2": 0.45
     },
-    "argument2": -0.72
+    "argument2": -0.66
   }
 }

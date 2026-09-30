@@ -72,7 +72,7 @@ public final class DdtConfig {
             .define("custom_sky", true);
         SHADER_WARNING = b.comment("warn the player when a shader mod is detected")
             .define("shader_warning", true);
-        SUN_TEXTURE_SIZE = b.comment("side length of the square sun texture")
+        SUN_TEXTURE_SIZE = b.comment("sun and moon size percent, 64 equals the vanilla size")
             .defineInRange("sun_texture_size", 64, 8, 512);
         SKY_TOP_COLORS = b.comment("sky zenith gradient stops from polar night to polar day, 6 digit hex without the hash")
             .defineListAllowEmpty("sky_top_colors",
