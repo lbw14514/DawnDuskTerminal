@@ -1,7 +1,4 @@
 {
-  "temperature": 0.7,
-  "downfall": 0.5,
-  "has_precipitation": false,
   "carvers": {
     "air": [
       "minecraft:cave",
@@ -9,9 +6,31 @@
       "minecraft:canyon"
     ]
   },
+  "downfall": 0.8,
+  "effects": {
+    "fog_color": 12638463,
+    "mood_sound": {
+      "block_search_extent": 8,
+      "offset": 2.0,
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000
+    },
+    "music": {
+      "max_delay": 24000,
+      "min_delay": 12000,
+      "replace_current_music": false,
+      "sound": "minecraft:music.overworld.meadow"
+    },
+    "sky_color": 8103167,
+    "water_color": 937679,
+    "water_fog_color": 329011
+  },
   "features": [
     [],
-    [],
+    [
+      "minecraft:lake_lava_underground",
+      "minecraft:lake_lava_surface"
+    ],
     [
       "minecraft:amethyst_geode"
     ],
@@ -46,24 +65,33 @@
       "minecraft:ore_diamond_buried",
       "minecraft:ore_lapis",
       "minecraft:ore_lapis_buried",
-      "minecraft:ore_copper"
+      "minecraft:ore_copper",
+      "minecraft:underwater_magma",
+      "minecraft:disk_sand",
+      "minecraft:disk_clay",
+      "minecraft:disk_gravel",
+      "minecraft:ore_emerald"
     ],
-    [],
-    [],
     [
+      "minecraft:ore_infested"
+    ],
+    [
+      "minecraft:spring_water",
+      "minecraft:spring_lava"
+    ],
+    [
+      "minecraft:glow_lichen",
       "minecraft:patch_tall_grass_2",
-      "minecraft:trees_plains",
-      "minecraft:flower_plains",
       "minecraft:patch_grass_plain",
-      "minecraft:brown_mushroom_normal",
-      "minecraft:red_mushroom_normal",
-      "minecraft:patch_sugar_cane",
-      "minecraft:patch_pumpkin"
+      "minecraft:flower_meadow",
+      "minecraft:trees_meadow"
     ],
     [
       "minecraft:freeze_top_layer"
     ]
   ],
+  "has_precipitation": true,
+  "spawn_costs": {},
   "spawners": {
     "ambient": [
       {
@@ -76,40 +104,22 @@
     "axolotls": [],
     "creature": [
       {
-        "type": "minecraft:sheep",
-        "maxCount": 4,
-        "minCount": 4,
-        "weight": 12
-      },
-      {
-        "type": "minecraft:pig",
-        "maxCount": 4,
-        "minCount": 4,
-        "weight": 10
-      },
-      {
-        "type": "minecraft:chicken",
-        "maxCount": 4,
-        "minCount": 4,
-        "weight": 10
-      },
-      {
-        "type": "minecraft:cow",
-        "maxCount": 4,
-        "minCount": 4,
-        "weight": 8
-      },
-      {
-        "type": "minecraft:horse",
-        "maxCount": 6,
-        "minCount": 2,
-        "weight": 5
-      },
-      {
         "type": "minecraft:donkey",
-        "maxCount": 3,
+        "maxCount": 2,
         "minCount": 1,
         "weight": 1
+      },
+      {
+        "type": "minecraft:rabbit",
+        "maxCount": 6,
+        "minCount": 2,
+        "weight": 2
+      },
+      {
+        "type": "minecraft:sheep",
+        "maxCount": 4,
+        "minCount": 2,
+        "weight": 2
       }
     ],
     "misc": [],
@@ -174,20 +184,5 @@
     "water_ambient": [],
     "water_creature": []
   },
-  "spawn_costs": {},
-  "effects": {
-    "sky_color": 9071544,
-    "fog_color": 7031454,
-    "water_color": 4882344,
-    "water_fog_color": 3037818,
-    "grass_color": 7317594,
-    "foliage_color": 5934922,
-    "dry_foliage_color": 10123866,
-    "mood_sound": {
-      "sound": "minecraft:ambient.cave",
-      "tick_delay": 6000,
-      "block_search_extent": 8,
-      "offset": 2.0
-    }
-  }
+  "temperature": 0.5
 }
