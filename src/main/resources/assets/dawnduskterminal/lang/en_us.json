@@ -42,6 +42,15 @@
   "biome.dawnduskterminal.night": "Night Plains",
   "biome.dawnduskterminal.polar_dusk": "Polar Night Plains",
 
+  "biome.dawnduskterminal.refusal_ocean": "Refusal Ocean",
+  "biome.dawnduskterminal.dawn_zone": "Dawn Zone",
+  "biome.dawnduskterminal.dusk_zone": "Dusk Zone",
+  "biome.dawnduskterminal.solidcanopy_ocean": "Solid Canopy Ocean",
+  "biome.dawnduskterminal.earth_light": "Earth Light",
+  "biome.dawnduskterminal.sky_island": "Sky Island",
+  "biome.dawnduskterminal.cave": "Cave",
+  "biome.dawnduskterminal.lush_cave": "Lush Cave",
+
   "message.dawnduskterminal.gate_unlocked": "One of the Twilight lords has fallen, the gate is open",
   "message.dawnduskterminal.shader_warning": "Shader mod %s detected, this dimension draws its own sky on top of the shader sky, so shader sky and volumetrics may not apply",
 

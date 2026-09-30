@@ -480,19 +480,19 @@
         {
           "from": "minecraft:dripstone_caves",
           "hot": [
-            "dawnduskterminal:earth_light"
+            "dawnduskterminal:cave"
           ],
           "cold": [
-            "dawnduskterminal:earth_light"
+            "dawnduskterminal:cave"
           ]
         },
         {
           "from": "minecraft:lush_caves",
           "hot": [
-            "dawnduskterminal:earth_light"
+            "dawnduskterminal:lush_cave"
           ],
           "cold": [
-            "dawnduskterminal:earth_light"
+            "dawnduskterminal:lush_cave"
           ]
         },
         {
@@ -502,6 +502,22 @@
           ],
           "cold": [
             "dawnduskterminal:earth_light"
+          ]
+        }
+      ],
+      "y_bands": [
+        {
+          "min_y": -64,
+          "max_y": 0,
+          "biome": [
+            "dawnduskterminal:earth_light"
+          ]
+        },
+        {
+          "min_y": 176,
+          "max_y": 384,
+          "biome": [
+            "dawnduskterminal:sky_island"
           ]
         }
       ]

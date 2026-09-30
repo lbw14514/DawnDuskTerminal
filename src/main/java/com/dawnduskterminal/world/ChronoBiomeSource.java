@@ -36,6 +36,7 @@ public final class ChronoBiomeSource extends BiomeSource {
         BiomeReplacement.CODEC.listOf().optionalFieldOf("replacements", List.of()).forGetter(ChronoBiomeSource::replacements),
         RegistryCodecs.homogeneousList(Registries.BIOME).optionalFieldOf("fallback").forGetter(ChronoBiomeSource::fallbackSet),
         SideShift.CODEC.listOf().optionalFieldOf("side_shift", List.of()).forGetter(ChronoBiomeSource::sideShift),
+        YBand.CODEC.listOf().optionalFieldOf("y_bands", List.of()).forGetter(ChronoBiomeSource::yBands),
         Codec.DOUBLE.optionalFieldOf("line_half_width", 200.0D).forGetter(ChronoBiomeSource::lineHalfWidth),
         Codec.DOUBLE.optionalFieldOf("band_half_width", 1000.0D).forGetter(ChronoBiomeSource::bandHalfWidth),
         Codec.DOUBLE.optionalFieldOf("max_distance", 5000.0D).forGetter(ChronoBiomeSource::maxDistance)
@@ -50,6 +51,7 @@ public final class ChronoBiomeSource extends BiomeSource {
     private final Optional<HolderSet<Biome>> fallbackSet;
     private final List<Holder<Biome>> fallbackList;
     private final List<SideShift> sideShift;
+    private final List<YBand> yBands;
     private final double lineHalfWidth;
     private final double bandHalfWidth;
     private final double maxDistance;
@@ -57,7 +59,7 @@ public final class ChronoBiomeSource extends BiomeSource {
 
     public ChronoBiomeSource(BiomeSource delegate, HolderSet<Biome> bands, Optional<HolderSet<Biome>> lineBiomeSet,
                              List<BiomeReplacement> replacements, Optional<HolderSet<Biome>> fallbackSet,
-                             List<SideShift> sideShift,
+                             List<SideShift> sideShift, List<YBand> yBands,
                              double lineHalfWidth, double bandHalfWidth, double maxDistance) {
         this.delegate = delegate;
         this.bands = bands;
@@ -72,6 +74,7 @@ public final class ChronoBiomeSource extends BiomeSource {
         this.fallbackSet = fallbackSet;
         this.fallbackList = fallbackSet.map(set -> set.stream().toList()).orElse(List.of());
         this.sideShift = sideShift;
+        this.yBands = yBands;
         this.lineHalfWidth = lineHalfWidth;
         this.bandHalfWidth = bandHalfWidth;
         this.maxDistance = maxDistance;
@@ -80,6 +83,10 @@ public final class ChronoBiomeSource extends BiomeSource {
 
     public List<SideShift> sideShift() {
         return this.sideShift;
+    }
+
+    public List<YBand> yBands() {
+        return this.yBands;
     }
 
     public BiomeSource delegate() {
@@ -187,6 +194,11 @@ public final class ChronoBiomeSource extends BiomeSource {
         if (this.bandList.size() < 4) {
             return this.delegate.getNoiseBiome(quartX, quartY, quartZ, sampler);
         }
+        int blockY = QuartPos.toBlock(quartY);
+        Holder<Biome> yBand = biomeForY(blockY);
+        if (yBand != null) {
+            return yBand;
+        }
         double blockX = QuartPos.toBlock(quartX);
         double blockZ = QuartPos.toBlock(quartZ);
         double max = Math.max(1.0D, this.maxDistance);
@@ -206,6 +218,24 @@ public final class ChronoBiomeSource extends BiomeSource {
         boolean outer = t >= 0.5D;
         int index = param > 0.0D ? (outer ? 3 : 2) : (outer ? 0 : 1);
         return this.bandList.get(Math.min(index, this.bandList.size() - 1));
+    }
+
+    private Holder<Biome> biomeForY(int blockY) {
+        for (YBand band : this.yBands) {
+            if (blockY >= band.minY() && blockY < band.maxY()) {
+                return band.biome().stream().findFirst()
+                    .orElse(this.lineBiome.orElse(null));
+            }
+        }
+        return null;
+    }
+
+    public record YBand(int minY, int maxY, HolderSet<Biome> biome) {
+        public static final Codec<YBand> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            Codec.INT.fieldOf("min_y").forGetter(YBand::minY),
+            Codec.INT.fieldOf("max_y").forGetter(YBand::maxY),
+            RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("biome").forGetter(YBand::biome)
+        ).apply(inst, YBand::new));
     }
 
     private Holder<Biome> shiftBySide(Holder<Biome> base, double param) {

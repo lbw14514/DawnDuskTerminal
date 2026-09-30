@@ -42,6 +42,15 @@
   "biome.dawnduskterminal.night": "夜区平原",
   "biome.dawnduskterminal.polar_dusk": "极夜平原",
 
+  "biome.dawnduskterminal.refusal_ocean": "拒绝之海",
+  "biome.dawnduskterminal.dawn_zone": "晨区",
+  "biome.dawnduskterminal.dusk_zone": "昏区",
+  "biome.dawnduskterminal.solidcanopy_ocean": "凝固苍穹的海洋",
+  "biome.dawnduskterminal.earth_light": "地光",
+  "biome.dawnduskterminal.sky_island": "空岛",
+  "biome.dawnduskterminal.cave": "溶洞",
+  "biome.dawnduskterminal.lush_cave": "繁茂洞穴",
+
   "message.dawnduskterminal.gate_unlocked": "已击败暮色森林的领主之一，晨昏线之门向你敞开",
   "message.dawnduskterminal.shader_warning": "检测到光影模组 %s，本维度天空由本模组自绘并盖在光影天空之上，光影的天空与体积雾可能不生效",
 
