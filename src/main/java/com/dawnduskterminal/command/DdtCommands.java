@@ -18,6 +18,7 @@ public final class DdtCommands {
 
     public static void register(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("ddt")
+            .requires(source -> source.hasPermission(2))
             .then(Commands.literal("line").executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();
                 ChronoLine line = ChronoLineState.serverLine();

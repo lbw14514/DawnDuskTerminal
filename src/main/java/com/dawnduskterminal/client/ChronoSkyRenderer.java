@@ -15,11 +15,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public final class ChronoSkyRenderer {
     private static final int SEGMENTS = 64;
     private static final float RADIUS = 100.0F;
+    private static final int STAR_COUNT = 320;
 
     private static SunRenderer sunRenderer = new PixelSunRenderer();
 
@@ -56,6 +60,8 @@ public final class ChronoSkyRenderer {
         RenderSystem.setShaderFogStart(1.0E9F);
         RenderSystem.setShaderFogEnd(1.0E9F);
         drawDome(modelViewMatrix, param);
+        drawHorizonGlow(modelViewMatrix, param);
+        drawStars(modelViewMatrix, param);
 
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(modelViewMatrix);
@@ -71,6 +77,79 @@ public final class ChronoSkyRenderer {
         RenderSystem.depthMask(true);
     }
 
+    private static void drawStars(Matrix4f modelViewMatrix, float param) {
+        float night = Mth.clamp(-param, 0.0F, 1.0F);
+        if (night <= 0.05F) {
+            return;
+        }
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Vector3f up = camera.getUpVector();
+        Vector3f left = camera.getLeftVector();
+        PoseStack poseStack = new PoseStack();
+        poseStack.mulPose(modelViewMatrix);
+        Matrix4f matrix = poseStack.last().pose();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        RandomSource random = RandomSource.create(20260930L);
+        for (int i = 0; i < STAR_COUNT; i++) {
+            double theta = random.nextDouble() * Math.PI * 2.0D;
+            double cosPhi = random.nextDouble() * 0.94D;
+            double sinPhi = Math.sqrt(1.0D - cosPhi * cosPhi);
+            float x = (float) (Math.cos(theta) * sinPhi * RADIUS * 0.96D);
+            float y = (float) (cosPhi * RADIUS * 0.96D);
+            float z = (float) (Math.sin(theta) * sinPhi * RADIUS * 0.96D);
+            float size = 0.30F + random.nextFloat() * 0.55F;
+            float alpha = night * (0.35F + random.nextFloat() * 0.65F);
+            float rx = -left.x * size;
+            float ry = -left.y * size;
+            float rz = -left.z * size;
+            float ux = up.x * size;
+            float uy = up.y * size;
+            float uz = up.z * size;
+            builder.addVertex(matrix, x - rx - ux, y - ry - uy, z - rz - uz).setColor(1.0F, 1.0F, 0.96F, alpha);
+            builder.addVertex(matrix, x + rx - ux, y + ry - uy, z + rz - uz).setColor(1.0F, 1.0F, 0.96F, alpha);
+            builder.addVertex(matrix, x + rx + ux, y + ry + uy, z + rz + uz).setColor(1.0F, 1.0F, 0.96F, alpha);
+            builder.addVertex(matrix, x - rx + ux, y - ry + uy, z - rz + uz).setColor(1.0F, 1.0F, 0.96F, alpha);
+        }
+        BufferUploader.drawWithShader(builder.buildOrThrow());
+        RenderSystem.disableBlend();
+    }
+
+    private static void drawHorizonGlow(Matrix4f modelViewMatrix, float param) {
+        float glow = 1.0F - Math.min(1.0F, Math.abs(param) / 0.35F);
+        if (glow <= 0.02F) {
+            return;
+        }
+        PoseStack poseStack = new PoseStack();
+        poseStack.mulPose(modelViewMatrix);
+        Matrix4f matrix = poseStack.last().pose();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        float innerY = -RADIUS * 0.68F;
+        float innerR = RADIUS * 1.02F;
+        float outerY = -RADIUS;
+        float outerR = RADIUS * 1.08F;
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        for (int i = 0; i <= SEGMENTS; i++) {
+            double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
+            double cos = Math.cos(theta);
+            double sin = Math.sin(theta);
+            builder.addVertex(matrix, (float) (cos * innerR), innerY, (float) (sin * innerR))
+                .setColor(1.0F, 0.68F, 0.38F, glow * 0.15F);
+            builder.addVertex(matrix, (float) (cos * outerR), outerY, (float) (sin * outerR))
+                .setColor(1.0F, 0.55F, 0.26F, glow * 0.75F);
+        }
+        BufferUploader.drawWithShader(builder.buildOrThrow());
+        RenderSystem.disableBlend();
+    }
+
     private static void drawDome(Matrix4f modelViewMatrix, float param) {
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(modelViewMatrix);
@@ -78,42 +157,55 @@ public final class ChronoSkyRenderer {
 
         int top = sampleColor(DdtConfig.skyTopColors(), param);
         int horizon = sampleColor(DdtConfig.skyHorizonColors(), param);
-        int mid = lerpColor(top, horizon, 0.55F);
+        int c1 = lerpColor(top, horizon, 0.25F);
+        int c2 = lerpColor(top, horizon, 0.50F);
+        int c3 = lerpColor(top, horizon, 0.75F);
         if (!logged) {
             logged = true;
             com.dawnduskterminal.DawnDuskTerminal.LOGGER.info(
-                "DDT_SKY param={} top={} mid={} horizon={}", param, top, mid, horizon);
+                "DDT_SKY param={} top={} c2={} horizon={}", param, top, c2, horizon);
         }
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        float capRadius = RADIUS * 0.86F;
-        float capY = RADIUS * 0.50F;
-        float ringRadius = RADIUS * 1.05F;
-        float ringY = -RADIUS;
+        float r1 = RADIUS * 0.72F;
+        float r2 = RADIUS * 0.90F;
+        float r3 = RADIUS * 1.00F;
+        float r4 = RADIUS * 1.05F;
+        float y1 = RADIUS * 0.62F;
+        float y2 = RADIUS * 0.10F;
+        float y3 = -RADIUS * 0.55F;
+        float y4 = -RADIUS;
 
         BufferBuilder cap = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
         cap.addVertex(matrix, 0.0F, RADIUS, 0.0F).setColor(red(top), green(top), blue(top), 1.0F);
         for (int i = 0; i <= SEGMENTS; i++) {
             double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
-            cap.addVertex(matrix, (float) (Math.cos(theta) * capRadius), capY, (float) (Math.sin(theta) * capRadius))
-                .setColor(red(mid), green(mid), blue(mid), 1.0F);
+            cap.addVertex(matrix, (float) (Math.cos(theta) * r1), y1, (float) (Math.sin(theta) * r1))
+                .setColor(red(c1), green(c1), blue(c1), 1.0F);
         }
         BufferUploader.drawWithShader(cap.buildOrThrow());
 
+        band(matrix, r1, y1, c1, r2, y2, c2);
+        band(matrix, r2, y2, c2, r3, y3, c3);
+        band(matrix, r3, y3, c3, r4, y4, horizon);
+    }
+
+    private static void band(Matrix4f matrix, float innerR, float innerY, int innerColor,
+                             float outerR, float outerY, int outerColor) {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        BufferBuilder band = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
         for (int i = 0; i <= SEGMENTS; i++) {
             double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
             double cos = Math.cos(theta);
             double sin = Math.sin(theta);
-            band.addVertex(matrix, (float) (cos * capRadius), capY, (float) (sin * capRadius))
-                .setColor(red(mid), green(mid), blue(mid), 1.0F);
-            band.addVertex(matrix, (float) (cos * ringRadius), ringY, (float) (sin * ringRadius))
-                .setColor(red(horizon), green(horizon), blue(horizon), 1.0F);
+            builder.addVertex(matrix, (float) (cos * innerR), innerY, (float) (sin * innerR))
+                .setColor(red(innerColor), green(innerColor), blue(innerColor), 1.0F);
+            builder.addVertex(matrix, (float) (cos * outerR), outerY, (float) (sin * outerR))
+                .setColor(red(outerColor), green(outerColor), blue(outerColor), 1.0F);
         }
-        BufferUploader.drawWithShader(band.buildOrThrow());
+        BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 
     private static int sampleColor(int[] stops, float param) {
