@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import org.joml.Matrix4f;
@@ -24,16 +25,16 @@ public final class ChronoSkyRenderer {
     private static final int SEGMENTS = 64;
     private static final float RADIUS = 100.0F;
     private static final int STAR_COUNT = 320;
+    private static final float BODY_HIDE_DEGREES = 2.0F;
 
-    private static SunRenderer sunRenderer = new PixelSunRenderer();
+    public static final ResourceLocation SUN_TEXTURE =
+        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/sun_disc.png");
+    public static final ResourceLocation MOON_TEXTURE =
+        com.dawnduskterminal.DawnDuskTerminal.id("textures/environment/moon_disc.png");
 
     private static boolean logged;
 
     private ChronoSkyRenderer() {}
-
-    public static void setSunRenderer(SunRenderer renderer) {
-        sunRenderer = renderer;
-    }
 
     public static void render(ClientLevel level, float partialTick, Matrix4f modelViewMatrix, Camera camera,
                               Matrix4f projectionMatrix, Runnable setupFog) {
@@ -65,8 +66,15 @@ public final class ChronoSkyRenderer {
 
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(modelViewMatrix);
-        SkyContext context = new SkyContext(level, player, poseStack, projectionMatrix, modelViewMatrix, camera, partialTick, param, sunAngle);
-        sunRenderer.render(context);
+        Matrix4f celestialMatrix = poseStack.last().pose();
+        float sunSize = DdtConfig.sunTextureSize() / 64.0F * 18.0F;
+        float moonSize = DdtConfig.sunTextureSize() / 64.0F * 15.0F;
+        if (sunAngle >= -BODY_HIDE_DEGREES) {
+            drawCelestial(celestialMatrix, camera, sunAngle, SUN_TEXTURE, sunSize, 1.0F, 1.0F, 1.0F, 1.0F);
+        }
+        if (-sunAngle >= -BODY_HIDE_DEGREES) {
+            drawCelestial(celestialMatrix, camera, -sunAngle, MOON_TEXTURE, moonSize, 0.62F, 0.66F, 0.82F, 1.0F);
+        }
 
         RenderSystem.setShaderFogStart(savedFogStart);
         RenderSystem.setShaderFogEnd(savedFogEnd);
@@ -75,6 +83,38 @@ public final class ChronoSkyRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
+    }
+
+    private static void drawCelestial(Matrix4f matrix, Camera camera, float angleDegrees, ResourceLocation texture,
+                                      float size, float r, float g, float b, float alpha) {
+        double angle = Math.toRadians(angleDegrees);
+        Vector3f normal = ChronoLineStateHolder.normal();
+        double cx = normal.x * Math.cos(angle) * RADIUS;
+        double cy = Math.sin(angle) * RADIUS;
+        double cz = normal.z * Math.cos(angle) * RADIUS;
+        float half = size * 0.5F;
+        Vector3f up = camera.getUpVector();
+        Vector3f left = camera.getLeftVector();
+        double rx = -left.x * half;
+        double ry = -left.y * half;
+        double rz = -left.z * half;
+        double ux = up.x * half;
+        double uy = up.y * half;
+        double uz = up.z * half;
+
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, texture);
+        RenderSystem.setShaderColor(r, g, b, alpha);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        builder.addVertex(matrix, (float) (cx - rx - ux), (float) (cy - ry - uy), (float) (cz - rz - uz)).setUv(0.0F, 1.0F);
+        builder.addVertex(matrix, (float) (cx + rx - ux), (float) (cy + ry - uy), (float) (cz + rz - uz)).setUv(1.0F, 1.0F);
+        builder.addVertex(matrix, (float) (cx + rx + ux), (float) (cy + ry + uy), (float) (cz + rz + uz)).setUv(1.0F, 0.0F);
+        builder.addVertex(matrix, (float) (cx - rx + ux), (float) (cy - ry + uy), (float) (cz - rz + uz)).setUv(0.0F, 0.0F);
+        BufferUploader.drawWithShader(builder.buildOrThrow());
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 
     private static void drawStars(Matrix4f modelViewMatrix, float param) {
