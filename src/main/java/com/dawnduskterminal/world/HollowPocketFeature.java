@@ -13,12 +13,13 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
 
 public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
-    public record Config(int minY, int maxY, int minRadius, int maxRadius) implements FeatureConfiguration {
+    public record Config(int minY, int maxY, int minRadius, int maxRadius, int floorY) implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(inst -> inst.group(
             Codec.INT.fieldOf("min_y").forGetter(Config::minY),
             Codec.INT.fieldOf("max_y").forGetter(Config::maxY),
             Codec.INT.fieldOf("min_radius").forGetter(Config::minRadius),
-            Codec.INT.fieldOf("max_radius").forGetter(Config::maxRadius)
+            Codec.INT.fieldOf("max_radius").forGetter(Config::maxRadius),
+            Codec.INT.fieldOf("floor_y").forGetter(Config::floorY)
         ).apply(inst, Config::new));
     }
 
@@ -35,6 +36,16 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
         int y0 = Mth.clamp(origin.getY(), config.minY(), config.maxY());
         int y1 = Mth.clamp(y0 + Mth.nextInt(random, 24, 56), config.minY(), config.maxY());
+        int bottom = config.floorY();
+        if (y0 < bottom) {
+            y0 = bottom;
+        }
+        if (y1 < bottom) {
+            y1 = bottom;
+        }
+        if (y1 < y0) {
+            return false;
+        }
         int cx = origin.getX();
         int cz = origin.getZ();
         BlockState air = Blocks.AIR.defaultBlockState();
