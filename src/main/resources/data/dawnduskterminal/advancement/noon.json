@@ -1,5 +1,5 @@
 {
-  "parent": "dawnduskterminal:polar_day",
+  "parent": "dawnduskterminal:polar_dawn",
   "display": {
     "icon": {
       "id": "minecraft:daylight_detector"

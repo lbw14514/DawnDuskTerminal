@@ -2,13 +2,13 @@
   "parent": "dawnduskterminal:enter_chrono",
   "display": {
     "icon": {
-      "id": "minecraft:sculk"
+      "id": "minecraft:sunflower"
     },
     "title": {
-      "translate": "advancements.dawnduskterminal.polar_night.title"
+      "translate": "advancements.dawnduskterminal.polar_dawn.title"
     },
     "description": {
-      "translate": "advancements.dawnduskterminal.polar_night.description"
+      "translate": "advancements.dawnduskterminal.polar_dawn.description"
     },
     "frame": "task",
     "show_toast": true,
@@ -20,7 +20,7 @@
       "trigger": "minecraft:location",
       "conditions": {
         "location": {
-          "biomes": "dawnduskterminal:polar_night"
+          "biomes": "dawnduskterminal:polar_dawn"
         }
       }
     }

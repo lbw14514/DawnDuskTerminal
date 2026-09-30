@@ -11,17 +11,17 @@
 
   "fluid_type.dawnduskterminal.portal_fluid": "Portal Fluid",
 
-  "effect.dawnduskterminal.portal_sickness": "Portal Sickness",
+  "effect.dawnduskterminal.portal_sickness": "Lost in Twilight",
 
   "itemGroup.dawnduskterminal.main": "Chrono Dimension",
 
   "dimension.dawnduskterminal.chrono": "Chrono Dimension",
 
-  "biome.dawnduskterminal.polar_day": "Polar Day Plains",
+  "biome.dawnduskterminal.polar_dawn": "Polar Day Plains",
   "biome.dawnduskterminal.day": "Day Plains",
   "biome.dawnduskterminal.normal": "Chrono Plains",
   "biome.dawnduskterminal.night": "Night Plains",
-  "biome.dawnduskterminal.polar_night": "Polar Night Plains",
+  "biome.dawnduskterminal.polar_dusk": "Polar Night Plains",
 
   "message.dawnduskterminal.gate_unlocked": "One of the Twilight lords has fallen, the gate is open",
   "message.dawnduskterminal.shader_warning": "Shader mod %s detected, this dimension draws its own sky on top of the shader sky, so shader sky and volumetrics may not apply",
@@ -47,10 +47,10 @@
   "advancements.dawnduskterminal.noon.description": "Walk deep into the day side",
   "advancements.dawnduskterminal.midnight.title": "Midnight Side",
   "advancements.dawnduskterminal.midnight.description": "Walk deep into the night side",
-  "advancements.dawnduskterminal.polar_day.title": "Polar Day",
-  "advancements.dawnduskterminal.polar_day.description": "Reach the polar day biome",
-  "advancements.dawnduskterminal.polar_night.title": "Polar Night",
-  "advancements.dawnduskterminal.polar_night.description": "Reach the polar night biome",
+  "advancements.dawnduskterminal.polar_dawn.title": "Polar Day",
+  "advancements.dawnduskterminal.polar_dawn.description": "Reach the polar day biome",
+  "advancements.dawnduskterminal.polar_dusk.title": "Polar Night",
+  "advancements.dawnduskterminal.polar_dusk.description": "Reach the polar night biome",
   "advancements.dawnduskterminal.return_home.title": "Home Again",
   "advancements.dawnduskterminal.return_home.description": "Return to the overworld from the chrono dimension"
 }

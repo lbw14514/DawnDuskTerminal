@@ -9,10 +9,10 @@
         "preset": "minecraft:overworld"
       },
       "bands": [
-        "dawnduskterminal:polar_night",
+        "dawnduskterminal:polar_dusk",
         "dawnduskterminal:night",
         "dawnduskterminal:day",
-        "dawnduskterminal:polar_day"
+        "dawnduskterminal:polar_dawn"
       ],
       "line_biome": [
         "dawnduskterminal:normal"
