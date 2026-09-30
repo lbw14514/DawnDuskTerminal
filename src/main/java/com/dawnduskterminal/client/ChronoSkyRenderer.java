@@ -166,10 +166,10 @@ public final class ChronoSkyRenderer {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        float innerY = -RADIUS * 0.68F;
-        float innerR = RADIUS * 1.02F;
-        float outerY = -RADIUS;
-        float outerR = RADIUS * 1.08F;
+        float innerY = RADIUS * 0.32F;
+        float innerR = RADIUS * 0.94F;
+        float outerY = -RADIUS * 0.08F;
+        float outerR = RADIUS * 1.12F;
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
         for (int i = 0; i <= SEGMENTS; i++) {
             double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
@@ -204,13 +204,13 @@ public final class ChronoSkyRenderer {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         float r1 = RADIUS * 0.72F;
-        float r2 = RADIUS * 0.90F;
-        float r3 = RADIUS * 1.00F;
-        float r4 = RADIUS * 1.05F;
+        float r2 = RADIUS * 0.92F;
+        float r3 = RADIUS * 1.02F;
+        float r4 = RADIUS * 1.12F;
         float y1 = RADIUS * 0.62F;
-        float y2 = RADIUS * 0.10F;
-        float y3 = -RADIUS * 0.55F;
-        float y4 = -RADIUS;
+        float y2 = RADIUS * 0.30F;
+        float y3 = RADIUS * 0.05F;
+        float y4 = -RADIUS * 0.08F;
 
         BufferBuilder cap = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
         cap.addVertex(matrix, 0.0F, RADIUS, 0.0F).setColor(red(top), green(top), blue(top), 1.0F);
