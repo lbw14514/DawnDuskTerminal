@@ -1,0 +1,88 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run/client')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run/server')
+            programArguments.addAll '--nogui'
+        }
+        data {
+            data()
+            gameDirectory = project.file('run/data')
+            programArguments.addAll '--mod', mod_id, '--all', '--output', project.file('src/generated/resources').absolutePath, '--existing', project.file('src/main/resources').absolutePath
+        }
+    }
+
+    mods {
+        "ysm" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    compileOnly files("libs/twilightforest-1.21.1.jar")
+    runtimeOnly files("libs/twilightforest-1.21.1.jar")
+}
+
+def replaceProperties = [
+    minecraft_version      : minecraft_version,
+    minecraft_version_range: minecraft_version_range,
+    neo_version            : neo_version,
+    neo_version_range      : neo_version_range,
+    loader_version_range   : loader_version_range,
+    mod_id                 : mod_id,
+    mod_name               : mod_name,
+    mod_license            : mod_license,
+    mod_version            : mod_version,
+    mod_authors            : mod_authors,
+    mod_description        : mod_description,
+]
+
+tasks.named('processResources', ProcessResources).configure {
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : mod_id,
+            'Specification-Vendor'  : mod_authors,
+            'Specification-Version' : '1',
+            'Implementation-Title'  : mod_name,
+            'Implementation-Version': mod_version,
+            'Implementation-Vendor' : mod_authors,
+        ])
+    }
+}
