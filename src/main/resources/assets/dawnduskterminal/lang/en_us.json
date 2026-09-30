@@ -27,6 +27,11 @@
 
   "death.attack.dawnduskterminal.portal": "%1$s was swallowed by the terminator",
 
+  "subtitles.dawnduskterminal.portal_open": "Portal forms",
+  "subtitles.dawnduskterminal.portal_enter": "Crossing the terminator",
+  "subtitles.dawnduskterminal.portal_exit": "Leaving the terminator",
+  "subtitles.dawnduskterminal.chrono_ambient": "Terminator hums",
+
   "advancements.dawnduskterminal.root.title": "Chrono",
   "advancements.dawnduskterminal.root.description": "A single line splits the world into day and night",
   "advancements.dawnduskterminal.defeat_boss.title": "Twilight Conqueror",
@@ -44,5 +49,7 @@
   "advancements.dawnduskterminal.polar_day.title": "Polar Day",
   "advancements.dawnduskterminal.polar_day.description": "Reach the polar day biome",
   "advancements.dawnduskterminal.polar_night.title": "Polar Night",
-  "advancements.dawnduskterminal.polar_night.description": "Reach the polar night biome"
+  "advancements.dawnduskterminal.polar_night.description": "Reach the polar night biome",
+  "advancements.dawnduskterminal.return_home.title": "Home Again",
+  "advancements.dawnduskterminal.return_home.description": "Return to the overworld from the chrono dimension"
 }

@@ -73,6 +73,10 @@ public final class DdtServerEvents {
         }
         PortalTeleporter.tickCooldown(player);
         if (PortalTrigger.isChrono(player)) {
+            if (ChronoLineState.hasServerLine() && player.tickCount % 20 == 0) {
+                double param = ChronoLineState.serverLine().param(player.getX(), player.getZ());
+                com.dawnduskterminal.advancement.ModCriteria.lineParam().trigger(player, param);
+            }
             if (player.tickCount % 5 == 0) {
                 BlockPos pos = player.blockPosition();
                 if (PortalTrigger.shouldTeleport(player, pos)) {

@@ -71,6 +71,8 @@ public class PortalBlock extends LiquidBlock {
         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             awardGate(serverPlayer);
         }
+        serverLevel.playSound(null, pos, com.dawnduskterminal.registry.ModSounds.PORTAL_OPEN.get(),
+            net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 
     private static void awardGate(net.minecraft.server.level.ServerPlayer player) {

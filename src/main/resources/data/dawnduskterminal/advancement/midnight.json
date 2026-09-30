@@ -1,0 +1,26 @@
+{
+  "parent": "dawnduskterminal:polar_night",
+  "display": {
+    "icon": {
+      "id": "minecraft:sculk_sensor"
+    },
+    "title": {
+      "translate": "advancements.dawnduskterminal.midnight.title"
+    },
+    "description": {
+      "translate": "advancements.dawnduskterminal.midnight.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "at_midnight": {
+      "trigger": "dawnduskterminal:line_param",
+      "conditions": {
+        "max": -0.95
+      }
+    }
+  }
+}

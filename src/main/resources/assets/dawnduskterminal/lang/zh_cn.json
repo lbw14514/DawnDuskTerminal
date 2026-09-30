@@ -27,6 +27,11 @@
 
   "death.attack.dawnduskterminal.portal": "%1$s 被晨昏线吞没",
 
+  "subtitles.dawnduskterminal.portal_open": "传送门成型",
+  "subtitles.dawnduskterminal.portal_enter": "跨过晨昏线",
+  "subtitles.dawnduskterminal.portal_exit": "离开晨昏线",
+  "subtitles.dawnduskterminal.chrono_ambient": "晨昏线低鸣",
+
   "advancements.dawnduskterminal.root.title": "晨昏线",
   "advancements.dawnduskterminal.root.description": "世界被一条线切成昼与夜",
   "advancements.dawnduskterminal.defeat_boss.title": "暮色征服者",
@@ -44,5 +49,7 @@
   "advancements.dawnduskterminal.polar_day.title": "极昼",
   "advancements.dawnduskterminal.polar_day.description": "抵达极昼群系",
   "advancements.dawnduskterminal.polar_night.title": "极夜",
-  "advancements.dawnduskterminal.polar_night.description": "抵达极夜群系"
+  "advancements.dawnduskterminal.polar_night.description": "抵达极夜群系",
+  "advancements.dawnduskterminal.return_home.title": "回家",
+  "advancements.dawnduskterminal.return_home.description": "从晨昏线维度返回主世界"
 }

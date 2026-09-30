@@ -20,12 +20,6 @@ import org.joml.Matrix4f;
 public final class ChronoSkyRenderer {
     private static final int SEGMENTS = 64;
     private static final float RADIUS = 100.0F;
-    private static final int[] TOP_COLORS = {
-        0x05050C, 0x101A38, 0x2E3A6E, 0x4A90D9, 0x3E7BD8
-    };
-    private static final int[] HORIZON_COLORS = {
-        0x131026, 0x2A2350, 0x8A6BB8, 0xA8CFFF, 0xFFD9A0
-    };
 
     private static SunRenderer sunRenderer = new PixelSunRenderer();
 
@@ -73,8 +67,8 @@ public final class ChronoSkyRenderer {
         poseStack.mulPose(modelViewMatrix);
         Matrix4f matrix = poseStack.last().pose();
 
-        int top = sampleColor(TOP_COLORS, param);
-        int horizon = sampleColor(HORIZON_COLORS, param);
+        int top = sampleColor(DdtConfig.skyTopColors(), param);
+        int horizon = sampleColor(DdtConfig.skyHorizonColors(), param);
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

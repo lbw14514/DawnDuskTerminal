@@ -1,0 +1,7 @@
+feat 音效骨架 天空配色配置化 中档进度节点
+
+- 新增 ModSounds 四个音效事件 挂原版音效占位 等美术 ogg
+- 天空五段渐变改为配置项 client.sky_top_colors 与 client.sky_horizon_colors
+- 新增 dawnduskterminal:line_param 自定义触发器 按晨昏线参数触发
+- 新增 noon midnight return_home 三条进度 共十条
+- 配置列表 API 改用非弃用重载 编译零警告

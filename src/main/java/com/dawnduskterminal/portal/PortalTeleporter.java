@@ -4,6 +4,7 @@ import com.dawnduskterminal.config.DdtConfig;
 import com.dawnduskterminal.registry.ModAttachments;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModDimensions;
+import com.dawnduskterminal.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -63,6 +64,7 @@ public final class PortalTeleporter {
             player.teleportTo(target, destination.x, destination.y, destination.z, player.getYRot(), player.getXRot());
             player.setData(ModAttachments.PORTAL_STATE,
                 player.getData(ModAttachments.PORTAL_STATE).withCooldown(cooldown));
+            playSound(player, ModSounds.PORTAL_EXIT);
             return;
         }
 
@@ -75,6 +77,12 @@ public final class PortalTeleporter {
             current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
         player.teleportTo(chrono, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
         player.setData(ModAttachments.PORTAL_STATE, remembered.withCooldown(cooldown));
+        playSound(player, ModSounds.PORTAL_ENTER);
+    }
+
+    private static void playSound(ServerPlayer player, net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> sound) {
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound.get(),
+            net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     private static Vec3 ensureLanding(ServerLevel chrono) {

@@ -9,7 +9,9 @@ import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModCreativeTabs;
 import com.dawnduskterminal.registry.ModEffects;
 import com.dawnduskterminal.registry.ModFluids;
+import com.dawnduskterminal.advancement.ModCriteria;
 import com.dawnduskterminal.registry.ModItems;
+import com.dawnduskterminal.registry.ModSounds;
 import com.dawnduskterminal.server.DdtServerEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -33,6 +35,8 @@ public final class DawnDuskTerminal {
         ModItems.register(modBus);
         ModEffects.register(modBus);
         ModAttachments.register(modBus);
+        ModSounds.register(modBus);
+        ModCriteria.register(modBus);
         ModBiomeSources.register(modBus);
         ModCreativeTabs.register(modBus);
 

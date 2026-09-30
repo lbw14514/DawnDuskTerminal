@@ -2,6 +2,8 @@ package com.dawnduskterminal.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.List;
+
 public final class DdtConfig {
     public static final ModConfigSpec SPEC;
 
@@ -15,6 +17,8 @@ public final class DdtConfig {
     private static final ModConfigSpec.BooleanValue CUSTOM_SKY;
     private static final ModConfigSpec.BooleanValue SHADER_WARNING;
     private static final ModConfigSpec.IntValue SUN_TEXTURE_SIZE;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> SKY_TOP_COLORS;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> SKY_HORIZON_COLORS;
     private static final ModConfigSpec.BooleanValue ENTITY_DEBUFF;
     private static final ModConfigSpec.BooleanValue TOLERATE_FEATURE_CYCLES;
 
@@ -58,6 +62,16 @@ public final class DdtConfig {
             .define("shader_warning", true);
         SUN_TEXTURE_SIZE = b.comment("side length of the square sun texture")
             .defineInRange("sun_texture_size", 64, 8, 512);
+        SKY_TOP_COLORS = b.comment("sky zenith gradient stops from polar night to polar day, 6 digit hex without the hash")
+            .defineListAllowEmpty("sky_top_colors",
+                () -> List.of("05050C", "101A38", "2E3A6E", "4A90D9", "3E7BD8"),
+                () -> "FFFFFF",
+                entry -> entry instanceof String text && text.matches("[0-9A-Fa-f]{6}"));
+        SKY_HORIZON_COLORS = b.comment("sky horizon gradient stops from polar night to polar day, 6 digit hex without the hash")
+            .defineListAllowEmpty("sky_horizon_colors",
+                () -> List.of("131026", "2A2350", "8A6BB8", "A8CFFF", "FFD9A0"),
+                () -> "FFFFFF",
+                entry -> entry instanceof String text && text.matches("[0-9A-Fa-f]{6}"));
         b.pop();
 
         SPEC = b.build();
@@ -159,5 +173,56 @@ public final class DdtConfig {
         } catch (IllegalStateException e) {
             return 64;
         }
+    }
+
+    private static final int[] DEFAULT_TOP = {0x05050C, 0x101A38, 0x2E3A6E, 0x4A90D9, 0x3E7BD8};
+    private static final int[] DEFAULT_HORIZON = {0x131026, 0x2A2350, 0x8A6BB8, 0xA8CFFF, 0xFFD9A0};
+
+    private static List<? extends String> cachedTopRaw;
+    private static int[] cachedTop = DEFAULT_TOP;
+    private static List<? extends String> cachedHorizonRaw;
+    private static int[] cachedHorizon = DEFAULT_HORIZON;
+
+    public static int[] skyTopColors() {
+        return resolve(SKY_TOP_COLORS, true);
+    }
+
+    public static int[] skyHorizonColors() {
+        return resolve(SKY_HORIZON_COLORS, false);
+    }
+
+    private static int[] resolve(ModConfigSpec.ConfigValue<List<? extends String>> value, boolean top) {
+        List<? extends String> cachedRaw = top ? cachedTopRaw : cachedHorizonRaw;
+        try {
+            List<? extends String> raw = value.get();
+            if (raw != cachedRaw) {
+                int[] parsed = parseColors(raw, top ? DEFAULT_TOP : DEFAULT_HORIZON);
+                if (top) {
+                    cachedTopRaw = raw;
+                    cachedTop = parsed;
+                } else {
+                    cachedHorizonRaw = raw;
+                    cachedHorizon = parsed;
+                }
+            }
+        } catch (IllegalStateException e) {
+            return top ? DEFAULT_TOP : DEFAULT_HORIZON;
+        }
+        return top ? cachedTop : cachedHorizon;
+    }
+
+    private static int[] parseColors(List<? extends String> raw, int[] fallback) {
+        if (raw == null || raw.size() < 2) {
+            return fallback;
+        }
+        int[] result = new int[raw.size()];
+        for (int i = 0; i < raw.size(); i++) {
+            try {
+                result[i] = Integer.parseInt(raw.get(i).trim().replace("#", ""), 16) & 0xFFFFFF;
+            } catch (NumberFormatException e) {
+                return fallback;
+            }
+        }
+        return result;
     }
 }

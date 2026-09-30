@@ -1,0 +1,26 @@
+{
+  "parent": "dawnduskterminal:polar_day",
+  "display": {
+    "icon": {
+      "id": "minecraft:daylight_detector"
+    },
+    "title": {
+      "translate": "advancements.dawnduskterminal.noon.title"
+    },
+    "description": {
+      "translate": "advancements.dawnduskterminal.noon.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "at_noon": {
+      "trigger": "dawnduskterminal:line_param",
+      "conditions": {
+        "min": 0.95
+      }
+    }
+  }
+}
