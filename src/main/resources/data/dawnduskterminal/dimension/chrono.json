@@ -403,7 +403,7 @@
             "twilightforest:swamp"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -412,7 +412,7 @@
             "twilightforest:lake"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -422,7 +422,7 @@
             "twilightforest:lake"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -431,7 +431,7 @@
             "twilightforest:swamp"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -440,7 +440,7 @@
             "twilightforest:lake"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -449,7 +449,7 @@
             "twilightforest:lake"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -458,7 +458,7 @@
             "twilightforest:glacier"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -467,7 +467,7 @@
             "twilightforest:glacier"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
@@ -476,43 +476,43 @@
             "twilightforest:glacier"
           ],
           "cold": [
-            "solidcanopy_ocean"
+            "dawnduskterminal:solidcanopy_ocean"
           ]
         },
         {
           "from": "minecraft:mushroom_fields",
           "hot": [
-            "dawn_zone"
+            "dawnduskterminal:dawn_zone"
           ],
           "cold": [
-            "dusk_zone"
+            "dawnduskterminal:dusk_zone"
           ]
         },
         {
           "from": "minecraft:dripstone_caves",
           "hot": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ],
           "cold": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ]
         },
         {
           "from": "minecraft:lush_caves",
           "hot": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ],
           "cold": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ]
         },
         {
           "from": "minecraft:deep_dark",
           "hot": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ],
           "cold": [
-            "earth_light"
+            "dawnduskterminal:earth_light"
           ]
         }
       ]
