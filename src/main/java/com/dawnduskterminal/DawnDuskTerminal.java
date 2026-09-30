@@ -14,6 +14,7 @@ import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.advancement.ModCriteria;
 import com.dawnduskterminal.command.DdtCommands;
 import com.dawnduskterminal.registry.ModItems;
+import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModSounds;
 import com.dawnduskterminal.server.DdtServerEvents;
 import net.minecraft.resources.ResourceLocation;
@@ -34,6 +35,7 @@ public final class DawnDuskTerminal {
 
     public DawnDuskTerminal(IEventBus modBus, ModContainer container) {
         ModFluids.register(modBus);
+        ModScorchingTwilight.register(modBus);
         ModBlocks.register(modBus);
         ModItems.register(modBus);
         ModEffects.register(modBus);

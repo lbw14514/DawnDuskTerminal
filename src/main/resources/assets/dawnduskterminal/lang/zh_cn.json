@@ -2,14 +2,17 @@
   "block.dawnduskterminal.portal_fluid": "传送门水体",
   "block.dawnduskterminal.chrono_crust": "晨昏地壳",
   "block.dawnduskterminal.sky_soil": "浮空壤土",
+  "block.dawnduskterminal.scorching_twilight": "灼热暮光",
 
   "item.dawnduskterminal.hydra_trophy": "九头蛇战利品",
   "item.dawnduskterminal.ur_ghast_trophy": "暮色恶魂战利品",
   "item.dawnduskterminal.snow_queen_trophy": "冰雪女王战利品",
   "item.dawnduskterminal.portal_bucket": "传送门水桶",
+  "item.dawnduskterminal.scorching_twilight_bucket": "灼热暮光桶",
   "item.dawnduskterminal.chrono_core": "晨昏核心",
 
   "fluid_type.dawnduskterminal.portal_fluid": "传送门水体",
+  "fluid_type.dawnduskterminal.scorching_twilight": "灼热暮光",
 
   "effect.dawnduskterminal.portal_sickness": "传送门病",
 

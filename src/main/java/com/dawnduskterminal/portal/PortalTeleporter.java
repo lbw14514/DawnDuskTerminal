@@ -88,6 +88,7 @@ public final class PortalTeleporter {
         PortalState remembered = state.withReturn(
             current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
         player.teleportTo(chrono, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
+        buildArrivalPortal(chrono, landing);
         player.setData(ModAttachments.PORTAL_STATE, remembered.withCooldown(cooldown));
         playSound(player, ModSounds.PORTAL_ENTER);
     }
@@ -216,6 +217,29 @@ public final class PortalTeleporter {
     private static void playSound(ServerPlayer player, net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.sounds.SoundEvent, net.minecraft.sounds.SoundEvent> sound) {
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(), sound.get(),
             net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
+
+    public static boolean buildArrivalPortal(ServerLevel level, Vec3 landing) {
+        int baseX = Mth.floor(landing.x) + 2;
+        int baseZ = Mth.floor(landing.z);
+        int y = Mth.floor(landing.y);
+        BlockPos probe = new BlockPos(baseX, y - 1, baseZ);
+        if (!level.getBlockState(probe).isFaceSturdy(level, probe, Direction.UP)) {
+            return false;
+        }
+        BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
+        for (int dx = 0; dx < 2; dx++) {
+            for (int dz = 0; dz < 2; dz++) {
+                BlockPos floor = new BlockPos(baseX + dx, y - 1, baseZ + dz);
+                if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) {
+                    level.setBlockAndUpdate(floor, ModBlocks.SKY_SOIL.get().defaultBlockState());
+                }
+                level.setBlockAndUpdate(floor.above(), portal);
+                level.setBlockAndUpdate(floor.above(2), Blocks.AIR.defaultBlockState());
+            }
+        }
+        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal arrival portal built at {} {} {}", baseX, y, baseZ);
+        return true;
     }
 
     public static boolean isChronoLevel(Level level) {
