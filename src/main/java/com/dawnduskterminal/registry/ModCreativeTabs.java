@@ -25,6 +25,7 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.SNOW_QUEEN_TROPHY.get());
                 accept(output, ModItems.CHRONO_CORE.get());
                 accept(output, ModItems.PORTAL_BUCKET.get());
+                accept(output, ModScorchingTwilight.BUCKET.get());
                 accept(output, ModItems.SKY_SOIL.get());
                 accept(output, ModItems.CHRONO_CRUST.get());
             })

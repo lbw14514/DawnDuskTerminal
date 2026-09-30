@@ -35,8 +35,6 @@ public final class ChronoSkyRenderer {
     private static final float VANILLA_SUN_HALF = 30.0F;
     private static final float VANILLA_MOON_HALF = 20.0F;
 
-    private static boolean logged;
-
     private ChronoSkyRenderer() {}
 
     public static void render(ClientLevel level, float partialTick, Matrix4f modelViewMatrix, Camera camera,
@@ -213,11 +211,6 @@ public final class ChronoSkyRenderer {
         int c1 = lerpColor(top, horizon, 0.25F);
         int c2 = lerpColor(top, horizon, 0.50F);
         int c3 = lerpColor(top, horizon, 0.75F);
-        if (!logged) {
-            logged = true;
-            com.dawnduskterminal.DawnDuskTerminal.LOGGER.info(
-                "DDT_SKY param={} top={} c2={} horizon={}", param, top, c2, horizon);
-        }
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);

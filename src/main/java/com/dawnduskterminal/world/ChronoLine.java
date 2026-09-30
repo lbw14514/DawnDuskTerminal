@@ -51,8 +51,4 @@ public record ChronoLine(double originX, double originZ, double normalX, double 
     public float sunAngleDegrees(double x, double z) {
         return (float) (param(x, z) * DdtConfig.sunAngleMax());
     }
-
-    public boolean isDaySide(double x, double z) {
-        return distance(x, z) > 0.0D;
-    }
 }
