@@ -17,6 +17,52 @@
       "line_biome": [
         "dawnduskterminal:normal"
       ],
+      "replacements": [
+        {
+          "from": "minecraft:dark_forest",
+          "to": ["twilightforest:dark_forest", "twilightforest:dark_forest_center"]
+        },
+        {
+          "from": "minecraft:flower_forest",
+          "to": ["twilightforest:forest", "twilightforest:dense_forest"]
+        },
+        {
+          "from": "minecraft:forest",
+          "to": ["twilightforest:forest", "twilightforest:dense_forest"]
+        },
+        {
+          "from": "minecraft:ice_spikes",
+          "to": ["twilightforest:glacier"]
+        },
+        {
+          "from": "minecraft:jungle",
+          "to": ["twilightforest:enchanted_forest"]
+        },
+        {
+          "from": "minecraft:mangrove_swamp",
+          "to": ["twilightforest:swamp", "twilightforest:fire_swamp"]
+        },
+        {
+          "from": "minecraft:swamp",
+          "to": ["twilightforest:swamp", "twilightforest:fire_swamp"]
+        },
+        {
+          "from": "minecraft:plains",
+          "to": ["twilightforest:clearing"]
+        },
+        {
+          "from": "minecraft:savanna",
+          "to": ["twilightforest:oak_savannah"]
+        },
+        {
+          "from": "minecraft:windswept_gravelly_hills",
+          "to": ["twilightforest:highlands", "twilightforest:thornlands"]
+        },
+        {
+          "from": "minecraft:windswept_hills",
+          "to": ["twilightforest:highlands", "twilightforest:thornlands"]
+        }
+      ],
       "line_half_width": 200.0,
       "band_half_width": 1000.0,
       "max_distance": 5000.0

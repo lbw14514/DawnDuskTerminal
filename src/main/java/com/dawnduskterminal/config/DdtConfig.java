@@ -16,6 +16,7 @@ public final class DdtConfig {
     private static final ModConfigSpec.BooleanValue SHADER_WARNING;
     private static final ModConfigSpec.IntValue SUN_TEXTURE_SIZE;
     private static final ModConfigSpec.BooleanValue ENTITY_DEBUFF;
+    private static final ModConfigSpec.BooleanValue TOLERATE_FEATURE_CYCLES;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -43,6 +44,11 @@ public final class DdtConfig {
             .define("convert_water_on_chunk_load", false);
         ENTITY_DEBUFF = b.comment("non player entities get the portal sickness effect")
             .define("entity_debuff", true);
+        b.pop();
+
+        b.push("compat");
+        TOLERATE_FEATURE_CYCLES = b.comment("replace the vanilla feature sorter with a cycle tolerant one, required when both vanilla and modded biomes are used in one dimension")
+            .define("tolerate_feature_cycles", true);
         b.pop();
 
         b.push("client");
@@ -118,6 +124,14 @@ public final class DdtConfig {
     public static boolean entityDebuff() {
         try {
             return ENTITY_DEBUFF.get();
+        } catch (IllegalStateException e) {
+            return true;
+        }
+    }
+
+    public static boolean tolerateFeatureCycles() {
+        try {
+            return TOLERATE_FEATURE_CYCLES.get();
         } catch (IllegalStateException e) {
             return true;
         }

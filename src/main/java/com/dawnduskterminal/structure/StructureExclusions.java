@@ -24,7 +24,7 @@ public final class StructureExclusions {
         EXCLUDED_TF.put("雪怪洞窟", ResourceLocation.parse("twilightforest:yeti_cave"));
         EXCLUDED_TF.put("极光宫殿", ResourceLocation.parse("twilightforest:aurora_palace"));
         EXCLUDED_TF.put("巨魔洞窟", ResourceLocation.parse("twilightforest:troll_cave"));
-        EXCLUDED_TF.put("云上小屋 待作者确认", ResourceLocation.parse("twilightforest:giant_house"));
+        EXCLUDED_TF.put("云上小屋", ResourceLocation.parse("twilightforest:giant_house"));
         EXCLUDED_TF.put("终焉城堡", ResourceLocation.parse("twilightforest:final_castle"));
 
         EXCLUDED_VANILLA.put("远古城市", ResourceLocation.withDefaultNamespace("ancient_city"));
