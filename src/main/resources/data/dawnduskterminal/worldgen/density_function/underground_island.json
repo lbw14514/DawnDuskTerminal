@@ -3,18 +3,18 @@
   "argument1": {
     "type": "minecraft:noise",
     "noise": "dawnduskterminal:island",
-    "xz_scale": 2.2,
-    "y_scale": 2.6
+    "xz_scale": 3.4,
+    "y_scale": 3.2
   },
   "argument2": {
     "type": "minecraft:mul",
     "argument1": {
       "type": "minecraft:y_clamped_gradient",
       "from_y": -64,
-      "to_y": -12,
+      "to_y": -18,
       "from_value": 1.0,
       "to_value": 0.0
     },
-    "argument2": 0.9
+    "argument2": 0.95
   }
 }

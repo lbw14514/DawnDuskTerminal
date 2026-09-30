@@ -1,10 +1,9 @@
 {
   "type": "dawnduskterminal:hollow_pocket",
   "config": {
-    "min_y": -60,
-    "max_y": 300,
-    "min_radius": 60,
-    "max_radius": 110,
-    "floor_y": -64
+    "min_radius": 70,
+    "max_radius": 90,
+    "floor_y": -64,
+    "top_y": 320
   }
 }
