@@ -1,0 +1,27 @@
+{
+  "feature": "dawnduskterminal:hollow_pocket",
+  "placement": [
+    {
+      "type": "minecraft:rarity_filter",
+      "chance": 45
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:trapezoid",
+        "min_inclusive": {
+          "absolute": 8
+        },
+        "max_inclusive": {
+          "absolute": 64
+        }
+      }
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

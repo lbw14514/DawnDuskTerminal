@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#dawnduskterminal:chrono_surface",
+  "features": "dawnduskterminal:scorching_lake",
+  "step": "underground_decoration"
+}

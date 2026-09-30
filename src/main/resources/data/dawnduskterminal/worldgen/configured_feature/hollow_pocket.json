@@ -1,0 +1,9 @@
+{
+  "type": "dawnduskterminal:hollow_pocket",
+  "config": {
+    "min_y": 4,
+    "max_y": 72,
+    "min_radius": 48,
+    "max_radius": 80
+  }
+}

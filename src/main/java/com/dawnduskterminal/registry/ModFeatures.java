@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.world.HollowPocketFeature;
 import com.dawnduskterminal.world.RootPillarFeature;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -15,6 +16,9 @@ public final class ModFeatures {
 
     public static final DeferredHolder<Feature<?>, RootPillarFeature> ROOT_PILLAR =
         FEATURES.register("root_pillar", () -> new RootPillarFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final DeferredHolder<Feature<?>, HollowPocketFeature> HOLLOW_POCKET =
+        FEATURES.register("hollow_pocket", () -> new HollowPocketFeature(HollowPocketFeature.Config.CODEC));
 
     private ModFeatures() {}
 
