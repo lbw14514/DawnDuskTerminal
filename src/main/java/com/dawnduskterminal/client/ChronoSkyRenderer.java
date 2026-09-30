@@ -115,9 +115,9 @@ public final class ChronoSkyRenderer {
     }
 
     private static int lerpColor(int from, int to, float t) {
-        int r = (int) (red(from) + (red(to) - red(from)) * t);
-        int g = (int) (green(from) + (green(to) - green(from)) * t);
-        int b = (int) (blue(from) + (blue(to) - blue(from)) * t);
+        int r = (int) ((red(from) + (red(to) - red(from)) * t) * 255.0F);
+        int g = (int) ((green(from) + (green(to) - green(from)) * t) * 255.0F);
+        int b = (int) ((blue(from) + (blue(to) - blue(from)) * t) * 255.0F);
         return (r << 16) | (g << 8) | b;
     }
 
