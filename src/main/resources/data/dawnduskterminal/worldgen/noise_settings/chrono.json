@@ -882,7 +882,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.2,
                                   "min_threshold": 0.0,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:packed_ice"
                                 },
                                 "then_run": {
                                   "type": "minecraft:block",
@@ -897,7 +897,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.025,
                                   "min_threshold": 0.0,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:ice"
                                 },
                                 "then_run": {
                                   "type": "minecraft:block",
@@ -953,7 +953,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.6,
                                   "min_threshold": 0.35,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:powder_snow"
                                 },
                                 "then_run": {
                                   "type": "minecraft:condition",
@@ -1047,7 +1047,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.6,
                                   "min_threshold": 0.35,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:powder_snow"
                                 },
                                 "then_run": {
                                   "type": "minecraft:condition",
@@ -1103,7 +1103,7 @@
                                       "type": "minecraft:noise_threshold",
                                       "max_threshold": 0.0125,
                                       "min_threshold": -0.0125,
-                                      "noise": "dawnduskterminal:siltstone"
+                                      "noise": "minecraft:calcite"
                                     },
                                     "then_run": {
                                       "type": "minecraft:block",
@@ -1138,7 +1138,7 @@
                                       "type": "minecraft:noise_threshold",
                                       "max_threshold": 0.05,
                                       "min_threshold": -0.05,
-                                      "noise": "dawnduskterminal:sky_stone"
+                                      "noise": "minecraft:gravel"
                                     },
                                     "then_run": {
                                       "type": "minecraft:sequence",
@@ -1519,7 +1519,7 @@
                           "if_true": {
                             "type": "minecraft:biome",
                             "biome_is": [
-                              "dawnduskterminal:frozen_canopy_spikes"
+                              "minecraft:ice_spikes"
                             ]
                           },
                           "then_run": {
@@ -1693,7 +1693,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.2,
                                   "min_threshold": -0.5,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:packed_ice"
                                 },
                                 "then_run": {
                                   "type": "minecraft:block",
@@ -1708,7 +1708,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.025,
                                   "min_threshold": -0.0625,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:ice"
                                 },
                                 "then_run": {
                                   "type": "minecraft:block",
@@ -1764,7 +1764,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.58,
                                   "min_threshold": 0.45,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:powder_snow"
                                 },
                                 "then_run": {
                                   "type": "minecraft:condition",
@@ -1832,7 +1832,7 @@
                                   "type": "minecraft:noise_threshold",
                                   "max_threshold": 0.58,
                                   "min_threshold": 0.45,
-                                  "noise": "dawnduskterminal:frozen_canopy"
+                                  "noise": "minecraft:powder_snow"
                                 },
                                 "then_run": {
                                   "type": "minecraft:condition",
@@ -1879,7 +1879,7 @@
                                       "type": "minecraft:noise_threshold",
                                       "max_threshold": 0.0125,
                                       "min_threshold": -0.0125,
-                                      "noise": "dawnduskterminal:siltstone"
+                                      "noise": "minecraft:calcite"
                                     },
                                     "then_run": {
                                       "type": "minecraft:block",
@@ -1914,7 +1914,7 @@
                                       "type": "minecraft:noise_threshold",
                                       "max_threshold": 0.05,
                                       "min_threshold": -0.05,
-                                      "noise": "dawnduskterminal:sky_stone"
+                                      "noise": "minecraft:gravel"
                                     },
                                     "then_run": {
                                       "type": "minecraft:sequence",
