@@ -24,7 +24,7 @@
   "biome.dawnduskterminal.polar_night": "极夜平原",
 
   "message.dawnduskterminal.gate_unlocked": "已击败暮色森林的领主之一，晨昏线之门向你敞开",
-  "message.dawnduskterminal.shader_warning": "检测到光影模组 %s，本模组自绘天空不保证兼容",
+  "message.dawnduskterminal.shader_warning": "检测到光影模组 %s，本维度天空由本模组自绘并盖在光影天空之上，光影的天空与体积雾可能不生效",
 
   "death.attack.dawnduskterminal.portal": "%1$s 被晨昏线吞没",
 

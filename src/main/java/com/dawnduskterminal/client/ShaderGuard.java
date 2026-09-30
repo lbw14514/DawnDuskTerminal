@@ -7,7 +7,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 public final class ShaderGuard {
-    private static final String[] SHADER_MODS = {"iris", "oculus", "optifine", "embeddium"};
+    private static final String[] SHADER_MODS = {"iris", "oculus", "optifine"};
 
     private static boolean warned;
 

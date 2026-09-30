@@ -24,7 +24,7 @@
   "biome.dawnduskterminal.polar_night": "Polar Night Plains",
 
   "message.dawnduskterminal.gate_unlocked": "One of the Twilight lords has fallen, the gate is open",
-  "message.dawnduskterminal.shader_warning": "Shader mod %s detected, the custom sky is not guaranteed to work",
+  "message.dawnduskterminal.shader_warning": "Shader mod %s detected, this dimension draws its own sky on top of the shader sky, so shader sky and volumetrics may not apply",
 
   "death.attack.dawnduskterminal.portal": "%1$s was swallowed by the terminator",
 

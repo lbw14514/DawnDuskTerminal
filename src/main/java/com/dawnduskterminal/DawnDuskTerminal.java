@@ -8,6 +8,8 @@ import com.dawnduskterminal.registry.ModBiomeSources;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModCreativeTabs;
 import com.dawnduskterminal.registry.ModEffects;
+import com.dawnduskterminal.registry.ModEntities;
+import com.dawnduskterminal.registry.ModFeatures;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.advancement.ModCriteria;
 import com.dawnduskterminal.registry.ModItems;
@@ -34,6 +36,8 @@ public final class DawnDuskTerminal {
         ModBlocks.register(modBus);
         ModItems.register(modBus);
         ModEffects.register(modBus);
+        ModEntities.register(modBus);
+        ModFeatures.register(modBus);
         ModAttachments.register(modBus);
         ModSounds.register(modBus);
         ModCriteria.register(modBus);
@@ -46,6 +50,7 @@ public final class DawnDuskTerminal {
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(DdtServerEvents::onSpawnPlacement);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             DdtClient.init(modBus);

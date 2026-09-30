@@ -80,7 +80,6 @@ public class PortalBlock extends LiquidBlock {
     private static void causeLightning(ServerLevel level, BlockPos pos) {
         LightningBolt bolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
         bolt.setPos(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
-        bolt.setVisualOnly(true);
         level.addFreshEntity(bolt);
     }
 

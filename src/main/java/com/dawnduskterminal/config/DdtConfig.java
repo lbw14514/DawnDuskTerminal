@@ -8,6 +8,10 @@ public final class DdtConfig {
     public static final ModConfigSpec SPEC;
 
     private static final ModConfigSpec.DoubleValue SUN_ANGLE_MAX;
+    private static final ModConfigSpec.BooleanValue SKY_LIGHT_BY_DISTANCE;
+    private static final ModConfigSpec.IntValue SKY_LIGHT_DAY;
+    private static final ModConfigSpec.IntValue SKY_LIGHT_CENTER;
+    private static final ModConfigSpec.IntValue SKY_LIGHT_NIGHT;
     private static final ModConfigSpec.DoubleValue MAX_DISTANCE;
     private static final ModConfigSpec.DoubleValue BAND_HALF_WIDTH;
     private static final ModConfigSpec.ConfigValue<String> NORMAL_OVERRIDE;
@@ -28,6 +32,14 @@ public final class DdtConfig {
         b.push("lighting");
         SUN_ANGLE_MAX = b.comment("max sun height angle in degrees")
             .defineInRange("sun_angle_max", 30.0D, 0.0D, 90.0D);
+        SKY_LIGHT_BY_DISTANCE = b.comment("let sky light fall off across the terminator instead of being 15 everywhere")
+            .define("sky_light_by_distance", true);
+        SKY_LIGHT_DAY = b.comment("sky light at the full day side")
+            .defineInRange("sky_light_day", 15, 0, 15);
+        SKY_LIGHT_CENTER = b.comment("sky light on the terminator itself")
+            .defineInRange("sky_light_center", 10, 0, 15);
+        SKY_LIGHT_NIGHT = b.comment("sky light at the full night side, 8 and below lets monsters spawn")
+            .defineInRange("sky_light_night", 5, 0, 15);
         b.pop();
 
         b.push("chrono_line");
@@ -84,6 +96,38 @@ public final class DdtConfig {
             return SUN_ANGLE_MAX.get();
         } catch (IllegalStateException e) {
             return 30.0D;
+        }
+    }
+
+    public static boolean skyLightByDistance() {
+        try {
+            return SKY_LIGHT_BY_DISTANCE.get();
+        } catch (IllegalStateException e) {
+            return true;
+        }
+    }
+
+    public static int skyLightDay() {
+        try {
+            return SKY_LIGHT_DAY.get();
+        } catch (IllegalStateException e) {
+            return 15;
+        }
+    }
+
+    public static int skyLightCenter() {
+        try {
+            return SKY_LIGHT_CENTER.get();
+        } catch (IllegalStateException e) {
+            return 10;
+        }
+    }
+
+    public static int skyLightNight() {
+        try {
+            return SKY_LIGHT_NIGHT.get();
+        } catch (IllegalStateException e) {
+            return 5;
         }
     }
 

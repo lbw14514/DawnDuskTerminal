@@ -30,7 +30,7 @@ public final class ChronoSkyRenderer {
     }
 
     public static void render(ClientLevel level, float partialTick, Matrix4f modelViewMatrix, Camera camera,
-                              Matrix4f projectionMatrix, Runnable setupFog) {
+                              Matrix4f projectionMatrix) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) {
@@ -40,23 +40,26 @@ public final class ChronoSkyRenderer {
         float param = (float) line.param(player.getX(), player.getZ());
         float sunAngle = (float) (param * DdtConfig.sunAngleMax());
 
-        setupFog.run();
-
+        RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.disableBlend();
-        RenderSystem.disableDepthTest();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        float savedFogStart = RenderSystem.getShaderFogStart();
+        float savedFogEnd = RenderSystem.getShaderFogEnd();
+        RenderSystem.setShaderFogStart(1.0E9F);
+        RenderSystem.setShaderFogEnd(1.0E9F);
         drawDome(modelViewMatrix, param);
-        RenderSystem.enableDepthTest();
 
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(modelViewMatrix);
         SkyContext context = new SkyContext(level, player, poseStack, projectionMatrix, modelViewMatrix, camera, partialTick, param, sunAngle);
         sunRenderer.render(context);
 
+        RenderSystem.setShaderFogStart(savedFogStart);
+        RenderSystem.setShaderFogEnd(savedFogEnd);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
