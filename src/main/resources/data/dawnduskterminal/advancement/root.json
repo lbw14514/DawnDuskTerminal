@@ -16,8 +16,11 @@
     "hidden": false
   },
   "criteria": {
-    "tick": {
-      "trigger": "minecraft:tick"
+    "entered_twilight": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "twilightforest:twilight_forest"
+      }
     }
   }
 }
