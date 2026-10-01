@@ -16,10 +16,10 @@
     "hidden": false
   },
   "criteria": {
-    "entered_twilight": {
+    "entered_chrono": {
       "trigger": "minecraft:changed_dimension",
       "conditions": {
-        "to": "twilightforest:twilight_forest"
+        "to": "dawnduskterminal:chrono"
       }
     }
   }
