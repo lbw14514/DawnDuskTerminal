@@ -1,12 +1,16 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -42,8 +46,17 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.FRAGILE_CANOPY_ITEM.get());
                 accept(output, ModTerrainBlocks.CHAOS_STONE_ITEM.get());
                 accept(output, ModTerrainBlocks.BLAZING_BLOCK_ITEM.get());
+                acceptForeign(output, "twilightforest:aurora_block");
             })
             .build());
+
+    private static void acceptForeign(CreativeModeTab.Output output, String id) {
+        Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(id));
+        if (block == Blocks.AIR) {
+            return;
+        }
+        output.accept(block);
+    }
 
     private static void accept(CreativeModeTab.Output output, ItemLike item) {
         if (item == null || item.asItem() == Items.AIR) {
