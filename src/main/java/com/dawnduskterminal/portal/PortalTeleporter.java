@@ -28,14 +28,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class PortalTeleporter {
-    public static final int LANDING_SEARCH_RADIUS = 500;
+    private static final int FINE_RADIUS = 24;
+    private static final int MID_RADIUS = 96;
+    private static final int MAX_CHUNK_LOADS = 400;
+    private static final int OPEN_SKY_HEIGHT = 32;
+    public static final int LANDING_SEARCH_RADIUS = 320;
     public static final int COLUMN_SCAN_DEPTH = 48;
     public static final int LANDING_MIN_Y = 0;
     public static final int LANDING_MAX_Y = 128;
-    private static final int FINE_RADIUS = 32;
-    private static final int MID_RADIUS = 160;
-    private static final int MAX_CHUNK_LOADS = 400;
-    private static final int OPEN_SKY_HEIGHT = 32;
 
     private PortalTeleporter() {}
 
@@ -130,12 +130,12 @@ public final class PortalTeleporter {
 
     private static int stepFor(int ring) {
         if (ring <= FINE_RADIUS) {
-            return 1;
+            return 2;
         }
         if (ring <= MID_RADIUS) {
-            return 4;
+            return 8;
         }
-        return 16;
+        return 24;
     }
 
     @Nullable

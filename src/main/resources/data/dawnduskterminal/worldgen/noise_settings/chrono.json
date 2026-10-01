@@ -226,39 +226,26 @@
         "then_run": {
           "type": "minecraft:block",
           "result_state": {
-            "Name": "dawnduskterminal:sky_soil"
+            "Name": "dawnduskterminal:ember_soil"
           }
         }
       },
       {
         "type": "minecraft:condition",
         "if_true": {
-          "type": "minecraft:stone_depth",
-          "add_surface_depth": false,
-          "offset": 2,
-          "secondary_depth_range": 0,
-          "surface_type": "floor"
-        },
-        "then_run": {
-          "type": "minecraft:block",
-          "result_state": {
-            "Name": "dawnduskterminal:sky_soil"
+          "type": "minecraft:vertical_gradient",
+          "false_at_and_above": {
+            "above_bottom": 5
+          },
+          "random_name": "minecraft:bedrock_floor",
+          "true_at_and_below": {
+            "above_bottom": 0
           }
-        }
-      },
-      {
-        "type": "minecraft:condition",
-        "if_true": {
-          "type": "minecraft:stone_depth",
-          "add_surface_depth": false,
-          "offset": 0,
-          "secondary_depth_range": 0,
-          "surface_type": "ceiling"
         },
         "then_run": {
           "type": "minecraft:block",
           "result_state": {
-            "Name": "dawnduskterminal:sky_soil"
+            "Name": "dawnduskterminal:peridotite"
           }
         }
       },
@@ -362,7 +349,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:ember_soil",
+                                    "Name": "dawnduskterminal:sky_soil",
                                     "Properties": {
                                       "snowy": "false"
                                     }
@@ -526,7 +513,7 @@
                           "then_run": {
                             "type": "minecraft:block",
                             "result_state": {
-                              "Name": "dawnduskterminal:ochre"
+                              "Name": "minecraft:orange_terracotta"
                             }
                           }
                         },
@@ -641,7 +628,7 @@
                           "then_run": {
                             "type": "minecraft:block",
                             "result_state": {
-                              "Name": "dawnduskterminal:ochre"
+                              "Name": "minecraft:orange_terracotta"
                             }
                           }
                         },
@@ -656,7 +643,7 @@
                           "then_run": {
                             "type": "minecraft:block",
                             "result_state": {
-                              "Name": "dawnduskterminal:siltstone"
+                              "Name": "minecraft:white_terracotta"
                             }
                           }
                         },
@@ -682,7 +669,7 @@
                             {
                               "type": "minecraft:block",
                               "result_state": {
-                                "Name": "dawnduskterminal:sky_stone"
+                                "Name": "dawnduskterminal:siltstone"
                               }
                             }
                           ]
@@ -729,7 +716,7 @@
                             "then_run": {
                               "type": "minecraft:block",
                               "result_state": {
-                                "Name": "dawnduskterminal:ochre"
+                                "Name": "minecraft:orange_terracotta"
                               }
                             }
                           }
@@ -760,7 +747,7 @@
                       "then_run": {
                         "type": "minecraft:block",
                         "result_state": {
-                          "Name": "dawnduskterminal:siltstone"
+                          "Name": "minecraft:white_terracotta"
                         }
                       }
                     }
@@ -912,7 +899,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -961,7 +948,7 @@
                                   "then_run": {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:frozen_canopy"
+                                      "Name": "minecraft:powder_snow"
                                     }
                                   }
                                 }
@@ -977,7 +964,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -1018,7 +1005,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -1055,7 +1042,7 @@
                                   "then_run": {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:frozen_canopy"
+                                      "Name": "minecraft:powder_snow"
                                     }
                                   }
                                 }
@@ -1071,7 +1058,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -1103,7 +1090,7 @@
                                     "then_run": {
                                       "type": "minecraft:block",
                                       "result_state": {
-                                        "Name": "dawnduskterminal:siltstone"
+                                        "Name": "dawnduskterminal:ochre"
                                       }
                                     }
                                   },
@@ -1157,7 +1144,7 @@
                                         {
                                           "type": "minecraft:block",
                                           "result_state": {
-                                            "Name": "dawnduskterminal:sky_stone"
+                                            "Name": "dawnduskterminal:siltstone"
                                           }
                                         }
                                       ]
@@ -1372,7 +1359,7 @@
                                     {
                                       "type": "minecraft:block",
                                       "result_state": {
-                                        "Name": "dawnduskterminal:sky_stone"
+                                        "Name": "dawnduskterminal:siltstone"
                                       }
                                     }
                                   ]
@@ -1415,7 +1402,7 @@
                                       "then_run": {
                                         "type": "minecraft:block",
                                         "result_state": {
-                                          "Name": "dawnduskterminal:ember_soil",
+                                          "Name": "dawnduskterminal:sky_soil",
                                           "Properties": {
                                             "snowy": "false"
                                           }
@@ -1453,7 +1440,7 @@
                                   {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:sky_stone"
+                                      "Name": "dawnduskterminal:siltstone"
                                     }
                                   }
                                 ]
@@ -1528,7 +1515,7 @@
                             "then_run": {
                               "type": "minecraft:block",
                               "result_state": {
-                                "Name": "dawnduskterminal:siltstone"
+                                "Name": "dawnduskterminal:frozen_canopy"
                               }
                             }
                           }
@@ -1580,7 +1567,7 @@
                               "then_run": {
                                 "type": "minecraft:block",
                                 "result_state": {
-                                  "Name": "dawnduskterminal:ember_soil",
+                                  "Name": "dawnduskterminal:sky_soil",
                                   "Properties": {
                                     "snowy": "false"
                                   }
@@ -1723,7 +1710,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -1772,7 +1759,7 @@
                                   "then_run": {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:frozen_canopy"
+                                      "Name": "minecraft:powder_snow"
                                     }
                                   }
                                 }
@@ -1788,7 +1775,7 @@
                                 "then_run": {
                                   "type": "minecraft:block",
                                   "result_state": {
-                                    "Name": "dawnduskterminal:siltstone"
+                                    "Name": "dawnduskterminal:frozen_canopy"
                                   }
                                 }
                               }
@@ -1840,7 +1827,7 @@
                                   "then_run": {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:frozen_canopy"
+                                      "Name": "minecraft:powder_snow"
                                     }
                                   }
                                 }
@@ -1879,7 +1866,7 @@
                                     "then_run": {
                                       "type": "minecraft:block",
                                       "result_state": {
-                                        "Name": "dawnduskterminal:siltstone"
+                                        "Name": "dawnduskterminal:ochre"
                                       }
                                     }
                                   },
@@ -1933,7 +1920,7 @@
                                         {
                                           "type": "minecraft:block",
                                           "result_state": {
-                                            "Name": "dawnduskterminal:sky_stone"
+                                            "Name": "dawnduskterminal:siltstone"
                                           }
                                         }
                                       ]
@@ -2128,7 +2115,7 @@
                                     {
                                       "type": "minecraft:block",
                                       "result_state": {
-                                        "Name": "dawnduskterminal:sky_stone"
+                                        "Name": "dawnduskterminal:siltstone"
                                       }
                                     }
                                   ]
@@ -2186,7 +2173,7 @@
                                   {
                                     "type": "minecraft:block",
                                     "result_state": {
-                                      "Name": "dawnduskterminal:sky_stone"
+                                      "Name": "dawnduskterminal:siltstone"
                                     }
                                   }
                                 ]
@@ -2361,7 +2348,7 @@
                       {
                         "type": "minecraft:block",
                         "result_state": {
-                          "Name": "dawnduskterminal:sky_stone"
+                          "Name": "dawnduskterminal:siltstone"
                         }
                       }
                     ]
@@ -2377,9 +2364,9 @@
         "if_true": {
           "type": "minecraft:vertical_gradient",
           "false_at_and_above": {
-            "absolute": 5
+            "absolute": 8
           },
-          "random_name": "minecraft:bedrock_floor",
+          "random_name": "minecraft:deepslate",
           "true_at_and_below": {
             "absolute": 0
           }
@@ -2387,7 +2374,10 @@
         "then_run": {
           "type": "minecraft:block",
           "result_state": {
-            "Name": "dawnduskterminal:peridotite"
+            "Name": "dawnduskterminal:peridotite",
+            "Properties": {
+              "axis": "y"
+            }
           }
         }
       }

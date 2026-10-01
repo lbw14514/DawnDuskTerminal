@@ -3,10 +3,10 @@
   "config": {
     "spacing": 31,
     "min_y": 198,
-    "max_y": 226,
-    "min_radius": 26,
-    "max_radius": 35,
-    "min_thickness": 8,
-    "max_thickness": 18
+    "max_y": 222,
+    "min_radius": 18,
+    "max_radius": 25,
+    "min_thickness": 6,
+    "max_thickness": 14
   }
 }

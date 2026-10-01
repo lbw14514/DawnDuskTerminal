@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "dawnduskterminal:sky_soil",
+    "dawnduskterminal:ember_soil",
+    "dawnduskterminal:road_sand",
+    "dawnduskterminal:sleepless_sand"
+  ]
+}

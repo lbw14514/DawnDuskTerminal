@@ -37,9 +37,9 @@ public final class DdtConfig {
         SKY_LIGHT_DAY = b.comment("sky light at the full day side")
             .defineInRange("sky_light_day", 15, 0, 15);
         SKY_LIGHT_CENTER = b.comment("sky light on the terminator itself")
-            .defineInRange("sky_light_center", 10, 0, 15);
+            .defineInRange("sky_light_center", 14, 0, 15);
         SKY_LIGHT_NIGHT = b.comment("sky light at the full night side, 8 and below lets monsters spawn")
-            .defineInRange("sky_light_night", 5, 0, 15);
+            .defineInRange("sky_light_night", 12, 0, 15);
         b.pop();
 
         b.push("chrono_line");
@@ -119,7 +119,7 @@ public final class DdtConfig {
         try {
             return SKY_LIGHT_CENTER.get();
         } catch (IllegalStateException e) {
-            return 10;
+            return 14;
         }
     }
 
@@ -127,7 +127,7 @@ public final class DdtConfig {
         try {
             return SKY_LIGHT_NIGHT.get();
         } catch (IllegalStateException e) {
-            return 5;
+            return 12;
         }
     }
 

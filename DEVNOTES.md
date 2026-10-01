@@ -30,6 +30,8 @@ final_density = max(island_density, sky_island_density) * void_band
 - `squeeze` 值域 `(x/2)^3*3` x=1 时只有 0.375 不是 1
 - `vertical_gradient true_at_and_below absolute:0` 会填满所有 y<=0
 - `gradle build` 对纯资源改动可能报 UP-TO-DATE 要验证 jar 内容
+- **`neoforge:remove_features` 引用的 feature ID 必须真实存在**，引用不存在的 ID 会在注册表加载期抛 `Unbound values` 整个存档起不来
+  （踩过 `twilightforest:thorn_rose`、`minecraft:*_blob` 都不存在）
 - **绝对不要 `Get-Process java | Stop-Process`** 会杀 gradle daemon 卡死
   只杀 MC 服务端：`Get-Process java | Where-Object { (Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)").CommandLine -match 'net.neoforged' } | Stop-Process -Force`
 - PS 5.1 里长 heredoc 会崩 PSReadLine 改用**独立 .py 脚本文件**
