@@ -24,25 +24,26 @@ public abstract class LightEngineSkyLightMixin {
     protected LightChunkGetter chunkSource;
 
     @Unique
-    private byte ddt$chrono = -1;
+    private Level ddt$level() {
+        return this.chunkSource.getLevel() instanceof Level level ? level : null;
+    }
 
     @Unique
     private boolean ddt$isChrono() {
-        if (this.ddt$chrono < 0) {
-            boolean chrono = ((Object) this instanceof SkyLightEngine)
-                && this.chunkSource.getLevel() instanceof Level level
-                && level.dimension().equals(ModDimensions.CHRONO);
-            this.ddt$chrono = (byte) (chrono ? 1 : 0);
+        if (!((Object) this instanceof SkyLightEngine)) {
+            return false;
         }
-        return this.ddt$chrono == 1;
+        Level level = ddt$level();
+        return level != null && level.dimension() == ModDimensions.CHRONO;
     }
 
     @Inject(method = "getLightValue(Lnet/minecraft/core/BlockPos;)I", at = @At("RETURN"), cancellable = true)
     private void ddt$capSkyLight(BlockPos pos, CallbackInfoReturnable<Integer> cir) {
-        if (!this.ddt$isChrono()) {
+        if (!ddt$isChrono()) {
             return;
         }
-        if (!(this.chunkSource.getLevel() instanceof Level level)) {
+        Level level = ddt$level();
+        if (level == null) {
             return;
         }
         int value = cir.getReturnValue();
