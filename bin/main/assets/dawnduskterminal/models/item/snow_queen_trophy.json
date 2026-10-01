@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "dawnduskterminal:item/snow_queen_trophy"
-  }
-}

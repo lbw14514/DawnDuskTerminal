@@ -5,8 +5,11 @@ import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -29,9 +32,14 @@ public final class FluidReactions {
         REACTIONS.add(new Reaction(ModFluids.PORTAL_FLUID.get(), ModScorchingTwilight.SOURCE.get(),
             ModTerrainBlocks.SKY_STONE.get()));
         REACTIONS.add(new Reaction(ModScorchingTwilight.SOURCE.get(), Fluids.WATER,
-            ModTerrainBlocks.AURORA_BLOCK.get()));
+            auroraBlock()));
         REACTIONS.add(new Reaction(ModScorchingTwilight.SOURCE.get(), Fluids.LAVA,
             ModTerrainBlocks.BLAZING_BLOCK.get()));
+    }
+
+    private static Block auroraBlock() {
+        Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse("twilightforest:aurora_block"));
+        return block == Blocks.AIR ? ModTerrainBlocks.BLAZING_BLOCK.get() : block;
     }
 
     public static boolean isReactive(Fluid fluid) {

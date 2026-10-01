@@ -62,13 +62,6 @@ public final class ModTerrainBlocks {
     public static final DeferredBlock<Block> CHAOS_STONE = BLOCKS.registerSimpleBlock(
         "chaos_stone", stone(MapColor.COLOR_BLACK));
 
-    public static final DeferredBlock<Block> AURORA_BLOCK = BLOCKS.registerSimpleBlock(
-        "aurora_block", BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_CYAN)
-            .strength(1.0F, 6.0F)
-            .lightLevel(state -> 12)
-            .sound(SoundType.AMETHYST));
-
     public static final DeferredBlock<Block> BLAZING_BLOCK = BLOCKS.registerSimpleBlock(
         "blazing_block", BlockBehaviour.Properties.of()
             .mapColor(MapColor.COLOR_ORANGE)
@@ -89,7 +82,6 @@ public final class ModTerrainBlocks {
     public static final DeferredItem<BlockItem> FROZEN_CANOPY_ITEM = ITEMS.registerSimpleBlockItem(FROZEN_CANOPY);
     public static final DeferredItem<BlockItem> FRAGILE_CANOPY_ITEM = ITEMS.registerSimpleBlockItem(FRAGILE_CANOPY);
     public static final DeferredItem<BlockItem> CHAOS_STONE_ITEM = ITEMS.registerSimpleBlockItem(CHAOS_STONE);
-    public static final DeferredItem<BlockItem> AURORA_BLOCK_ITEM = ITEMS.registerSimpleBlockItem(AURORA_BLOCK);
     public static final DeferredItem<BlockItem> BLAZING_BLOCK_ITEM = ITEMS.registerSimpleBlockItem(BLAZING_BLOCK);
 
     private ModTerrainBlocks() {}

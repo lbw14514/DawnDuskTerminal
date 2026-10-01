@@ -2,8 +2,7 @@
   "block.dawnduskterminal.portal_fluid": "Portal Fluid",
   "block.dawnduskterminal.chrono_crust": "Chrono Crust",
   "block.dawnduskterminal.sky_soil": "Sky Soil",
-  "block.dawnduskterminal.scorching_twilight": "Scorching Twilight",
-
+  "block.dawnduskterminal.scorching_twilight": "Passionate Twilight",
   "block.dawnduskterminal.ember_soil": "Ember Soil",
   "block.dawnduskterminal.sky_stone": "Sky Stone",
   "block.dawnduskterminal.ochre": "Ochre",
@@ -17,31 +16,23 @@
   "block.dawnduskterminal.frozen_canopy": "Frozen Canopy",
   "block.dawnduskterminal.fragile_canopy": "Fragile Canopy",
   "block.dawnduskterminal.chaos_stone": "Chaos Stone",
-  "block.dawnduskterminal.aurora_block": "Aurora Block",
   "block.dawnduskterminal.blazing_block": "Blazing Block",
-
   "item.dawnduskterminal.hydra_trophy": "Hydra Trophy",
   "item.dawnduskterminal.ur_ghast_trophy": "Ur Ghast Trophy",
   "item.dawnduskterminal.snow_queen_trophy": "Snow Queen Trophy",
   "item.dawnduskterminal.portal_bucket": "Portal Bucket",
-  "item.dawnduskterminal.scorching_twilight_bucket": "Scorching Twilight Bucket",
+  "item.dawnduskterminal.scorching_twilight_bucket": "Passionate Twilight Bucket",
   "item.dawnduskterminal.chrono_core": "Chrono Core",
-
   "fluid_type.dawnduskterminal.portal_fluid": "Portal Fluid",
-  "fluid_type.dawnduskterminal.scorching_twilight": "Scorching Twilight",
-
+  "fluid_type.dawnduskterminal.scorching_twilight": "Passionate Twilight",
   "effect.dawnduskterminal.portal_sickness": "Lost in Twilight",
-
   "itemGroup.dawnduskterminal.main": "Chrono Dimension",
-
   "dimension.dawnduskterminal.chrono": "Chrono Dimension",
-
   "biome.dawnduskterminal.polar_dawn": "Polar Day Plains",
   "biome.dawnduskterminal.day": "Day Plains",
   "biome.dawnduskterminal.normal": "Chrono Plains",
   "biome.dawnduskterminal.night": "Night Plains",
   "biome.dawnduskterminal.polar_dusk": "Polar Night Plains",
-
   "biome.dawnduskterminal.refusal_ocean": "Refusal Ocean",
   "biome.dawnduskterminal.dawn_zone": "Dawn Zone",
   "biome.dawnduskterminal.dusk_zone": "Dusk Zone",
@@ -50,18 +41,14 @@
   "biome.dawnduskterminal.sky_island": "Sky Island",
   "biome.dawnduskterminal.cave": "Cave",
   "biome.dawnduskterminal.lush_cave": "Lush Cave",
-
   "message.dawnduskterminal.gate_unlocked": "One of the Twilight lords has fallen, the gate is open",
   "message.dawnduskterminal.searching": "Searching for a landing spot, please wait",
   "message.dawnduskterminal.shader_warning": "Shader mod %s detected, this dimension draws its own sky on top of the shader sky, so shader sky and volumetrics may not apply",
-
   "death.attack.dawnduskterminal.portal": "%1$s was swallowed by the terminator",
-
   "subtitles.dawnduskterminal.portal_open": "Portal forms",
   "subtitles.dawnduskterminal.portal_enter": "Crossing the terminator",
   "subtitles.dawnduskterminal.portal_exit": "Leaving the terminator",
   "subtitles.dawnduskterminal.chrono_ambient": "Terminator hums",
-
   "advancements.dawnduskterminal.root.title": "Chrono",
   "advancements.dawnduskterminal.root.description": "A single line splits the world into day and night",
   "advancements.dawnduskterminal.defeat_boss.title": "Twilight Conqueror",

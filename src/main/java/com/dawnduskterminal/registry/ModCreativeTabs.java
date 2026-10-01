@@ -41,7 +41,6 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.FROZEN_CANOPY_ITEM.get());
                 accept(output, ModTerrainBlocks.FRAGILE_CANOPY_ITEM.get());
                 accept(output, ModTerrainBlocks.CHAOS_STONE_ITEM.get());
-                accept(output, ModTerrainBlocks.AURORA_BLOCK_ITEM.get());
                 accept(output, ModTerrainBlocks.BLAZING_BLOCK_ITEM.get());
             })
             .build());
