@@ -1,7 +1,7 @@
 {
   "ambient_light": 0.0,
   "bed_works": true,
-  "coordinate_scale": 0.125,
+  "coordinate_scale": 1.0,
   "effects": "dawnduskterminal:chrono",
   "fixed_time": 12000,
   "has_ceiling": false,

@@ -28,9 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class PortalTeleporter {
-    private static final int FINE_RADIUS = 24;
-    private static final int MID_RADIUS = 96;
-    private static final int MAX_CHUNK_LOADS = 400;
+    private static final int MAX_CHUNK_LOADS = 64;
     private static final int OPEN_SKY_HEIGHT = 32;
     public static final int LANDING_SEARCH_RADIUS = 320;
     public static final int COLUMN_SCAN_DEPTH = 48;
@@ -90,6 +88,9 @@ public final class PortalTeleporter {
         player.displayClientMessage(
             net.minecraft.network.chat.Component.translatable("message.dawnduskterminal.searching"), false);
         Vec3 landing = findSafeLanding(chrono, player.getX(), player.getZ(), Mth.floor(player.getY()));
+        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal teleport from {} {} {} to chrono {} {} {}",
+            (int) player.getX(), (int) player.getY(), (int) player.getZ(),
+            (int) landing.x, (int) landing.y, (int) landing.z);
         PortalState remembered = state.withReturn(
             current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
         player.teleportTo(chrono, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
@@ -102,17 +103,21 @@ public final class PortalTeleporter {
         int baseX = Mth.floor(originX);
         int baseZ = Mth.floor(originZ);
         Set<Long> loaded = new HashSet<>();
-        for (int ring = 0; ring <= LANDING_SEARCH_RADIUS; ring += stepFor(ring)) {
-            int step = stepFor(ring);
+        loaded.add(ChunkPos.asLong(baseX >> 4, baseZ >> 4));
+        level.getChunk(baseX >> 4, baseZ >> 4);
+        Vec3 here = scanColumn(level, baseX, baseZ, originY);
+        if (here != null) {
+            return here;
+        }
+        for (int ring = 16; ring <= LANDING_SEARCH_RADIUS; ring += 16) {
+            if (loaded.size() > MAX_CHUNK_LOADS) {
+                break;
+            }
+            int step = 16;
             for (int dx = -ring; dx <= ring; dx += step) {
                 for (int dz = -ring; dz <= ring; dz += step) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) < ring) {
                         continue;
-                    }
-                    if (loaded.size() > MAX_CHUNK_LOADS) {
-                        DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal landing search gave up after {} chunks",
-                            loaded.size());
-                        return buildFallbackPlatform(level, baseX, originY, baseZ);
                     }
                     Vec3 found = probe(level, loaded, baseX + dx, baseZ + dz, originY);
                     if (found != null) {
@@ -123,19 +128,8 @@ public final class PortalTeleporter {
                 }
             }
         }
-        DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal landing search found nothing within {} blocks, building a platform",
-            LANDING_SEARCH_RADIUS);
+        DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal landing search found nothing, building a platform");
         return buildFallbackPlatform(level, baseX, originY, baseZ);
-    }
-
-    private static int stepFor(int ring) {
-        if (ring <= FINE_RADIUS) {
-            return 2;
-        }
-        if (ring <= MID_RADIUS) {
-            return 8;
-        }
-        return 24;
     }
 
     @Nullable
@@ -158,29 +152,18 @@ public final class PortalTeleporter {
         if (surface < LANDING_MIN_Y || surface > LANDING_MAX_Y) {
             return null;
         }
-        int top = Math.min(surface + 1, LANDING_MAX_Y);
-        int bottom = Math.max(surface - 2, LANDING_MIN_Y);
-        for (int y = top; y >= bottom; y--) {
-            BlockPos pos = new BlockPos(x, y, z);
-            if (!isSafeStanding(level, pos)) {
-                continue;
-            }
-            if (!hasOpenSky(level, pos)) {
-                continue;
-            }
-            return new Vec3(x + 0.5D, y, z + 0.5D);
+        BlockPos pos = new BlockPos(x, surface, z);
+        BlockPos ground = new BlockPos(x, surface - 1, z);
+        if (!level.getBlockState(ground).isFaceSturdy(level, ground, Direction.UP)) {
+            return null;
         }
-        return null;
-    }
-
-    private static boolean hasOpenSky(ServerLevel level, BlockPos pos) {
-        int limit = Math.min(pos.getY() + OPEN_SKY_HEIGHT, level.getMaxBuildHeight());
-        for (int y = pos.getY() + 1; y <= limit; y++) {
-            if (!level.getBlockState(new BlockPos(pos.getX(), y, pos.getZ())).isAir()) {
-                return false;
-            }
+        if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
+            return null;
         }
-        return true;
+        if (!level.getBlockState(pos).getFluidState().isEmpty()) {
+            return null;
+        }
+        return new Vec3(x + 0.5D, surface, z + 0.5D);
     }
 
     private static boolean isSafeStanding(ServerLevel level, BlockPos pos) {
@@ -204,7 +187,11 @@ public final class PortalTeleporter {
     }
 
     private static Vec3 buildFallbackPlatform(ServerLevel level, int x, int y, int z) {
-        int landed = Mth.clamp(y, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
+        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int landed = Mth.clamp(surface + 1, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
+        if (landed < LANDING_MIN_Y + 4) {
+            landed = Mth.clamp(y, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
+        }
         BlockPos center = new BlockPos(x, landed, z);
         int radius = 6;
         for (int dx = -radius; dx <= radius; dx++) {
