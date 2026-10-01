@@ -52,6 +52,7 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.DAWN_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.DUSK_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.CHRONO_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.SCARLET_MOLYBDENUM_ORE_ITEM.get());
                 acceptForeign(output, "twilightforest:aurora_block");
             })
             .build());

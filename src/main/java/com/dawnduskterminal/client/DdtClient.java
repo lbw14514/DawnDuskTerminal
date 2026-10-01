@@ -18,8 +18,21 @@ public final class DdtClient {
     public static void init(IEventBus modBus) {
         modBus.addListener(DdtClient::registerDimensionEffects);
         modBus.addListener(DdtClient::registerFluidExtensions);
+        modBus.addListener(DdtClient::registerBlockColors);
         NeoForge.EVENT_BUS.addListener(DdtClient::onRenderLevelStage);
         NeoForge.EVENT_BUS.addListener(ShaderGuard::onClientLogin);
+    }
+
+    private static void registerBlockColors(net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tintIndex) -> {
+            if (tintIndex != 0) {
+                return -1;
+            }
+            if (level != null && pos != null) {
+                return net.minecraft.client.renderer.BiomeColors.getAverageGrassColor(level, pos);
+            }
+            return 0x91BD59;
+        }, com.dawnduskterminal.registry.ModBlocks.SKY_SOIL.get());
     }
 
     private static void onRenderLevelStage(RenderLevelStageEvent event) {

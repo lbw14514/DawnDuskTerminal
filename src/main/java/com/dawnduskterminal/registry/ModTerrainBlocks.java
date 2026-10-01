@@ -84,6 +84,16 @@ public final class ModTerrainBlocks {
     public static final DeferredItem<BlockItem> CHAOS_STONE_ITEM = ITEMS.registerSimpleBlockItem(CHAOS_STONE);
     public static final DeferredItem<BlockItem> BLAZING_BLOCK_ITEM = ITEMS.registerSimpleBlockItem(BLAZING_BLOCK);
 
+    public static final DeferredBlock<Block> SCARLET_MOLYBDENUM_ORE = BLOCKS.registerSimpleBlock(
+        "scarlet_molybdenum_ore", BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_RED)
+            .requiresCorrectToolForDrops()
+            .strength(3.0F, 3.0F)
+            .sound(SoundType.STONE));
+
+    public static final DeferredItem<BlockItem> SCARLET_MOLYBDENUM_ORE_ITEM =
+        ITEMS.registerSimpleBlockItem(SCARLET_MOLYBDENUM_ORE);
+
     public static final DeferredBlock<net.minecraft.world.level.block.RotatedPillarBlock> DAWN_LOG =
         BLOCKS.registerBlock("dawn_log", net.minecraft.world.level.block.RotatedPillarBlock::new, log(MapColor.WOOD));
     public static final DeferredBlock<net.minecraft.world.level.block.RotatedPillarBlock> DUSK_LOG =
