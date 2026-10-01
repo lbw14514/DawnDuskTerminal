@@ -56,14 +56,45 @@ public final class DdtServerEvents {
     }
 
     private static void profileChrono(ServerLevel chrono) {
+        int[][] spots = {{0, 0}, {2000, 2000}, {60000, 60000}, {-6000, 6000}};
+        for (int[] spot : spots) {
+            int surface = 0;
+            java.util.Map<Integer, Integer> hist = new java.util.TreeMap<>();
+            int samples = 0;
+            for (int x = spot[0]; x < spot[0] + 64; x += 8) {
+                for (int z = spot[1]; z < spot[1] + 64; z += 8) {
+                    chrono.getChunk(x >> 4, z >> 4);
+                    int h = chrono.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                    hist.merge(h / 16 * 16, 1, Integer::sum);
+                    surface += h;
+                    samples++;
+                }
+            }
+            DawnDuskTerminal.LOGGER.info("DDT_SPOT {} {} avgSurface={} hist={}", spot[0], spot[1],
+                samples == 0 ? 0 : surface / samples, hist);
+        }
+        StringBuilder tc = new StringBuilder("DDT_TOP ");
+        java.util.Map<String, Integer> topKinds = new java.util.HashMap<>();
+        for (int x = -6000; x < -6000 + 256; x += 8) {
+            for (int z = 6000; z < 6000 + 256; z += 8) {
+                chrono.getChunk(x >> 4, z >> 4);
+                int h = chrono.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                var st = chrono.getBlockState(new BlockPos(x, h - 1, z));
+                topKinds.merge(net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(st.getBlock()).toString(), 1, Integer::sum);
+            }
+        }
+        tc.append(topKinds);
+        DawnDuskTerminal.LOGGER.info(tc.toString());
+
         StringBuilder sb = new StringBuilder("DDT_PROFILE ");
-        int[] ys = {-50, -20, 10, 40, 62, 80, 110, 128, 150, 176, 200, 230, 260, 290, 320};
+        int[] ys = {10, 30, 40, 48, 62, 80, 110, 128, 192, 196, 200, 208, 230, 260};
         for (int y : ys) {
             int solid = 0;
             int total = 0;
             java.util.Map<String, Integer> kinds = new java.util.HashMap<>();
-            for (int x = 60000; x < 60064; x += 4) {
-                for (int z = 60000; z < 60064; z += 4) {
+            for (int x = -6000; x < -6000 + 64; x += 4) {
+                for (int z = 6000; z < 6000 + 64; z += 4) {
                     chrono.getChunk(x >> 4, z >> 4);
                     total++;
                     var st = chrono.getBlockState(new BlockPos(x, y, z));

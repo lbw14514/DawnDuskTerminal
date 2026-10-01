@@ -1,0 +1,9 @@
+{
+  "type": "dawnduskterminal:void_region",
+  "config": {
+    "period": 6000,
+    "radius": 1400,
+    "min_y": -64,
+    "max_y": 320
+  }
+}

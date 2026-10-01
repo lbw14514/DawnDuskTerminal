@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:mul",
+    "argument1": "dawnduskterminal:vanilla_final_density",
+    "argument2": "dawnduskterminal:mainland_window"
+  },
+  "argument2": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": "dawnduskterminal:mainland_window",
+      "argument2": -1.0
+    },
+    "argument2": 10000.0
+  }
+}

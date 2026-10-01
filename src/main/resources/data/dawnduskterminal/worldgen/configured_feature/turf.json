@@ -1,0 +1,8 @@
+{
+  "type": "dawnduskterminal:turf",
+  "config": {
+    "min_y": 1,
+    "max_y": 128,
+    "soil_depth": 3
+  }
+}

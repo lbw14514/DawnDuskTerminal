@@ -4,6 +4,8 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.world.HollowPocketFeature;
 import com.dawnduskterminal.world.RootPillarFeature;
 import com.dawnduskterminal.world.SkyIslandFeature;
+import com.dawnduskterminal.world.TurfFeature;
+import com.dawnduskterminal.world.VoidRegionFeature;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -23,6 +25,12 @@ public final class ModFeatures {
 
     public static final DeferredHolder<Feature<?>, SkyIslandFeature> SKY_ISLAND =
         FEATURES.register("sky_island", () -> new SkyIslandFeature(SkyIslandFeature.Config.CODEC));
+
+    public static final DeferredHolder<Feature<?>, VoidRegionFeature> VOID_REGION =
+        FEATURES.register("void_region", () -> new VoidRegionFeature(VoidRegionFeature.Config.CODEC));
+
+    public static final DeferredHolder<Feature<?>, TurfFeature> TURF =
+        FEATURES.register("turf", () -> new TurfFeature(TurfFeature.Config.CODEC));
 
     private ModFeatures() {}
 
