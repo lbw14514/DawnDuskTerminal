@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:random_selector",
+  "config": {
+    "features": [
+      {
+        "chance": 0.34,
+        "feature": "dawnduskterminal:tree_dawn"
+      },
+      {
+        "chance": 0.33,
+        "feature": "dawnduskterminal:tree_dusk"
+      }
+    ],
+    "default": "dawnduskterminal:tree_chrono"
+  }
+}

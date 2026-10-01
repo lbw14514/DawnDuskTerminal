@@ -19,9 +19,17 @@
     "there": {
       "trigger": "minecraft:location",
       "conditions": {
-        "location": {
-          "biomes": "dawnduskterminal:polar_dusk"
-        }
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "#dawnduskterminal:is_polar_dusk"
+              }
+            }
+          }
+        ]
       }
     }
   }

@@ -11,5 +11,6 @@ public final class ModNetwork {
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
         registrar.playToClient(ChronoLinePayload.TYPE, ChronoLinePayload.STREAM_CODEC, ChronoLinePayload::handle);
+        registrar.playToClient(PortalSearchPayload.TYPE, PortalSearchPayload.STREAM_CODEC, PortalSearchPayload::handle);
     }
 }

@@ -1,7 +1,11 @@
 {
   "type": "dawnduskterminal:bedrock_layer",
   "config": {
-    "y": 0,
-    "thickness": 1
+    "range_min_y": -8,
+    "range_max_y": 48,
+    "thickness": 10,
+    "seal_y": -1,
+    "pocket_grid_chunks": 219,
+    "pocket_chunks": 10
   }
 }

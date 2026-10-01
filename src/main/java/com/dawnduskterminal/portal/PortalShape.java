@@ -105,7 +105,12 @@ public final class PortalShape {
             if (water.size() > MAX_WATER) {
                 return Optional.empty();
             }
-            if (!level.getBlockState(current.below()).isFaceSturdy(level, current, Direction.UP)) {
+            BlockPos floor = current.below();
+            int guard = 0;
+            while (isPoolWater(level, floor) && guard++ < 16) {
+                floor = floor.below();
+            }
+            if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) {
                 return Optional.empty();
             }
             for (Direction direction : Direction.Plane.HORIZONTAL) {
@@ -124,36 +129,34 @@ public final class PortalShape {
             return Optional.empty();
         }
 
-        List<BlockPos> frame = new ArrayList<>();
-        List<BlockPos> plants = new ArrayList<>();
+        Set<BlockPos> ring = new java.util.LinkedHashSet<>();
         for (BlockPos pos : water) {
             for (Direction direction : Direction.Plane.HORIZONTAL) {
                 BlockPos side = pos.relative(direction);
-                if (visited.contains(side)) {
+                if (visited.contains(side) || isPoolWater(level, side)) {
                     continue;
                 }
-                if (isPoolWater(level, side)) {
-                    continue;
-                }
-                BlockState frameState = level.getBlockState(side);
-                if (!isPlantable(frameState)) {
+                if (!isPlantable(level.getBlockState(side))) {
                     return Optional.empty();
                 }
-                BlockPos aboveSide = side.above();
-                BlockState plantState = level.getBlockState(aboveSide);
-                if (!isPlant(plantState)) {
-                    return Optional.empty();
-                }
-                if (!frame.contains(side)) {
-                    frame.add(side);
-                }
-                if (!plants.contains(aboveSide)) {
-                    plants.add(aboveSide);
-                }
+                ring.add(side);
             }
         }
 
-        if (frame.isEmpty()) {
+        if (ring.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<BlockPos> frame = new ArrayList<>(ring);
+        List<BlockPos> plants = new ArrayList<>();
+        for (BlockPos side : ring) {
+            BlockPos aboveSide = side.above();
+            if (isPlant(level.getBlockState(aboveSide))) {
+                plants.add(aboveSide);
+            }
+        }
+
+        if (plants.size() < Math.max(2, ring.size() / 4)) {
             return Optional.empty();
         }
         return Optional.of(new PortalShape(water, frame, plants));

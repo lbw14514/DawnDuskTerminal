@@ -49,8 +49,8 @@ public class PortalBlock extends LiquidBlock {
         }
         if (entity instanceof Player player) {
             PortalTeleporter.tickCooldown(player);
-            if (PortalTrigger.shouldTeleport(player, pos) && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
-                PortalTeleporter.teleport(serverPlayer);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                PortalTeleporter.tick(serverPlayer);
             }
             return;
         }

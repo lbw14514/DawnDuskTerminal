@@ -36,7 +36,7 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         int pocket = config.pocketChunks();
         long cellX = Math.floorDiv(chunkX, grid);
         long cellZ = Math.floorDiv(chunkZ, grid);
-        long hash = cellHash(cellX, cellZ);
+        long hash = cellHash(cellX, cellZ) ^ level.getSeed();
         int startX = (int) (cellX * grid) + (int) Math.floorMod(hash, grid - pocket + 1);
         int startZ = (int) (cellZ * grid) + (int) Math.floorMod(hash >>> 20, grid - pocket + 1);
         int endX = startX + pocket;
@@ -54,15 +54,29 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         int maxX = endX << 4;
         int maxZ = endZ << 4;
         double radius = pocket * 8.0D;
+        double band = BAND;
+        double cx = (minX + maxX) / 2.0D;
+        double cz = (minZ + maxZ) / 2.0D;
         BlockState air = Blocks.AIR.defaultBlockState();
         boolean changed = false;
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                if (!inside(x0 + x, z0 + z, minX, minZ, maxX, maxZ, radius)) {
+                int bx = x0 + x;
+                int bz = z0 + z;
+                double cheb = Math.max(Math.abs(bx - cx), Math.abs(bz - cz));
+                if (cheb > radius + band) {
                     continue;
                 }
+                boolean core = cheb <= radius - band;
                 for (int y = y0; y <= y1; y++) {
-                    BlockPos pos = new BlockPos(x0 + x, y, z0 + z);
+                    if (!core) {
+                        double edge = radius - cheb;
+                        double wob = wildNoise(bx, y, bz) * 12.0D + fineNoise(bx, y, bz);
+                        if (edge + wob <= 0.0D) {
+                            continue;
+                        }
+                    }
+                    BlockPos pos = new BlockPos(bx, y, bz);
                     if (level.getBlockState(pos).isAir()) {
                         continue;
                     }
@@ -74,21 +88,47 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         return changed;
     }
 
-    private static boolean inside(int bx, int bz, int minX, int minZ, int maxX, int maxZ, double radius) {
-        double cx = (minX + maxX) / 2.0D;
-        double cz = (minZ + maxZ) / 2.0D;
-        double dx = bx - cx;
-        double dz = bz - cz;
-        double angle = Math.atan2(dz, dx);
-        double noise = Math.sin(angle * 3.0D) * 0.20D
-            + Math.sin(angle * 5.0D + 1.3D) * 0.12D
-            + Math.sin(angle * 8.0D + 2.7D) * 0.08D
-            + Math.sin(angle * 13.0D + 4.1D) * 0.05D;
-        double limit = radius * (1.0D + noise);
-        return dx * dx + dz * dz <= limit * limit;
+    private static double wildNoise(int x, int y, int z) {
+        double a = Math.sin(x * 0.21D + y * 0.13D) * Math.cos(z * 0.19D - y * 0.09D);
+        double b = Math.sin((x + z) * 0.37D + y * 0.07D);
+        double c = Math.sin(x * 0.53D - z * 0.47D + y * 0.31D);
+        double d = Math.sin(y * 0.29D + x * 0.11D - z * 0.17D);
+        return a * 0.35D + b * 0.30D + c * 0.20D + d * 0.15D;
     }
 
-    private static long cellHash(long x, long z) {
+    private static double fineNoise(int x, int y, int z) {
+        long h = x * 31871L ^ y * 9781L ^ z * 13763L;
+        h ^= h >>> 27;
+        h *= 0xff51afd7ed558ccdL;
+        h ^= h >>> 33;
+        h *= 0xc4ceb9fe1a85ec53L;
+        h ^= h >>> 29;
+        return (double) (h >>> 11) / 9007199254740992.0D * 4.0D - 2.0D;
+    }
+
+    public static final double BAND = 24.0D;
+
+    public static boolean inZone(long seed, int grid, int pocket, int x, int z) {
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        long cellX = Math.floorDiv(chunkX, grid);
+        long cellZ = Math.floorDiv(chunkZ, grid);
+        long hash = cellHash(cellX, cellZ) ^ seed;
+        int startX = (int) (cellX * grid) + (int) Math.floorMod(hash, grid - pocket + 1);
+        int startZ = (int) (cellZ * grid) + (int) Math.floorMod(hash >>> 20, grid - pocket + 1);
+        int endX = startX + pocket;
+        int endZ = startZ + pocket;
+        if (chunkX < startX - 1 || chunkX > endX || chunkZ < startZ - 1 || chunkZ > endZ) {
+            return false;
+        }
+        double radius = pocket * 8.0D;
+        double cx = (startX * 16 + endX * 16) / 2.0D;
+        double cz = (startZ * 16 + endZ * 16) / 2.0D;
+        double cheb = Math.max(Math.abs(x - cx), Math.abs(z - cz));
+        return cheb <= radius + BAND;
+    }
+
+    public static long cellHash(long x, long z) {
         long h = x * 341873128712L + z * 132897987541L;
         h ^= h >>> 33;
         h *= 0xff51afd7ed558ccdL;

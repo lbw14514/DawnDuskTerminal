@@ -2,9 +2,7 @@
   "type": "neoforge:add_features",
   "biomes": "#dawnduskterminal:chrono_surface",
   "features": [
-    "dawnduskterminal:tree_dawn",
-    "dawnduskterminal:tree_dusk",
-    "dawnduskterminal:tree_chrono"
+    "dawnduskterminal:chrono_trees"
   ],
   "step": "vegetal_decoration"
 }

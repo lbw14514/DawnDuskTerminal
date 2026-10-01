@@ -17,6 +17,7 @@ public final class ChronoLineState extends SavedData {
 
     public ChronoLineState() {
         this.line = ChronoLine.create(RandomSource.create());
+        setDirty();
     }
 
     public ChronoLineState(ChronoLine line) {

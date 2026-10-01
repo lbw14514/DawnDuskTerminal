@@ -225,7 +225,7 @@
           "then_run": {
             "type": "minecraft:block",
             "result_state": {
-              "Name": "dawnduskterminal:peridotite"
+              "Name": "minecraft:bedrock"
             }
           }
         }
@@ -245,7 +245,7 @@
         "then_run": {
           "type": "minecraft:block",
           "result_state": {
-            "Name": "dawnduskterminal:peridotite"
+            "Name": "minecraft:bedrock"
           }
         }
       }

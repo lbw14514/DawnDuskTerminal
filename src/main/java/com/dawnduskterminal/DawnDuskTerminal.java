@@ -6,6 +6,7 @@ import com.dawnduskterminal.network.ModNetwork;
 import com.dawnduskterminal.registry.ModAttachments;
 import com.dawnduskterminal.registry.ModBiomeSources;
 import com.dawnduskterminal.registry.ModBlocks;
+import com.dawnduskterminal.registry.ModChronoOres;
 import com.dawnduskterminal.registry.ModCreativeTabs;
 import com.dawnduskterminal.registry.ModEffects;
 import com.dawnduskterminal.registry.ModEntities;
@@ -39,6 +40,7 @@ public final class DawnDuskTerminal {
         ModScorchingTwilight.register(modBus);
         ModBlocks.register(modBus);
         ModTerrainBlocks.register(modBus);
+        ModChronoOres.register(modBus);
         ModItems.register(modBus);
         ModEffects.register(modBus);
         ModEntities.register(modBus);

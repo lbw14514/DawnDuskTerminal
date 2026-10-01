@@ -1,0 +1,35 @@
+{
+  "type": "neoforge:remove_features",
+  "biomes": "#dawnduskterminal:chrono_surface",
+  "features": [
+    "minecraft:dark_forest_vegetation",
+    "minecraft:jungle_tree",
+    "minecraft:mega_jungle_tree_checked",
+    "minecraft:mushroom_island_vegetation",
+    "minecraft:rooted_azalea_tree",
+    "minecraft:trees_badlands",
+    "minecraft:trees_birch",
+    "minecraft:trees_birch_and_oak",
+    "minecraft:trees_cherry",
+    "minecraft:trees_flower_forest",
+    "minecraft:trees_grove",
+    "minecraft:trees_jungle",
+    "minecraft:trees_mangrove",
+    "minecraft:trees_meadow",
+    "minecraft:trees_old_growth_pine_taiga",
+    "minecraft:trees_old_growth_spruce_taiga",
+    "minecraft:trees_plains",
+    "minecraft:trees_savanna",
+    "minecraft:trees_snowy",
+    "minecraft:trees_sparse_jungle",
+    "minecraft:trees_swamp",
+    "minecraft:trees_taiga",
+    "minecraft:trees_water",
+    "minecraft:trees_windswept_forest",
+    "minecraft:trees_windswept_hills",
+    "minecraft:trees_windswept_savanna"
+  ],
+  "steps": [
+    "vegetal_decoration"
+  ]
+}

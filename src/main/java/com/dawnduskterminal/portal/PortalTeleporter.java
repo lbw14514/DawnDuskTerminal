@@ -99,6 +99,254 @@ public final class PortalTeleporter {
         playSound(player, ModSounds.PORTAL_ENTER);
     }
 
+    private static final class SearchTask {
+        final ServerLevel level;
+        final double baseX;
+        final double baseZ;
+        final int originY;
+        final PortalState remembered;
+        final boolean returning;
+        final ServerLevel homeLevel;
+        final int maxRadius;
+        final Set<Long> loaded = new HashSet<>();
+        int ring = 0;
+        int index = 0;
+        boolean originTried = false;
+        boolean searching = false;
+        int budget = 0;        int charge = 0;
+        SearchTask(ServerLevel level, double baseX, double baseZ, int originY,
+                   PortalState remembered, boolean returning, ServerLevel homeLevel, int maxRadius) {
+            this.level = level;
+            this.baseX = baseX;
+            this.baseZ = baseZ;
+            this.originY = originY;
+            this.remembered = remembered;
+            this.returning = returning;
+            this.homeLevel = homeLevel;
+            this.maxRadius = maxRadius;
+        }
+    }
+
+    private static final java.util.Map<java.util.UUID, SearchTask> SEARCHES = new java.util.HashMap<>();
+
+    public static void tick(ServerPlayer player) {
+        java.util.UUID id = player.getUUID();
+        SearchTask task = SEARCHES.get(id);
+        boolean inPortal = PortalTrigger.shouldTeleport(player, player.blockPosition());
+        if (task == null) {
+            if (inPortal) {
+                SearchTask created = createTask(player);
+                if (created != null) {
+                    created.searching = true;
+                    SEARCHES.put(id, created);
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                        new com.dawnduskterminal.network.PortalSearchPayload(true));
+                    player.displayClientMessage(
+                        net.minecraft.network.chat.Component.translatable("message.dawnduskterminal.searching"), true);
+                }
+            }
+            return;
+        }
+        if (!inPortal) {
+            task.charge = 0;
+            if (task.searching) {
+                task.searching = false;
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                    new com.dawnduskterminal.network.PortalSearchPayload(false));
+            }
+            return;
+        }
+        if (!task.searching) {
+            task.searching = true;
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                new com.dawnduskterminal.network.PortalSearchPayload(true));
+        }
+        task.budget = 16;
+        if (task.charge < 100) {
+            task.charge++;
+            return;
+        }
+        Vec3 found = advance(player, task);
+        if (found == null && task.ring > task.maxRadius) {
+            found = buildFallbackPlatform(task.level, Mth.floor(task.baseX), task.originY, Mth.floor(task.baseZ));
+        }
+        if (found == null && player.tickCount % 20 == 0) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                "searching radius " + Math.min(task.ring, task.maxRadius) + " / " + task.maxRadius), true);
+        }
+        if (found == null) {
+            return;
+        }
+        SEARCHES.remove(id);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+            new com.dawnduskterminal.network.PortalSearchPayload(false));
+        finish(player, task, found);
+    }
+
+    @Nullable
+    private static SearchTask createTask(ServerPlayer player) {
+        PortalState state = player.getData(ModAttachments.PORTAL_STATE);
+        ServerLevel current = player.serverLevel();
+        if (current.dimension().equals(ModDimensions.CHRONO)) {
+            ServerLevel target = resolve(player.server, state.returnDim());
+            if (target == null) {
+                target = player.server.overworld();
+            }
+            double originX = state.hasReturn() ? state.x() : target.getSharedSpawnPos().getX() + 0.5D;
+            double originZ = state.hasReturn() ? state.z() : target.getSharedSpawnPos().getZ() + 0.5D;
+            int originY = state.hasReturn() ? Mth.floor(state.y()) : target.getSharedSpawnPos().getY();
+            return new SearchTask(target, originX, originZ, originY, state, true, target, 48);
+        }
+        ServerLevel chrono = player.server.getLevel(ModDimensions.CHRONO);
+        if (chrono == null) {
+            return null;
+        }
+        PortalState remembered = state.withReturn(
+            current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
+        return new SearchTask(chrono, player.getX(), player.getZ(), Mth.floor(player.getY()),
+            remembered, false, current, LANDING_SEARCH_RADIUS);
+    }
+
+    @Nullable
+    private static Vec3 advance(ServerPlayer player, SearchTask task) {
+        if (task.returning) {
+            Vec3 spot = returnSpot(task.level, task.baseX, task.originY, task.baseZ);
+            if (spot != null) {
+                return spot;
+            }
+            return new Vec3(task.baseX, task.originY, task.baseZ);
+        }
+        if (!task.originTried) {
+            Vec3 here = probe(task, Mth.floor(task.baseX), Mth.floor(task.baseZ));
+            if (here == null && task.budget <= 0) {
+                return null;
+            }
+            task.originTried = true;
+            if (here != null) {
+                return here;
+            }
+        }
+        while (task.ring <= task.maxRadius) {
+            if (task.ring == 0) {
+                task.ring = 16;
+                task.index = 0;
+                continue;
+            }
+            int ring = task.ring;
+            int step = Math.max(16, ring / 6);
+            int perSide = (2 * ring) / step;
+            if (perSide < 1) {
+                perSide = 1;
+            }
+            int total = 4 * perSide;
+            if (task.index >= total) {
+                task.ring += step;
+                task.index = 0;
+                continue;
+            }
+            int i = task.index;
+            int side = i / perSide;
+            int off = i % perSide;
+            int dx;
+            int dz;
+            if (side == 0) {
+                dx = -ring + off * step;
+                dz = -ring;
+            } else if (side == 1) {
+                dx = ring;
+                dz = -ring + off * step;
+            } else if (side == 2) {
+                dx = ring - off * step;
+                dz = ring;
+            } else {
+                dx = -ring;
+                dz = ring - off * step;
+            }
+            int px = Mth.floor(task.baseX) + dx;
+            int pz = Mth.floor(task.baseZ) + dz;
+            int cx = px >> 4;
+            int cz = pz >> 4;
+            long key = ChunkPos.asLong(cx, cz);
+            if (!task.loaded.contains(key)) {
+                if (task.budget <= 0) {
+                    return null;
+                }
+                task.budget--;
+                task.loaded.add(key);
+                task.level.getChunk(cx, cz);
+            }
+            Vec3 found = scanColumn(task.level, px, pz, task.originY);
+            if (found != null) {
+                return found;
+            }
+            task.index++;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Vec3 returnSpot(ServerLevel level, double x, int y, double z) {
+        int bx = Mth.floor(x);
+        int bz = Mth.floor(z);
+        level.getChunk(bx >> 4, bz >> 4);
+        java.util.List<int[]> offsets = new java.util.ArrayList<>();
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                offsets.add(new int[] {dx, dz});
+            }
+        }
+        offsets.sort(java.util.Comparator.comparingInt(o -> o[0] * o[0] + o[1] * o[1]));
+        for (int dy = 0; dy >= -1; dy--) {
+            for (int[] o : offsets) {
+                BlockPos feet = new BlockPos(bx + o[0], y + dy, bz + o[1]);
+                if (level.isOutsideBuildHeight(feet)) {
+                    continue;
+                }
+                if (isSafeStanding(level, feet)) {
+                    return new Vec3(feet.getX() + 0.5D, feet.getY(), feet.getZ() + 0.5D);
+                }
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Vec3 probe(SearchTask task, int x, int z) {
+        int chunkX = x >> 4;
+        int chunkZ = z >> 4;
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        if (!task.loaded.contains(key)) {
+            if (task.budget <= 0) {
+                return null;
+            }
+            task.budget--;
+            task.loaded.add(key);
+            task.level.getChunk(chunkX, chunkZ);
+        }
+        return scanColumn(task.level, x, z, task.originY);
+    }
+
+    private static void finish(ServerPlayer player, SearchTask task, Vec3 landing) {
+        int cooldown = Math.max(DdtConfig.portalCooldownTicks(), 40);
+        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+            net.minecraft.world.effect.MobEffects.POISON, 300, 0));
+        if (task.returning) {
+            player.teleportTo(task.level, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
+            player.setData(ModAttachments.PORTAL_STATE,
+                player.getData(ModAttachments.PORTAL_STATE).withCooldown(cooldown));
+            playSound(player, ModSounds.PORTAL_EXIT);
+            return;
+        }
+        player.teleportTo(task.level, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
+        buildArrivalPortal(task.level, landing);
+        player.setData(ModAttachments.PORTAL_STATE, task.remembered.withCooldown(cooldown));
+        playSound(player, ModSounds.PORTAL_ENTER);
+    }
+
+    public static void cancelSearch(ServerPlayer player) {
+        SEARCHES.remove(player.getUUID());
+    }
+
     public static Vec3 findSafeLanding(ServerLevel level, double originX, double originZ, int originY) {
         int baseX = Mth.floor(originX);
         int baseZ = Mth.floor(originZ);

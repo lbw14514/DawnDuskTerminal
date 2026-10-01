@@ -20,6 +20,10 @@ public final class DdtClient {
         modBus.addListener(DdtClient::registerFluidExtensions);
         modBus.addListener(DdtClient::registerBlockColors);
         NeoForge.EVENT_BUS.addListener(DdtClient::onRenderLevelStage);
+        NeoForge.EVENT_BUS.addListener(PortalDistortion::onClientTick);
+        NeoForge.EVENT_BUS.addListener(PortalDistortion::onCameraAngles);
+        NeoForge.EVENT_BUS.addListener(PortalDistortion::onComputeFov);
+        NeoForge.EVENT_BUS.addListener(PortalDistortion::onRenderGui);
         NeoForge.EVENT_BUS.addListener(ShaderGuard::onClientLogin);
     }
 
@@ -28,11 +32,41 @@ public final class DdtClient {
             if (tintIndex != 0) {
                 return -1;
             }
-            if (level != null && pos != null) {
-                return net.minecraft.client.renderer.BiomeColors.getAverageGrassColor(level, pos);
+            if (pos != null) {
+                double param = com.dawnduskterminal.world.ChronoLineState.clientLine()
+                    .param(pos.getX(), pos.getZ());
+                double cr;
+                double cg;
+                double cb;
+                if (param <= 0.0D) {
+                    double u = param + 1.0D;
+                    cr = 150.0D + 105.0D * u;
+                    cg = 176.0D + 48.0D * u;
+                    cb = 236.0D - 56.0D * u;
+                } else {
+                    double u = param;
+                    cr = 255.0D - 17.0D * u;
+                    cg = 224.0D + 18.0D * u;
+                    cb = 180.0D + 48.0D * u;
+                }
+                int r = (int) cr;
+                int g = (int) cg;
+                int b = (int) cb;
+                return (r << 16) | (g << 8) | b;
             }
-            return 0x91BD59;
+            return 0xC8CEFF;
         }, com.dawnduskterminal.registry.ModBlocks.SKY_SOIL.get());
+        event.register((state, level, pos, tintIndex) -> {
+            if (tintIndex != 0) {
+                return -1;
+            }
+            if (level != null && pos != null) {
+                return net.minecraft.client.renderer.BiomeColors.getAverageFoliageColor(level, pos);
+            }
+            return 0x48B518;
+        }, com.dawnduskterminal.registry.ModTerrainBlocks.DAWN_LEAVES.get(),
+            com.dawnduskterminal.registry.ModTerrainBlocks.DUSK_LEAVES.get(),
+            com.dawnduskterminal.registry.ModTerrainBlocks.CHRONO_LEAVES.get());
     }
 
     private static void onRenderLevelStage(RenderLevelStageEvent event) {

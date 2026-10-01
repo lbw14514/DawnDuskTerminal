@@ -21,6 +21,17 @@
     "twilightforest:final_plateau"
   ],
   "features": [
+    "twilightforest:tree/selector/vanilla_trees",
+    "twilightforest:tree/selector/vanilla_mushrooms",
+    "twilightforest:big_mushgloom",
+    "twilightforest:hollow_log",
+    "twilightforest:hollow_stump",
+    "twilightforest:fallen_leaves",
+    "twilightforest:default_fallen_logs",
+    "twilightforest:mangrove_fallen_log",
+    "twilightforest:spruce_fallen_log",
+    "twilightforest:tf_oak_fallen_log",
+    "twilightforest:mycelium_blob",
     "twilightforest:tree/darkwood_tree",
     "twilightforest:tree/dead_canopy_tree",
     "twilightforest:tree/forest_mega_oak_tree",
@@ -57,8 +68,15 @@
     "twilightforest:mushroom/canopy_mushrooms_sparse"
   ],
   "steps": [
-    "vegetal_decoration",
+    "raw_generation",
+    "lakes",
+    "local_modifications",
+    "underground_structures",
+    "surface_structures",
+    "underground_ores",
+    "underground_decoration",
     "fluid_springs",
-    "underground_decoration"
+    "vegetal_decoration",
+    "top_layer_modification"
   ]
 }

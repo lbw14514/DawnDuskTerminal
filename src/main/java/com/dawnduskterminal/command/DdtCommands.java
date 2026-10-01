@@ -6,6 +6,7 @@ import com.dawnduskterminal.registry.ModDimensions;
 import com.dawnduskterminal.world.ChronoLine;
 import com.dawnduskterminal.world.ChronoLineState;
 import com.dawnduskterminal.world.ChronoSkyLight;
+import com.dawnduskterminal.world.HollowPocketFeature;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -32,6 +33,49 @@ public final class DdtCommands {
                     distance, param, light, player.level().dimension().location())), false);
                 return 1;
             }))
+            .then(Commands.literal("void")
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    ServerLevel chrono = player.server.getLevel(ModDimensions.CHRONO);
+                    long seed = chrono != null ? chrono.getSeed() : 0L;
+                    int grid = 219;
+                    int pocket = 10;
+                    long cellX = Math.floorDiv(player.getBlockX() >> 4, grid);
+                    long cellZ = Math.floorDiv(player.getBlockZ() >> 4, grid);
+                    long hash = HollowPocketFeature.cellHash(cellX, cellZ) ^ seed;
+                    int startX = (int) (cellX * grid) + (int) Math.floorMod(hash, grid - pocket + 1);
+                    int startZ = (int) (cellZ * grid) + (int) Math.floorMod(hash >>> 20, grid - pocket + 1);
+                    int centerX = (startX + pocket / 2) * 16 + 8;
+                    int centerZ = (startZ + pocket / 2) * 16 + 8;
+                    ctx.getSource().sendSuccess(() -> Component.literal(String.format(
+                        "pocket center x=%d z=%d size=160x160 shaft -64..320",
+                        centerX, centerZ)), false);
+                    return 1;
+                })
+                .then(Commands.literal("tp").executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    ServerLevel chrono = player.server.getLevel(ModDimensions.CHRONO);
+                    if (chrono == null) {
+                        ctx.getSource().sendFailure(Component.literal("chrono dimension is not loaded"));
+                        return 0;
+                    }
+                    int grid = 219;
+                    int pocket = 10;
+                    long cellX = Math.floorDiv(player.getBlockX() >> 4, grid);
+                    long cellZ = Math.floorDiv(player.getBlockZ() >> 4, grid);
+                    long hash = HollowPocketFeature.cellHash(cellX, cellZ) ^ chrono.getSeed();
+                    int startX = (int) (cellX * grid) + (int) Math.floorMod(hash, grid - pocket + 1);
+                    int startZ = (int) (cellZ * grid) + (int) Math.floorMod(hash >>> 20, grid - pocket + 1);
+                    int centerX = (startX + pocket / 2) * 16 + 8;
+                    int centerZ = (startZ + pocket / 2) * 16 + 8;
+                    Vec3 landing = PortalTeleporter.findSafeLanding(chrono, centerX + 104, centerZ, 180);
+                    player.teleportTo(chrono, landing.x, landing.y, landing.z,
+                        player.getYRot(), player.getXRot());
+                    ctx.getSource().sendSuccess(() -> Component.literal(String.format(
+                        "pocket center %d %d landed at %.1f %.1f %.1f",
+                        centerX, centerZ, landing.x, landing.y, landing.z)), false);
+                    return 1;
+                })))
             .then(Commands.literal("tp")
                 .then(Commands.argument("param", DoubleArgumentType.doubleArg(-1.0D, 1.0D))
                     .executes(ctx -> {
