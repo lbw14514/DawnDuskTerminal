@@ -87,6 +87,38 @@ public final class DdtServerEvents {
         tc.append(topKinds);
         DawnDuskTerminal.LOGGER.info(tc.toString());
 
+        var oreTag = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+            .getTag(net.minecraft.tags.BlockTags.STONE_ORE_REPLACEABLES);
+        DawnDuskTerminal.LOGGER.info("DDT_TAG stone_ore_replaceables={}",
+            oreTag.map(h -> h.stream().map(x -> net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getKey(x.value()).toString()).toList()).orElse(null));
+        var deepTag = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+            .getTag(net.minecraft.tags.BlockTags.DEEPSLATE_ORE_REPLACEABLES);
+        DawnDuskTerminal.LOGGER.info("DDT_TAG deepslate_ore_replaceables={}",
+            deepTag.map(h -> h.stream().map(x -> net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getKey(x.value()).toString()).toList()).orElse(null));
+
+        StringBuilder oreSb = new StringBuilder("DDT_ORE ");
+        int[] oreYs = {-50, -20, 10, 30, 50, 70};
+        for (int y : oreYs) {
+            java.util.Map<String, Integer> oreKinds = new java.util.HashMap<>();
+            int ores = 0;
+            for (int x = 0; x < 512; x += 4) {
+                for (int z = 0; z < 512; z += 4) {
+                    chrono.getChunk(x >> 4, z >> 4);
+                    var st = chrono.getBlockState(new BlockPos(x, y, z));
+                    String key = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                        .getKey(st.getBlock()).toString();
+                    if (key.contains("_ore")) {
+                        ores++;
+                        oreKinds.merge(key, 1, Integer::sum);
+                    }
+                }
+            }
+            oreSb.append(String.format("%d:%d%s ", y, ores, oreKinds));
+        }
+        DawnDuskTerminal.LOGGER.info(oreSb.toString());
+
         StringBuilder sb = new StringBuilder("DDT_PROFILE ");
         int[] ys = {10, 30, 40, 48, 62, 80, 110, 128, 192, 196, 200, 208, 230, 260};
         for (int y : ys) {
