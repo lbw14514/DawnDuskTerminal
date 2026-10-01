@@ -84,6 +84,27 @@ public final class ModTerrainBlocks {
     public static final DeferredItem<BlockItem> CHAOS_STONE_ITEM = ITEMS.registerSimpleBlockItem(CHAOS_STONE);
     public static final DeferredItem<BlockItem> BLAZING_BLOCK_ITEM = ITEMS.registerSimpleBlockItem(BLAZING_BLOCK);
 
+    public static final DeferredBlock<net.minecraft.world.level.block.RotatedPillarBlock> DAWN_LOG =
+        BLOCKS.registerBlock("dawn_log", net.minecraft.world.level.block.RotatedPillarBlock::new, log(MapColor.WOOD));
+    public static final DeferredBlock<net.minecraft.world.level.block.RotatedPillarBlock> DUSK_LOG =
+        BLOCKS.registerBlock("dusk_log", net.minecraft.world.level.block.RotatedPillarBlock::new, log(MapColor.WOOD));
+    public static final DeferredBlock<net.minecraft.world.level.block.RotatedPillarBlock> CHRONO_LOG =
+        BLOCKS.registerBlock("chrono_log", net.minecraft.world.level.block.RotatedPillarBlock::new, log(MapColor.WOOD));
+
+    public static final DeferredBlock<net.minecraft.world.level.block.LeavesBlock> DAWN_LEAVES =
+        BLOCKS.registerBlock("dawn_leaves", net.minecraft.world.level.block.LeavesBlock::new, leaves());
+    public static final DeferredBlock<net.minecraft.world.level.block.LeavesBlock> DUSK_LEAVES =
+        BLOCKS.registerBlock("dusk_leaves", net.minecraft.world.level.block.LeavesBlock::new, leaves());
+    public static final DeferredBlock<net.minecraft.world.level.block.LeavesBlock> CHRONO_LEAVES =
+        BLOCKS.registerBlock("chrono_leaves", net.minecraft.world.level.block.LeavesBlock::new, leaves());
+
+    public static final DeferredItem<BlockItem> DAWN_LOG_ITEM = ITEMS.registerSimpleBlockItem(DAWN_LOG);
+    public static final DeferredItem<BlockItem> DUSK_LOG_ITEM = ITEMS.registerSimpleBlockItem(DUSK_LOG);
+    public static final DeferredItem<BlockItem> CHRONO_LOG_ITEM = ITEMS.registerSimpleBlockItem(CHRONO_LOG);
+    public static final DeferredItem<BlockItem> DAWN_LEAVES_ITEM = ITEMS.registerSimpleBlockItem(DAWN_LEAVES);
+    public static final DeferredItem<BlockItem> DUSK_LEAVES_ITEM = ITEMS.registerSimpleBlockItem(DUSK_LEAVES);
+    public static final DeferredItem<BlockItem> CHRONO_LEAVES_ITEM = ITEMS.registerSimpleBlockItem(CHRONO_LEAVES);
+
     private ModTerrainBlocks() {}
 
 
@@ -92,6 +113,24 @@ public final class ModTerrainBlocks {
             .mapColor(color)
             .requiresCorrectToolForDrops()
             .strength(1.5F, 6.0F);
+    }
+
+    private static BlockBehaviour.Properties log(MapColor color) {
+        return BlockBehaviour.Properties.of()
+            .mapColor(color)
+            .strength(2.0F)
+            .sound(SoundType.WOOD);
+    }
+
+    private static BlockBehaviour.Properties leaves() {
+        return BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .strength(0.2F)
+            .randomTicks()
+            .sound(SoundType.GRASS)
+            .noOcclusion()
+            .ignitedByLava()
+            .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY);
     }
 
     private static BlockBehaviour.Properties soft(MapColor color, SoundType sound, float strength) {

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/leaves",
+  "textures": {
+    "all": "dawnduskterminal:block/chrono_leaves"
+  }
+}

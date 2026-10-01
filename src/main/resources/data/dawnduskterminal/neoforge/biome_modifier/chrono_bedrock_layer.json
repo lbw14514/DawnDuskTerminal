@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#dawnduskterminal:chrono_surface",
+  "features": "dawnduskterminal:bedrock_layer",
+  "step": "fluid_springs"
+}

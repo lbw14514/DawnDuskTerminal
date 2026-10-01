@@ -1,0 +1,7 @@
+{
+  "type": "dawnduskterminal:bedrock_layer",
+  "config": {
+    "y": 0,
+    "thickness": 1
+  }
+}

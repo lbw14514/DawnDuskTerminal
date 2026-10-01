@@ -68,5 +68,11 @@
   "advancements.dawnduskterminal.polar_dusk.title": "Polar Night",
   "advancements.dawnduskterminal.polar_dusk.description": "Reach the polar night biome",
   "advancements.dawnduskterminal.return_home.title": "Home Again",
-  "advancements.dawnduskterminal.return_home.description": "Return to the overworld from the chrono dimension"
+  "advancements.dawnduskterminal.return_home.description": "Return to the overworld from the chrono dimension",
+  "block.dawnduskterminal.dawn_log": "Dawn Log",
+  "block.dawnduskterminal.dawn_leaves": "Dawn Leaves",
+  "block.dawnduskterminal.dusk_log": "Dusk Log",
+  "block.dawnduskterminal.dusk_leaves": "Dusk Leaves",
+  "block.dawnduskterminal.chrono_log": "Chrono Log",
+  "block.dawnduskterminal.chrono_leaves": "Chrono Leaves"
 }

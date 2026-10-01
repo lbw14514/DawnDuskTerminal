@@ -68,5 +68,11 @@
   "advancements.dawnduskterminal.polar_dusk.title": "极夜",
   "advancements.dawnduskterminal.polar_dusk.description": "抵达极夜群系",
   "advancements.dawnduskterminal.return_home.title": "回家",
-  "advancements.dawnduskterminal.return_home.description": "从晨昏线维度返回主世界"
+  "advancements.dawnduskterminal.return_home.description": "从晨昏线维度返回主世界",
+  "block.dawnduskterminal.dawn_log": "晨之木",
+  "block.dawnduskterminal.dawn_leaves": "晨之叶",
+  "block.dawnduskterminal.dusk_log": "昏之木",
+  "block.dawnduskterminal.dusk_leaves": "昏之叶",
+  "block.dawnduskterminal.chrono_log": "时之木",
+  "block.dawnduskterminal.chrono_leaves": "时之叶"
 }

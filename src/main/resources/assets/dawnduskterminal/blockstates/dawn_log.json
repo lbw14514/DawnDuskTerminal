@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "dawnduskterminal:block/dawn_log"
+    },
+    "axis=z": {
+      "model": "dawnduskterminal:block/dawn_log",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "dawnduskterminal:block/dawn_log",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

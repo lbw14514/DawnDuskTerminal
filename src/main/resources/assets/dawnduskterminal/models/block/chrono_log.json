@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "dawnduskterminal:block/chrono_log",
+    "side": "dawnduskterminal:block/chrono_log"
+  }
+}

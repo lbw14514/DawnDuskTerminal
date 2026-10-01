@@ -1,7 +1,7 @@
 {
   "type": "dawnduskterminal:sky_island",
   "config": {
-    "spacing": 44,
+    "spacing": 30,
     "min_y": 192,
     "max_y": 240,
     "min_radius": 54,

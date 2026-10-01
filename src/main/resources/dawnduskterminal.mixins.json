@@ -6,7 +6,8 @@
   "mixins": [
     "FeatureSorterMixin",
     "LightEngineSkyLightMixin",
-    "StructureExclusionMixin"
+    "StructureExclusionMixin",
+    "NoLavaLevelMixin"
   ],
   "client": [],
   "injectors": {

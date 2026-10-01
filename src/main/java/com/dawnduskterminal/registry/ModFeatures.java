@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.world.BedrockLayerFeature;
 import com.dawnduskterminal.world.HollowPocketFeature;
 import com.dawnduskterminal.world.RootPillarFeature;
 import com.dawnduskterminal.world.SkyIslandFeature;
@@ -31,6 +32,9 @@ public final class ModFeatures {
 
     public static final DeferredHolder<Feature<?>, TurfFeature> TURF =
         FEATURES.register("turf", () -> new TurfFeature(TurfFeature.Config.CODEC));
+
+    public static final DeferredHolder<Feature<?>, BedrockLayerFeature> BEDROCK_LAYER =
+        FEATURES.register("bedrock_layer", () -> new BedrockLayerFeature(BedrockLayerFeature.Config.CODEC));
 
     private ModFeatures() {}
 

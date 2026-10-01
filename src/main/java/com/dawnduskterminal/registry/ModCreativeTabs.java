@@ -46,6 +46,12 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.FRAGILE_CANOPY_ITEM.get());
                 accept(output, ModTerrainBlocks.CHAOS_STONE_ITEM.get());
                 accept(output, ModTerrainBlocks.BLAZING_BLOCK_ITEM.get());
+                accept(output, ModTerrainBlocks.DAWN_LOG_ITEM.get());
+                accept(output, ModTerrainBlocks.DUSK_LOG_ITEM.get());
+                accept(output, ModTerrainBlocks.CHRONO_LOG_ITEM.get());
+                accept(output, ModTerrainBlocks.DAWN_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.DUSK_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.CHRONO_LEAVES_ITEM.get());
                 acceptForeign(output, "twilightforest:aurora_block");
             })
             .build());

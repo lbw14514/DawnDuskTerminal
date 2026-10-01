@@ -40,9 +40,25 @@
     "twilightforest:tree/selector/enchanted_forest_trees",
     "twilightforest:tree/selector/firefly_forest_trees",
     "twilightforest:tree/selector/highlands_trees",
-    "twilightforest:tree/selector/snowy_forest_trees"
+    "twilightforest:tree/selector/snowy_forest_trees",
+    "twilightforest:plant_roots",
+    "twilightforest:wood_roots",
+    "twilightforest:troll_roots",
+    "twilightforest:enchanted_forest_vines",
+    "twilightforest:webs",
+    "twilightforest:vanilla_roots",
+    "twilightforest:canopy_fallen_log",
+    "twilightforest:snow_under_trees",
+    "twilightforest:dark_mushglooms",
+    "twilightforest:mushgloom_cluster",
+    "twilightforest:sparse_mushglooms",
+    "twilightforest:troll_mushglooms",
+    "twilightforest:mushroom/canopy_mushrooms_dense",
+    "twilightforest:mushroom/canopy_mushrooms_sparse"
   ],
   "steps": [
-    "vegetal_decoration"
+    "vegetal_decoration",
+    "fluid_springs",
+    "underground_decoration"
   ]
 }
