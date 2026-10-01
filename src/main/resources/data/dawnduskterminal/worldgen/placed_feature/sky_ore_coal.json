@@ -1,9 +1,9 @@
 {
-  "feature": "dawnduskterminal:sky_island",
+  "feature": "minecraft:ore_coal",
   "placement": [
     {
       "type": "minecraft:count",
-      "count": 1
+      "count": 30
     },
     {
       "type": "minecraft:in_square"

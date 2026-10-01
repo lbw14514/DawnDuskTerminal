@@ -1,0 +1,15 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#dawnduskterminal:chrono_surface",
+  "features": [
+    "dawnduskterminal:sky_ore_coal",
+    "dawnduskterminal:sky_ore_iron",
+    "dawnduskterminal:sky_ore_copper",
+    "dawnduskterminal:sky_ore_gold",
+    "dawnduskterminal:sky_ore_redstone",
+    "dawnduskterminal:sky_ore_lapis",
+    "dawnduskterminal:sky_ore_diamond",
+    "dawnduskterminal:sky_ore_emerald"
+  ],
+  "step": "underground_ores"
+}

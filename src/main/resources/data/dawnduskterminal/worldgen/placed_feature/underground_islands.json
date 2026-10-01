@@ -1,9 +1,9 @@
 {
-  "feature": "dawnduskterminal:sky_island",
+  "feature": "dawnduskterminal:underground_islands",
   "placement": [
     {
       "type": "minecraft:count",
-      "count": 1
+      "count": 2
     },
     {
       "type": "minecraft:in_square"
@@ -13,10 +13,10 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "absolute": 192
+          "absolute": -58
         },
         "max_inclusive": {
-          "absolute": 240
+          "absolute": -16
         }
       }
     },
