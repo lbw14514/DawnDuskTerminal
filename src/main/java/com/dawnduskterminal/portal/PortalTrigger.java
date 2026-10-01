@@ -13,10 +13,7 @@ public final class PortalTrigger {
     private PortalTrigger() {}
 
     public static boolean isPortalBlock(BlockState state) {
-        if (state.is(ModBlocks.PORTAL_FLUID.get())) {
-            return true;
-        }
-        return DdtConfig.waterIsPortal() && state.is(Blocks.WATER);
+        return state.is(ModBlocks.PORTAL_FLUID.get());
     }
 
     public static boolean isChrono(Entity entity) {
@@ -33,6 +30,9 @@ public final class PortalTrigger {
 
     public static boolean shouldTeleport(Entity entity, BlockPos pos) {
         if (!isActivePortal(entity, pos)) {
+            return false;
+        }
+        if (!PortalShape.isCompletePortalPart(entity.level(), pos)) {
             return false;
         }
         if (!(entity instanceof Player player)) {

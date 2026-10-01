@@ -37,10 +37,20 @@ public final class ModFluids {
             .sound(SoundActions.BUCKET_EMPTY, net.minecraft.sounds.SoundEvents.BUCKET_EMPTY)));
 
     public static final DeferredHolder<Fluid, BaseFlowingFluid.Source> PORTAL_FLUID =
-        FLUIDS.register("portal_fluid", () -> new BaseFlowingFluid.Source(properties()));
+        FLUIDS.register("portal_fluid", () -> new BaseFlowingFluid.Source(properties()) {
+            @Override
+            public void tick(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos,
+                    net.minecraft.world.level.material.FluidState state) {
+            }
+        });
 
     public static final DeferredHolder<Fluid, BaseFlowingFluid.Flowing> PORTAL_FLOWING =
-        FLUIDS.register("flowing_portal_fluid", () -> new BaseFlowingFluid.Flowing(properties()));
+        FLUIDS.register("flowing_portal_fluid", () -> new BaseFlowingFluid.Flowing(properties()) {
+            @Override
+            public void tick(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos,
+                    net.minecraft.world.level.material.FluidState state) {
+            }
+        });
 
     private ModFluids() {}
 

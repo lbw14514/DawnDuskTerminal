@@ -1,0 +1,16 @@
+{
+  "type": "neoforge:remove_features",
+  "biomes": "#dawnduskterminal:chrono_surface",
+  "features": [
+    "minecraft:lake_lava_underground",
+    "minecraft:lake_lava_surface",
+    "minecraft:spring_lava",
+    "minecraft:spring_lava_frozen",
+    "minecraft:underwater_magma"
+  ],
+  "steps": [
+    "lakes",
+    "underground_decoration",
+    "fluid_springs"
+  ]
+}

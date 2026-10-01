@@ -28,6 +28,10 @@ public class PortalBlock extends LiquidBlock {
     @Override
     protected void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level,
             BlockPos pos, net.minecraft.util.RandomSource random) {
+        if (!com.dawnduskterminal.portal.PortalShape.isCompletePortalPart(level, pos)) {
+            level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            return;
+        }
         com.dawnduskterminal.world.FluidReactions.handle(level, pos);
     }
 

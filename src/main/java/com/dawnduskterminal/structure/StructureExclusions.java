@@ -68,8 +68,36 @@ public final class StructureExclusions {
 
     private static final Set<ResourceLocation> LOGGED = ConcurrentHashMap.newKeySet();
 
+    public static final Set<ResourceLocation> WHITELIST = Set.of(
+        ResourceLocation.withDefaultNamespace("ruined_portal"),
+        ResourceLocation.withDefaultNamespace("ruined_portal_desert"),
+        ResourceLocation.withDefaultNamespace("ruined_portal_jungle"),
+        ResourceLocation.withDefaultNamespace("ruined_portal_mountain"),
+        ResourceLocation.withDefaultNamespace("ruined_portal_ocean"),
+        ResourceLocation.withDefaultNamespace("ruined_portal_swamp"),
+        ResourceLocation.withDefaultNamespace("shipwreck"),
+        ResourceLocation.withDefaultNamespace("shipwreck_beached"),
+        ResourceLocation.withDefaultNamespace("pillager_outpost"),
+        ResourceLocation.withDefaultNamespace("desert_pyramid"),
+        ResourceLocation.withDefaultNamespace("igloo"),
+        ResourceLocation.withDefaultNamespace("village_plains"),
+        ResourceLocation.withDefaultNamespace("village_desert"),
+        ResourceLocation.withDefaultNamespace("village_savanna"),
+        ResourceLocation.withDefaultNamespace("village_snowy"),
+        ResourceLocation.withDefaultNamespace("village_taiga"),
+        ResourceLocation.parse("twilightforest:hollow_tree"),
+        ResourceLocation.parse("twilightforest:fallen_trunk"),
+        ResourceLocation.parse("twilightforest:mushroom_tower"),
+        ResourceLocation.parse("twilightforest:camp"),
+        ResourceLocation.parse("twilightforest:hedge_maze"),
+        ResourceLocation.parse("twilightforest:small_hollow_hill"));
+
+    public static boolean isAllowed(ResourceLocation id) {
+        return WHITELIST.contains(id);
+    }
+
     public static boolean isExcluded(ResourceLocation id) {
-        return EXCLUDED_TF_IDS.contains(id);
+        return !WHITELIST.contains(id);
     }
 
     public static void logSuppressed(ResourceLocation id) {

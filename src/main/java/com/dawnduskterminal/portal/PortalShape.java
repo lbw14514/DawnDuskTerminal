@@ -57,6 +57,20 @@ public final class PortalShape {
         return state.is(ModBlocks.PORTAL_FLUID.get());
     }
 
+    public static int countNeighbors(net.minecraft.world.level.LevelReader level, BlockPos pos) {
+        int n = 0;
+        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
+            if (level.getBlockState(pos.relative(dir)).is(ModBlocks.PORTAL_FLUID.get())) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    public static boolean isCompletePortalPart(net.minecraft.world.level.LevelReader level, BlockPos pos) {
+        return countNeighbors(level, pos) >= 2;
+    }
+
     public static boolean isPoolBlock(BlockState state) {
         return state.is(PORTAL_FLUID_TAG);
     }

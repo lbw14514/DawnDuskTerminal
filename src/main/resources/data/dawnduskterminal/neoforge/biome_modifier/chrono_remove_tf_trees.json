@@ -1,0 +1,48 @@
+{
+  "type": "neoforge:remove_features",
+  "biomes": [
+    "twilightforest:clearing",
+    "twilightforest:forest",
+    "twilightforest:dense_forest",
+    "twilightforest:firefly_forest",
+    "twilightforest:oak_savannah",
+    "twilightforest:spooky_forest",
+    "twilightforest:swamp",
+    "twilightforest:fire_swamp",
+    "twilightforest:dark_forest",
+    "twilightforest:dark_forest_center",
+    "twilightforest:snowy_forest",
+    "twilightforest:glacier",
+    "twilightforest:highlands",
+    "twilightforest:thornlands",
+    "twilightforest:enchanted_forest",
+    "twilightforest:mushroom_forest",
+    "twilightforest:dense_mushroom_forest",
+    "twilightforest:final_plateau"
+  ],
+  "features": [
+    "twilightforest:tree/darkwood_tree",
+    "twilightforest:tree/dead_canopy_tree",
+    "twilightforest:tree/forest_mega_oak_tree",
+    "twilightforest:tree/large_twilight_oak_tree",
+    "twilightforest:tree/mangrove_tree",
+    "twilightforest:tree/mega_canopy_tree",
+    "twilightforest:tree/oak_bush",
+    "twilightforest:tree/oak_bush_dense",
+    "twilightforest:tree/savannah_mega_oak_tree",
+    "twilightforest:tree/savannah_oak_tree",
+    "twilightforest:tree/swampy_oak_tree",
+    "twilightforest:tree/twilight_oak_tree",
+    "twilightforest:tree/selector/canopy_trees",
+    "twilightforest:tree/selector/dark_forest_tree_mix",
+    "twilightforest:tree/selector/dark_forest_trees",
+    "twilightforest:tree/selector/dense_canopy_trees",
+    "twilightforest:tree/selector/enchanted_forest_trees",
+    "twilightforest:tree/selector/firefly_forest_trees",
+    "twilightforest:tree/selector/highlands_trees",
+    "twilightforest:tree/selector/snowy_forest_trees"
+  ],
+  "steps": [
+    "vegetal_decoration"
+  ]
+}

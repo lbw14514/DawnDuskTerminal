@@ -1,0 +1,24 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": [
+    "twilightforest:clearing",
+    "twilightforest:forest",
+    "twilightforest:dense_forest",
+    "twilightforest:firefly_forest",
+    "twilightforest:oak_savannah",
+    "twilightforest:spooky_forest",
+    "twilightforest:dark_forest",
+    "twilightforest:dark_forest_center",
+    "twilightforest:enchanted_forest",
+    "twilightforest:highlands",
+    "twilightforest:thornlands",
+    "twilightforest:final_plateau",
+    "twilightforest:mushroom_forest",
+    "twilightforest:dense_mushroom_forest"
+  ],
+  "features": [
+    "minecraft:trees_plains",
+    "minecraft:trees_birch_and_oak"
+  ],
+  "step": "vegetal_decoration"
+}

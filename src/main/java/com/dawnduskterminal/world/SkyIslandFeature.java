@@ -53,26 +53,38 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
         int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
         int thickness = Mth.nextInt(random, config.minThickness(), config.maxThickness());
         int tail = radius / 2 + Mth.nextInt(random, 3, 8);
+        double phase1 = random.nextDouble() * Math.PI * 2.0D;
+        double phase2 = random.nextDouble() * Math.PI * 2.0D;
+        double phase3 = random.nextDouble() * Math.PI * 2.0D;
         BlockState stone = com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get().defaultBlockState();
         BlockState soil = com.dawnduskterminal.registry.ModBlocks.SKY_SOIL.get().defaultBlockState();
         boolean changed = false;
-        int r = radius + 1;
+        int r = radius + 12;
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
                 double dist = Math.sqrt(dx * dx + dz * dz);
-                if (dist > radius) {
+                double angle = Math.atan2(dz, dx);
+                double wobble = Math.sin(angle * 3.0D + phase1) * 0.22D
+                    + Math.sin(angle * 5.0D + phase2) * 0.13D
+                    + Math.sin(angle * 8.0D + phase3) * 0.08D
+                    + Math.sin(angle * 13.0D + phase1 * 1.7D) * 0.05D;
+                double limit = radius * (1.0D + wobble);
+                if (dist > limit) {
                     continue;
                 }
-                double edge = dist / radius;
+                double edge = dist / limit;
                 double edgeFade = 1.0D - edge * edge * 0.35D;
-                int top = y + (int) Math.round(edgeFade * Mth.nextInt(random, 0, 1));
+                int bump = (int) Math.round(Math.sin(dx * 0.35D + phase1) * 2.0D
+                    + Math.sin(dz * 0.28D + phase2) * 2.0D
+                    + Math.sin((dx + dz) * 0.19D + phase3) * 3.0D);
+                int top = y + bump + (int) Math.round(edgeFade * Mth.nextInt(random, 0, 1));
                 int depth = (int) Math.round(thickness * edgeFade);
                 for (int dy = 0; dy < tail; dy++) {
                     double taper = 1.0D - (double) dy / tail;
-                    if (dy > depth && dist > radius * taper) {
+                    if (dy > depth && dist > limit * taper) {
                         break;
                     }
-                    if (dy > depth + 12) {
+                    if (dy > depth + 14) {
                         break;
                     }
                     BlockPos pos = new BlockPos(centerX + dx, top - dy, centerZ + dz);

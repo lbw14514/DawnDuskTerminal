@@ -232,6 +232,8 @@ public final class PortalTeleporter {
         }
         BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
+        BlockState turf = ModBlocks.SKY_SOIL.get().defaultBlockState();
+        BlockState soil = com.dawnduskterminal.registry.ModTerrainBlocks.EMBER_SOIL.get().defaultBlockState();
         for (int dx = 0; dx < 2; dx++) {
             for (int dz = 0; dz < 2; dz++) {
                 BlockPos top = new BlockPos(baseX + dx, y - 1, baseZ + dz);
@@ -240,6 +242,29 @@ public final class PortalTeleporter {
                 level.setBlockAndUpdate(top.below(2), bedrock);
                 level.setBlockAndUpdate(top, portal);
                 level.setBlockAndUpdate(top.above(), Blocks.AIR.defaultBlockState());
+            }
+        }
+        int r = 4;
+        for (int dx = -r; dx <= 2 + r; dx++) {
+            for (int dz = -r; dz <= 2 + r; dz++) {
+                if (dx >= 0 && dx < 2 && dz >= 0 && dz < 2) {
+                    continue;
+                }
+                BlockPos pos = new BlockPos(baseX + dx, y - 1, baseZ + dz);
+                BlockState at = level.getBlockState(pos);
+                if (at.isAir()) {
+                    continue;
+                }
+                if (!level.getBlockState(pos.above()).isAir()) {
+                    continue;
+                }
+                if (at.is(com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get())) {
+                    level.setBlockAndUpdate(pos, turf);
+                    BlockPos below = pos.below();
+                    if (level.getBlockState(below).is(com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get())) {
+                        level.setBlockAndUpdate(below, soil);
+                    }
+                }
             }
         }
         DawnDuskTerminal.LOGGER.info("DawnDuskTerminal arrival portal built at {} {} {}", baseX, y, baseZ);

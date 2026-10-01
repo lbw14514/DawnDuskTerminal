@@ -55,7 +55,7 @@ public final class DdtConfig {
         PORTAL_COOLDOWN_TICKS = b.comment("ticks before the player can be teleported again")
             .defineInRange("cooldown_ticks", 100, 0, 72000);
         WATER_IS_PORTAL = b.comment("inside the chrono dimension vanilla water acts as a portal")
-            .define("water_is_portal", true);
+            .define("water_is_portal", false);
         CONVERT_WATER = b.comment("replace vanilla water with portal fluid when a chunk is loaded")
             .define("convert_water_on_chunk_load", false);
         ENTITY_DEBUFF = b.comment("non player entities get the portal sickness effect")
