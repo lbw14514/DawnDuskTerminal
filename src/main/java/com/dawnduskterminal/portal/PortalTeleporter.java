@@ -31,10 +31,11 @@ public final class PortalTeleporter {
     public static final int LANDING_SEARCH_RADIUS = 500;
     public static final int COLUMN_SCAN_DEPTH = 48;
     public static final int LANDING_MIN_Y = 0;
-    public static final int LANDING_MAX_Y = 176;
+    public static final int LANDING_MAX_Y = 128;
     private static final int FINE_RADIUS = 32;
     private static final int MID_RADIUS = 160;
     private static final int MAX_CHUNK_LOADS = 400;
+    private static final int OPEN_SKY_HEIGHT = 32;
 
     private PortalTeleporter() {}
 
@@ -157,14 +158,29 @@ public final class PortalTeleporter {
         if (surface < LANDING_MIN_Y || surface > LANDING_MAX_Y) {
             return null;
         }
-        int top = Math.min(surface + 2, LANDING_MAX_Y);
-        int bottom = Math.max(surface - 3, LANDING_MIN_Y);
+        int top = Math.min(surface + 1, LANDING_MAX_Y);
+        int bottom = Math.max(surface - 2, LANDING_MIN_Y);
         for (int y = top; y >= bottom; y--) {
-            if (isSafeStanding(level, new BlockPos(x, y, z))) {
-                return new Vec3(x + 0.5D, y, z + 0.5D);
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!isSafeStanding(level, pos)) {
+                continue;
             }
+            if (!hasOpenSky(level, pos)) {
+                continue;
+            }
+            return new Vec3(x + 0.5D, y, z + 0.5D);
         }
         return null;
+    }
+
+    private static boolean hasOpenSky(ServerLevel level, BlockPos pos) {
+        int limit = Math.min(pos.getY() + OPEN_SKY_HEIGHT, level.getMaxBuildHeight());
+        for (int y = pos.getY() + 1; y <= limit; y++) {
+            if (!level.getBlockState(new BlockPos(pos.getX(), y, pos.getZ())).isAir()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isSafeStanding(ServerLevel level, BlockPos pos) {

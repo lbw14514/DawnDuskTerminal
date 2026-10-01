@@ -52,7 +52,7 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
         int y = Mth.nextInt(random, config.minY(), config.maxY());
         int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
         int thickness = Mth.nextInt(random, config.minThickness(), config.maxThickness());
-        int tail = radius * 2 + Mth.nextInt(random, 4, 10);
+        int tail = radius / 2 + Mth.nextInt(random, 3, 8);
         BlockState stone = com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get().defaultBlockState();
         BlockState soil = com.dawnduskterminal.registry.ModBlocks.SKY_SOIL.get().defaultBlockState();
         boolean changed = false;
@@ -64,8 +64,8 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
                     continue;
                 }
                 double edge = dist / radius;
-                double edgeFade = 1.0D - edge * edge * 0.55D;
-                int top = y + (int) Math.round(edgeFade * Mth.nextInt(random, 0, 2));
+                double edgeFade = 1.0D - edge * edge * 0.35D;
+                int top = y + (int) Math.round(edgeFade * Mth.nextInt(random, 0, 1));
                 int depth = (int) Math.round(thickness * edgeFade);
                 for (int dy = 0; dy < tail; dy++) {
                     double taper = 1.0D - (double) dy / tail;

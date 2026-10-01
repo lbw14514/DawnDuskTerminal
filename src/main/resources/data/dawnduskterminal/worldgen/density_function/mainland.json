@@ -12,9 +12,9 @@
             "type": "minecraft:noise",
             "noise": "dawnduskterminal:island",
             "xz_scale": 1.6,
-            "y_scale": 0.16
+            "y_scale": 0.1
           },
-          "argument2": 0.55
+          "argument2": 0.22
         },
         "argument2": {
           "type": "minecraft:mul",
@@ -22,9 +22,9 @@
             "type": "minecraft:noise",
             "noise": "dawnduskterminal:island",
             "xz_scale": 4.5,
-            "y_scale": 0.6
+            "y_scale": 0.35
           },
-          "argument2": 0.22
+          "argument2": 0.1
         }
       },
       "argument2": {
