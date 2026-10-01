@@ -48,6 +48,35 @@ public final class DdtServerEvents {
         Registry<Structure> structures = event.getServer().registryAccess().registryOrThrow(Registries.STRUCTURE);
         StructurePlacements.validate(structures);
         StructureExclusions.validate(structures);
+
+        ServerLevel chrono = event.getServer().getLevel(com.dawnduskterminal.registry.ModDimensions.CHRONO);
+        if (chrono != null) {
+            profileChrono(chrono);
+        }
+    }
+
+    private static void profileChrono(ServerLevel chrono) {
+        StringBuilder sb = new StringBuilder("DDT_PROFILE ");
+        int[] ys = {-50, -20, 10, 40, 62, 80, 110, 128, 150, 176, 200, 230, 260, 290, 320};
+        for (int y : ys) {
+            int solid = 0;
+            int total = 0;
+            java.util.Map<String, Integer> kinds = new java.util.HashMap<>();
+            for (int x = 60000; x < 60064; x += 4) {
+                for (int z = 60000; z < 60064; z += 4) {
+                    chrono.getChunk(x >> 4, z >> 4);
+                    total++;
+                    var st = chrono.getBlockState(new BlockPos(x, y, z));
+                    if (!st.isAir()) {
+                        solid++;
+                        kinds.merge(net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                            .getKey(st.getBlock()).toString(), 1, Integer::sum);
+                    }
+                }
+            }
+            sb.append(String.format("%d=%d%%%s ", y, total == 0 ? 0 : solid * 100 / total, kinds));
+        }
+        DawnDuskTerminal.LOGGER.info(sb.toString());
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

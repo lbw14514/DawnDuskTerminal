@@ -1,0 +1,27 @@
+{
+  "feature": "dawnduskterminal:sky_island",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 3
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "min_inclusive": {
+          "absolute": 198
+        },
+        "max_inclusive": {
+          "absolute": 226
+        }
+      }
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

@@ -25,31 +25,13 @@
     "depth": "minecraft:overworld/depth",
     "erosion": "minecraft:overworld/erosion",
     "final_density": {
-      "type": "minecraft:add",
+      "type": "minecraft:mul",
       "argument1": {
         "type": "minecraft:max",
-        "argument1": {
-          "type": "minecraft:interpolated",
-          "argument": "dawnduskterminal:island_density"
-        },
-        "argument2": {
-          "type": "minecraft:interpolated",
-          "argument": "dawnduskterminal:sky_island_density"
-        }
+        "argument1": "dawnduskterminal:island_density",
+        "argument2": "dawnduskterminal:sky_island_density"
       },
-      "argument2": {
-        "type": "minecraft:mul",
-        "argument1": {
-          "type": "minecraft:abs",
-          "argument": {
-            "type": "minecraft:noise",
-            "noise": "dawnduskterminal:island",
-            "xz_scale": 4.5,
-            "y_scale": 1.2
-          }
-        },
-        "argument2": -2.2
-      }
+      "argument2": "dawnduskterminal:void_band"
     },
     "fluid_level_floodedness": {
       "type": "minecraft:noise",
