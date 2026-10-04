@@ -3,9 +3,10 @@
   "config": {
     "range_min_y": -8,
     "range_max_y": 48,
-    "thickness": 10,
+    "thickness": 3,
     "seal_y": -1,
     "pocket_grid_chunks": 219,
-    "pocket_chunks": 10
+    "pocket_min_chunks": 6,
+    "pocket_max_chunks": 12
   }
 }

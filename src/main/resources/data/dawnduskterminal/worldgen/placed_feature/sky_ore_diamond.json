@@ -1,5 +1,5 @@
 {
-  "feature": "minecraft:ore_diamond_medium",
+  "feature": "dawnduskterminal:sky_ore_diamond",
   "placement": [
     {
       "type": "minecraft:count",
@@ -13,10 +13,10 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "absolute": 176
+          "absolute": 196
         },
         "max_inclusive": {
-          "absolute": 248
+          "absolute": 236
         }
       }
     }

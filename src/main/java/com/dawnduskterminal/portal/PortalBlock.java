@@ -28,7 +28,7 @@ public class PortalBlock extends LiquidBlock {
     @Override
     protected void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level,
             BlockPos pos, net.minecraft.util.RandomSource random) {
-        if (!com.dawnduskterminal.portal.PortalShape.isCompletePortalPart(level, pos)) {
+        if (com.dawnduskterminal.portal.PortalShape.countNeighbors(level, pos) == 0) {
             level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
             return;
         }
@@ -48,7 +48,6 @@ public class PortalBlock extends LiquidBlock {
             return;
         }
         if (entity instanceof Player player) {
-            PortalTeleporter.tickCooldown(player);
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 PortalTeleporter.tick(serverPlayer);
             }

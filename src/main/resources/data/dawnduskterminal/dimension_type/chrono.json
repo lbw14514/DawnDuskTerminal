@@ -1,5 +1,5 @@
 {
-  "ambient_light": 0.15,
+  "ambient_light": 0.0,
   "bed_works": true,
   "coordinate_scale": 1.0,
   "effects": "dawnduskterminal:chrono",
@@ -7,10 +7,10 @@
   "has_ceiling": false,
   "has_raids": false,
   "has_skylight": true,
-  "height": 384,
+  "height": 368,
   "infiniburn": "#minecraft:infiniburn_overworld",
-  "logical_height": 384,
-  "min_y": -64,
+  "logical_height": 368,
+  "min_y": -48,
   "monster_spawn_block_light_limit": 0,
   "monster_spawn_light_level": {
     "type": "minecraft:uniform",

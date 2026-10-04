@@ -41,12 +41,12 @@
                       "argument1": 0.078125,
                       "argument2": {
                         "type": "minecraft:range_choice",
-                        "input": "minecraft:overworld/sloped_cheese",
+                        "input": "dawnduskterminal:mainland_sloped_cheese",
                         "max_exclusive": 1.5625,
                         "min_inclusive": -1000000.0,
                         "when_in_range": {
                           "type": "minecraft:min",
-                          "argument1": "minecraft:overworld/sloped_cheese",
+                          "argument1": "dawnduskterminal:mainland_sloped_cheese",
                           "argument2": {
                             "type": "minecraft:mul",
                             "argument1": 5.0,
@@ -99,7 +99,7 @@
                                       "argument2": {
                                         "type": "minecraft:mul",
                                         "argument1": -0.64,
-                                        "argument2": "minecraft:overworld/sloped_cheese"
+                                        "argument2": "dawnduskterminal:mainland_sloped_cheese"
                                       }
                                     },
                                     "max": 0.5,

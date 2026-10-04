@@ -67,6 +67,10 @@ public final class DdtClient {
         }, com.dawnduskterminal.registry.ModTerrainBlocks.DAWN_LEAVES.get(),
             com.dawnduskterminal.registry.ModTerrainBlocks.DUSK_LEAVES.get(),
             com.dawnduskterminal.registry.ModTerrainBlocks.CHRONO_LEAVES.get());
+        event.register((state, level, pos, tintIndex) -> tintIndex == 0 ? 0x9C7A50 : -1,
+            com.dawnduskterminal.registry.ModTerrainBlocks.WITHERED_DAWN_LEAVES.get(),
+            com.dawnduskterminal.registry.ModTerrainBlocks.WITHERED_DUSK_LEAVES.get(),
+            com.dawnduskterminal.registry.ModTerrainBlocks.WITHERED_CHRONO_LEAVES.get());
     }
 
     private static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -93,5 +97,7 @@ public final class DdtClient {
 
     private static void registerFluidExtensions(RegisterClientExtensionsEvent event) {
         event.registerFluidType(PortalFluidExtensions.INSTANCE, ModFluids.PORTAL_FLUID_TYPE.get());
+        event.registerFluidType(ScorchingTwilightFluidExtensions.INSTANCE,
+            com.dawnduskterminal.registry.ModScorchingTwilight.TYPE.get());
     }
 }

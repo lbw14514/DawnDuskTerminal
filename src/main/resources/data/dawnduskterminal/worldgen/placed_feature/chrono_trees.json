@@ -13,6 +13,15 @@
       "heightmap": "OCEAN_FLOOR"
     },
     {
+      "type": "minecraft:block_predicate_filter",
+      "predicate": {
+        "type": "minecraft:matching_blocks",
+        "blocks": [
+          "dawnduskterminal:sky_soil"
+        ]
+      }
+    },
+    {
       "type": "minecraft:biome"
     }
   ]

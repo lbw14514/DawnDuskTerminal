@@ -64,16 +64,15 @@ public class RootPillarFeature extends Feature<NoneFeatureConfiguration> {
         int z = logPos.getZ();
         int y = logPos.getY() - 1;
         int gap = 0;
-        while (y > minY) {
+        while (y > minY && gap <= MAX_PILLAR) {
             if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) {
                 break;
             }
             y--;
             gap++;
-            if (gap > MAX_PILLAR) {
-                level.setBlock(logPos, Blocks.AIR.defaultBlockState(), 2);
-                return true;
-            }
+        }
+        if (gap > MAX_PILLAR) {
+            return false;
         }
         if (gap < MIN_GAP) {
             return false;

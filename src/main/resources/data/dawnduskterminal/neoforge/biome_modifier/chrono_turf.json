@@ -2,5 +2,5 @@
   "type": "neoforge:add_features",
   "biomes": "#dawnduskterminal:chrono_surface",
   "features": "dawnduskterminal:turf",
-  "step": "underground_decoration"
+  "step": "top_layer_modification"
 }

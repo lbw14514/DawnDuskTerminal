@@ -12,19 +12,22 @@ import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfigur
 
 public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
     public record Config(int rangeMinY, int rangeMaxY, int thickness, int sealY,
-                         int pocketGridChunks, int pocketChunks) implements FeatureConfiguration {
+                         int pocketGridChunks, int pocketMinChunks, int pocketMaxChunks)
+        implements FeatureConfiguration {
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(inst -> inst.group(
             Codec.INT.fieldOf("range_min_y").forGetter(Config::rangeMinY),
             Codec.INT.fieldOf("range_max_y").forGetter(Config::rangeMaxY),
             Codec.INT.fieldOf("thickness").forGetter(Config::thickness),
             Codec.INT.fieldOf("seal_y").forGetter(Config::sealY),
             Codec.INT.fieldOf("pocket_grid_chunks").forGetter(Config::pocketGridChunks),
-            Codec.INT.fieldOf("pocket_chunks").forGetter(Config::pocketChunks)
+            Codec.INT.fieldOf("pocket_min_chunks").forGetter(Config::pocketMinChunks),
+            Codec.INT.fieldOf("pocket_max_chunks").forGetter(Config::pocketMaxChunks)
         ).apply(inst, Config::new));
     }
 
     private static final int MAX_SKIRT = 8;
     private static final int SOLID_CORE = 3;
+    private static final int POCKET_RING = 16;
 
     public BedrockLayerFeature(Codec<Config> codec) {
         super(codec);
@@ -38,17 +41,19 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
         BlockState filler = Blocks.BEDROCK.defaultBlockState();
         int baseX = origin.getX() & ~15;
         int baseZ = origin.getZ() & ~15;
+        long seed = level.getSeed();
+        boolean pocketOn = cfg.pocketGridChunks() > 0;
+        boolean pocketRing = pocketOn && nearPocket(seed, baseX >> 4, baseZ >> 4, 1);
         int windowLo = Math.max(level.getMinBuildHeight(), cfg.rangeMinY());
         int windowHi = Math.min(level.getMaxBuildHeight() - 1, cfg.rangeMaxY());
         int thickness = Math.max(1, cfg.thickness());
-        long seed = level.getSeed();
         int[][] base = new int[18][18];
         for (int i = 0; i < 18; i++) {
             for (int j = 0; j < 18; j++) {
                 base[i][j] = Integer.MIN_VALUE;
                 int x = baseX - 1 + i;
                 int z = baseZ - 1 + j;
-                if (HollowPocketFeature.inZone(seed, cfg.pocketGridChunks(), cfg.pocketChunks(), x, z)) {
+                if (pocketRing && inRing(seed, x, z)) {
                     continue;
                 }
                 for (int y = windowLo; y <= windowHi; y++) {
@@ -79,7 +84,14 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
                 if (skirt > cfg.sealY()) {
                     skirt = Math.min(b, cfg.sealY());
                 }
-                int top = Math.min(windowHi, b + thickness - 1);
+                int lowest = cfg.sealY() - MAX_SKIRT;
+                if (skirt < lowest) {
+                    skirt = lowest;
+                }
+                int top = Math.min(windowHi, cfg.sealY() + thickness);
+                if (skirt > top) {
+                    continue;
+                }
                 for (int y = skirt; y <= top; y++) {
                     BlockPos target = new BlockPos(baseX - 1 + i, y, baseZ - 1 + j);
                     if (level.isOutsideBuildHeight(target)) {
@@ -99,6 +111,65 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
                 }
             }
         }
+        if (pocketRing && carvePocket(level, seed, baseX, baseZ, windowLo, windowHi)) {
+            changed = true;
+        }
         return changed;
+    }
+
+    private static boolean carvePocket(WorldGenLevel level, long seed, int baseX, int baseZ, int lo, int hi) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        boolean changed = false;
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                int x = baseX + i;
+                int z = baseZ + j;
+                if (!inRing(seed, x, z)) {
+                    continue;
+                }
+                for (int y = lo; y <= hi; y++) {
+                    BlockPos target = new BlockPos(x, y, z);
+                    if (level.getBlockState(target).is(Blocks.BEDROCK)) {
+                        level.setBlock(target, air, 2);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        return changed;
+    }
+
+    private static boolean inZone(long seed, int x, int z) {
+        return HollowPocketFeature.inZone(seed, HollowPocketFeature.GRID_CHUNKS,
+            HollowPocketFeature.MIN_CHUNKS, HollowPocketFeature.MAX_CHUNKS, x, z);
+    }
+
+    private static boolean inRing(long seed, int x, int z) {
+        return inZone(seed, x, z)
+            || inZone(seed, x - POCKET_RING, z)
+            || inZone(seed, x + POCKET_RING, z)
+            || inZone(seed, x, z - POCKET_RING)
+            || inZone(seed, x, z + POCKET_RING);
+    }
+
+    private static boolean nearPocket(long seed, int chunkX, int chunkZ, int marginChunks) {
+        int grid = HollowPocketFeature.GRID_CHUNKS;
+        long cellX = Math.floorDiv(chunkX, grid);
+        long cellZ = Math.floorDiv(chunkZ, grid);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int px = (int) ((cellX + dx) * grid + grid / 2) * 16 + 8;
+                int pz = (int) ((cellZ + dz) * grid + grid / 2) * 16 + 8;
+                int[] center = HollowPocketFeature.centerBlock(seed, px, pz);
+                int size = center[2];
+                int startX = Math.floorDiv(center[0] - 8, 16) - size / 2;
+                int startZ = Math.floorDiv(center[1] - 8, 16) - size / 2;
+                if (chunkX >= startX - 1 - marginChunks && chunkX <= startX + size + marginChunks
+                    && chunkZ >= startZ - 1 - marginChunks && chunkZ <= startZ + size + marginChunks) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

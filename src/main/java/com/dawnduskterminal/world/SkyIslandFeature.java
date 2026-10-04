@@ -49,11 +49,10 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
         int y = Mth.nextInt(random, config.minY(), config.maxY());
         int radius = Mth.nextInt(random, config.minRadius(), config.maxRadius());
         int thickness = Mth.nextInt(random, config.minThickness(), config.maxThickness());
-        double phase1 = random.nextDouble() * Math.PI * 2.0D;
-        double phase2 = random.nextDouble() * Math.PI * 2.0D;
-        double phase3 = random.nextDouble() * Math.PI * 2.0D;
-        double phase4 = random.nextDouble() * Math.PI * 2.0D;
-        int reach = radius + 16;
+        long salt1 = random.nextLong();
+        long salt2 = random.nextLong();
+        int reach = radius;
+        int centerY = Mth.clamp(y, config.minY() + thickness, config.maxY() - thickness);
         int x0 = chunkX << 4;
         int z0 = chunkZ << 4;
         if (x0 + 15 < centerX - reach || x0 > centerX + reach
@@ -61,7 +60,6 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
             return false;
         }
         BlockState stone = com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get().defaultBlockState();
-        BlockState soil = com.dawnduskterminal.registry.ModBlocks.SKY_SOIL.get().defaultBlockState();
         boolean changed = false;
         int minX = Math.max(x0, centerX - reach);
         int maxX = Math.min(x0 + 15, centerX + reach);
@@ -72,59 +70,83 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
                 int dx = wx - centerX;
                 int dz = wz - centerZ;
                 double dist = Math.sqrt(dx * dx + dz * dz);
-                double angle = Math.atan2(dz, dx);
-                double wobble = Math.sin(angle * 2.0D + phase1) * 0.34D
-                    + Math.sin(angle * 3.0D + phase2) * 0.20D
-                    + Math.sin(angle * 5.0D + phase3) * 0.14D
-                    + Math.sin(angle * 8.0D + phase4) * 0.09D
-                    + Math.sin(angle * 13.0D + phase1 * 1.7D) * 0.05D;
-                double limit = radius * (1.0D + wobble);
-                if (dist > limit) {
+                if (dist > radius) {
                     continue;
                 }
-                double edge = dist / limit;
-                double edgeFade = 1.0D - edge * edge * 0.45D;
-                double topNoise = Math.sin(wx * 0.17D + phase1) * 0.5D
-                    + Math.sin(wz * 0.21D + phase2) * 0.3D
-                    + Math.sin((wx + wz) * 0.09D + phase3) * 0.2D
-                    + Math.sin(wx * 0.43D + phase4) * 0.12D
-                    + Math.sin(wz * 0.37D + phase1 * 2.1D) * 0.12D;
-                int top = y + (int) Math.round(topNoise * 6.0D);
-                double depthNoise = Math.sin(wx * 0.13D + phase2) * 0.5D
-                    + Math.cos(wz * 0.16D + phase3) * 0.5D;
-                int depth = (int) Math.round(thickness * edgeFade) + (int) Math.round(depthNoise * 4.0D);
-                if (depth < 2) {
-                    depth = 2;
-                }
-                int tail = (int) Math.round(radius * 0.30D * (0.5D + 0.5D * depthNoise));
-                int maxDrop = Math.max(depth, depth + tail);
-                for (int dy = 0; dy <= maxDrop; dy++) {
-                    if (dy > depth) {
-                        double taper = 1.0D - (double) (dy - depth) / Math.max(1, tail + 1);
-                        double jag = 1.0D + Math.sin(dy * 1.9D + wx * 0.11D + phase4) * 0.08D;
-                        if (dist > limit * taper * jag) {
-                            break;
-                        }
+                double ring = 1.0D - dist / radius;
+                for (int dy = -thickness; dy <= thickness; dy++) {
+                    int wy = centerY + dy;
+                    double vert = 1.0D - (double) (dy * dy) / (double) (thickness * thickness);
+                    double n = noise3(wx, wy, wz, salt1, salt2);
+                    double d = n * 0.45D + ring * vert * 1.65D - 0.35D;
+                    if (d <= 0.0D) {
+                        continue;
                     }
-                    BlockPos pos = new BlockPos(wx, top - dy, wz);
+                    BlockPos pos = new BlockPos(wx, wy, wz);
                     if (level.isOutsideBuildHeight(pos)) {
                         continue;
                     }
-                    if (level.getBlockState(pos).isAir()) {
-                        BlockState fill = dy < 2 ? soil : stone;
-                        if (dy >= 2) {
-                            BlockState ore = oreAt(wx, top - dy, wz, seed);
-                            if (ore != null) {
-                                fill = ore;
-                            }
-                        }
-                        level.setBlock(pos, fill, 2);
-                        changed = true;
+                    if (!level.getBlockState(pos).isAir()) {
+                        continue;
                     }
+                    BlockState fill = stone;
+                    BlockState ore = oreAt(wx, wy, wz, seed);
+                    if (ore != null) {
+                        fill = ore;
+                    }
+                    level.setBlock(pos, fill, 2);
+                    changed = true;
                 }
             }
         }
         return changed;
+    }
+
+    private static double noise3(int x, int y, int z, long salt1, long salt2) {
+        return grid3(x, y, z, 96, salt1) * 0.55D
+            + grid3(x, y, z, 34, salt1 + 7L) * 0.30D
+            + grid3(x, y, z, 12, salt2) * 0.15D;
+    }
+
+    private static double grid3(int x, int y, int z, int scale, long salt) {
+        double fx = (double) x / scale;
+        double fy = (double) y / scale;
+        double fz = (double) z / scale;
+        int ix = (int) Math.floor(fx);
+        int iy = (int) Math.floor(fy);
+        int iz = (int) Math.floor(fz);
+        double tx = fx - ix;
+        double ty = fy - iy;
+        double tz = fz - iz;
+        double sx = tx * tx * (3.0D - 2.0D * tx);
+        double sy = ty * ty * (3.0D - 2.0D * ty);
+        double sz = tz * tz * (3.0D - 2.0D * tz);
+        double c000 = lattice3(ix, iy, iz, salt);
+        double c100 = lattice3(ix + 1, iy, iz, salt);
+        double c010 = lattice3(ix, iy + 1, iz, salt);
+        double c110 = lattice3(ix + 1, iy + 1, iz, salt);
+        double c001 = lattice3(ix, iy, iz + 1, salt);
+        double c101 = lattice3(ix + 1, iy, iz + 1, salt);
+        double c011 = lattice3(ix, iy + 1, iz + 1, salt);
+        double c111 = lattice3(ix + 1, iy + 1, iz + 1, salt);
+        double x00 = c000 + (c100 - c000) * sx;
+        double x10 = c010 + (c110 - c010) * sx;
+        double x01 = c001 + (c101 - c001) * sx;
+        double x11 = c011 + (c111 - c011) * sx;
+        double y0 = x00 + (x10 - x00) * sy;
+        double y1 = x01 + (x11 - x01) * sy;
+        return (y0 + (y1 - y0) * sz) * 2.0D - 1.0D;
+    }
+
+    private static double lattice3(int x, int y, int z, long salt) {
+        long h = salt;
+        h ^= (long) x * 0x9E3779B97F4A7C15L;
+        h ^= (long) y * 0xC2B2AE3D27D4EB4FL;
+        h ^= (long) z * 0x165667B19E3779F9L;
+        h ^= h >>> 29;
+        h *= 0xBF58476D1CE4E5B9L;
+        h ^= h >>> 32;
+        return (double) (h >>> 11) * 0x1.0p-53;
     }
 
     private static BlockState oreAt(int x, int y, int z, long seed) {

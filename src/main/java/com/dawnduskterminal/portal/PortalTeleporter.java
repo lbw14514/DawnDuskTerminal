@@ -60,45 +60,6 @@ public final class PortalTeleporter {
         return server.getLevel(ResourceKey.create(Registries.DIMENSION, location));
     }
 
-    public static void teleport(ServerPlayer player) {
-        int cooldown = DdtConfig.portalCooldownTicks();
-        PortalState state = player.getData(ModAttachments.PORTAL_STATE);
-        ServerLevel current = player.serverLevel();
-
-        if (current.dimension().equals(ModDimensions.CHRONO)) {
-            ServerLevel target = resolve(player.server, state.returnDim());
-            if (target == null) {
-                target = player.server.overworld();
-            }
-            double originX = state.hasReturn() ? state.x() : target.getSharedSpawnPos().getX() + 0.5D;
-            double originZ = state.hasReturn() ? state.z() : target.getSharedSpawnPos().getZ() + 0.5D;
-            int originY = state.hasReturn() ? Mth.floor(state.y()) : target.getSharedSpawnPos().getY();
-            Vec3 destination = findSafeLanding(target, originX, originZ, originY);
-            player.teleportTo(target, destination.x, destination.y, destination.z, player.getYRot(), player.getXRot());
-            player.setData(ModAttachments.PORTAL_STATE,
-                player.getData(ModAttachments.PORTAL_STATE).withCooldown(cooldown));
-            playSound(player, ModSounds.PORTAL_EXIT);
-            return;
-        }
-
-        ServerLevel chrono = player.server.getLevel(ModDimensions.CHRONO);
-        if (chrono == null) {
-            return;
-        }
-        player.displayClientMessage(
-            net.minecraft.network.chat.Component.translatable("message.dawnduskterminal.searching"), false);
-        Vec3 landing = findSafeLanding(chrono, player.getX(), player.getZ(), Mth.floor(player.getY()));
-        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal teleport from {} {} {} to chrono {} {} {}",
-            (int) player.getX(), (int) player.getY(), (int) player.getZ(),
-            (int) landing.x, (int) landing.y, (int) landing.z);
-        PortalState remembered = state.withReturn(
-            current.dimension().location().toString(), player.getX(), player.getY(), player.getZ());
-        player.teleportTo(chrono, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
-        buildArrivalPortal(chrono, landing);
-        player.setData(ModAttachments.PORTAL_STATE, remembered.withCooldown(cooldown));
-        playSound(player, ModSounds.PORTAL_ENTER);
-    }
-
     private static final class SearchTask {
         final ServerLevel level;
         final double baseX;
@@ -133,6 +94,15 @@ public final class PortalTeleporter {
         java.util.UUID id = player.getUUID();
         SearchTask task = SEARCHES.get(id);
         boolean inPortal = PortalTrigger.shouldTeleport(player, player.blockPosition());
+        if (task == null && !inPortal && cooldownActive(player)
+            && PortalTrigger.isInsidePortal(player, player.blockPosition())) {
+            if (player.tickCount % 20 == 0) {
+                int left = player.getData(ModAttachments.PORTAL_STATE).cooldown();
+                player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    "portal cooldown " + (left / 20 + 1) + "s"), true);
+            }
+            return;
+        }
         if (task == null) {
             if (inPortal) {
                 SearchTask created = createTask(player);
@@ -161,7 +131,7 @@ public final class PortalTeleporter {
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
                 new com.dawnduskterminal.network.PortalSearchPayload(true));
         }
-        task.budget = 16;
+        task.budget = 2;
         if (task.charge < 100) {
             task.charge++;
             return;
@@ -343,10 +313,6 @@ public final class PortalTeleporter {
         playSound(player, ModSounds.PORTAL_ENTER);
     }
 
-    public static void cancelSearch(ServerPlayer player) {
-        SEARCHES.remove(player.getUUID());
-    }
-
     public static Vec3 findSafeLanding(ServerLevel level, double originX, double originZ, int originY) {
         int baseX = Mth.floor(originX);
         int baseZ = Mth.floor(originZ);
@@ -448,8 +414,10 @@ public final class PortalTeleporter {
                     continue;
                 }
                 level.setBlockAndUpdate(center.offset(dx, -1, dz), ModBlocks.SKY_SOIL.get().defaultBlockState());
-                level.setBlockAndUpdate(center.offset(dx, -2, dz), Blocks.STONE.defaultBlockState());
-                level.setBlockAndUpdate(center.offset(dx, -3, dz), Blocks.STONE.defaultBlockState());
+                level.setBlockAndUpdate(center.offset(dx, -2, dz),
+                    com.dawnduskterminal.registry.ModTerrainBlocks.EMBER_SOIL.get().defaultBlockState());
+                level.setBlockAndUpdate(center.offset(dx, -3, dz),
+                    com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get().defaultBlockState());
             }
         }
         for (int dy = 0; dy <= 4; dy++) {

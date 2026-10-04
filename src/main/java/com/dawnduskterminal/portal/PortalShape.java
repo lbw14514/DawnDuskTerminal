@@ -151,7 +151,8 @@ public final class PortalShape {
         List<BlockPos> plants = new ArrayList<>();
         for (BlockPos side : ring) {
             BlockPos aboveSide = side.above();
-            if (isPlant(level.getBlockState(aboveSide))) {
+            BlockState above = level.getBlockState(aboveSide);
+            if (isPlant(above) && !above.isAir()) {
                 plants.add(aboveSide);
             }
         }

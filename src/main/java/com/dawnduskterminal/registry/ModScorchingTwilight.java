@@ -13,7 +13,6 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.SoundActions;
-import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -50,11 +49,13 @@ public final class ModScorchingTwilight {
             .sound(SoundActions.BUCKET_FILL, net.minecraft.sounds.SoundEvents.BUCKET_FILL_LAVA)
             .sound(SoundActions.BUCKET_EMPTY, net.minecraft.sounds.SoundEvents.BUCKET_EMPTY_LAVA)));
 
-    public static final DeferredHolder<net.minecraft.world.level.material.Fluid, BaseFlowingFluid.Source> SOURCE =
-        FLUIDS.register("scorching_twilight", () -> new BaseFlowingFluid.Source(properties()));
+    public static final DeferredHolder<net.minecraft.world.level.material.Fluid,
+        com.dawnduskterminal.fluid.ScorchingTwilightFluid.Source> SOURCE =
+        FLUIDS.register("scorching_twilight", com.dawnduskterminal.fluid.ScorchingTwilightFluid.Source::new);
 
-    public static final DeferredHolder<net.minecraft.world.level.material.Fluid, BaseFlowingFluid.Flowing> FLOWING =
-        FLUIDS.register("flowing_scorching_twilight", () -> new BaseFlowingFluid.Flowing(properties()));
+    public static final DeferredHolder<net.minecraft.world.level.material.Fluid,
+        com.dawnduskterminal.fluid.ScorchingTwilightFluid.Flowing> FLOWING =
+        FLUIDS.register("flowing_scorching_twilight", com.dawnduskterminal.fluid.ScorchingTwilightFluid.Flowing::new);
 
     public static final DeferredBlock<LiquidBlock> BLOCK = BLOCKS.registerBlock(
         "scorching_twilight",
@@ -79,16 +80,6 @@ public final class ModScorchingTwilight {
             .rarity(Rarity.UNCOMMON)));
 
     private ModScorchingTwilight() {}
-
-    public static BaseFlowingFluid.Properties properties() {
-        return new BaseFlowingFluid.Properties(TYPE, SOURCE, FLOWING)
-            .block(BLOCK)
-            .bucket(BUCKET)
-            .slopeFindDistance(4)
-            .levelDecreasePerBlock(1)
-            .tickRate(20)
-            .explosionResistance(100.0F);
-    }
 
     public static void register(IEventBus bus) {
         FLUID_TYPES.register(bus);

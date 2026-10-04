@@ -30,6 +30,12 @@ neoForge {
             gameDirectory = project.file('run/data')
             programArguments.addAll '--mod', mod_id, '--all', '--output', project.file('src/generated/resources').absolutePath, '--existing', project.file('src/main/resources').absolutePath
         }
+        gameTestServer {
+            type = "gameTestServer"
+            gameDirectory = project.file('run/gametest')
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            programArguments.addAll '--nogui'
+        }
     }
 
     mods {

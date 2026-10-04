@@ -81,8 +81,8 @@ public final class DdtServerEvents {
                 double param = ChronoLineState.serverLine().param(player.getX(), player.getZ());
                 com.dawnduskterminal.advancement.ModCriteria.lineParam().trigger(player, param);
             }
-            PortalTeleporter.tick(player);
         }
+        PortalTeleporter.tick(player);
     }
 
     private static void scanFuelItems(ServerPlayer player) {

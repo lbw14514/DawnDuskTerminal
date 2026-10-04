@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "dawnduskterminal:chrono_leaves",
+    "dawnduskterminal:dawn_leaves",
+    "dawnduskterminal:dusk_leaves",
+    "dawnduskterminal:withered_chrono_leaves",
+    "dawnduskterminal:withered_dawn_leaves",
+    "dawnduskterminal:withered_dusk_leaves"
+  ]
+}

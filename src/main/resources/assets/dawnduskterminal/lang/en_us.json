@@ -75,5 +75,8 @@
   "block.dawnduskterminal.dusk_leaves": "Dusk Leaves",
   "block.dawnduskterminal.chrono_log": "Chrono Log",
   "block.dawnduskterminal.chrono_leaves": "Chrono Leaves",
+  "block.dawnduskterminal.withered_dawn_leaves": "Withered Dawn Leaves",
+  "block.dawnduskterminal.withered_dusk_leaves": "Withered Dusk Leaves",
+  "block.dawnduskterminal.withered_chrono_leaves": "Withered Chrono Leaves",
   "block.dawnduskterminal.scarlet_molybdenum_ore": "Scarlet Molybdenum Ore"
 }

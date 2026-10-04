@@ -11,5 +11,5 @@
     "dawnduskterminal:sky_ore_diamond",
     "dawnduskterminal:sky_ore_emerald"
   ],
-  "step": "underground_ores"
+  "step": "top_layer_modification"
 }

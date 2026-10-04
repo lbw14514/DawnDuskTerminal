@@ -28,11 +28,12 @@ public final class PortalTrigger {
         return state.is(ModBlocks.PORTAL_FLUID.get());
     }
 
+    public static boolean isInsidePortal(Entity entity, BlockPos pos) {
+        return isActivePortal(entity, pos) && PortalShape.isCompletePortalPart(entity.level(), pos);
+    }
+
     public static boolean shouldTeleport(Entity entity, BlockPos pos) {
-        if (!isActivePortal(entity, pos)) {
-            return false;
-        }
-        if (!PortalShape.isCompletePortalPart(entity.level(), pos)) {
+        if (!isInsidePortal(entity, pos)) {
             return false;
         }
         if (!(entity instanceof Player player)) {
@@ -44,9 +45,6 @@ public final class PortalTrigger {
         if (player.isSwimming() || player.isVisuallySwimming()) {
             return false;
         }
-        if (!player.isShiftKeyDown()) {
-            return false;
-        }
-        return player.getUseItem().isEmpty();
+        return true;
     }
 }

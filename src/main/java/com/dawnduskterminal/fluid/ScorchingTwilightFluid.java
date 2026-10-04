@@ -1,0 +1,234 @@
+package com.dawnduskterminal.fluid;
+
+import com.dawnduskterminal.registry.ModScorchingTwilight;
+import java.util.Optional;
+import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.FluidState;
+import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.neoforge.fluids.FluidType;
+
+public abstract class ScorchingTwilightFluid extends FlowingFluid {
+    public static final float MIN_LEVEL_CUTOFF = 0.44444445F;
+
+    @Override
+    public FluidType getFluidType() {
+        return ModScorchingTwilight.TYPE.value();
+    }
+
+    @Override
+    public Fluid getFlowing() {
+        return ModScorchingTwilight.FLOWING.get();
+    }
+
+    @Override
+    public Fluid getSource() {
+        return ModScorchingTwilight.SOURCE.get();
+    }
+
+    @Override
+    public Item getBucket() {
+        return ModScorchingTwilight.BUCKET.get();
+    }
+
+    @Override
+    public void animateTick(Level level, BlockPos pos, FluidState state, RandomSource random) {
+        BlockPos above = pos.above();
+        BlockState aboveState = level.getBlockState(above);
+        if (aboveState.isAir() && !aboveState.isSolidRender(level, above)) {
+            if (random.nextInt(100) == 0) {
+                double x = pos.getX() + random.nextDouble();
+                double y = pos.getY() + 1.0D;
+                double z = pos.getZ() + random.nextDouble();
+                level.addParticle(ParticleTypes.LAVA, x, y, z, 0.0D, 0.0D, 0.0D);
+                level.playLocalSound(x, y, z, SoundEvents.LAVA_POP, SoundSource.BLOCKS,
+                    0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
+            }
+            if (random.nextInt(200) == 0) {
+                level.playLocalSound(pos.getX(), pos.getY(), pos.getZ(), SoundEvents.LAVA_AMBIENT,
+                    SoundSource.BLOCKS, 0.2F + random.nextFloat() * 0.2F,
+                    0.9F + random.nextFloat() * 0.15F, false);
+            }
+        }
+    }
+
+    @Override
+    public void randomTick(Level level, BlockPos pos, FluidState state, RandomSource random) {
+        if (!level.getGameRules().getBoolean(GameRules.RULE_DOFIRETICK)) {
+            return;
+        }
+        int rolls = random.nextInt(3);
+        if (rolls > 0) {
+            BlockPos target = pos;
+            for (int i = 0; i < rolls; i++) {
+                target = target.offset(random.nextInt(3) - 1, 1, random.nextInt(3) - 1);
+                if (!level.isLoaded(target)) {
+                    return;
+                }
+                BlockState state2 = level.getBlockState(target);
+                if (state2.isAir()) {
+                    if (this.hasFlammableNeighbours(level, target)) {
+                        level.setBlockAndUpdate(target, EventHooks.fireFluidPlaceBlockEvent(level, target, pos,
+                            BaseFireBlock.getState(level, target)));
+                        return;
+                    }
+                } else if (state2.blocksMotion()) {
+                    return;
+                }
+            }
+        } else {
+            for (int i = 0; i < 3; i++) {
+                BlockPos target = pos.offset(random.nextInt(3) - 1, 0, random.nextInt(3) - 1);
+                if (!level.isLoaded(target)) {
+                    return;
+                }
+                if (level.isEmptyBlock(target.above()) && this.isFlammable(level, target, Direction.UP)) {
+                    level.setBlockAndUpdate(target.above(), EventHooks.fireFluidPlaceBlockEvent(level,
+                        target.above(), pos, BaseFireBlock.getState(level, target)));
+                }
+            }
+        }
+    }
+
+    private boolean hasFlammableNeighbours(LevelReader level, BlockPos pos) {
+        for (Direction direction : Direction.values()) {
+            if (this.isFlammable(level, pos.relative(direction), direction.getOpposite())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isFlammable(LevelReader level, BlockPos pos, Direction face) {
+        if (pos.getY() >= level.getMinBuildHeight() && pos.getY() < level.getMaxBuildHeight()
+            && !level.hasChunkAt(pos)) {
+            return false;
+        }
+        return level.getBlockState(pos).ignitedByLava(level, pos, face);
+    }
+
+    @Nullable
+    @Override
+    public ParticleOptions getDripParticle() {
+        return ParticleTypes.DRIPPING_LAVA;
+    }
+
+    @Override
+    protected void beforeDestroyingBlock(LevelAccessor level, BlockPos pos, BlockState state) {
+        level.levelEvent(1501, pos, 0);
+    }
+
+    @Override
+    public int getSlopeFindDistance(LevelReader level) {
+        return level.dimensionType().ultraWarm() ? 4 : 2;
+    }
+
+    @Override
+    public BlockState createLegacyBlock(FluidState state) {
+        return ModScorchingTwilight.BLOCK.get().defaultBlockState()
+            .setValue(LiquidBlock.LEVEL, Integer.valueOf(getLegacyLevel(state)));
+    }
+
+    @Override
+    public boolean isSame(Fluid fluid) {
+        return fluid == ModScorchingTwilight.SOURCE.get() || fluid == ModScorchingTwilight.FLOWING.get();
+    }
+
+    @Override
+    public int getDropOff(LevelReader level) {
+        return level.dimensionType().ultraWarm() ? 1 : 2;
+    }
+
+    @Override
+    public boolean canBeReplacedWith(FluidState state, BlockGetter level, BlockPos pos, Fluid fluid,
+                                     Direction direction) {
+        return state.getHeight(level, pos) >= MIN_LEVEL_CUTOFF && fluid.is(FluidTags.WATER);
+    }
+
+    @Override
+    public int getTickDelay(LevelReader level) {
+        return level.dimensionType().ultraWarm() ? 10 : 30;
+    }
+
+    @Override
+    public int getSpreadDelay(Level level, BlockPos pos, FluidState oldState, FluidState newState) {
+        int delay = this.getTickDelay(level);
+        if (!oldState.isEmpty() && !newState.isEmpty()
+            && !oldState.getValue(FALLING) && !newState.getValue(FALLING)
+            && newState.getHeight(level, pos) > oldState.getHeight(level, pos)
+            && level.getRandom().nextInt(4) != 0) {
+            delay *= 4;
+        }
+        return delay;
+    }
+
+    @Override
+    protected boolean canConvertToSource(Level level) {
+        return level.getGameRules().getBoolean(GameRules.RULE_LAVA_SOURCE_CONVERSION);
+    }
+
+    @Override
+    protected boolean isRandomlyTicking() {
+        return true;
+    }
+
+    @Override
+    protected float getExplosionResistance() {
+        return 100.0F;
+    }
+
+    @Override
+    public Optional<SoundEvent> getPickupSound() {
+        return Optional.of(SoundEvents.BUCKET_FILL_LAVA);
+    }
+
+    public static class Source extends ScorchingTwilightFluid {
+        @Override
+        public int getAmount(FluidState state) {
+            return 8;
+        }
+
+        @Override
+        public boolean isSource(FluidState state) {
+            return true;
+        }
+    }
+
+    public static class Flowing extends ScorchingTwilightFluid {
+        @Override
+        protected void createFluidStateDefinition(StateDefinition.Builder<Fluid, FluidState> builder) {
+            super.createFluidStateDefinition(builder);
+            builder.add(LEVEL);
+        }
+
+        @Override
+        public int getAmount(FluidState state) {
+            return state.getValue(LEVEL);
+        }
+
+        @Override
+        public boolean isSource(FluidState state) {
+            return false;
+        }
+    }
+}

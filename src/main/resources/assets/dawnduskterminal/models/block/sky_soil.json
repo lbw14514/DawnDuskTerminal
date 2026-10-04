@@ -4,7 +4,9 @@
     "particle": "dawnduskterminal:block/sky_soil_bottom",
     "bottom": "dawnduskterminal:block/sky_soil_bottom",
     "top": "dawnduskterminal:block/sky_soil_top",
-    "side": "dawnduskterminal:block/sky_soil_side"
+    "side": "dawnduskterminal:block/sky_soil_side",
+    "top2": "dawnduskterminal:block/sky_soil_top2",
+    "side2": "dawnduskterminal:block/sky_soil_side2"
   },
   "elements": [
     {
@@ -17,26 +19,52 @@
         },
         "up": {
           "texture": "#top",
+          "cullface": "up"
+        },
+        "north": {
+          "texture": "#side",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#side",
+          "cullface": "south"
+        },
+        "west": {
+          "texture": "#side",
+          "cullface": "west"
+        },
+        "east": {
+          "texture": "#side",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "up": {
+          "texture": "#top2",
           "cullface": "up",
           "tintindex": 0
         },
         "north": {
-          "texture": "#side",
+          "texture": "#side2",
           "cullface": "north",
           "tintindex": 0
         },
         "south": {
-          "texture": "#side",
+          "texture": "#side2",
           "cullface": "south",
           "tintindex": 0
         },
         "west": {
-          "texture": "#side",
+          "texture": "#side2",
           "cullface": "west",
           "tintindex": 0
         },
         "east": {
-          "texture": "#side",
+          "texture": "#side2",
           "cullface": "east",
           "tintindex": 0
         }

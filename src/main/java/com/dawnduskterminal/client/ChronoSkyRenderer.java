@@ -24,6 +24,7 @@ import org.joml.Vector3f;
 
 public final class ChronoSkyRenderer {
     private static final int SEGMENTS = 64;
+    private static final int DOME_BANDS = 14;
     private static final float RADIUS = 100.0F;
     private static final int STAR_COUNT = 320;
     private static final float SUN_HIDE_DEGREES = 2.0F;
@@ -208,34 +209,50 @@ public final class ChronoSkyRenderer {
 
         int top = sampleColor(DdtConfig.skyTopColors(), param);
         int horizon = sampleColor(DdtConfig.skyHorizonColors(), param);
-        int c1 = lerpColor(top, horizon, 0.25F);
-        int c2 = lerpColor(top, horizon, 0.50F);
-        int c3 = lerpColor(top, horizon, 0.75F);
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        float r1 = RADIUS * 0.72F;
-        float r2 = RADIUS * 0.92F;
-        float r3 = RADIUS * 1.02F;
-        float r4 = RADIUS * 1.12F;
-        float y1 = RADIUS * 0.62F;
-        float y2 = RADIUS * 0.30F;
-        float y3 = RADIUS * 0.05F;
-        float y4 = -RADIUS * 0.08F;
+        float capElevation = 52.0F;
+        float floorElevation = -8.0F;
+        double capRad = Math.toRadians(capElevation);
+        float capY = (float) (Math.sin(capRad) * RADIUS);
+        float capR = (float) (Math.cos(capRad) * RADIUS);
 
         BufferBuilder cap = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
         cap.addVertex(matrix, 0.0F, RADIUS, 0.0F).setColor(red(top), green(top), blue(top), 1.0F);
         for (int i = 0; i <= SEGMENTS; i++) {
             double theta = (double) i / (double) SEGMENTS * Math.PI * 2.0D;
-            cap.addVertex(matrix, (float) (Math.cos(theta) * r1), y1, (float) (Math.sin(theta) * r1))
-                .setColor(red(c1), green(c1), blue(c1), 1.0F);
+            cap.addVertex(matrix, (float) (Math.cos(theta) * capR), capY, (float) (Math.sin(theta) * capR))
+                .setColor(red(top), green(top), blue(top), 1.0F);
         }
         BufferUploader.drawWithShader(cap.buildOrThrow());
 
-        band(matrix, r1, y1, c1, r2, y2, c2);
-        band(matrix, r2, y2, c2, r3, y3, c3);
-        band(matrix, r3, y3, c3, r4, y4, horizon);
+        for (int bandIndex = 0; bandIndex < DOME_BANDS; bandIndex++) {
+            float t0 = (float) bandIndex / (float) DOME_BANDS;
+            float t1 = (float) (bandIndex + 1) / (float) DOME_BANDS;
+            float ease0 = smooth(t0);
+            float ease1 = smooth(t1);
+            int color0 = ease0 <= 0.0F ? top : lerpColor(top, horizon, ease0);
+            int color1 = lerpColor(top, horizon, ease1);
+            float elevation0 = Mth.lerp(t0, capElevation, floorElevation);
+            float elevation1 = Mth.lerp(t1, capElevation, floorElevation);
+            double rad0 = Math.toRadians(elevation0);
+            double rad1 = Math.toRadians(elevation1);
+            band(matrix,
+                (float) (Math.cos(rad0) * RADIUS), (float) (Math.sin(rad0) * RADIUS), color0,
+                (float) (Math.cos(rad1) * RADIUS), (float) (Math.sin(rad1) * RADIUS), color1);
+        }
+    }
+
+    private static float smooth(float t) {
+        if (t <= 0.0F) {
+            return 0.0F;
+        }
+        if (t >= 1.0F) {
+            return 1.0F;
+        }
+        return t * t * (3.0F - 2.0F * t);
     }
 
     private static void band(Matrix4f matrix, float innerR, float innerY, int innerColor,

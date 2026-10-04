@@ -75,5 +75,8 @@
   "block.dawnduskterminal.dusk_leaves": "昏之叶",
   "block.dawnduskterminal.chrono_log": "时之木",
   "block.dawnduskterminal.chrono_leaves": "时之叶",
+  "block.dawnduskterminal.withered_dawn_leaves": "枯萎晨之叶",
+  "block.dawnduskterminal.withered_dusk_leaves": "枯萎昏之叶",
+  "block.dawnduskterminal.withered_chrono_leaves": "枯萎时之叶",
   "block.dawnduskterminal.scarlet_molybdenum_ore": "绯红钼矿"
 }

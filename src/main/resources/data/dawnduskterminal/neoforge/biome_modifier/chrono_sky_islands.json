@@ -1,6 +1,0 @@
-{
-  "type": "neoforge:add_features",
-  "biomes": "#dawnduskterminal:chrono_surface",
-  "features": "dawnduskterminal:sky_island",
-  "step": "raw_generation"
-}

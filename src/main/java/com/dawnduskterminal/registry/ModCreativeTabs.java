@@ -28,7 +28,6 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.UR_GHAST_TROPHY.get());
                 accept(output, ModItems.SNOW_QUEEN_TROPHY.get());
                 accept(output, ModItems.CHRONO_CORE.get());
-                accept(output, ModItems.PORTAL_BUCKET.get());
                 accept(output, ModScorchingTwilight.BUCKET.get());
                 accept(output, ModItems.SKY_SOIL.get());
                 accept(output, ModItems.CHRONO_CRUST.get());
@@ -52,6 +51,9 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.DAWN_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.DUSK_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.CHRONO_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.WITHERED_DAWN_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.WITHERED_DUSK_LEAVES_ITEM.get());
+                accept(output, ModTerrainBlocks.WITHERED_CHRONO_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.SCARLET_MOLYBDENUM_ORE_ITEM.get());
                 acceptForeign(output, "twilightforest:aurora_block");
             })

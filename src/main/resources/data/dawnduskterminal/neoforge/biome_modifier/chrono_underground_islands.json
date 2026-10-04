@@ -1,6 +1,0 @@
-{
-  "type": "neoforge:add_features",
-  "biomes": "#dawnduskterminal:chrono_surface",
-  "features": "dawnduskterminal:underground_islands",
-  "step": "local_modifications"
-}
