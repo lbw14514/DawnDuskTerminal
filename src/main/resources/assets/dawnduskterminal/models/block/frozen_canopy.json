@@ -1,8 +1,6 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
+  "parent": "minecraft:block/cube_all",
   "textures": {
-    "top": "dawnduskterminal:block/frozen_canopy_top",
-    "side": "dawnduskterminal:block/frozen_canopy_side",
-    "bottom": "dawnduskterminal:block/frozen_canopy"
+    "all": "dawnduskterminal:block/frozen_canopy"
   }
 }

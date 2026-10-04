@@ -307,8 +307,11 @@ public final class PortalTeleporter {
             playSound(player, ModSounds.PORTAL_EXIT);
             return;
         }
-        player.teleportTo(task.level, landing.x, landing.y, landing.z, player.getYRot(), player.getXRot());
-        buildArrivalPortal(task.level, landing);
+        Vec3 arrived = buildArrivalPortal(task.level, landing);
+        if (arrived == null) {
+            arrived = landing;
+        }
+        player.teleportTo(task.level, arrived.x, arrived.y, arrived.z, player.getYRot(), player.getXRot());
         player.setData(ModAttachments.PORTAL_STATE, task.remembered.withCooldown(cooldown));
         playSound(player, ModSounds.PORTAL_ENTER);
     }
@@ -438,53 +441,114 @@ public final class PortalTeleporter {
             net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
-    public static boolean buildArrivalPortal(ServerLevel level, Vec3 landing) {
-        int baseX = Mth.floor(landing.x) + 2;
-        int baseZ = Mth.floor(landing.z);
-        int y = Mth.floor(landing.y);
-        BlockPos probe = new BlockPos(baseX, y - 1, baseZ);
-        if (!level.getBlockState(probe).isFaceSturdy(level, probe, Direction.UP)) {
-            return false;
-        }
-        BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
-        BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
-        BlockState turf = ModBlocks.SKY_SOIL.get().defaultBlockState();
-        BlockState soil = com.dawnduskterminal.registry.ModTerrainBlocks.EMBER_SOIL.get().defaultBlockState();
-        for (int dx = 0; dx < 2; dx++) {
-            for (int dz = 0; dz < 2; dz++) {
-                BlockPos top = new BlockPos(baseX + dx, y - 1, baseZ + dz);
-                level.setBlockAndUpdate(top, Blocks.AIR.defaultBlockState());
-                level.setBlockAndUpdate(top.below(), bedrock);
-                level.setBlockAndUpdate(top.below(2), bedrock);
-                level.setBlockAndUpdate(top, portal);
-                level.setBlockAndUpdate(top.above(), Blocks.AIR.defaultBlockState());
+    public static Vec3 buildArrivalPortal(ServerLevel level, Vec3 landing) {
+        int reqX = Mth.floor(landing.x) + 2;
+        int reqZ = Mth.floor(landing.z);
+        int reqFloor = Mth.floor(landing.y) - 1;
+        BlockPos.MutableBlockPos scan = new BlockPos.MutableBlockPos();
+        for (int sx = -6; sx <= 6; sx++) {
+            for (int sy = -4; sy <= 4; sy++) {
+                for (int sz = -6; sz <= 6; sz++) {
+                    scan.set(reqX + sx, reqFloor + 1 + sy, reqZ + sz);
+                    if (level.getBlockState(scan).is(ModBlocks.PORTAL_FLUID.get())) {
+                        return landing;
+                    }
+                }
             }
         }
+        int minFloor = Math.max(level.getMinBuildHeight() + 2, LANDING_MIN_Y);
+        int chosenX = Integer.MIN_VALUE;
+        int chosenZ = 0;
+        int chosenFloor = 0;
+        for (int ring = 0; ring <= 24 && chosenX == Integer.MIN_VALUE; ring += 4) {
+            for (int dx = -ring; dx <= ring && chosenX == Integer.MIN_VALUE; dx += 4) {
+                for (int dz = -ring; dz <= ring; dz += 4) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+                        continue;
+                    }
+                    int x = reqX + dx;
+                    int z = reqZ + dz;
+                    level.getChunk(x >> 4, z >> 4);
+                    int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                    if (ground < minFloor || ground > reqFloor + 1) {
+                        continue;
+                    }
+                    BlockPos feet = new BlockPos(x, ground + 1, z);
+                    if (!level.getBlockState(feet).getFluidState().isEmpty()
+                        || !level.getBlockState(feet.above()).getFluidState().isEmpty()) {
+                        continue;
+                    }
+                    chosenX = x;
+                    chosenZ = z;
+                    chosenFloor = ground;
+                    break;
+                }
+            }
+        }
+        if (chosenX == Integer.MIN_VALUE) {
+            chosenX = reqX;
+            chosenZ = reqZ;
+            chosenFloor = Math.max(reqFloor, minFloor);
+        }
+        int baseX = chosenX;
+        int baseZ = chosenZ;
+        int floorY = chosenFloor;
+        BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
+        BlockState pad = com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get().defaultBlockState();
+        BlockState turf = ModBlocks.SKY_SOIL.get().defaultBlockState();
+        BlockState soil = com.dawnduskterminal.registry.ModTerrainBlocks.EMBER_SOIL.get().defaultBlockState();
+        BlockState air = Blocks.AIR.defaultBlockState();
         int r = 4;
+        for (int dx = -r; dx <= 2 + r; dx++) {
+            for (int dz = -r; dz <= 2 + r; dz++) {
+                for (int dy = 1; dy <= 4; dy++) {
+                    BlockPos clear = new BlockPos(baseX + dx, floorY + dy, baseZ + dz);
+                    if (!level.getBlockState(clear).isAir()) {
+                        level.setBlockAndUpdate(clear, air);
+                    }
+                }
+                BlockPos pos = new BlockPos(baseX + dx, floorY, baseZ + dz);
+                if (level.getBlockState(pos).isAir()) {
+                    level.setBlockAndUpdate(pos, pad);
+                }
+                if (level.getBlockState(pos.below()).isAir()) {
+                    level.setBlockAndUpdate(pos.below(), pad);
+                }
+                if (level.getBlockState(pos.below(2)).isAir()) {
+                    level.setBlockAndUpdate(pos.below(2), pad);
+                }
+            }
+        }
+        for (int dx = 0; dx < 2; dx++) {
+            for (int dz = 0; dz < 2; dz++) {
+                BlockPos top = new BlockPos(baseX + dx, floorY, baseZ + dz);
+                level.setBlockAndUpdate(top, air);
+                level.setBlockAndUpdate(top.below(), pad);
+                level.setBlockAndUpdate(top.below(2), pad);
+                level.setBlockAndUpdate(top, portal);
+                level.setBlockAndUpdate(top.above(), air);
+            }
+        }
         for (int dx = -r; dx <= 2 + r; dx++) {
             for (int dz = -r; dz <= 2 + r; dz++) {
                 if (dx >= 0 && dx < 2 && dz >= 0 && dz < 2) {
                     continue;
                 }
-                BlockPos pos = new BlockPos(baseX + dx, y - 1, baseZ + dz);
-                BlockState at = level.getBlockState(pos);
-                if (at.isAir()) {
-                    continue;
-                }
+                BlockPos pos = new BlockPos(baseX + dx, floorY, baseZ + dz);
                 if (!level.getBlockState(pos.above()).isAir()) {
                     continue;
                 }
-                if (at.is(com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get())) {
+                if (level.getBlockState(pos).is(pad.getBlock())) {
                     level.setBlockAndUpdate(pos, turf);
                     BlockPos below = pos.below();
-                    if (level.getBlockState(below).is(com.dawnduskterminal.registry.ModTerrainBlocks.SKY_STONE.get())) {
+                    if (level.getBlockState(below).is(pad.getBlock())) {
                         level.setBlockAndUpdate(below, soil);
                     }
                 }
             }
         }
-        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal arrival portal built at {} {} {}", baseX, y, baseZ);
-        return true;
+        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal arrival portal built at {} {} {}", baseX, floorY, baseZ);
+        return new Vec3(baseX - 1.5D, floorY + 1, baseZ + 1.0D);
     }
 
     public static boolean isChronoLevel(Level level) {

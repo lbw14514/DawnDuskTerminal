@@ -202,7 +202,7 @@ public class SkyIslandFeature extends Feature<SkyIslandFeature.Config> {
         return (int) (h ^ (h >>> 32));
     }
 
-    private static long mix(int cx, int cz, long seed) {
+    public static long mix(int cx, int cz, long seed) {
         long h = seed;
         h ^= (long) cx * 0x9E3779B97F4A7C15L;
         h ^= (long) cz * 0xC2B2AE3D27D4EB4FL;

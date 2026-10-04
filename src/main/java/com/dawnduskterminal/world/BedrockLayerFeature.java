@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration;
@@ -38,7 +40,7 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         Config cfg = context.config();
-        BlockState filler = Blocks.BEDROCK.defaultBlockState();
+        BlockState filler = com.dawnduskterminal.registry.ModBlocks.CHRONO_CRUST.get().defaultBlockState();
         int baseX = origin.getX() & ~15;
         int baseZ = origin.getZ() & ~15;
         long seed = level.getSeed();
@@ -47,6 +49,15 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
         int windowLo = Math.max(level.getMinBuildHeight(), cfg.rangeMinY());
         int windowHi = Math.min(level.getMaxBuildHeight() - 1, cfg.rangeMaxY());
         int thickness = Math.max(1, cfg.thickness());
+        int baseChunkX = baseX >> 4;
+        int baseChunkZ = baseZ >> 4;
+        ChunkAccess[][] grid = new ChunkAccess[3][3];
+        for (int cx = 0; cx < 3; cx++) {
+            for (int cz = 0; cz < 3; cz++) {
+                grid[cx][cz] = level.getChunk(baseChunkX - 1 + cx, baseChunkZ - 1 + cz);
+            }
+        }
+        int minBuildY = level.getMinBuildHeight();
         int[][] base = new int[18][18];
         for (int i = 0; i < 18; i++) {
             for (int j = 0; j < 18; j++) {
@@ -56,8 +67,19 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
                 if (pocketRing && inRing(seed, x, z)) {
                     continue;
                 }
+                LevelChunkSection[] sections = grid[(x >> 4) - baseChunkX + 1][(z >> 4) - baseChunkZ + 1].getSections();
+                int lx = x & 15;
+                int lz = z & 15;
                 for (int y = windowLo; y <= windowHi; y++) {
-                    if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) {
+                    int si = (y - minBuildY) >> 4;
+                    if (si < 0 || si >= sections.length) {
+                        continue;
+                    }
+                    LevelChunkSection section = sections[si];
+                    if (section == null || section.hasOnlyAir()) {
+                        continue;
+                    }
+                    if (!section.getBlockState(lx, y & 15, lz).isAir()) {
                         base[i][j] = y;
                         break;
                     }
@@ -119,6 +141,7 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
 
     private static boolean carvePocket(WorldGenLevel level, long seed, int baseX, int baseZ, int lo, int hi) {
         BlockState air = Blocks.AIR.defaultBlockState();
+        net.minecraft.world.level.block.Block crust = com.dawnduskterminal.registry.ModBlocks.CHRONO_CRUST.get();
         boolean changed = false;
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 16; j++) {
@@ -129,7 +152,8 @@ public class BedrockLayerFeature extends Feature<BedrockLayerFeature.Config> {
                 }
                 for (int y = lo; y <= hi; y++) {
                     BlockPos target = new BlockPos(x, y, z);
-                    if (level.getBlockState(target).is(Blocks.BEDROCK)) {
+                    BlockState cur = level.getBlockState(target);
+                    if (cur.is(Blocks.BEDROCK) || cur.is(crust)) {
                         level.setBlock(target, air, 2);
                         changed = true;
                     }

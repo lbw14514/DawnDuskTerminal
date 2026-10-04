@@ -51,7 +51,6 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
         double cz = (cell.startZ() + size / 2.0D) * 16.0D;
         double baseRadius = size * 8.0D;
         BlockState air = Blocks.AIR.defaultBlockState();
-        BlockState crust = com.dawnduskterminal.registry.ModBlocks.CHRONO_CRUST.get().defaultBlockState();
         double[] dists = new double[256];
         double[] shapes = new double[256];
         boolean[] cores = new boolean[256];
@@ -114,11 +113,6 @@ public class HollowPocketFeature extends Feature<HollowPocketFeature.Config> {
                             }
                         }
                         BlockPos pos = new BlockPos(bx, y, bz);
-                        if (!core && !current.getFluidState().isEmpty()) {
-                            level.setBlock(pos, crust, 2);
-                            changed = true;
-                            continue;
-                        }
                         level.setBlock(pos, air, 2);
                         changed = true;
                     }
