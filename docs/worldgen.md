@@ -67,7 +67,7 @@
 
 `density_function/` 含 `overworld/` 子目录
 
-`noise/` 是移植过来的噪声参数
+`noise/` 是移植过来的噪声参数，只有 `noise/temperature.json` 的 `firstOctave` 改过，见「温度噪声的频率是手调的」
 
 `multi_noise_biome_source_parameter_list/` 是原版主世界与下界的多噪声参数表副本
 
@@ -220,13 +220,39 @@ ID 仍是 `birch_forest`，因为占位不改注册名，看 ID 就知道它顶�
 
 想把边界拉直就把 `SPREAD` 调成 0；调大到 `0.15` 以上，夜里会开始往温带渗雪原
 
+### 温度噪声的频率是手调的
+
+`noise/temperature.json` 是从原版 `minecraft:temperature` 一字不差拷过来的，但**频率改过**：`firstOctave` 从 `-10` 抬到 `-7`，`amplitudes` 不动
+
+原版主世界没「带边界」这回事，温度噪声本身就是气候，所以它用 `firstOctave -10`：波长 `4096 / 1024` 格。这个尺度比七带里任何一带（`1000 ~ 3000` 格）都宽，放在晨昏线里只会让边界在几公里的尺度上慢慢漂，带内部与带边上都看不出结构
+
+抬到 `-7` 后波长 `512 / 128` 格（`2^7 / xz_scale 0.25` 与 `2^5 / xz_scale 0.25`）：宽的那个让边界在带内凹凹凸凸，窄的那个把「跟晨昏线平行」的群系边界打散。幅度一个字没改，所以抖动幅度、`±4.4444` 的值域、泄漏上界全都不变
+
+重跑 `tools/port_overworld_worldgen.py` 会把原版的 `-10` 写回来（脚本是忠实拷贝，没有例外表），`WorldgenTests.temperatureNoiseRunsAtTheBandScale` 就是那时候的报警
+
+### 交界抖动
+
+光靠上面那条噪声撑不起交界：`512` 格对它自己要打散的边界来说仍偏宽，站在交界上看还是能看出一条弯得很缓的线
+
+所以断点两侧再叠一层 `ChronoTemperature.seamDither`：三个八度的值噪声，波长是 `SEAM_WIDTH` 的 `1 / 0.3 / 0.1`（默认 `5000` 下即 `400 / 120 / 40` 格），权重 `1 / 0.5 / 0.25`，幅度 `SEAM_DITHER`（`0.09`），再乘一个按到最近断点距离算的权重（断点上 1，离开 `SEAM_WIDTH` 即 `0.08` 个 `param`、默认约 400 格后归 0，中间 smoothstep）
+
+交界于是长成两侧群系互相咬进去的楔形与小飞地；带心不吃抖动，那一带内的群系分布与只叠 `SPREAD` 时一样
+
+`SEAM_WIDTH` 和 `SEAM_DITHER` 的取舍：`SEAM_DITHER` 越大楔子越深，但同时留出的余量越小（见下一条）；`SEAM_WIDTH` 定的是「交界有多宽」，调到 `0.15` 以上会把窄带（夜区 昼区 极带都只有 `0.2` 宽）从中间吃掉，整带都变成抖动区
+
+带宽与抖动波长都写在 `param` 尺度上，跟七带的宽度一样，所以两者都跟着 `maxDistance` 一起缩放：`maxDistance` 从 `5000` 改成 `2500`，带宽减半，抖动波长跟着减半，交界不会相对变粗。代码里没有任何以格为单位的抖动常数——`seamDither` 先把坐标除回 `param` 尺度（除数与 `ChronoLine.param` 用的那个一致），再在 `param` 空间里算值噪声
+
+抖动是 `param` 与 `(x, z)` 的纯函数：不读注册表、不读配置，跨区块、跨线程、重开存档都是同一张图；用 smoothstep 插值值噪声，4 格内变化不到 `0.01`，不会在林子里切出格子状断层
+
+交界抖动与 `SPREAD` 同时满幅，所以泄漏的上界是两者之和（`0.17`）：温带上界 `0.20 + 0.17 < 0.55`，下界 `-0.15 - 0.17 > -0.45`，仍然够不到沙漠与雪原。`WorldgenTests` 钉住这两条
+
 ### 值域
 
-温度噪声原本是 `shifted_noise`，噪声 `dawnduskterminal:temperature`，`amplitudes` 为 `[1.5, 0, 1, 0, 0, 0]`，`firstOctave` 为 -10，声明值域 `±4.4444`
+温度噪声原本是 `shifted_noise`，噪声 `dawnduskterminal:temperature`，`amplitudes` 为 `[1.5, 0, 1, 0, 0, 0]`，`firstOctave` 为 `-7`（手调过，见「温度噪声的频率是手调的」），声明值域 `±4.4444`
 
-中间五带输出落在 `[-1.08, 1.08]`（带端点 ± `SPREAD`）；两个极带继续往外推，`param` 被钳到 `±1` 时温度到 `ChronoTemperature.POLAR_TEMPERATURE`（`2.0`），所以 `minValue` / `maxValue` 是 `±2.0`
+中间五带输出落在 `[-1.17, 1.17]`（带端点 ± `SPREAD` ± `SEAM_DITHER`）；两个极带继续往外推，`param` 被钳到 `±1` 时温度到 `ChronoTemperature.POLAR_TEMPERATURE`（`2.0`），所以 `minValue` / `maxValue` 是 `±2.0`。极带内抖动的余量够大：`param` `0.9` 处温度 `1.5`，减满幅抖动还有 `1.41`，稳稳留在 `extra` 的 `[1, 2]` 里
 
-`|param| >= 0.8` 的两个极带不叠噪声：噪声一压就可能掉回原版那一行，而 `extra` 那两条的跨度是从 `±1` 起算的，边界会变成一条毛边
+`|param| >= 0.8` 的两个极带不叠 `SPREAD` 那条低频噪声：它一压就可能把极带边界推出 `extra` 的 `±1 ~ ±2` 跨度，边界变成一条毛边。交界抖动不受这条限制，极带边界（`±0.8`）照样吃它，所以极昼极夜与昼区夜区之间也会互相咬合
 
 ### 想加群系有两条路
 
