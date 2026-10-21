@@ -499,15 +499,56 @@ public final class WorldgenTests {
                     <= ChronoTemperature.bandTemperature(param + 0.01D),
                 "the band mapping must be monotonic at param " + param);
         }
-        // 温带带内即使算上噪声也到不了沙漠与雪原的门槛（0.55 / -0.45）
+        // 温带带内即使算上噪声也到不了沙漠与雪原的门槛（0.55 / -0.45）。交界抖动与 SPREAD 同时满幅，
+        // 所以泄漏的上界是两者之和
+        double seamReach = ChronoTemperature.SPREAD + ChronoTemperature.SEAM_DITHER;
         double temperateCeiling = ChronoTemperature.bandTemperature(ChronoTemperature.TROPIC_ZONE);
         double temperateFloor = ChronoTemperature.bandTemperature(ChronoTemperature.COLD_ZONE);
-        helper.assertTrue(temperateCeiling + ChronoTemperature.SPREAD < 0.55D,
+        helper.assertTrue(temperateCeiling + seamReach < 0.55D,
             "the temperate band must not reach the desert threshold even with noise, got "
-                + (temperateCeiling + ChronoTemperature.SPREAD));
-        helper.assertTrue(temperateFloor - ChronoTemperature.SPREAD > -0.45D,
+                + (temperateCeiling + seamReach));
+        helper.assertTrue(temperateFloor - seamReach > -0.45D,
             "the temperate band must not reach the snowy threshold even with noise, got "
-                + (temperateFloor - ChronoTemperature.SPREAD));
+                + (temperateFloor - seamReach));
+
+        // 交界抖动：断点上满幅，离开 SEAM_WIDTH 归零，带心一点不动
+        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE) == 1.0D,
+            "a breakpoint must get the full seam weight");
+        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE
+                + ChronoTemperature.SEAM_WIDTH) == 0.0D,
+            "the seam weight must be gone one SEAM_WIDTH away from the breakpoint");
+        helper.assertTrue(ChronoTemperature.seamWeight(0.0D) == 0.0D,
+            "the middle of the temperate band must stay free of seam jitter");
+        helper.assertTrue(ChronoTemperature.seamDither(0.0D, 1234.0D, -5678.0D) == 0.0D,
+            "band cores must not be jittered");
+        // 极带边界（±0.8）也吃抖动，但极带内部即使满幅抖动也必须留在 extra 的 [1, 2]
+        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.POLAR_DAY) == 1.0D,
+            "the polar seams must be jittered too, otherwise those two lines stay razor sharp");
+        helper.assertTrue(ChronoTemperature.bandTemperature(0.9D) - ChronoTemperature.SEAM_DITHER > 1.0D,
+            "the polar bands must stay inside the extra spans even at full seam jitter");
+
+        // 断点两侧都得被推过温标：两侧都有正有负，交界才会两侧群系都出现，而不是一条线
+        double min = Double.MAX_VALUE;
+        double max = -Double.MAX_VALUE;
+        for (double x = -2000.0D; x <= 2000.0D; x += 37.0D) {
+            for (double z = -2000.0D; z <= 2000.0D; z += 37.0D) {
+                double dither = ChronoTemperature.seamDither(ChronoTemperature.TROPIC_ZONE, x, z);
+                helper.assertTrue(Math.abs(dither) <= ChronoTemperature.SEAM_DITHER,
+                    "the seam jitter must stay within SEAM_DITHER, got " + dither);
+                min = Math.min(min, dither);
+                max = Math.max(max, dither);
+            }
+        }
+        helper.assertTrue(max > 0.02D && min < -0.02D,
+            "the seam jitter must push both ways at a breakpoint, got " + min + " ~ " + max);
+
+        // 连续：逐格跳 0.01 以上就会把交界切成格子状断层
+        for (double z = -1500.0D; z < 1500.0D; z += 1.0D) {
+            double a = ChronoTemperature.seamDither(ChronoTemperature.COLD_ZONE, 300.0D, z);
+            double b = ChronoTemperature.seamDither(ChronoTemperature.COLD_ZONE, 300.0D, z + 1.0D);
+            helper.assertTrue(Math.abs(a - b) < 0.01D,
+                "the seam jitter must stay smooth at z " + z + ", got a step of " + Math.abs(a - b));
+        }
         helper.succeed();
     }
 
