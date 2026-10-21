@@ -170,6 +170,31 @@ public final class WorldgenTests {
     }
 
     /**
+     * 温度噪声的频率是手调的，不是原版那一个
+     *
+     * <p>原版主世界用的是 {@code firstOctave -10}，波长 `4096 / 1024` 格，比七带里任何一带都宽，所以它只会
+     * 让边界在几公里上慢慢漂，带内部看不出结构。把首八度抬到 {@code -7} 后，波长 `512 / 128` 格：宽的那个
+     * 让边界在带内凹凹凸凸，窄的那个把「跟晨昏线平行」的群系边界打散。幅度一个字没改，所以温度抖动幅度与
+     * {@code ChronoTemperature} 的泄漏上界都不变
+     *
+     * <p>重跑 {@code tools/port_overworld_worldgen.py} 会把原版的 {@code -10} 写回来（脚本是忠实拷贝），这个
+     * 断言就是那时候的报警
+     */
+    @GameTest(template = "ddt_empty")
+    public static void temperatureNoiseRunsAtTheBandScale(GameTestHelper helper) {
+        Registry<NormalNoise.NoiseParameters> registry =
+            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE);
+        NormalNoise.NoiseParameters params = registry.getOrThrow(ResourceKey.create(Registries.NOISE,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "temperature")));
+        helper.assertTrue(params.firstOctave() == -7,
+            "the chrono temperature noise must stay at firstOctave -7 (512 / 128 block wavelengths); "
+                + "the vanilla -10 only wanders over kilometres, got " + params.firstOctave());
+        helper.assertTrue(params.amplitudes().size() == 6 && params.amplitudes().getDouble(0) == 1.5D,
+            "the amplitude fingerprint is still vanilla's, only the frequency was retuned");
+        helper.succeed();
+    }
+
+    /**
      * 把噪声参数搬进自己命名空间的全部意义。引擎把每个噪声场都建成
      * {@code NormalNoise.create(randomFactory.fromHashOf(key.location()), params)}，由世界种子决定，所以
      * {@code dawnduskterminal:*} 的键会得到一个与 {@code minecraft:*} 不同、且由种子派生的场，而原版原件
