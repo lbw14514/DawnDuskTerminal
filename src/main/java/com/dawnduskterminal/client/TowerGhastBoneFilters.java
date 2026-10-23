@@ -2,9 +2,9 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import com.dawnduskterminal.entity.TowerGhastPhysics;
-import com.dawnduskterminal.entity.TowerGhastPhysics.SecondOrderState;
 import net.minecraft.util.Mth;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +39,7 @@ import java.util.Map;
  * </ul>
  *
  * <p>除了这 12 支按实体状态驱动的滤波器，这个类还持有 <strong>64 条链条滤波器的状态</strong>
- * （{@code ysm.bone_rot} 的父带子递次滞后，见 {@link #stepChain}）
+ * （{@code ysm.bone_rot} 的父带子递次滞后，见 {@link #stepChain(int, double, double, double, double, double, double, double, int, double)}）
  *
  * <p>源模型里 {@code v.bv}、{@code v.bg}、{@code v.hv}、{@code v.hg} 这些变量
  * 由外部自定义函数脚本喂值，而那套脚本不在这个模型包里，YSM 对未初始化变量取 0，所以这里也当 0
@@ -68,18 +68,72 @@ public final class TowerGhastBoneFilters {
     /** 每秒 = 每 tick 乘 20 */
     private static final double PER_SECOND = 20.0;
 
+    /**
+     * 二阶滤波的系数只由频率 阻尼 响应时间决定，提前算好
+     *
+     * <p>这样每 tick 不再为 12 支主滤波器重复做 sqrt ceil 和除法；
+     * {@link TowerGhastPhysics#secondOrderStepPrecomputed} 的运算顺序与
+     * {@link TowerGhastPhysics#secondOrderStep} 相同
+     */
+    private static final double[] SECOND_K1 = new double[COUNT];
+    private static final double[] SECOND_K2 = new double[COUNT];
+    private static final double[] SECOND_K3 = new double[COUNT];
+    private static final double[] SECOND_STEP = new double[COUNT];
+    private static final int[] SECOND_CYCLES = new int[COUNT];
+    /** 一阶滤波的 alpha = dt / response */
+    private static final double[] FIRST_ALPHA = new double[COUNT];
+
+    static {
+        initSecond(EYE_YAW, 1.0, 0.8, 0.0);
+        initSecond(EYE_PITCH, 1.0, 0.8, 0.0);
+        initSecond(CHEST_VERTICAL, 3.0, 0.3, 0.0);
+        initSecond(CHEST_HORIZONTAL, 2.0, 0.5, 1.0);
+        initSecond(CHEST_YAW_SPEED, 3.0, 0.3, 0.0);
+        initSecond(HAIR_VERTICAL, 2.0, 0.6, 0.0);
+        initSecond(HAIR_HORIZONTAL, 2.0, 0.6, 0.0);
+        initSecond(HAIR_YAW_SPEED, 2.0, 0.6, 0.0);
+        initSecond(HAIR_PITCH, 2.0, 0.6, 0.0);
+        initSecond(HAIR_PITCH_CLAMPED, 2.0, 0.6, 0.0);
+        initSecond(BODY_TURN, 2.5, 0.3, 0.0);
+        initFirst(BODY_ANGLE_FIX, 0.3);
+    }
+
+    private static void initSecond(int index, double frequency, double coefficient, double response) {
+        TowerGhastPhysics.SecondOrderCoefficients coefficients =
+            TowerGhastPhysics.secondOrderCoefficients(frequency, coefficient, response);
+        SECOND_K1[index] = coefficients.k1();
+        SECOND_K2[index] = coefficients.k2();
+        SECOND_K3[index] = coefficients.k3();
+        SECOND_CYCLES[index] = coefficients.cycles();
+        SECOND_STEP[index] = coefficients.step();
+    }
+
+    private static void initFirst(int index, double response) {
+        FIRST_ALPHA[index] = TowerGhastPhysics.DT / response;
+    }
+
     /** 第一刻要把累积的世界朝向对到实体的实际朝向上 */
     private boolean started;
 
-    private final Map<String, SecondOrderState> secondOrder = new HashMap<>();
-    private final Map<String, Double> firstOrder = new HashMap<>();
+    /** 12 支主滤波器的状态，value/velocity/previousInput 三个一组 */
+    private final double[] secondState = new double[COUNT * 3];
+    private final double[] firstState = new double[COUNT];
 
-    /** 链条（{@code ysm.bone_rot} 的递次滞后）的滤波状态，同样按名字记忆 */
-    private final Map<String, SecondOrderState> chainOrder = new HashMap<>();
+    /** 链条（{@code ysm.bone_rot} 的递次滞后）的滤波状态，每根三个 double */
+    private double[] chainState = new double[0];
     /** 链条结果的两刻缓存，交给渲染帧插值 */
-    private final Map<String, double[]> chainValues = new HashMap<>();
-    /** 上一步写到某根骨骼某个轴上的链条量（度），按骨骼名记忆 */
-    private final Map<String, double[]> chainPose = new HashMap<>();
+    private double[] chainPrevious = new double[0];
+    private double[] chainCurrent = new double[0];
+    /** 上一步写到某根骨骼某个轴上的链条量（度），按骨骼下标记忆 */
+    private double[] chainPose = new double[0];
+
+    /**
+     * 仅给旧的名字式调用与测试使用
+     *
+     * <p>生产路径由 {@code TowerGhastBonePose} 使用 int 下标，不会碰这两个 Map
+     */
+    private final Map<String, Integer> chainIndices = new HashMap<>();
+    private final Map<String, Integer> poseIndices = new HashMap<>();
 
     private final double[] current = new double[COUNT];
     private final double[] previous = new double[COUNT];
@@ -91,6 +145,19 @@ public final class TowerGhastBoneFilters {
     /** 本刻的 {@code ysm.perlin_noise(1492, query.life_time)}，由渲染层喂 */
     private double perlin;
 
+    public TowerGhastBoneFilters() {
+        this(0, 0);
+    }
+
+    /**
+     * @param chainCapacity 链条数量，生产路径用 {@code TowerGhastBonePose} 的布局大小
+     * @param boneCapacity  参与链条姿态的骨骼数量
+     */
+    public TowerGhastBoneFilters(int chainCapacity, int boneCapacity) {
+        ensureChainCapacity(chainCapacity);
+        ensureBoneCapacity(boneCapacity);
+    }
+
     /**
      * 每个游戏刻推进一次；同一刻重复调用直接返回 false
      *
@@ -100,7 +167,7 @@ public final class TowerGhastBoneFilters {
      * <p>{@code partialTick} 不参与滤波器的积分：YSM 也是每 tick 积分一次，介于两刻之间的渲染帧靠
      * {@link #interpolate} 插值
      *
-     * @return 这一回真的推进了一刻（调用方要在这一刻接着走链条，见 {@link #stepChain}）
+     * @return 这一回真的推进了一刻（调用方要在这一刻接着走链条，见 {@link #stepChain(int, double, double, double, double, double, double, double, int, double)}）
      */
     public boolean advanceIfNewTick(TowerGhastEntity entity, double perlinNoise) {
         if (entity.tickCount == this.lastTick) {
@@ -127,31 +194,31 @@ public final class TowerGhastBoneFilters {
         double groundSpeed = entity.getDeltaMovement().horizontalDistance() * PER_SECOND;
         double yawSpeed = Mth.wrapDegrees(entity.getYRot() - entity.yRotO) * PER_SECOND;
 
-        this.current[EYE_YAW] = second("眼睛yaw", headYaw / 180.0, 1.0, 0.8, 0.0);
-        this.current[EYE_PITCH] = second("眼睛pitch", headPitch / 360.0, 1.0, 0.8, 0.0);
-        this.current[CHEST_VERTICAL] = second("胸部垂直",
-            clamp(verticalSpeed + UNASSIGNED_VARIABLE, -30.0, 30.0), 3.0, 0.3, 0.0);
-        this.current[CHEST_HORIZONTAL] = second("胸部水平",
-            clamp(groundSpeed + UNASSIGNED_VARIABLE, 0.0, 20.0), 2.0, 0.5, 1.0);
-        this.current[CHEST_YAW_SPEED] = second("胸部角速度",
-            clamp(-0.01 * yawSpeed, -30.0, 30.0), 3.0, 0.3, 0.0);
-        this.current[HAIR_VERTICAL] = second("头发垂直",
-            clamp(-3.0 * verticalSpeed + UNASSIGNED_VARIABLE, -10.0, 120.0), 2.0, 0.6, 0.0);
-        this.current[HAIR_HORIZONTAL] = second("头发水平",
-            clamp(groundSpeed + UNASSIGNED_VARIABLE, 0.0, 20.0), 2.0, 0.6, 0.0);
-        this.current[HAIR_YAW_SPEED] = second("头发角速度",
-            clamp(-0.02 * yawSpeed, -60.0, 60.0), 2.0, 0.6, 0.0);
-        this.current[HAIR_PITCH] = second("抬头头发", headPitch, 2.0, 0.6, 0.0);
-        this.current[HAIR_PITCH_CLAMPED] = second("抬头头发防穿模",
-            Math.max(headPitch, -40.0), 2.0, 0.6, 0.0);
+        this.current[EYE_YAW] = second(EYE_YAW, headYaw / 180.0);
+        this.current[EYE_PITCH] = second(EYE_PITCH, headPitch / 360.0);
+        this.current[CHEST_VERTICAL] = second(CHEST_VERTICAL,
+            clamp(verticalSpeed + UNASSIGNED_VARIABLE, -30.0, 30.0));
+        this.current[CHEST_HORIZONTAL] = second(CHEST_HORIZONTAL,
+            clamp(groundSpeed + UNASSIGNED_VARIABLE, 0.0, 20.0));
+        this.current[CHEST_YAW_SPEED] = second(CHEST_YAW_SPEED,
+            clamp(-0.01 * yawSpeed, -30.0, 30.0));
+        this.current[HAIR_VERTICAL] = second(HAIR_VERTICAL,
+            clamp(-3.0 * verticalSpeed + UNASSIGNED_VARIABLE, -10.0, 120.0));
+        this.current[HAIR_HORIZONTAL] = second(HAIR_HORIZONTAL,
+            clamp(groundSpeed + UNASSIGNED_VARIABLE, 0.0, 20.0));
+        this.current[HAIR_YAW_SPEED] = second(HAIR_YAW_SPEED,
+            clamp(-0.02 * yawSpeed, -60.0, 60.0));
+        this.current[HAIR_PITCH] = second(HAIR_PITCH, headPitch);
+        this.current[HAIR_PITCH_CLAMPED] = second(HAIR_PITCH_CLAMPED,
+            Math.max(headPitch, -40.0));
         // 源式子是 second_order('转体', first_order('身体角度修正', eye_target_y_rotation + query.head_x_rotation, 0.3), ...)
         // 而 YSM 的 query.head_x_rotation 是<strong>偏航</strong>（YSM 的 head query 与 GeckoLib 命名相反，
         // 见 tools/ysm/README.md），用俯仰当输入等于让整条转体链死掉：
         // 恶魂待机时靠 LookAtPlayer 一直在改头部偏航，俯仰几乎不变
         // eye_target_y_rotation（视角朝向）GeckoLib 没有，用累积的世界朝向加相对头部偏航代替，
         // 两者之和就是「头的世界偏航」，也就是源式子在源侧算出来的量
-        this.current[BODY_ANGLE_FIX] = first("身体角度修正", this.worldYaw + headYaw, 0.3);
-        this.current[BODY_TURN] = second("转体", this.current[BODY_ANGLE_FIX], 2.5, 0.3, 0.0);
+        this.current[BODY_ANGLE_FIX] = first(BODY_ANGLE_FIX, this.worldYaw + headYaw);
+        this.current[BODY_TURN] = second(BODY_TURN, this.current[BODY_ANGLE_FIX]);
         return true;
     }
 
@@ -162,26 +229,35 @@ public final class TowerGhastBoneFilters {
      * 「父带子」递次滞后的 64 条通道就是它（源式子有 {@code F(x)-x}、{@code -F(x)+0.8x}、{@code F(x)}
      * 三种形状，都落在这一条通式里）
      *
-     * <p>输入由调用方从父骨骼上取（{@code TowerGhastBonePose.offsetDegrees}），也就是 YSM 说的
-     * 「上一帧的骨骼旋转」。链条是一棵严格的父→子树，没有自引用，所以读回自己写出去的值不会发散
+     * <p>生产路径使用这个 int 下标版本：布局在 {@code TowerGhastBonePose} 里预先建好，
+     * 这里不再做任何字符串查找，也不构造 {@code SecondOrderState}
      *
-     * <p>{@code filterInput} 喂给滤波器，{@code subtractInput} 是式子第二项用的父骨骼值
-     * （64 条通道里只有一条的两个轴不同）
+     * @return 这一步写出去的量（度），调用方要把它连同骨骼下标记进 {@link #setChainPose(int, int, double)}
+     */
+    public double stepChain(int index, double filterInput, double subtractInput, double sign, double parentGain,
+                            double k1, double k2, double k3, int cycles, double step) {
+        ensureChainCapacity(index + 1);
+        double filtered = TowerGhastPhysics.secondOrderStepPrecomputed(
+            filterInput, k1, k2, k3, cycles, step, this.chainState, index * 3);
+        double value = sign * filtered + parentGain * subtractInput;
+        this.chainPrevious[index] = this.chainCurrent[index];
+        this.chainCurrent[index] = value;
+        return value;
+    }
+
+    /**
+     * 名字式入口，保留给测试与旧的调用点
      *
-     * <p>每 tick 只调用一次：filter 的状态按名字记忆，重复调用会多积分一步
-     *
-     * @return 这一步写出去的量（度），调用方要把它连同骨骼名记进 {@link #setChainPose}
+     * <p>生产路径不要用这个重载，它包含一次 Map 查找
      */
     public double stepChain(String name, double filterInput, double subtractInput, double frequency,
                             double coefficient, double sign, double parentGain) {
-        SecondOrderState state = TowerGhastPhysics.secondOrderStep(filterInput, frequency, coefficient, 0.0,
-            this.chainOrder.getOrDefault(name, SecondOrderState.ZERO));
-        this.chainOrder.put(name, state);
-        double value = sign * state.value() + parentGain * subtractInput;
-        double[] values = this.chainValues.computeIfAbsent(name, unused -> new double[2]);
-        values[0] = values[1];
-        values[1] = value;
-        return value;
+        int index = this.chainIndices.computeIfAbsent(name, key -> this.chainIndices.size());
+        TowerGhastPhysics.SecondOrderCoefficients coefficients =
+            TowerGhastPhysics.secondOrderCoefficients(frequency, coefficient, 0.0);
+        return stepChain(index, filterInput, subtractInput, sign, parentGain,
+            coefficients.k1(), coefficients.k2(), coefficients.k3(),
+            coefficients.cycles(), coefficients.step());
     }
 
     /**
@@ -191,24 +267,30 @@ public final class TowerGhastBoneFilters {
      * 那些骨骼重置回「关键帧的值 + 初始姿势」，上一帧 {@code addRotation} 加的量活不过一帧，
      * 所以只能由这里替它记着（{@code TowerGhastBonePose.advanceChains}）
      */
-    public void setChainPose(String bone, int axis, double degrees) {
-        this.chainPose.computeIfAbsent(bone, unused -> new double[3])[axis] = degrees;
+    public void setChainPose(int boneIndex, int axis, double degrees) {
+        if (boneIndex < 0) {
+            return;
+        }
+        ensureBoneCapacity(boneIndex + 1);
+        this.chainPose[boneIndex * 3 + axis] = degrees;
     }
 
     /** 上一步链条写在这根骨骼这个轴上的量，没写过就是 0 */
-    public double chainPose(String bone, int axis) {
-        double[] pose = this.chainPose.get(bone);
-
-        return pose == null ? 0.0 : pose[axis];
+    public double chainPose(int boneIndex, int axis) {
+        if (boneIndex < 0) {
+            return 0.0;
+        }
+        int offset = boneIndex * 3 + axis;
+        return offset < this.chainPose.length ? this.chainPose[offset] : 0.0;
     }
 
     /** 链条结果在两刻之间插值，没走过就直接是 0 */
-    public double interpolateChain(String name, float partialTick) {
-        double[] values = this.chainValues.get(name);
-        if (values == null) {
+    public double interpolateChain(int index, float partialTick) {
+        if (index < 0 || index >= this.chainCurrent.length) {
             return 0.0;
         }
-        return values[0] + (values[1] - values[0]) * partialTick;
+        double previousValue = this.chainPrevious[index];
+        return previousValue + (this.chainCurrent[index] - previousValue) * partialTick;
     }
 
     /** 两刻之间插值，避免 20 Hz 的滤波器在更高帧率下抖动 */
@@ -216,22 +298,55 @@ public final class TowerGhastBoneFilters {
         return this.previous[index] + (this.current[index] - this.previous[index]) * partialTick;
     }
 
-    private double second(String name, double input, double frequency, double coefficient, double response) {
-        SecondOrderState state = TowerGhastPhysics.secondOrderStep(input, frequency, coefficient, response,
-            this.secondOrder.getOrDefault(name, SecondOrderState.ZERO));
-        this.secondOrder.put(name, state);
-        return state.value();
+    /** 名字式链条入口，保留给测试 */
+    public void setChainPose(String bone, int axis, double degrees) {
+        setChainPose(this.poseIndices.computeIfAbsent(bone, key -> this.poseIndices.size()), axis, degrees);
     }
 
-    private double first(String name, double input, double response) {
-        double value = TowerGhastPhysics.firstOrderStep(input, response,
-            this.firstOrder.getOrDefault(name, 0.0));
-        this.firstOrder.put(name, value);
+    /** 名字式链条入口，保留给测试 */
+    public double chainPose(String bone, int axis) {
+        Integer index = this.poseIndices.get(bone);
+        return index == null ? 0.0 : chainPose(index, axis);
+    }
+
+    /** 名字式链条入口，保留给测试 */
+    public double interpolateChain(String name, float partialTick) {
+        Integer index = this.chainIndices.get(name);
+        return index == null ? 0.0 : interpolateChain(index, partialTick);
+    }
+
+    private double second(int index, double input) {
+        return TowerGhastPhysics.secondOrderStepPrecomputed(
+            input, SECOND_K1[index], SECOND_K2[index], SECOND_K3[index],
+            SECOND_CYCLES[index], SECOND_STEP[index], this.secondState, index * 3);
+    }
+
+    private double first(int index, double input) {
+        double alpha = FIRST_ALPHA[index];
+        double value = (1.0 - alpha) * this.firstState[index] + alpha * input;
+        this.firstState[index] = value;
         return value;
+    }
+
+    private void ensureChainCapacity(int count) {
+        if (count <= this.chainCurrent.length) {
+            return;
+        }
+        int newCount = Math.max(count, Math.max(8, this.chainCurrent.length * 2));
+        this.chainState = Arrays.copyOf(this.chainState, newCount * 3);
+        this.chainPrevious = Arrays.copyOf(this.chainPrevious, newCount);
+        this.chainCurrent = Arrays.copyOf(this.chainCurrent, newCount);
+    }
+
+    private void ensureBoneCapacity(int count) {
+        if (count <= this.chainPose.length / 3) {
+            return;
+        }
+        int newCount = Math.max(count, Math.max(8, this.chainPose.length / 3 * 2));
+        this.chainPose = Arrays.copyOf(this.chainPose, newCount * 3);
     }
 
     private static double clamp(double value, double min, double max) {
         return TowerGhastPhysics.clamp(value, min, max);
     }
 }
-

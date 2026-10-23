@@ -1,13 +1,9 @@
 package com.dawnduskterminal.world;
 
 import com.dawnduskterminal.registry.ModTerrainBlocks;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.NoiseChunk;
-
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * {@code OreVeinifier} 写死的矿脉填充物，重映射到晨昏线调色板
@@ -26,14 +22,8 @@ public final class ChronoVeinPalette {
     private ChronoVeinPalette() {}
 
     private static final class Holder {
-        static final Map<Block, Block> FILLERS = build();
-    }
-
-    private static Map<Block, Block> build() {
-        Map<Block, Block> map = new IdentityHashMap<>();
-        map.put(Blocks.GRANITE, ModTerrainBlocks.OCHRE.get());
-        map.put(Blocks.TUFF, ModTerrainBlocks.TWILIGHT_STONE.get());
-        return map;
+        static final BlockState OCHRE = ModTerrainBlocks.OCHRE.get().defaultBlockState();
+        static final BlockState TWILIGHT_STONE = ModTerrainBlocks.TWILIGHT_STONE.get().defaultBlockState();
     }
 
     /**
@@ -44,8 +34,14 @@ public final class ChronoVeinPalette {
         if (state == null) {
             return null;
         }
-        Block replacement = Holder.FILLERS.get(state.getBlock());
-        return replacement == null ? state : replacement.defaultBlockState();
+        // 只有两个写死的填充物，直接比较 Block 比每方块查一次 IdentityHashMap 便宜
+        if (state.getBlock() == Blocks.GRANITE) {
+            return Holder.OCHRE;
+        }
+        if (state.getBlock() == Blocks.TUFF) {
+            return Holder.TWILIGHT_STONE;
+        }
+        return state;
     }
 
     /**

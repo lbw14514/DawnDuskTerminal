@@ -23,9 +23,24 @@ public abstract class LightEngineSkyLightMixin {
     @Final
     protected LightChunkGetter chunkSource;
 
+    /**
+     * 光照引擎与维度是一一对应的，这些判断没必要每次 getLightValue 都重做
+     *
+     * <p>非天光引擎在第一次调用时就会解析成 false，此后只走一个 boolean 判断
+     */
     @Unique
-    private Level ddt$level() {
-        return this.chunkSource.getLevel() instanceof Level level ? level : null;
+    private boolean ddt$chronoResolved;
+    @Unique
+    private boolean ddt$chrono;
+    @Unique
+    private Level ddt$cachedLevel;
+
+    @Unique
+    private void ddt$resolveChrono() {
+        this.ddt$chronoResolved = true;
+        this.ddt$cachedLevel = this.chunkSource.getLevel() instanceof Level level ? level : null;
+        this.ddt$chrono = this.ddt$cachedLevel != null
+            && this.ddt$cachedLevel.dimension() == ModDimensions.CHRONO;
     }
 
     @Unique
@@ -33,8 +48,10 @@ public abstract class LightEngineSkyLightMixin {
         if (!((Object) this instanceof SkyLightEngine)) {
             return false;
         }
-        Level level = ddt$level();
-        return level != null && level.dimension() == ModDimensions.CHRONO;
+        if (!this.ddt$chronoResolved) {
+            ddt$resolveChrono();
+        }
+        return this.ddt$chrono;
     }
 
     @Inject(method = "getLightValue(Lnet/minecraft/core/BlockPos;)I", at = @At("RETURN"), cancellable = true)
@@ -42,7 +59,7 @@ public abstract class LightEngineSkyLightMixin {
         if (!ddt$isChrono()) {
             return;
         }
-        Level level = ddt$level();
+        Level level = this.ddt$cachedLevel;
         if (level == null) {
             return;
         }

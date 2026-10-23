@@ -48,6 +48,29 @@ public final class TowerGhastPhysics {
     }
 
     /**
+     * 二阶滤波的参数只由频率 阻尼 响应时间决定
+     *
+     * <p>这三支系数和分子步长在 {@code name} 不变时是常量，提前算好可以避免每 tick
+     * 重复做 {@code sqrt} {@code ceil} 和除法；{@link #secondOrderStep} 仍按原来的顺序计算，
+     * 数值与逐次重算完全一致
+     */
+    public record SecondOrderCoefficients(double k1, double k2, double k3, int cycles, double step) {}
+
+    /** 按 YSM 的夹取规则预计算二阶滤波系数 */
+    public static SecondOrderCoefficients secondOrderCoefficients(double frequency, double coefficient,
+                                                                  double response) {
+        double f = clamp(frequency, 0.0, 5.0);
+        double c = clamp(coefficient, 0.0, 1.0);
+        double k1 = c / Math.PI / f;
+        double k2 = 1.0 / (2.0 * Math.PI * f) / (2.0 * Math.PI * f);
+        double k3 = response * c / 2.0 / Math.PI / f;
+
+        double maxStep = Math.sqrt(4.0 * k2 + k1 * k1) - k1;
+        int cycles = maxStep > 0.0 ? Math.max(1, (int) Math.ceil(DT / maxStep)) : 1;
+        return new SecondOrderCoefficients(k1, k2, k3, cycles, DT / cycles);
+    }
+
+    /**
      * 二阶滤波走一 tick
      *
      * <p>公式与 {@code physics_reference.second_order_state} 一致：先夹取参数，再由三支系数按分子步积分，
@@ -59,24 +82,41 @@ public final class TowerGhastPhysics {
      */
     public static SecondOrderState secondOrderStep(double input, double frequency, double coefficient,
                                                    double response, SecondOrderState state) {
-        double f = clamp(frequency, 0.0, 5.0);
-        double c = clamp(coefficient, 0.0, 1.0);
-        double k1 = c / Math.PI / f;
-        double k2 = 1.0 / (2.0 * Math.PI * f) / (2.0 * Math.PI * f);
-        double k3 = response * c / 2.0 / Math.PI / f;
-
-        double inputDot = (input - state.previousInput()) / DT;
-        double maxStep = Math.sqrt(4.0 * k2 + k1 * k1) - k1;
-        int cycles = maxStep > 0.0 ? Math.max(1, (int) Math.ceil(DT / maxStep)) : 1;
-        double step = DT / cycles;
-
+        SecondOrderCoefficients coefficients = secondOrderCoefficients(frequency, coefficient, response);
         double value = state.value();
         double velocity = state.velocity();
+        double inputDot = (input - state.previousInput()) / DT;
+
+        for (int i = 0; i < coefficients.cycles(); i++) {
+            value += coefficients.step() * velocity;
+            velocity += coefficients.step()
+                * (coefficients.k3() * inputDot + input - value - coefficients.k1() * velocity)
+                / coefficients.k2();
+        }
+        return new SecondOrderState(value, velocity, input);
+    }
+
+    /**
+     * 用预计算系数推进一份内联状态
+     *
+     * <p>{@code state[offset]} 是当前值 {@code state[offset + 1]} 是速度
+     * {@code state[offset + 2]} 是上一帧输入；返回推进后的当前值。运算顺序与
+     * {@link #secondOrderStep} 相同，只是不再构造 record
+     */
+    public static double secondOrderStepPrecomputed(double input, double k1, double k2, double k3,
+                                                    int cycles, double step, double[] state, int offset) {
+        double inputDot = (input - state[offset + 2]) / DT;
+        double value = state[offset];
+        double velocity = state[offset + 1];
+
         for (int i = 0; i < cycles; i++) {
             value += step * velocity;
             velocity += step * (k3 * inputDot + input - value - k1 * velocity) / k2;
         }
-        return new SecondOrderState(value, velocity, input);
+        state[offset] = value;
+        state[offset + 1] = velocity;
+        state[offset + 2] = input;
+        return value;
     }
 
     /**

@@ -9,10 +9,10 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.GeoModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 把 {@link TowerGhastBoneFilters} 的结果写回骨骼
@@ -57,6 +57,12 @@ import java.util.stream.Collectors;
  * 再把 X 与 Y 取反；Z 不取反。这里照做，于是本层写出的值与动画文件里同一个通道的值处于同一套单位
  *
  * <p>旋转是「初始姿势加偏移」，位置与缩放是绝对值，与 {@code AnimationProcessor} 里的应用方式一致
+ *
+ * <h2>性能</h2>
+ *
+ * 骨骼引用、发丝下标、链条的父骨骼与祖先列表、二阶滤波系数都在第一次看到模型时建好
+ * （{@link BoneLayout}）。之后每帧只做数组遍历，不再按名字查 {@code GeoModel.getBone}，
+ * 也不再对每根骨骼重复算 12 支滤波器的插值
  */
 public final class TowerGhastBonePose {
 
@@ -116,9 +122,6 @@ public final class TowerGhastBonePose {
         new Strand("bone91", 2, 1, 1),
         new Strand("bone92", 2, 1, 1),
         new Strand("bone93", 2, 1, 1));
-
-    private static final Map<String, Strand> STRAND_BY_BONE = STRANDS.stream()
-        .collect(Collectors.toUnmodifiableMap(Strand::bone, strand -> strand));
 
     /**
      * 链条：源动画用 {@code ysm.bone_rot('父骨骼')} 做「父带子」递次滞后的一根骨骼的一个轴
@@ -225,11 +228,34 @@ public final class TowerGhastBonePose {
      */
     private static final String HEAD_BONE = "AllHead";
 
+    private static final int KIND_IGNORE = 0;
+    private static final int KIND_EYES = 1;
+    private static final int KIND_BREAST = 2;
+    private static final int KIND_CARMINITE = 3;
+    private static final int KIND_LEFT_GUARD = 4;
+    private static final int KIND_BUNG = 5;
+    private static final int KIND_FRONT_FRAG = 6;
+    private static final int KIND_BACK_FRAG = 7;
+    private static final int KIND_SIDE_FRAG = 8;
+    private static final int KIND_FLONG_HAIR = 9;
+    private static final int KIND_MLONG_HAIR = 10;
+    private static final int KIND_ELYTRA = 11;
+    private static final int KIND_LEFT_HEAD_FRAG = 12;
+    private static final int KIND_RIGHT_HEAD_FRAG = 13;
+    private static final int KIND_STRAND = 14;
+
     /** 每个实体一份滤波器状态。弱键，实体卸载后自己消失 */
     private final Map<TowerGhastEntity, TowerGhastBoneFilters> states = new WeakHashMap<>();
 
     /** 缺骨骼只报一次，别每帧刷屏 */
     private final List<String> reportedMissing = new ArrayList<>();
+
+    /** 每个模型只建一次骨骼布局；资源重载后哨兵骨骼的 identity 会变，届时重建 */
+    private GeoModel<?> cachedModel;
+    private BoneLayout cachedLayout;
+
+    /** 12 支滤波器的本帧插值结果，避免在 90 根骨骼上各算一遍 */
+    private final double[] filterValues = new double[TowerGhastBoneFilters.COUNT];
 
     /**
      * 每渲染帧调一次，紧跟在动画写入骨骼之后
@@ -237,62 +263,59 @@ public final class TowerGhastBonePose {
      * @param partialTick 用于两刻之间插值，滤波器本身每 tick 只走一步
      */
     public void apply(TowerGhastEntity entity, GeoModel<TowerGhastEntity> model, float partialTick) {
-        TowerGhastBoneFilters filters = this.states.computeIfAbsent(entity, unused -> new TowerGhastBoneFilters());
+        BoneLayout layout = layout(model);
+        TowerGhastBoneFilters filters = this.states.computeIfAbsent(entity,
+            unused -> new TowerGhastBoneFilters(layout.lags.length, layout.boneCount));
+
         // 发丝的 perlin 要按<strong>帧</strong>取：噪声乘 10 度加在发丝上，而 GeckoLib 每帧都求值动画，
         // 按 20 Hz 的 tickCount 取值在 60 fps 下就是一跳一跳的（YSM 那边 query.life_time 也是连续的）
         double perlin = TowerGhastPhysics.perlinNoise(PERLIN_SEED, (entity.tickCount + partialTick) / 20.0);
         boolean newTick = filters.advanceIfNewTick(entity, perlin);
-        applyHeadTracking(entity, model, partialTick);
-
-        List<String> missing = null;
-        for (String name : BONES) {
-            GeoBone bone = model.getBone(name).orElse(null);
-            if (bone == null) {
-                if (!this.reportedMissing.contains(name)) {
-                    if (missing == null) {
-                        missing = new ArrayList<>();
-                    }
-                    missing.add(name);
-                }
-                continue;
-            }
-            applyBone(bone, entity, partialTick, filters, perlin);
+        if (layout.head != null) {
+            applyHeadTracking(entity, layout.head, partialTick);
         }
+
+        double[] f = this.filterValues;
+        for (int i = 0; i < TowerGhastBoneFilters.COUNT; i++) {
+            f[i] = filters.interpolate(i, partialTick);
+        }
+        double chestSum = f[TowerGhastBoneFilters.CHEST_VERTICAL] + f[TowerGhastBoneFilters.CHEST_HORIZONTAL];
+        double turnLag = f[TowerGhastBoneFilters.BODY_TURN] - f[TowerGhastBoneFilters.BODY_ANGLE_FIX];
+
+        for (BoneSlot slot : layout.applySlots) {
+            applyBone(slot, f, chestSum, turnLag, perlin);
+        }
+
         // 链条要读的是「基础姿势已经写完」的骨骼，所以排在 BONES 循环之后，见 advanceChains
         if (newTick) {
-            advanceChains(model, filters);
+            advanceChains(layout, filters);
         }
         // 链条的骨骼不在 NAMED_BONES 里，单独写回
-        for (Lag lag : LAGS) {
-            GeoBone bone = model.getBone(lag.bone()).orElse(null);
-            if (bone == null) {
-                continue;
-            }
-            addRotation(bone, lag.axis(), filters.interpolateChain(lag.name(), partialTick));
+        for (LagSlot lag : layout.lags) {
+            addRotation(lag.bone, lag.axis, filters.interpolateChain(lag.chainIndex, partialTick));
         }
-        // 临时诊断：每 20 刻各实体打一次，用来确认「基础姿势有没有被抹平」与链条输出到底是多少
-        if (entity.tickCount % 20 == 0) {
-            for (String name : List.of("FrontFragFlag", "FragFlag2", "FragFlag3", "FragFlag4")) {
-                GeoBone bone = model.getBone(name).orElse(null);
-                if (bone == null) {
-                    continue;
+    }
+
+    private BoneLayout layout(GeoModel<TowerGhastEntity> model) {
+        BoneLayout layout = this.cachedLayout;
+        if (layout != null && this.cachedModel == model && layout.isCurrent(model)) {
+            return layout;
+        }
+        layout = BoneLayout.build(model);
+        this.cachedModel = model;
+        this.cachedLayout = layout;
+        reportMissing(layout);
+        return layout;
+    }
+
+    private void reportMissing(BoneLayout layout) {
+        List<String> missing = null;
+        for (String name : layout.missing) {
+            if (!this.reportedMissing.contains(name)) {
+                if (missing == null) {
+                    missing = new ArrayList<>();
                 }
-                StringBuilder lag = new StringBuilder();
-                for (Lag entry : LAGS) {
-                    if (entry.bone().equals(name)) {
-                        lag.append(entry.axis()).append('=')
-                            .append(String.format("%.2f", filters.interpolateChain(entry.name(), partialTick)))
-                            .append(' ');
-                    }
-                }
-                DawnDuskTerminal.LOGGER.info(
-                    "[布条诊断] {} rotX={}（初始 {}） rotZ={}（初始 {}） 链条: {}",
-                    name,
-                    String.format("%.2f", Math.toDegrees(bone.getRotX())),
-                    String.format("%.2f", Math.toDegrees(bone.getInitialSnapshot().getRotX())),
-                    String.format("%.2f", Math.toDegrees(bone.getRotZ())),
-                    String.format("%.2f", Math.toDegrees(bone.getInitialSnapshot().getRotZ())),
-                    lag.toString().trim());
+                missing.add(name);
             }
         }
         if (missing != null) {
@@ -312,40 +335,35 @@ public final class TowerGhastBonePose {
      * 头部跟踪、发丝滤波器）都是本层每帧写上去的，而转换后的动画文件里那些通道是 0。
      * 排在前面的读到的就是 0，链条整条安静，表现是布条作为一块硬片跟着根骨转
      *
-     * <p>父骨骼上一 tick 的链条量要靠 {@link TowerGhastBoneFilters#chainPose} 补回来：
+     * <p>父骨骼上一 tick 的链条量要靠 {@link TowerGhastBoneFilters#chainPose(int, int)} 补回来：
      * GeckoLib 每帧 {@code tickAnimation} 把骨骼重置回关键帧，本层的 {@code addRotation} 活不过一帧，
      * 直接读骨骼只能读到动画叠加的那部分
      *
      * <p>链条是一棵严格的父→子树，没有自引用，{@code F(x)-x} 这种形状反而会自己把自己拉回 0
      */
-    private void advanceChains(GeoModel<TowerGhastEntity> model, TowerGhastBoneFilters filters) {
-        for (Lag lag : LAGS) {
-            GeoBone parent = model.getBone(lag.parent()).orElse(null);
-            if (parent == null) {
+    private static void advanceChains(BoneLayout layout, TowerGhastBoneFilters filters) {
+        for (LagSlot lag : layout.lags) {
+            if (lag.parent == null) {
                 continue;
             }
-            double input = posedDegrees(parent, lag.parentAxis(), filters);
+            double input = composedDegrees(lag.parent, lag.parentAxis)
+                + chainPoseSum(filters, lag.ancestors, lag.parentAxis);
             // 源式子的第二项读的是父骨骼另一个轴上的值（64 条里只有 FragFlag16.rotation[0] 与第一项不同轴）
-            double subtracted = lag.parentAxis() == lag.subtractAxis()
+            double subtracted = lag.parentAxis == lag.subtractAxis
                 ? input
-                : posedDegrees(parent, lag.subtractAxis(), filters);
-            double value = filters.stepChain(lag.name(), input, subtracted, lag.frequency(), lag.coefficient(),
-                lag.sign(), lag.parentGain());
-            filters.setChainPose(lag.bone(), lag.axis(), value);
+                : composedDegrees(lag.parent, lag.subtractAxis)
+                    + chainPoseSum(filters, lag.ancestors, lag.subtractAxis);
+            double value = filters.stepChain(lag.chainIndex, input, subtracted,
+                lag.sign, lag.parentGain, lag.k1, lag.k2, lag.k3, lag.cycles, lag.step);
+            filters.setChainPose(lag.boneIndex, lag.axis, value);
         }
     }
 
-    /**
-     * 骨骼在某个轴上<strong>实际摆出来的</strong>角度：动画与本层基础姿势的合成，再加各级链条自己带出去的量
-     *
-     * <p>后者不在骨骼上（{@link #advanceChains} 的注释里写了原因），由滤波器替它记着
-     */
-    private static double posedDegrees(GeoBone bone, int axis, TowerGhastBoneFilters filters) {
-        double total = composedDegrees(bone, axis);
-        for (GeoBone current = bone; current != null; current = current.getParent()) {
-            total += filters.chainPose(current.getName(), axis);
+    private static double chainPoseSum(TowerGhastBoneFilters filters, int[] ancestors, int axis) {
+        double total = 0.0;
+        for (int index : ancestors) {
+            total += filters.chainPose(index, axis);
         }
-
         return total;
     }
 
@@ -383,11 +401,7 @@ public final class TowerGhastBonePose {
      * <p>代价是 {@code death} 与 {@code attacked} 里 {@code AllHead} 自己的关键帧被跟踪覆盖
      * （YSM 的跟踪也在同一个位置，覆盖面相同）
      */
-    private void applyHeadTracking(TowerGhastEntity entity, GeoModel<TowerGhastEntity> model, float partialTick) {
-        GeoBone head = model.getBone(HEAD_BONE).orElse(null);
-        if (head == null) {
-            return;
-        }
+    private static void applyHeadTracking(TowerGhastEntity entity, GeoBone head, float partialTick) {
         // 与 query.head_x_rotation（getViewXRot）以及相对身体偏航同源，见类注释的「单位与符号」
         double pitch = Mth.lerp(partialTick, entity.xRotO, entity.getXRot());
         double yaw = Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot)
@@ -396,78 +410,68 @@ public final class TowerGhastBonePose {
         setRotation(head, 1, yaw);
     }
 
-    private void applyBone(GeoBone bone, TowerGhastEntity entity, float partialTick,
-                           TowerGhastBoneFilters filters, double perlin) {
-        double eyeYaw = filters.interpolate(TowerGhastBoneFilters.EYE_YAW, partialTick);
-        double eyePitch = filters.interpolate(TowerGhastBoneFilters.EYE_PITCH, partialTick);
-        double chestVertical = filters.interpolate(TowerGhastBoneFilters.CHEST_VERTICAL, partialTick);
-        double chestHorizontal = filters.interpolate(TowerGhastBoneFilters.CHEST_HORIZONTAL, partialTick);
-        double chestYawSpeed = filters.interpolate(TowerGhastBoneFilters.CHEST_YAW_SPEED, partialTick);
-        double hairVertical = filters.interpolate(TowerGhastBoneFilters.HAIR_VERTICAL, partialTick);
-        double hairHorizontal = filters.interpolate(TowerGhastBoneFilters.HAIR_HORIZONTAL, partialTick);
-        double hairYawSpeed = filters.interpolate(TowerGhastBoneFilters.HAIR_YAW_SPEED, partialTick);
-        double hairPitch = filters.interpolate(TowerGhastBoneFilters.HAIR_PITCH, partialTick);
-        double hairPitchClamped = filters.interpolate(TowerGhastBoneFilters.HAIR_PITCH_CLAMPED, partialTick);
-        double bodyAngleFix = filters.interpolate(TowerGhastBoneFilters.BODY_ANGLE_FIX, partialTick);
-        double bodyTurn = filters.interpolate(TowerGhastBoneFilters.BODY_TURN, partialTick);
-
-        double chestSum = chestVertical + chestHorizontal;
-        double turnLag = bodyTurn - bodyAngleFix;
-
-        Strand strand = STRAND_BY_BONE.get(bone.getName());
-        if (strand != null) {
-            // 发丝只有这一条式子，符号与轴从表里取
-            setRotation(bone, strand.axis(),
-                strand.perlinSign() * PERLIN_AMPLITUDE * perlin + strand.yawSign() * hairYawSpeed);
-            return;
-        }
-
-        switch (bone.getName()) {
-            case "RightEyesBase", "LeftEyesBase" -> {
-                bone.setPosX((float) eyeYaw);
-                bone.setPosY((float) eyePitch);
+    private static void applyBone(BoneSlot slot, double[] f, double chestSum, double turnLag, double perlin) {
+        GeoBone bone = slot.bone;
+        switch (slot.kind) {
+            case KIND_EYES -> {
+                bone.setPosX((float) f[TowerGhastBoneFilters.EYE_YAW]);
+                bone.setPosY((float) f[TowerGhastBoneFilters.EYE_PITCH]);
             }
-            case "Breast" -> {
+            case KIND_BREAST -> {
                 setRotation(bone, 0, chestSum);
-                setRotation(bone, 1, chestYawSpeed);
+                setRotation(bone, 1, f[TowerGhastBoneFilters.CHEST_YAW_SPEED]);
                 setScale(bone, 0, 1.0 - 0.002 * chestSum);
                 setScale(bone, 1, 1.0 + 0.01 * chestSum);
                 setScale(bone, 2, 1.0 - 0.008 * chestSum);
             }
-            case "Carminite" -> {
+            case KIND_CARMINITE -> {
                 setRotation(bone, 0, chestSum);
-                setRotation(bone, 2, 3.0 * chestYawSpeed);
+                setRotation(bone, 2, 3.0 * f[TowerGhastBoneFilters.CHEST_YAW_SPEED]);
             }
-            case "LeftGuard" -> {
-                addRotation(bone, 0, 3.0 * chestHorizontal - 3.0 * chestYawSpeed);
-                addRotation(bone, 2, 3.0 * chestVertical);
+            case KIND_LEFT_GUARD -> {
+                addRotation(bone, 0,
+                    3.0 * f[TowerGhastBoneFilters.CHEST_HORIZONTAL]
+                        - 3.0 * f[TowerGhastBoneFilters.CHEST_YAW_SPEED]);
+                addRotation(bone, 2, 3.0 * f[TowerGhastBoneFilters.CHEST_VERTICAL]);
             }
-            case "Bung" -> {
-                setRotation(bone, 0, chestVertical);
-                setRotation(bone, 1, chestYawSpeed);
+            case KIND_BUNG -> {
+                setRotation(bone, 0, f[TowerGhastBoneFilters.CHEST_VERTICAL]);
+                setRotation(bone, 1, f[TowerGhastBoneFilters.CHEST_YAW_SPEED]);
             }
-            case "FrontFragFlag", "AnteriorFragFlag", "AnteriorFragFlag2" ->
-                addRotation(bone, 2, 0.5 * turnLag);
-            case "BackFragFlag", "RearAnteriorFragFlag", "RearAnteriorFragFlag2" ->
-                addRotation(bone, 2, -0.5 * turnLag);
-            case "LeftFragFlag", "RightFragFlag" ->
-                addRotation(bone, 1, -0.3 * turnLag);
-            case "FLongHair" -> setRotation(bone, 0, hairPitchClamped);
-            case "MLongHair" -> {
-                setRotation(bone, 0, hairVertical + hairHorizontal);
-                setRotation(bone, 2, hairYawSpeed);
+            case KIND_FRONT_FRAG -> addRotation(bone, 2, 0.5 * turnLag);
+            case KIND_BACK_FRAG -> addRotation(bone, 2, -0.5 * turnLag);
+            case KIND_SIDE_FRAG -> addRotation(bone, 1, -0.3 * turnLag);
+            case KIND_FLONG_HAIR -> setRotation(bone, 0, f[TowerGhastBoneFilters.HAIR_PITCH_CLAMPED]);
+            case KIND_MLONG_HAIR -> {
+                setRotation(bone, 0,
+                    f[TowerGhastBoneFilters.HAIR_VERTICAL] + f[TowerGhastBoneFilters.HAIR_HORIZONTAL]);
+                setRotation(bone, 2, f[TowerGhastBoneFilters.HAIR_YAW_SPEED]);
             }
-            case "ElytraLocator" -> {
-                setRotation(bone, 0, 0.6 * hairVertical + 0.6 * hairHorizontal);
-                setRotation(bone, 2, hairYawSpeed);
+            case KIND_ELYTRA -> {
+                setRotation(bone, 0,
+                    0.6 * f[TowerGhastBoneFilters.HAIR_VERTICAL]
+                        + 0.6 * f[TowerGhastBoneFilters.HAIR_HORIZONTAL]);
+                setRotation(bone, 2, f[TowerGhastBoneFilters.HAIR_YAW_SPEED]);
             }
-            case "LeftHeadFrag" -> {
-                setRotation(bone, 0, -1.5 * hairVertical);
-                setRotation(bone, 2, -0.9 * hairPitch + 1.5 * hairYawSpeed - 3.0 * hairHorizontal);
+            case KIND_LEFT_HEAD_FRAG -> {
+                setRotation(bone, 0, -1.5 * f[TowerGhastBoneFilters.HAIR_VERTICAL]);
+                setRotation(bone, 2,
+                    -0.9 * f[TowerGhastBoneFilters.HAIR_PITCH]
+                        + 1.5 * f[TowerGhastBoneFilters.HAIR_YAW_SPEED]
+                        - 3.0 * f[TowerGhastBoneFilters.HAIR_HORIZONTAL]);
             }
-            case "RightHeadFrag" -> {
-                setRotation(bone, 0, -1.5 * hairVertical);
-                setRotation(bone, 2, 0.9 * hairPitch + 1.5 * hairYawSpeed + 3.0 * hairHorizontal);
+            case KIND_RIGHT_HEAD_FRAG -> {
+                setRotation(bone, 0, -1.5 * f[TowerGhastBoneFilters.HAIR_VERTICAL]);
+                setRotation(bone, 2,
+                    0.9 * f[TowerGhastBoneFilters.HAIR_PITCH]
+                        + 1.5 * f[TowerGhastBoneFilters.HAIR_YAW_SPEED]
+                        + 3.0 * f[TowerGhastBoneFilters.HAIR_HORIZONTAL]);
+            }
+            case KIND_STRAND -> {
+                Strand strand = STRANDS.get(slot.strandIndex);
+                setRotation(bone, strand.axis(),
+                    strand.perlinSign() * PERLIN_AMPLITUDE * perlin
+                        + strand.yawSign() * f[TowerGhastBoneFilters.HAIR_YAW_SPEED]);
             }
             default -> {
             }
@@ -519,6 +523,190 @@ public final class TowerGhastBonePose {
             case 0 -> bone.setScaleX((float) value);
             case 1 -> bone.setScaleY((float) value);
             default -> bone.setScaleZ((float) value);
+        }
+    }
+
+    private static int kindForNamed(String name) {
+        return switch (name) {
+            case "RightEyesBase", "LeftEyesBase" -> KIND_EYES;
+            case "Breast" -> KIND_BREAST;
+            case "Carminite" -> KIND_CARMINITE;
+            case "LeftGuard" -> KIND_LEFT_GUARD;
+            case "Bung" -> KIND_BUNG;
+            case "FrontFragFlag", "AnteriorFragFlag", "AnteriorFragFlag2" -> KIND_FRONT_FRAG;
+            case "BackFragFlag", "RearAnteriorFragFlag", "RearAnteriorFragFlag2" -> KIND_BACK_FRAG;
+            case "LeftFragFlag", "RightFragFlag" -> KIND_SIDE_FRAG;
+            case "FLongHair" -> KIND_FLONG_HAIR;
+            case "MLongHair" -> KIND_MLONG_HAIR;
+            case "ElytraLocator" -> KIND_ELYTRA;
+            case "LeftHeadFrag" -> KIND_LEFT_HEAD_FRAG;
+            case "RightHeadFrag" -> KIND_RIGHT_HEAD_FRAG;
+            default -> KIND_IGNORE;
+        };
+    }
+
+    /** 模型加载时一次性建好的骨骼索引，之后每帧只读 */
+    private static final class BoneLayout {
+        private final BoneSlot[] applySlots;
+        private final LagSlot[] lags;
+        private final GeoBone head;
+        private final String sentinelName;
+        private final GeoBone sentinel;
+        private final List<String> missing;
+        private final int boneCount;
+
+        private BoneLayout(BoneSlot[] applySlots, LagSlot[] lags, GeoBone head,
+                           String sentinelName, GeoBone sentinel, List<String> missing, int boneCount) {
+            this.applySlots = applySlots;
+            this.lags = lags;
+            this.head = head;
+            this.sentinelName = sentinelName;
+            this.sentinel = sentinel;
+            this.missing = missing;
+            this.boneCount = boneCount;
+        }
+
+        private static BoneLayout build(GeoModel<?> model) {
+            var processor = model.getAnimationProcessor();
+            Map<String, Integer> boneIndex = new HashMap<>();
+            for (int i = 0; i < BONES.size(); i++) {
+                boneIndex.put(BONES.get(i), i);
+            }
+
+            List<String> missing = new ArrayList<>();
+            for (String name : BONES) {
+                if (processor.getBone(name) == null) {
+                    missing.add(name);
+                }
+            }
+
+            boolean[] lagBone = new boolean[BONES.size()];
+            for (Lag lag : LAGS) {
+                Integer index = boneIndex.get(lag.bone());
+                if (index != null) {
+                    lagBone[index] = true;
+                }
+            }
+
+            List<BoneSlot> slots = new ArrayList<>(NAMED_BONES.size() + STRANDS.size());
+            for (String name : NAMED_BONES) {
+                GeoBone bone = processor.getBone(name);
+                int kind = kindForNamed(name);
+                if (bone != null && kind != KIND_IGNORE) {
+                    slots.add(new BoneSlot(bone, kind, -1));
+                }
+            }
+            for (int i = 0; i < STRANDS.size(); i++) {
+                GeoBone bone = processor.getBone(STRANDS.get(i).bone());
+                if (bone != null) {
+                    slots.add(new BoneSlot(bone, KIND_STRAND, i));
+                }
+            }
+
+            List<LagSlot> lags = new ArrayList<>(LAGS.size());
+            int chainIndex = 0;
+            for (Lag lag : LAGS) {
+                GeoBone bone = processor.getBone(lag.bone());
+                GeoBone parent = processor.getBone(lag.parent());
+                Integer boneId = boneIndex.get(lag.bone());
+                if (bone == null || boneId == null) {
+                    continue;
+                }
+                TowerGhastPhysics.SecondOrderCoefficients coefficients =
+                    TowerGhastPhysics.secondOrderCoefficients(lag.frequency(), lag.coefficient(), 0.0);
+                lags.add(new LagSlot(
+                    bone, parent, chainIndex++, boneId, lag.axis(), lag.parentAxis(), lag.subtractAxis(),
+                    lag.sign(), lag.parentGain(), coefficients,
+                    lagAncestors(parent, boneIndex, lagBone)));
+            }
+
+            GeoBone sentinel = processor.getRegisteredBones().stream().findFirst().orElse(null);
+            return new BoneLayout(
+                slots.toArray(BoneSlot[]::new),
+                lags.toArray(LagSlot[]::new),
+                processor.getBone(HEAD_BONE),
+                sentinel == null ? null : sentinel.getName(),
+                sentinel,
+                missing,
+                BONES.size());
+        }
+
+        private boolean isCurrent(GeoModel<?> model) {
+            if (this.sentinelName == null) {
+                return model.getAnimationProcessor().getRegisteredBones().isEmpty();
+            }
+            return model.getAnimationProcessor().getBone(this.sentinelName) == this.sentinel;
+        }
+
+        /**
+         * 收集父骨骼到根之间真正参与链条的骨骼下标
+         *
+         * <p>只有 {@code LAGS} 里的骨骼会被 {@code setChainPose} 写值，其余祖先的贡献恒为 0
+         * 所以不必把它们也放进求和列表
+         */
+        private static int[] lagAncestors(GeoBone parent, Map<String, Integer> boneIndex, boolean[] lagBone) {
+            List<Integer> ancestors = new ArrayList<>();
+            for (GeoBone current = parent; current != null; current = current.getParent()) {
+                Integer index = boneIndex.get(current.getName());
+                if (index != null && lagBone[index]) {
+                    ancestors.add(index);
+                }
+            }
+            int[] result = new int[ancestors.size()];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = ancestors.get(i);
+            }
+            return result;
+        }
+    }
+
+    private static final class BoneSlot {
+        private final GeoBone bone;
+        private final int kind;
+        private final int strandIndex;
+
+        private BoneSlot(GeoBone bone, int kind, int strandIndex) {
+            this.bone = bone;
+            this.kind = kind;
+            this.strandIndex = strandIndex;
+        }
+    }
+
+    private static final class LagSlot {
+        private final GeoBone bone;
+        private final GeoBone parent;
+        private final int chainIndex;
+        private final int boneIndex;
+        private final int axis;
+        private final int parentAxis;
+        private final int subtractAxis;
+        private final double sign;
+        private final double parentGain;
+        private final double k1;
+        private final double k2;
+        private final double k3;
+        private final double step;
+        private final int cycles;
+        private final int[] ancestors;
+
+        private LagSlot(GeoBone bone, GeoBone parent, int chainIndex, int boneIndex,
+                        int axis, int parentAxis, int subtractAxis, double sign, double parentGain,
+                        TowerGhastPhysics.SecondOrderCoefficients coefficients, int[] ancestors) {
+            this.bone = bone;
+            this.parent = parent;
+            this.chainIndex = chainIndex;
+            this.boneIndex = boneIndex;
+            this.axis = axis;
+            this.parentAxis = parentAxis;
+            this.subtractAxis = subtractAxis;
+            this.sign = sign;
+            this.parentGain = parentGain;
+            this.k1 = coefficients.k1();
+            this.k2 = coefficients.k2();
+            this.k3 = coefficients.k3();
+            this.step = coefficients.step();
+            this.cycles = coefficients.cycles();
+            this.ancestors = ancestors;
         }
     }
 }

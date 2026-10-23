@@ -105,7 +105,9 @@ public final class DdtServerEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        if (player.tickCount % 10 == 0) {
+        // 所有玩家的 tickCount 同相位，直接取模会让全服在同一刻一起扫 12 格
+        // 用实体 id 错开相位，平均开销不变，但不再形成每 10 tick 一次的尖峰
+        if ((player.tickCount + player.getId()) % 10 == 0) {
             scanFuelItems(player);
         }
         if (PortalTrigger.isChrono(player)) {

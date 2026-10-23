@@ -42,10 +42,16 @@ public final class DdtConfig {
      * 所以配置还没加载时读到的与 {@link #safe} 的兜底一致
      */
     private static volatile double maxDistanceCache = MAX_DISTANCE_DEFAULT;
-    private static volatile boolean skyLightByDistanceCache = SKY_LIGHT_BY_DISTANCE_DEFAULT;
-    private static volatile int skyLightDayCache = SKY_LIGHT_DAY_DEFAULT;
-    private static volatile int skyLightCenterCache = SKY_LIGHT_CENTER_DEFAULT;
-    private static volatile int skyLightNightCache = SKY_LIGHT_NIGHT_DEFAULT;
+    private static volatile SkyLightConfig skyLightCache = new SkyLightConfig(
+        SKY_LIGHT_BY_DISTANCE_DEFAULT, SKY_LIGHT_DAY_DEFAULT,
+        SKY_LIGHT_CENTER_DEFAULT, SKY_LIGHT_NIGHT_DEFAULT);
+
+    /**
+     * 天光参数的一次性快照
+     *
+     * <p>{@code LightEngine.getLightValue} 每次都会读一遍，一次取四个 volatile 不如取一个快照
+     */
+    public record SkyLightConfig(boolean byDistance, int day, int center, int night) {}
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -100,20 +106,24 @@ public final class DdtConfig {
         return safe(SUN_ANGLE_MAX, SUN_ANGLE_MAX_DEFAULT);
     }
 
+    public static SkyLightConfig skyLightConfig() {
+        return skyLightCache;
+    }
+
     public static boolean skyLightByDistance() {
-        return skyLightByDistanceCache;
+        return skyLightCache.byDistance();
     }
 
     public static int skyLightDay() {
-        return skyLightDayCache;
+        return skyLightCache.day();
     }
 
     public static int skyLightCenter() {
-        return skyLightCenterCache;
+        return skyLightCache.center();
     }
 
     public static int skyLightNight() {
-        return skyLightNightCache;
+        return skyLightCache.night();
     }
 
     public static double maxDistance() {
@@ -127,10 +137,11 @@ public final class DdtConfig {
      * 启动时调一次，后者在玩家改完配置重载时调
      */
     public static void refreshCache() {
-        skyLightByDistanceCache = safe(SKY_LIGHT_BY_DISTANCE, SKY_LIGHT_BY_DISTANCE_DEFAULT);
-        skyLightDayCache = safe(SKY_LIGHT_DAY, SKY_LIGHT_DAY_DEFAULT);
-        skyLightCenterCache = safe(SKY_LIGHT_CENTER, SKY_LIGHT_CENTER_DEFAULT);
-        skyLightNightCache = safe(SKY_LIGHT_NIGHT, SKY_LIGHT_NIGHT_DEFAULT);
+        skyLightCache = new SkyLightConfig(
+            safe(SKY_LIGHT_BY_DISTANCE, SKY_LIGHT_BY_DISTANCE_DEFAULT),
+            safe(SKY_LIGHT_DAY, SKY_LIGHT_DAY_DEFAULT),
+            safe(SKY_LIGHT_CENTER, SKY_LIGHT_CENTER_DEFAULT),
+            safe(SKY_LIGHT_NIGHT, SKY_LIGHT_NIGHT_DEFAULT));
         maxDistanceCache = safe(MAX_DISTANCE, MAX_DISTANCE_DEFAULT);
     }
 
