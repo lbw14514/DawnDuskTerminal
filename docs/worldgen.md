@@ -334,6 +334,16 @@ ID 仍是 `birch_forest`，因为占位不改注册名，看 ID 就知道它顶�
 
 早期的四带设计（大陆 空置域 空岛 地下岛）在接管地形噪声那一次被整份替换，`VoidRegionFeature` 一并删除
 
+### 薄空岛换云
+
+`sky_island_density` 的两段 `y_clamped_gradient` 在 140~240 与 260~310 之外不再变化 噪声整体偏高或偏低时岛体只剩噪声零点附近的一薄片 这种薄片不再当石头岛看
+
+`SkyIslandClouds` 在 `FEATURES` 末尾（`ChunkGenerator.applyBiomeDecoration` 的 `TAIL`）按列量厚度 列顶低于 140 的不碰 同一块连通的岛如果最大厚度仍小于 4 就把整块岛换 `twilightforest:wispy_cloud` 再按切比雪夫距离向外补 2 格 外补只填空气 不覆盖已有方块
+
+厚度读 `WORLD_SURFACE_WG` 高度图 这套高度图在 `CARVERS` 之后不再被 `ProtoChunk.setBlockState` 更新 所以停在纯地形上 树叶和草不会把薄片撑厚 换成 `WORLD_SURFACE` 会把树算进来
+
+不看群系 只看高度 晨昏线维度里任何群系的高空薄岛都走同一条路径 写入范围是当前区块以及边界外 2 格 仍在生成的 3x3 区块区域内 每个区块只负责自己那格的外补 邻居不会重复外扩
+
 ## 已知问题
 
 `data/dawnduskterminal/tags/worldgen/biome/` 下的旧标签只保留 `palette_biomes`

@@ -18,6 +18,7 @@
     "NoiseChunkTemperatureMixin",
     "PaintingVariantGuardMixin",
     "CraftingMenuMixin",
+    "SkyIslandCloudMixin",
     "GameTestChunkWaitMixin"
   ],
   "client": [
