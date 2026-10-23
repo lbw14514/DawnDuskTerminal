@@ -41,8 +41,8 @@ public final class SkyIslandClouds {
 
     /** 空的密度梯度从 y 140 起才可能为正，再低就是地面 */
     public static final int ISLAND_MIN_TOP_Y = 140;
-    /** 第二段梯度在 y 310 收尾，这里给到世界顶 */
-    public static final int ISLAND_MAX_TOP_Y = 319;
+    /** 第二段梯度在 y 310 收尾；这里只是测试兜底，生产直接用维度最大建筑高度 */
+    public static final int ISLAND_MAX_TOP_Y = 511;
     /** 往下最多看到这里，超过这个深度的列一定不是薄片 */
     public static final int ISLAND_SCAN_FLOOR_Y = 128;
     /** 厚度小于这个值才算薄片 */
@@ -74,7 +74,7 @@ public final class SkyIslandClouds {
 
         int minBuildY = level.getMinBuildHeight();
         int maxBuildY = level.getMaxBuildHeight() - 1;
-        int maxTopY = Math.min(ISLAND_MAX_TOP_Y, maxBuildY);
+        int maxTopY = maxBuildY;
         int scanFloorY = Math.max(ISLAND_SCAN_FLOOR_Y, minBuildY);
         int originX = chunk.getPos().getMinBlockX();
         int originZ = chunk.getPos().getMinBlockZ();
