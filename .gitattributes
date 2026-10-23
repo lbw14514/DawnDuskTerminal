@@ -2,9 +2,25 @@
 * text=auto eol=lf
 
 # Binary assets are never line-ending converted
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.ogg binary
-*.nbt binary
-*.jar binary
+*.png binary linguist-vendored
+*.jpg binary linguist-vendored
+*.jpeg binary linguist-vendored
+*.ogg binary linguist-vendored
+*.nbt binary linguist-vendored
+*.jar binary linguist-vendored
+
+# 非源码不参与 GitHub 语言统计 只保留 Java C++ C
+tools/** linguist-vendored
+*.py linguist-vendored
+.eclipse/** linguist-vendored
+*.launch linguist-vendored
+gradle/wrapper/** linguist-vendored
+gradlew linguist-vendored
+gradlew.bat linguist-vendored
+*.gradle linguist-vendored
+*.json linguist-vendored
+*.yml linguist-vendored
+*.yaml linguist-vendored
+*.toml linguist-vendored
+*.properties linguist-vendored
+*.md linguist-vendored
