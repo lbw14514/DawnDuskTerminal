@@ -57,7 +57,7 @@ public:
     }
 
     void run(const Mesh* mesh, const float* matrices, const float* normals,
-             const int* cubeIds, int count, float* out) {
+             const jint* cubeIds, int count, float* out) {
         std::unique_lock<std::mutex> lock(mutex);
         jobMesh = mesh;
         jobMatrices = matrices;
@@ -88,7 +88,7 @@ private:
             const Mesh* mesh = jobMesh;
             const float* matrices = jobMatrices;
             const float* normals = jobNormals;
-            const int* cubeIds = jobCubeIds;
+            const jint* cubeIds = jobCubeIds;
             const int count = jobCount;
             float* out = jobOut;
             lock.unlock();
@@ -159,7 +159,7 @@ private:
     const Mesh* jobMesh = nullptr;
     const float* jobMatrices = nullptr;
     const float* jobNormals = nullptr;
-    const int* jobCubeIds = nullptr;
+    const jint* jobCubeIds = nullptr;
     float* jobOut = nullptr;
     int jobCount = 0;
     std::atomic<int> next{0};
@@ -196,8 +196,8 @@ Java_com_dawnduskterminal_client_NativeVertex_nativeCreateMesh(
     mesh->cubes.resize(static_cast<std::size_t>(cubeCount));
 
     float* vertexSource = env->GetFloatArrayElements(vertexData, nullptr);
-    int* offsetSource = env->GetIntArrayElements(offsets, nullptr);
-    int* countSource = env->GetIntArrayElements(counts, nullptr);
+    jint* offsetSource = env->GetIntArrayElements(offsets, nullptr);
+    jint* countSource = env->GetIntArrayElements(counts, nullptr);
     float* sizeSource = env->GetFloatArrayElements(sizes, nullptr);
 
     std::memcpy(mesh->vertices.data(), vertexSource,
@@ -205,8 +205,8 @@ Java_com_dawnduskterminal_client_NativeVertex_nativeCreateMesh(
 
     for (jsize i = 0; i < cubeCount; ++i) {
         ddt::Cube& cube = mesh->cubes[static_cast<std::size_t>(i)];
-        cube.offset = offsetSource[i];
-        cube.count = countSource[i];
+        cube.offset = static_cast<int>(offsetSource[i]);
+        cube.count = static_cast<int>(countSource[i]);
         cube.sizeX = sizeSource[i * 3];
         cube.sizeY = sizeSource[i * 3 + 1];
         cube.sizeZ = sizeSource[i * 3 + 2];
@@ -254,7 +254,7 @@ Java_com_dawnduskterminal_client_NativeVertex_nativeTransform(
 
     float* matrixSource = env->GetFloatArrayElements(matrices, nullptr);
     float* normalSource = env->GetFloatArrayElements(normals, nullptr);
-    int* idSource = env->GetIntArrayElements(cubeIds, nullptr);
+    jint* idSource = env->GetIntArrayElements(cubeIds, nullptr);
 
     pool->run(mesh, matrixSource, normalSource, idSource, count, out);
 

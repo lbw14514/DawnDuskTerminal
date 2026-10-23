@@ -12,7 +12,7 @@
 #define JNIIMPORT __declspec(dllimport)
 #define JNICALL __stdcall
 
-typedef long jint;
+typedef int jint;
 typedef long long jlong;
 typedef signed char jbyte;
 
