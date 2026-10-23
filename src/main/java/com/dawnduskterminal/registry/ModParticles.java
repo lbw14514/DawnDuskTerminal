@@ -9,10 +9,12 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * 砷铅铁反应权杖用到的三种粒子
+ * 砷铅铁反应权杖用到的三种粒子，以及试验物品 027 的红石点
  *
  * <p>贴图表与帧序在 {@code assets/dawnduskterminal/particles/particle_carminite_*.json}，
- * 客户端 provider 在 {@link com.dawnduskterminal.client.CarminiteParticle}
+ * 客户端 provider 在 {@link com.dawnduskterminal.client.CarminiteParticle}；
+ * 027 的贴图表在 {@code particles/particle_experiment_027.json}，实现在
+ * {@link com.dawnduskterminal.client.Experiment027Particle}
  */
 public final class ModParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
@@ -29,6 +31,10 @@ public final class ModParticles {
     /** 命中后炸开的反应场 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_EFFECT =
         register("particle_carminite_effect");
+
+    /** 试验物品 027 画在方块面上的红石点：静止、半尺寸、60 秒 */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> EXPERIMENT_027 =
+        register("particle_experiment_027");
 
     private ModParticles() {}
 

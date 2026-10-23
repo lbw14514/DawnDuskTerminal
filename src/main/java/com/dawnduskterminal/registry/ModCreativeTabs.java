@@ -89,7 +89,9 @@ public final class ModCreativeTabs {
     /**
      * 试验物品栏：本模组 001~051 里所有有号的试验物品，再加 114 与暮色森林的试验物品 115
      *
-     * <p>全部按序号升序排，靠一张 {@link TreeMap} 排出来，不走手写顺序：001 是方块，033/034 是两支长矛，
+     * <p>全部按序号升序排，靠一张 {@link TreeMap} 排出来，不走手写顺序：001 是方块，004 是照熔炉工作的那台机器，
+     * 007 与 017 是那两把近战
+     * 伤害 4、攻速 5 的裸武器，008 是那件 5 点饥饿 5 点饱和度的食物，027 是那支画红石点的笔，033/034 是两支长矛，
      * 037~042 是高塔工具与简单物品，046 是权杖，051 是拆解台那台机器，104 是那个食物，114 是能吃能摆的那一块，
      * 其余空号是 {@link ModExperimentItems#placeholders()} 补的占位物品
      *
@@ -108,7 +110,14 @@ public final class ModCreativeTabs {
             .displayItems((params, output) -> {
                 SortedMap<Integer, ItemLike> sequence = new TreeMap<>();
                 sequence.put(1, ModItems.EXPERIMENT_001.get());
+                sequence.put(4, ModItems.EXPERIMENT_004.get());
                 ModExperimentItems.placeholders().forEach((number, item) -> sequence.put(number, item.get()));
+                sequence.put(7, ModExperimentItems.EXPERIMENT_007.get());
+                sequence.put(8, ModExperimentItems.EXPERIMENT_008.get());
+                sequence.put(17, ModExperimentItems.EXPERIMENT_017.get());
+                sequence.put(19, ModItems.EXPERIMENT_019.get());
+                sequence.put(20, ModExperimentItems.EXPERIMENT_020.get());
+                sequence.put(27, ModExperimentItems.EXPERIMENT_027.get());
                 sequence.put(33, ModExperimentItems.EXPERIMENT_033.get());
                 sequence.put(34, ModExperimentItems.EXPERIMENT_034.get());
                 sequence.put(37, ModExperimentItems.EXPERIMENT_037.get());

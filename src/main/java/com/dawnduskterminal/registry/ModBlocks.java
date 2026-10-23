@@ -1,11 +1,14 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.Experiment004Block;
+import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
 import com.dawnduskterminal.block.Experiment114Block;
 import com.dawnduskterminal.portal.PortalBlock;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CraftingTableBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -56,6 +59,24 @@ public final class ModBlocks {
         TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("crafting_tables"));
 
     /**
+     * 试验物品 019 摆下来的样子：一丛植物，行为在 {@link Experiment019Block}
+     *
+     * <p>属性照原版花与草那一套：{@code PLANT} 地图色、{@code instabreak}（空手一下就掉）、{@code GRASS} 音效、
+     * {@code noCollission}、随机 XZ 偏移、{@code DESTROY} 推挤反应。掉自身走
+     * {@code data/dawnduskterminal/loot_table/blocks/experiment_019.json}
+     */
+    public static final DeferredBlock<Experiment019Block> EXPERIMENT_019 = BLOCKS.registerBlock(
+        "experiment_019",
+        Experiment019Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.PLANT)
+            .noCollission()
+            .instabreak()
+            .sound(SoundType.GRASS)
+            .offsetType(BlockBehaviour.OffsetType.XZ)
+            .pushReaction(PushReaction.DESTROY));
+
+    /**
      * 试验物品 001：属性和工作台完全一样（{@link net.minecraft.world.level.block.Blocks#CRAFTING_TABLE}
      * 的构造参数逐字照抄），只是没有配方，只能创造栏或命令拿到
      *
@@ -71,6 +92,28 @@ public final class ModBlocks {
             .strength(2.5F)
             .sound(SoundType.WOOD)
             .ignitedByLava());
+
+    /**
+     * 试验物品 004：照熔炉工作的那一台
+     *
+     * <p>属性逐条照抄原版熔炉（{@code Blocks.FURNACE}）的注册参数：{@code mapColor(STONE)}、
+     * {@code requiresCorrectToolForDrops()}、3.5 硬度、石头音效，烧着时 13 级光
+     * （原版 {@code litBlockEmission(13)} 写死了 {@code BlockStateProperties.LIT}，这里用的正是
+     * {@link AbstractFurnaceBlock#LIT}，所以直接写一行 lambda）
+     *
+     * <p>方块模型、方块实体与界面见 {@link Experiment004Block}、
+     * {@code Experiment004BlockEntity}、{@code Experiment004Menu}；掉自身走
+     * {@code data/dawnduskterminal/loot_table/blocks/experiment_004.json}
+     */
+    public static final DeferredBlock<Experiment004Block> EXPERIMENT_004 = BLOCKS.registerBlock(
+        "experiment_004",
+        Experiment004Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.STONE)
+            .requiresCorrectToolForDrops()
+            .strength(3.5F)
+            .sound(SoundType.STONE)
+            .lightLevel(state -> state.getValue(AbstractFurnaceBlock.LIT) ? 13 : 0));
 
     /**
      * 试验物品 114 摆下来的那一块：整块照抄暮色森林的试验物品 115 方块

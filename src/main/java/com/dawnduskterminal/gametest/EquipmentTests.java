@@ -120,7 +120,7 @@ public final class EquipmentTests {
     /**
      * 反应场是圆柱不是长方体：水平 3,3 格落在旧的长方体里、在新圆柱外，不该吃伤害
      *
-     * <p>羊是 8 血，反应场一下 6 点，被命中的那只还剩 2 血活着，可以断言「掉过血」而不是「死了」
+     * <p>反应场一下 8 点，羊只有 8 血，所以命中的那只直接死，断言只判「掉过血」，不判剩多少
      */
     @GameTest(template = "ddt_empty", timeoutTicks = 20)
     public static void carminiteFieldIsCylindrical(GameTestHelper helper) {
@@ -140,6 +140,49 @@ public final class EquipmentTests {
                 "a sheep 2 blocks away must take field damage");
             helper.assertTrue(corner.getHealth() == corner.getMaxHealth(),
                 "a sheep in the corner of the old 4x4 box must stay outside the cylinder");
+        });
+    }
+
+    /**
+     * 反应场的落地频率由对方的受伤无敌时间决定，不是自己定间隔
+     *
+     * <p>原版 {@code LivingEntity.hurt} 命中后把 {@code invulnerableTime} 置 20，只有它衰减到 10 以下
+     * 才吃得下下一次等量伤害，所以每 tick 都结算的反应场实际是每 10 tick 掉一次血：
+     * 5 tick 时 1 次、15 tick 时 2 次、25 tick 时 3 次
+     *
+     * <p>下面这条同时钉住三种错法：改成每 20 tick 结算（15 tick 时只有 1 次）、
+     * 伤害类型被塞进 {@code bypasses_cooldown}（25 tick 时会掉满 20 多次血）、以及第 3 次还没到就收场
+     *
+     * <p>羊默认 8 血撑不住第二下，所以先把血量顶到 200，让每次掉血都能读成 8 点的整数
+     *
+     * <p>羊故意站在离柱心一格的位置：这个伤害类型在 {@code #minecraft:no_knockback} 里，
+     * 受击既不该给水平推挤也不该给向上的弹跳，所以每次掉血后 {@code getDeltaMovement()} 必须还是零。
+     * 把这行标签删掉，这条断言立刻翻车（原版 hurt 会塞 0.4 的速度）
+     */
+    @GameTest(template = "ddt_empty", timeoutTicks = 60)
+    public static void carminiteFieldDamageFollowsInvulnerability(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos center = helper.absolutePos(new BlockPos(2, 1, 2));
+
+        Sheep sheep = helper.spawnWithNoFreeWill(EntityType.SHEEP, new BlockPos(3, 1, 2));
+        sheep.setNoGravity(true);
+        sheep.getAttribute(Attributes.MAX_HEALTH).setBaseValue(200.0D);
+        sheep.setHealth(200.0F);
+
+        CarminiteFieldEntity.spawn(level, center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D, null, 0, 0, 0);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(sheep.getHealth() == 192.0F,
+                "one hit within 5 ticks, got health " + sheep.getHealth());
+            helper.assertTrue(sheep.getDeltaMovement().lengthSqr() < 1.0E-6,
+                "the field must not knock the sheep back, got " + sheep.getDeltaMovement());
+        });
+        helper.runAfterDelay(15, () -> helper.assertTrue(sheep.getHealth() == 184.0F,
+            "two hits within 15 ticks, got health " + sheep.getHealth()));
+        helper.runAfterDelay(25, () -> {
+            helper.assertTrue(sheep.getHealth() == 176.0F,
+                "three hits within 25 ticks, got health " + sheep.getHealth());
+            helper.succeed();
         });
     }
 

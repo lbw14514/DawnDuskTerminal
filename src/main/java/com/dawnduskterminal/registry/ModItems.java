@@ -145,6 +145,12 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> EXPERIMENT_001 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_001);
 
+    /** 试验物品 004：那台熔炉的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_004} */
+    public static final DeferredItem<BlockItem> EXPERIMENT_004 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_004);
+
+    /** 试验物品 019：那丛植物的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_019} */
+    public static final DeferredItem<BlockItem> EXPERIMENT_019 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_019);
+
     /** 试验物品 051：拆解台那台机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_051} */
     public static final DeferredItem<BlockItem> EXPERIMENT_051 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_051);
 

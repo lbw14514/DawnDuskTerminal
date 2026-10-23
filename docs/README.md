@@ -16,6 +16,8 @@
 
 只改传送门与流体读 `portal.md`
 
+只改合成与标签读 `crafting.md`
+
 要调数值读 `configuration.md`
 
 ## 文件
@@ -29,6 +31,8 @@
 `todo.md` 待办，做完就删行
 
 `portal.md` 传送门判定 触发 即时传送 落点门 稳定效果 流体与桶
+
+`crafting.md` 苍穹石顶替石头与圆石 标签布局 原版配方改写 NeoForge 覆盖的坑 测试
 
 `development.md` 环境 构建 运行 游戏测试 指令 CI 移植脚本 踩坑
 

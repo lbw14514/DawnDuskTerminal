@@ -1,0 +1,21 @@
+{
+  "type": "twilightforest:uncrafting",
+  "cost": 0,
+  "input": {
+    "item": "dawnduskterminal:experiment_017"
+  },
+  "input_count": 1,
+  "key": {
+    "A": {
+      "item": "twilightforest:steeleaf_ingot"
+    },
+    "B": {
+      "item": "twilightforest:dark_leaves"
+    }
+  },
+  "pattern": [
+    "  A",
+    "AA ",
+    "BA "
+  ]
+}

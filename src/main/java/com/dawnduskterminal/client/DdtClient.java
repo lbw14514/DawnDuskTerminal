@@ -48,6 +48,7 @@ public final class DdtClient {
      * 挡住，服务端不会走到这里
      */
     private static void registerMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenus.EXPERIMENT_004.get(), Experiment004Screen::new);
         event.register(ModMenus.EXPERIMENT_051.get(), Experiment051Screen::new);
     }
 
@@ -135,11 +136,12 @@ public final class DdtClient {
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_1.get(), PaintingRenderer::new);
     }
 
-    /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle} */
+    /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle}；027 的红石点单独一支，见 {@link Experiment027Particle} */
     private static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.CARMINITE_BALL.get(), CarminiteParticle::ballProvider);
         event.registerSpriteSet(ModParticles.CARMINITE_TRACE.get(), CarminiteParticle::traceProvider);
         event.registerSpriteSet(ModParticles.CARMINITE_EFFECT.get(), CarminiteParticle::effectProvider);
+        event.registerSpriteSet(ModParticles.EXPERIMENT_027.get(), Experiment027Particle::provider);
     }
 
     private static void registerFluidExtensions(RegisterClientExtensionsEvent event) {

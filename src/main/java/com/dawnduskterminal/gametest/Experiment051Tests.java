@@ -5,10 +5,13 @@ import com.dawnduskterminal.block.entity.Experiment051BlockEntity;
 import com.dawnduskterminal.crafting.UncraftingPlan;
 import com.dawnduskterminal.crafting.UncraftingResolver;
 import com.dawnduskterminal.registry.ModBlocks;
+import com.dawnduskterminal.registry.ModExperimentItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
@@ -214,6 +217,53 @@ public final class Experiment051Tests {
                 new ItemStack(Items.OAK_PLANKS), Direction.DOWN),
             "output slots must be pullable from the bottom");
         helper.succeed();
+    }
+
+    /**
+     * 试验物品 017 只能拆、不能合：拆一次吃 1 个，吐四个钢叶加一片黑树树叶
+     *
+     * <p>产物位置照拆解台的 3x3：右上、中左、中中、下中四个钢叶（{@code twilightforest:steeleaf_ingot}），
+     * 左下那片是黑树树叶（{@code twilightforest:dark_leaves}），其余四格空着
+     *
+     * <p>数据在 {@code data/dawnduskterminal/recipe/experiment_017_uncrafting.json}，类型是暮色森林的
+     * {@code twilightforest:uncrafting}（本模组的拆解台与它共用同一份配方表）。同时钉住「不可合成」：
+     * 哪天有人给它补了合成配方，反查那段就会抢在拆解配方前面，这条断言先红
+     */
+    @GameTest(template = "ddt_empty")
+    public static void experiment017UncraftsIntoTwilightMaterials(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        boolean craftable = level.getRecipeManager().getRecipes().stream()
+            .anyMatch(holder -> holder.value().getResultItem(level.registryAccess())
+                .is(ModExperimentItems.EXPERIMENT_017.get()));
+        helper.assertFalse(craftable,
+            "experiment_017 must stay uncraftable, but some crafting recipe now yields it");
+
+        UncraftingPlan plan = UncraftingResolver.resolve(level,
+            new ItemStack(ModExperimentItems.EXPERIMENT_017.get()));
+        helper.assertFalse(plan.isNone(), "experiment_017 must uncraft into its twilight materials");
+        helper.assertTrue(plan.inputCount() == 1,
+            "one experiment_017 must be eaten per uncraft, got " + plan.inputCount());
+
+        ItemStack steelLeaf = foreign("twilightforest:steeleaf_ingot");
+        ItemStack darkLeaves = foreign("twilightforest:dark_leaves");
+        helper.assertFalse(steelLeaf.isEmpty() || darkLeaves.isEmpty(),
+            "twilightforest must be installed: steeleaf=" + steelLeaf + " dark_leaves=" + darkLeaves);
+        for (int slot : new int[] {2, 3, 4, 7}) {
+            helper.assertTrue(plan.products().get(slot).is(steelLeaf.getItem()),
+                "output slot " + slot + " must be a steeleaf ingot, got " + plan.products().get(slot));
+        }
+        helper.assertTrue(plan.products().get(6).is(darkLeaves.getItem()),
+            "output slot 6 must be dark leaves, got " + plan.products().get(6));
+        for (int slot : new int[] {0, 1, 5, 8}) {
+            helper.assertTrue(plan.products().get(slot).isEmpty(),
+                "output slot " + slot + " must stay empty, got " + plan.products().get(slot));
+        }
+        helper.succeed();
+    }
+
+    /** 别的模组的物品，只用字符串 ID 取；取不到就是空栈，让断言自己把这件事报出来 */
+    private static ItemStack foreign(String id) {
+        return new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(id)));
     }
 
     private static Experiment051BlockEntity placeMachine(ServerLevel level, BlockPos pos) {

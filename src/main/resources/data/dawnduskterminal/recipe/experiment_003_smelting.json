@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "cookingtime": 200,
+  "experience": 0.7,
+  "ingredient": {
+    "item": "dawnduskterminal:experiment_003"
+  },
+  "result": {
+    "id": "minecraft:copper_ingot"
+  }
+}

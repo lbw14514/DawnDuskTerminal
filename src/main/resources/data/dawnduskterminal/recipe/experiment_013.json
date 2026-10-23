@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "dawnduskterminal:rawscarletmolybdenum"
+    },
+    {
+      "item": "twilightforest:raw_ironwood"
+    },
+    {
+      "item": "dawnduskterminal:experiment_016"
+    },
+    {
+      "item": "twilightforest:carminite"
+    }
+  ],
+  "result": {
+    "id": "dawnduskterminal:experiment_013",
+    "count": 3
+  }
+}

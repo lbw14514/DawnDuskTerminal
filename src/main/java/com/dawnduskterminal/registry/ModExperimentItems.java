@@ -1,9 +1,15 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.item.Experiment020Item;
+import com.dawnduskterminal.item.Experiment027Item;
 import com.dawnduskterminal.item.ThrustSpearItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
@@ -13,6 +19,7 @@ import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -24,7 +31,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * 试验物品栏里那批实验品：两支长矛（试验物品 033、034）、高塔五件套（试验物品 037~041）与一件简单物品（试验物品 042）
+ * 试验物品栏里那批实验品：一台照熔炉工作的机器（试验物品 004）、两把近战武器（试验物品 007、017）、
+ * 一件食物（试验物品 008）、一支画红石点的笔（试验物品 027）、两支长矛（试验物品 033、034）、
+ * 高塔五件套（试验物品 037~041）与一件简单物品（试验物品 042）
  *
  * <p>整批试验物品的注册 ID 与显示名都用三位数序列，含已经就是三位的 {@code experiment_001}，
  * 所以这里从 {@code experiment_033} 起步，不是 {@code experiment_33}
@@ -40,6 +49,73 @@ import java.util.TreeMap;
  */
 public final class ModExperimentItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DawnDuskTerminal.MOD_ID);
+
+    /**
+     * 试验物品 007：近战伤害 4、攻速 5
+     *
+     * <p>玩家自身的底数是攻击力 1、攻速 4，所以两个修饰符分别给 +3 与 +1，面板上就是「4 攻击伤害、
+     * 5 攻击速度」，每 0.2 秒一刀。两条都写全：属性表里没有 {@code ATTACK_SPEED} 这一项，面板就不显示攻速
+     *
+     * <p>不挂 tool tier，所以它没有耐久、挖不动方块、也不在五个原版工具标签里；要的就是一件只拿来比
+     * 伤害与攻速尺子的裸武器，规格由 {@code ExperimentItemTests#experiment007IsAFourFiveWeapon} 钉住
+     */
+    public static final DeferredItem<Item> EXPERIMENT_007 = ITEMS.register("experiment_007",
+        () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_007", 3.0D, 1.0D))));
+
+    /**
+     * 试验物品 017：近战伤害 4、攻速 5，与 {@link #EXPERIMENT_007} 同一副规格
+     *
+     * <p>两件物品共用 {@link #meleeAttributes}，只有修饰符的 ID 前缀不同——同一个属性上挂两个同 ID 的
+     * 修饰符会互相顶掉，所以 ID 必须按物品分开
+     */
+    public static final DeferredItem<Item> EXPERIMENT_017 = ITEMS.register("experiment_017",
+        () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_017", 3.0D, 1.0D))));
+
+    /**
+     * 试验物品 008 的食物属性：5 点饥饿、5 点饱和度
+     *
+     * <p>{@link FoodProperties} 里存的不是饱和度本身，是饱和度系数，实际给的点数是
+     * 系数 × 饥饿 × 2，所以 5 与 0.5 才等于 5 点饥饿、5 点饱和度（对照烤马铃薯：5 与 0.6 → 6.0）。
+     * 5 点饥饿是两块生猪排以下、一块熟猪排以上的量
+     */
+    private static final FoodProperties EXPERIMENT_008_FOOD = new FoodProperties.Builder()
+        .nutrition(5)
+        .saturationModifier(0.5F)
+        .build();
+
+    /**
+     * 试验物品 008：食物，5 点饥饿、5 点饱和度，吃完东西就没了
+     *
+     * <p>可堆叠到 64（食物物品的默认值），没有附加效果、也不带「随时可吃」——饥饿满时吃不下，
+     * 与原版普通食物一致
+     */
+    public static final DeferredItem<Item> EXPERIMENT_008 = ITEMS.register("experiment_008",
+        () -> new Item(new Item.Properties().food(EXPERIMENT_008_FOOD)));
+
+    /**
+     * 试验物品 020 的食物属性：20 点饥饿、20 点饱和度
+     *
+     * <p>系数还是 0.5：系数 × 饥饿 × 2 = 0.5 × 20 × 2 = 20.0。20 点饥饿就是整条饥饿条，
+     * 饱和度的上限也正好是 20，所以这一口直接吃满
+     */
+    private static final FoodProperties EXPERIMENT_020_FOOD = new FoodProperties.Builder()
+        .nutrition(20)
+        .saturationModifier(0.5F)
+        .build();
+
+    /**
+     * 试验物品 020：20 点饥饿、20 点饱和度的食物，吃完随机给 0~3 个效果，每个 10~300 秒
+     *
+     * <p>摇效果的逻辑在 {@link Experiment020Item}：随机表进不了 {@code FoodProperties}（那张表是固定的、
+     * 还会写进 tooltip），只能在吃完那一刻现摇
+     */
+    public static final DeferredItem<Experiment020Item> EXPERIMENT_020 = ITEMS.register(
+        "experiment_020",
+        () -> new Experiment020Item(new Item.Properties().food(EXPERIMENT_020_FOOD)));
+
+    /** 试验物品 027：按住右键在视线命中的方块面上每 tick 画一个红石点，行为在 {@link Experiment027Item} */
+    public static final DeferredItem<Experiment027Item> EXPERIMENT_027 = ITEMS.register(
+        "experiment_027", () -> new Experiment027Item(new Item.Properties()));
 
     public static final DeferredItem<SwordItem> EXPERIMENT_037 = ITEMS.register("experiment_037",
         () -> new SwordItem(Tiers.DIAMOND, new Item.Properties()
@@ -113,7 +189,13 @@ public final class ModExperimentItems {
     /**
      * 已经被占掉的序号
      *
-     * <p>001 是能当合成台用的方块，033/034 是上面那两支长矛，051 是拆解台那台机器（方块在
+     * <p>001 是能当合成台用的方块，004 是照熔炉工作的那台机器（方块在
+     * {@link ModBlocks#EXPERIMENT_004}、物品在 {@link ModItems#EXPERIMENT_004}），
+     * 007 与 017 是上面那两把近战伤害 4、攻速 5 的裸武器，008 是上面那件
+     * 5 点饥饿 5 点饱和度的食物，020 是上面那件 20 点饥饿 20 点饱和度、随机给效果的食物，
+     * 027 是上面那支画红石点的笔，019 是那丛植物（方块在 {@link ModBlocks#EXPERIMENT_019}、
+     * 物品在 {@link ModItems#EXPERIMENT_019}），033/034 是上面那两支长矛，
+     * 051 是拆解台那台机器（方块在
      * {@link ModBlocks#EXPERIMENT_051}、物品在 {@link ModItems#EXPERIMENT_051}），037~042 是上面那批工具与简单物品，
      * 046 是砷铅铁钼反应权杖（注册 ID 仍是 {@code carminite_molybdenum_reactor_staff}），
      * 104 是那个能吃的东西（在 {@link ModItems#EXPERIMENT_104}），114 是能吃能摆的那一块（在
@@ -121,7 +203,8 @@ public final class ModExperimentItems {
      *
      * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
      */
-    private static final Set<Integer> TAKEN = Set.of(1, 33, 34, 37, 38, 39, 40, 41, 42, 46, 51, 104, 114, 115);
+    private static final Set<Integer> TAKEN =
+        Set.of(1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 46, 51, 104, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 
@@ -144,6 +227,26 @@ public final class ModExperimentItems {
             map.put(number, ITEMS.registerSimpleItem(id, new Item.Properties()));
         }
         return Collections.unmodifiableSortedMap(map);
+    }
+
+    /**
+     * 裸近战武器的属性表：主手攻击力加 {@code attackDamage}、攻速加 {@code attackSpeed}
+     *
+     * <p>玩家底数是攻击力 1、攻速 4，所以「面板 4 伤害、5 攻速」对应的是 +3 与 +1。修饰符 ID 带上物品 ID
+     * 前缀，同一属性上挂两个同 ID 的修饰符会互相顶掉
+     */
+    private static ItemAttributeModifiers meleeAttributes(String itemPath, double attackDamage,
+                                                          double attackSpeed) {
+        return ItemAttributeModifiers.builder()
+            .add(Attributes.ATTACK_DAMAGE,
+                new AttributeModifier(DawnDuskTerminal.id(itemPath + "_attack_damage"), attackDamage,
+                    AttributeModifier.Operation.ADD_VALUE),
+                EquipmentSlotGroup.MAINHAND)
+            .add(Attributes.ATTACK_SPEED,
+                new AttributeModifier(DawnDuskTerminal.id(itemPath + "_attack_speed"), attackSpeed,
+                    AttributeModifier.Operation.ADD_VALUE),
+                EquipmentSlotGroup.MAINHAND)
+            .build();
     }
 
     private static void describe(List<Component> tooltip, String key) {

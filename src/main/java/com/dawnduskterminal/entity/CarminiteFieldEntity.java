@@ -28,8 +28,19 @@ import org.jetbrains.annotations.Nullable;
  * <p>范围是圆柱不是长方体：源 mod 用 {@code AABB(x±4, y±1.5, z±4)} 只能框出方盒子，
  * 这里按水平距离 4 格、竖直 ±1.5 格筛
  *
- * <p>伤害每 {@value #DAMAGE_INTERVAL} tick 结算一次。源 mod 是每 tick 一次，那是 MCreator 把
- * 过程挂在实体 tick 上的副作用，玩家 3 tick 就没了，不照抄
+ * <p>伤害每 tick 都试着结算一次，真正落地的频率交给生物的受伤无敌时间：原版
+ * {@code LivingEntity#hurt} 在命中后把 {@code invulnerableTime} 置 20，之后只有降到 10 以下才再吃，
+ * 等量伤害在窗口内直接返回 false（{@code lastHurt} 那条超额分支走不到），所以等伤害的反应场
+ * 自然就是每 10 tick 也就是 0.5 秒掉一次血，与生物的受伤表现同频
+ *
+ * <p>曾经卡过一个 20 tick 的间隔常量，理由是「源 mod 每 tick 一次会让玩家 3 tick 就没」。
+ * 那个担心在原版这层门上不成立：等量伤害每 tick 调用也只有每 10 tick 那一次吃得下，
+ * 于是间隔常量只是把频率从 0.5 秒又压到 1 秒，白丢一半伤害
+ *
+ * <p>伤害不带击退：本模组的 {@code carminite_field} 伤害类型挂在
+ * {@code data/minecraft/tags/damage_type/no_knockback.json} 里。原版 {@code LivingEntity#hurt}
+ * 每次真正落地的伤害都会给 0.4 的击退，落在场里就是把人往外推、还带一下向上的弹跳，
+ * 连续几秒被打成弹球；弹体直击用的是同一个伤害类型，所以两条路一起没有了击退
  *
  * <p>每 tick 在反应场边缘画一圈 {@value #RING_POINTS} 个粒子。源 mod 把 12 个角的坐标手写成
  * 2.5 / 2.17 / 1.25 的常量组合，这里直接算 cos/sin，画出来是同一条圆
@@ -40,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 public class CarminiteFieldEntity extends Entity {
     private static final int BASE_LIFETIME = 75;
     private static final int LIFETIME_PER_POWER = 15;
-    private static final int DAMAGE_INTERVAL = 20;
     private static final float DAMAGE = 8.0F;
     private static final float DAMAGE_PER_POWER = 2.0F;
     /** 火矢：点燃秒数与每 tick 的岩浆粒子数 */
@@ -91,9 +101,8 @@ public class CarminiteFieldEntity extends Entity {
             this.spawnRing();
             return;
         }
-        if (this.age % DAMAGE_INTERVAL == 0) {
-            this.damageInField();
-        }
+        // 每 tick 都试着结算一次，频率由对方的受伤无敌时间决定，见类注释
+        this.damageInField();
         // 源 mod 的岩浆粒子是每 tick 发的，不在伤害结算里
         if (this.fire > 0) {
             this.spawnFireParticles();
@@ -113,7 +122,11 @@ public class CarminiteFieldEntity extends Entity {
             if (target instanceof ArmorStand || !target.isAlive() || !this.contains(target)) {
                 continue;
             }
-            target.hurt(source, damage);
+            boolean hurt = target.hurt(source, damage);
+            // 无敌窗口里这一次没吃下伤害，火与缓慢也不该跟着空刷
+            if (!hurt) {
+                continue;
+            }
             if (this.fire > 0) {
                 target.igniteForSeconds(FIRE_SECONDS);
             }
