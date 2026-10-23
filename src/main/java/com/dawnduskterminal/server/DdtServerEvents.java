@@ -78,9 +78,15 @@ public final class DdtServerEvents {
         ChronoLineState.setServerLine(state.line());
         DawnDuskTerminal.LOGGER.info("DawnDuskTerminal chrono line origin=({}, {}) normal=({}, {})",
             state.line().originX(), state.line().originZ(), state.line().normalX(), state.line().normalZ());
+        if (net.neoforged.fml.ModList.get().isLoaded("c2me")) {
+            DawnDuskTerminal.LOGGER.info(
+                "DawnDuskTerminal c2me is active (bundled; external copies are deduplicated by JarJar)");
+        }
 
         Registry<Structure> structures = event.getServer().registryAccess().registryOrThrow(Registries.STRUCTURE);
         StructureExclusions.validate(structures);
+
+        com.dawnduskterminal.debug.ChronoParityProbe.runIfRequested(event.getServer());
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

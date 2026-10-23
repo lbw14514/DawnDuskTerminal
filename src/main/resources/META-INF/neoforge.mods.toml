@@ -37,5 +37,13 @@ versionRange = "[4.9.3,)"
 ordering = "AFTER"
 side = "BOTH"
 
+# c2me 以 JarJar 嵌套随本模组加载；这条 optional 依赖给外部安装留出版本协商依据
+[[dependencies.${mod_id}]]
+modId = "c2me"
+type = "optional"
+versionRange = "[0.4.0-alpha.0.123,)"
+ordering = "AFTER"
+side = "BOTH"
+
 [[mixins]]
 config = "dawnduskterminal.mixins.json"

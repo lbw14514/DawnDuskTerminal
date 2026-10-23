@@ -115,12 +115,111 @@ configurations {
     clientDevMods {
         canBeConsumed = false
     }
+    // 只用来取 c2me 原始 jar，打补丁后再 JarJar，不进编译或运行 classpath
+    c2meCompat {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+// 专用服对照证明官方 c2me 的地形高度与不装 c2me 逐字节一致，开发环境那 15 列差是 dev 侧
+// classpath 组合造成的假阳性，所以这里保留全部模块，只把 jar 嵌进产物
+def c2meRemovedModules = []
+def c2meBundleVersion = '0.4.0-alpha.0.123.1'
+def c2meBundleGroup = 'com.ishland.c2me'
+def c2meBundleArtifact = 'c2me-neoforge'
+def patchC2me = tasks.register('patchC2me') {
+    def c2meJar = configurations.c2meCompat
+    inputs.files(c2meJar)
+    inputs.property('removed', c2meRemovedModules.join(','))
+    def output = layout.buildDirectory.file('c2me/c2me-patched.jar')
+    outputs.file(output)
+    doLast {
+        def source = c2meJar.singleFile
+        def target = output.get().asFile
+        target.parentFile.mkdirs()
+        if (c2meRemovedModules.isEmpty()) {
+            java.nio.file.Files.copy(source.toPath(), target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("c2me bundled unmodified")
+            return
+        }
+        def found = new HashSet<String>()
+        def put = { out, name, bytes ->
+            out.putNextEntry(new java.util.zip.ZipEntry(name))
+            out.write(bytes)
+            out.closeEntry()
+        }
+        new java.util.zip.ZipFile(source).withCloseable { zip ->
+            new java.util.zip.ZipOutputStream(new FileOutputStream(target)).withCloseable { out ->
+                def entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    def entry = entries.nextElement()
+                    def name = entry.name
+                    if (name == 'META-INF/jarjar/metadata.json') {
+                        def json = new groovy.json.JsonSlurper().parse(zip.getInputStream(entry))
+                        def kept = []
+                        json.jars.each { jar ->
+                            def artifact = jar.identifier.artifact
+                            if (c2meRemovedModules.contains(artifact)) {
+                                found.add(artifact)
+                            } else {
+                                kept.add(jar)
+                            }
+                        }
+                        json.jars = kept
+                        put(out, name, groovy.json.JsonOutput.toJson(json).getBytes('UTF-8'))
+                    } else if (name.startsWith('META-INF/jars/')
+                        && c2meRemovedModules.any { name.contains(it.replace('c2me-', '')) }) {
+                        found.add(c2meRemovedModules.find { name.contains(it.replace('c2me-', '')) })
+                    } else {
+                        put(out, name, zip.getInputStream(entry).bytes)
+                    }
+                }
+            }
+        }
+        def missing = c2meRemovedModules - found
+        if (!missing.isEmpty()) {
+            throw new GradleException("c2me jar did not contain ${missing}, update the patch list")
+        }
+        logger.lifecycle("c2me patched without ${c2meRemovedModules}")
+    }
+}
+
+// 手写 JarJar 元数据，避免 ModDevGradle 的 jarJar 配置在配置期就去解析本地补丁 jar
+def c2meJarJarMetadata = tasks.register('generateC2meJarJarMetadata') {
+    def output = layout.buildDirectory.file('c2me/META-INF/jarjar/metadata.json')
+    outputs.file(output)
+    doLast {
+        def file = output.get().asFile
+        file.parentFile.mkdirs()
+        def payload = """{
+  "jars": [
+    {
+      "identifier": {
+        "group": "${c2meBundleGroup}",
+        "artifact": "${c2meBundleArtifact}"
+      },
+      "version": {
+        "range": "[${c2meBundleVersion},)",
+        "artifactVersion": "${c2meBundleVersion}"
+      },
+      "path": "META-INF/jars/${c2meBundleArtifact}-${c2meBundleVersion}.jar"
+    }
+  ]
+}
+"""
+        file.setText(payload, 'UTF-8')
+    }
 }
 
 // 两个前置模组都用 compileOnly 加 runtimeOnly：
 // compileOnly 供编译，runtimeOnly 让 runClient runServer runData 这些开发运行也加载它们
 // 它们都是普通模组，运行时必须装在游戏端，jar 不会被打进本模组的产物
 dependencies {
+    // c2me 本体打进 jar，先去掉会改地形的两个模块；外部安装时由 FML 的 JarJar 协商处理
+    c2meCompat "maven.modrinth:c2me-neoforge:${c2me_version}"
+
     // 4.9.3 是 1.21.1 线上当前的版本，它声明 neoforge >= 21.1.150，本项目满足
     // GeckoLib 另有一个 geckoanimfix 是 incompatible 依赖，两者不能同时装
     compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
@@ -154,6 +253,18 @@ dependencies {
     // BoccHUD 0.4.1 的必装前置就是 MaFgLib，不需要另写一条
     clientDevMods "maven.modrinth:appleskin:${appleskin_version}"
     clientDevMods "maven.modrinth:bocchud:${bocchud_version}"
+}
+
+// 把打过补丁的 c2me 作为嵌套 jar 打进产物，元数据手写
+tasks.named('jar', Jar) {
+    dependsOn patchC2me, c2meJarJarMetadata
+    from(patchC2me) {
+        into 'META-INF/jars'
+        rename { "${c2meBundleArtifact}-${c2meBundleVersion}.jar" }
+    }
+    from(c2meJarJarMetadata) {
+        into 'META-INF/jarjar'
+    }
 }
 
 // run 的 classpath 在任务执行时才从 classpathProvider 取，所以要加在 provider 上，加 classpath 会被覆盖
@@ -206,18 +317,32 @@ jar {
 
 // 可选的 native 顶点变换内核
 // 找不到编译器就跳过，jar 里没有库时 NativeVertex 会走纯 Java 路径，构建不会因此失败
+//
+// 默认按构建机编译。交叉编译时传：
+//   -PddtNativeTarget=linux-aarch64
+//   -PddtNativeCompiler=aarch64-linux-gnu-g++
+//   -PddtNativeFlags="-arch x86_64"
+// 产物落在 build/native/<os>-<arch>/，processResources 会把 build/native 下所有平台一起打进 jar
 def nativeOsName = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
 def nativeArchName = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT)
-def nativeIsWindows = nativeOsName.contains('win')
-def nativeIsMac = nativeOsName.contains('mac')
-def nativeArch = nativeArchName.contains('aarch64') ? 'aarch64'
+def nativeHostOs = nativeOsName.contains('win') ? 'windows' : (nativeOsName.contains('mac') ? 'macos' : 'linux')
+def nativeHostArch = (nativeArchName.contains('aarch64') || nativeArchName.contains('arm64')) ? 'aarch64'
     : (nativeArchName.contains('64') ? 'x86_64' : 'x86')
-def nativeKey = (nativeIsWindows ? 'windows' : (nativeIsMac ? 'macos' : 'linux')) + '-' + nativeArch
-def nativeLibraryName = nativeIsWindows ? 'ddt_vertex.dll' : (nativeIsMac ? 'ddt_vertex.dylib' : 'ddt_vertex.so')
-def nativeCompiler = nativeIsWindows ? 'g++' : (nativeIsMac ? 'clang++' : 'g++')
+
+def nativeTarget = providers.gradleProperty('ddtNativeTarget').getOrElse("${nativeHostOs}-${nativeHostArch}")
+def nativeTargetParts = nativeTarget.split('-')
+def nativeTargetOs = nativeTargetParts[0]
+def nativeTargetArch = nativeTargetParts.length > 1 ? nativeTargetParts[1] : nativeHostArch
+def nativeKey = "${nativeTargetOs}-${nativeTargetArch}"
+def nativeLibraryName = nativeTargetOs == 'windows' ? 'ddt_vertex.dll'
+    : (nativeTargetOs == 'macos' ? 'ddt_vertex.dylib' : 'ddt_vertex.so')
+def nativeCompiler = providers.gradleProperty('ddtNativeCompiler')
+    .getOrElse(nativeTargetOs == 'windows' ? 'g++' : 'c++')
+def nativeExtraFlags = providers.gradleProperty('ddtNativeFlags').getOrElse('')
+    .split(' ').findAll { !it.isBlank() }
 def nativeOutput = layout.buildDirectory.dir("native/${nativeKey}")
 def javaHome = System.getProperty('java.home')
-def jniPlatform = nativeIsWindows ? 'win32' : (nativeIsMac ? 'darwin' : 'linux')
+def jniPlatform = nativeTargetOs == 'windows' ? 'win32' : (nativeTargetOs == 'macos' ? 'darwin' : 'linux')
 
 def nativeCompilerAvailable = {
     try {
@@ -231,18 +356,22 @@ def nativeCompilerAvailable = {
     }
 }
 
-def nativeArguments = ['-O3', '-std=c++17']
-if (nativeIsWindows) {
-    nativeArguments += ['-shared', '-pthread', '-static-libgcc', '-static-libstdc++']
-} else if (nativeIsMac) {
+def nativeArguments = ['-O3', '-std=c++17'] + nativeExtraFlags
+if (nativeTargetOs == 'windows') {
+    // -static 把 libwinpthread 与 gcc/stdc++ 运行库一起塞进 DLL 玩家机器上没有 MinGW 的 DLL
+    nativeArguments += ['-shared', '-pthread', '-static']
+} else if (nativeTargetOs == 'macos') {
     nativeArguments += ['-dynamiclib', '-pthread']
 } else {
-    nativeArguments += ['-shared', '-fPIC', '-pthread']
+    nativeArguments += ['-shared', '-fPIC', '-pthread', '-static-libgcc', '-static-libstdc++']
 }
 
 def buildNative = tasks.register('buildNative', Exec) {
     onlyIf { nativeCompilerAvailable() }
     inputs.file layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
+    inputs.property('target', nativeKey)
+    inputs.property('compiler', nativeCompiler)
+    inputs.property('flags', nativeExtraFlags.join(' '))
     outputs.dir nativeOutput
     doFirst {
         nativeOutput.get().asFile.mkdirs()
@@ -256,9 +385,11 @@ def buildNative = tasks.register('buildNative', Exec) {
     ])
 }
 
+// build/native 下已经有交叉编译产物的目录也一起打包，CI 先跑矩阵再把产物落到这里
 processResources {
     dependsOn buildNative
-    from(nativeOutput) {
-        into "native/${nativeKey}"
+    from(layout.buildDirectory.dir('native')) {
+        into 'native'
+        includeEmptyDirs = false
     }
 }

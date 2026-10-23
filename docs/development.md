@@ -74,6 +74,25 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 纯资源改动可能报 UP-TO-DATE，要验证 jar 里的内容
 
+### native 顶点内核
+
+默认按构建机编译，产物落在 `build/native/<os>-<arch>/`，`processResources` 会把 `build/native` 下所有平台一起打进 jar
+
+交叉编译用
+
+```bash
+./gradlew buildNative \
+  -PddtNativeTarget=linux-aarch64 \
+  -PddtNativeCompiler=aarch64-linux-gnu-g++ \
+  -PddtNativeFlags=""
+```
+
+支持的 key 是 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`
+
+本机没有对应编译器时 `buildNative` 跳过，`NativeVertex` 会回退纯 Java，构建不失败
+
+Windows DLL 用 `-static`，不能依赖 `libwinpthread-1.dll`；玩家机器上只有 MinGW 开发环境才有那个 DLL
+
 ## 游戏内测试
 
 `./gradlew runGameTestServer`
@@ -216,9 +235,19 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 `build.yml` 在 push main 与 v 标签 与 PR 触发，跑 `./gradlew build` 并上传 jar
 
-`gametest.yml` 在 PR 触发，跑 `./gradlew runGameTestServer` 并上传日志
+`gametest.yml` 在 PR 触发，跑两遍 `./gradlew runGameTestServer`：一遍原版环境，一遍把 c2me 1.21.1 NeoForge 构建放进 `run/gametest/mods`
 
-`release.yml` 在 v 标签触发，校验标签与 `mod_version` 一致，构建并 `gh release create`
+`release.yml` 在 v 标签触发，先用矩阵编译 5 个平台的 native（Windows 在 Ubuntu 上交叉编译），再合成一个 jar，最后 `gh release create` 或 `gh release upload --clobber`
+
+c2me 的许可证是 MIT，只有 `c2me-opts-accel-opencl` 那个模块是 All Rights Reserved；1.21.1 的正式构建不带 OpenCL 模块，class 文件 major 65，就是 Java 21，不用为 Java 22 改环境
+
+c2me 由 `patchC2me` 从 `c2me_version` 解析后以嵌套 jar 打进产物，保留官方全部模块。Manifest 手动写在 `META-INF/jarjar/metadata.json`，不要换成 ModDevGradle 的 `jarJar` 配置，本地补丁 jar 在配置期解析不到
+
+专用服固定种子 12345 的对照已经跑过：官方 c2me 与不装 c2me 的 3072 列地表高度 群系 流体指纹逐字节一致。开发环境里出现过 15 列高度差，是 dev classpath 组合的假阳性，不要据此删 c2me 模块
+
+“内置 c2me 加外部同版本 c2me”也实测过：JarJar 协商后正常启动 正常生成地形 正常停服，地形指纹仍是生产基线
+
+地形指纹探针 `ChronoParityProbe` 只在 `DDT_CHRONO_PARITY=1` 或 `-Dddt.chronoParity=true` 时运行，固定种子专用服会写出 `ddt-chrono-fingerprint.txt` 并停服
 
 concurrency 只在 PR 上 cancel-in-progress
 

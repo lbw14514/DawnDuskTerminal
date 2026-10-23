@@ -33,13 +33,16 @@ public final class NativeVertex {
         String library;
 
         if (os.contains("win")) {
+            if (arch.contains("aarch64") || arch.contains("arm64")) {
+                return false;
+            }
             key = arch.contains("64") ? "windows-x86_64" : "windows-x86";
             library = "ddt_vertex.dll";
         } else if (os.contains("mac")) {
-            key = arch.contains("aarch64") ? "macos-aarch64" : "macos-x86_64";
+            key = arch.contains("aarch64") || arch.contains("arm64") ? "macos-aarch64" : "macos-x86_64";
             library = "ddt_vertex.dylib";
         } else if (os.contains("linux")) {
-            key = arch.contains("aarch64") ? "linux-aarch64" : "linux-x86_64";
+            key = arch.contains("aarch64") || arch.contains("arm64") ? "linux-aarch64" : "linux-x86_64";
             library = "ddt_vertex.so";
         } else {
             return false;

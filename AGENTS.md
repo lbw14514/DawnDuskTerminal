@@ -54,6 +54,34 @@ NeoForge 21.1.252 与 ModDevGradle，版本写在 `gradle.properties`
 
 `gradlew` 必须保持可执行位，CI 在 Linux 上跑，权限位丢了会直接失败
 
+### 单一产物
+
+最终用户只拿 `build/libs/dawnduskterminal-<version>.jar` 一个文件
+
+jar 里同时包含两样东西
+
+| 内容 | 位置 |
+|---|---|
+| 5 个平台的 native 顶点内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
+| c2me（JarJar 嵌套） | `META-INF/jars/` 加 `META-INF/jarjar/metadata.json` |
+
+本机构建只包含构建机自己的 native，要产出全平台单文件必须走 `.github/workflows/release.yml`
+
+1 矩阵在 Ubuntu 和 macOS 上分别编译 5 个 native，产物落 `build/native/<os>-<arch>/`
+2 合并任务把 5 个目录下载到 `build/native`
+3 `./gradlew build` 的 `processResources` 把 `build/native` 下全部目录打进 jar
+4 工作流逐个校验 5 个 `ddt_vertex` 都在，缺一个直接失败
+
+Windows DLL 用 `-static` 链接，不能依赖 `libwinpthread-1.dll`
+
+c2me 由 `patchC2me` 从 `c2me_version` 指定的 Modrinth Maven 坐标解析后嵌进 jar，默认保留官方全部模块。专用服固定种子对照已经验证官方 c2me 与不装 c2me 的地形高度 群系 流体指纹逐字节一致；开发环境里那 15 列差是 dev classpath 组合的假阳性，不要据此删模块
+
+不要用 ModDevGradle 的 `jarJar` 配置嵌 c2me：本地补丁 jar 在配置期解析不到。当前做法是手动写 `META-INF/jarjar/metadata.json` 并让 `jar` 任务把补丁 jar 放进 `META-INF/jars/`
+
+玩家额外安装 c2me 时由 JarJar 版本协商处理，已用“内置加外部同版本”实测能正常启动、正常生成地形、正常停服
+
+c2me 许可证 MIT，`c2me-opts-accel-opencl` 是 All Rights Reserved 且没有打进产物，嵌套 jar 里保留 `LICENSE-MIT.txt`
+
 ## 暮色森林
 
 运行必须装暮色森林 1.21.1
