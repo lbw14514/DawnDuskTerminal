@@ -1,6 +1,9 @@
 package com.dawnduskterminal.world;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +29,9 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * {@code ProtoChunk.setBlockState} 更新，会把树叶算进来；{@code _WG} 那套在 {@code CARVERS} 之后再没人更新，
  * 正好停在纯地形上，所以从它往下数的连续实心块就是岛体本身
  *
+ * <p>判定薄岛后不是只换岛体，而是从岛体开始沿 6 邻接 flood fill 收集所有非空气方块
+ * 树 树叶 草 花 雪都算进来，白名单只有空气和已经换好的薄云；最后再围绕整团替换结果外补两格
+ *
  * <p>执行线程是区块生成的工作线程（{@code applyBiomeDecoration} 的调用点），不在主线程
  */
 public final class SkyIslandClouds {
@@ -43,6 +49,8 @@ public final class SkyIslandClouds {
     public static final int THICKNESS_LIMIT = 4;
     /** 换成薄云后，各方向向外补几格 */
     public static final int CLOUD_MARGIN = 2;
+    /** flood fill 允许越过区块边界的格数，给树冠留空间 */
+    public static final int SEARCH_MARGIN = 6;
 
     private static final int SIZE = 16;
     private static final int COLUMNS = SIZE * SIZE;
@@ -167,32 +175,114 @@ public final class SkyIslandClouds {
 
         int replaced = 0;
         int minDilationY = Math.max(minBuildY, scanFloorY - CLOUD_MARGIN);
-        int maxDilationY = Math.min(maxBuildY, maxTopY + CLOUD_MARGIN);
+        int maxDilationY = maxBuildY;
+        boolean[] processed = new boolean[COLUMNS];
         for (int index = 0; index < COLUMNS; index++) {
-            if (!body[index] || componentThickness[find(parent, index)] >= THICKNESS_LIMIT) {
+            if (!body[index]) {
                 continue;
             }
-
-            int x = originX + (index % SIZE);
-            int z = originZ + (index / SIZE);
-            for (int y = bottoms[index]; y <= tops[index]; y++) {
-                cursor.set(x, y, z);
-                if (!reader.getBlockState(cursor).isAir()) {
-                    setter.set(x, y, z, cloudState);
-                    replaced++;
-                }
+            int root = find(parent, index);
+            if (componentThickness[root] >= THICKNESS_LIMIT || processed[root]) {
+                continue;
             }
-
-            dilate(reader, setter, cloudState, x, z, bottoms[index], tops[index],
-                originX, originZ, minDilationY, maxDilationY);
+            processed[root] = true;
+            replaced += replaceComponent(reader, setter, cloudState, parent, body, tops, bottoms, root,
+                originX, originZ, scanFloorY, maxBuildY, minDilationY, maxDilationY);
         }
         return replaced;
     }
 
+    /**
+     * 从薄岛岛体开始沿 6 邻接收集所有非空气方块，整团替换，再围绕整团外补
+     *
+     * <p>白名单只有空气和已经换好的薄云，所以树干 树叶 草 花 雪都会被一起换掉
+     */
+    private static int replaceComponent(BlockGetter reader, BlockSetter setter, BlockState cloudState,
+                                        int[] parent, boolean[] body, int[] tops, int[] bottoms, int root,
+                                        int originX, int originZ, int scanFloorY, int maxBuildY,
+                                        int minDilationY, int maxDilationY) {
+        int minX = originX - SEARCH_MARGIN;
+        int maxX = originX + SIZE - 1 + SEARCH_MARGIN;
+        int minZ = originZ - SEARCH_MARGIN;
+        int maxZ = originZ + SIZE - 1 + SEARCH_MARGIN;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        Set<Long> visited = new HashSet<>();
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+
+        for (int index = 0; index < COLUMNS; index++) {
+            if (!body[index] || find(parent, index) != root) {
+                continue;
+            }
+            int x = originX + (index % SIZE);
+            int z = originZ + (index / SIZE);
+            for (int y = bottoms[index]; y <= tops[index]; y++) {
+                long key = BlockPos.asLong(x, y, z);
+                if (visited.add(key)) {
+                    queue.add(key);
+                }
+            }
+        }
+
+        while (!queue.isEmpty()) {
+            long key = queue.poll();
+            int x = BlockPos.getX(key);
+            int y = BlockPos.getY(key);
+            int z = BlockPos.getZ(key);
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) != 1) {
+                            continue;
+                        }
+                        int nx = x + dx;
+                        int ny = y + dy;
+                        int nz = z + dz;
+                        if (nx < minX || nx > maxX || nz < minZ || nz > maxZ
+                            || ny < scanFloorY || ny > maxBuildY) {
+                            continue;
+                        }
+                        long next = BlockPos.asLong(nx, ny, nz);
+                        if (visited.contains(next)) {
+                            continue;
+                        }
+                        cursor.set(nx, ny, nz);
+                        BlockState state = reader.getBlockState(cursor);
+                        if (!state.isAir() && !state.is(cloudState.getBlock())) {
+                            visited.add(next);
+                            queue.add(next);
+                        }
+                    }
+                }
+            }
+        }
+
+        int replaced = 0;
+        for (long key : visited) {
+            int x = BlockPos.getX(key);
+            int y = BlockPos.getY(key);
+            int z = BlockPos.getZ(key);
+            cursor.set(x, y, z);
+            if (!reader.getBlockState(cursor).isAir()) {
+                setter.set(x, y, z, cloudState);
+                replaced++;
+            }
+        }
+
+        dilate(reader, setter, cloudState, visited, originX, originZ, minDilationY, maxDilationY);
+        return replaced;
+    }
+
     private static void dilate(BlockGetter reader, BlockSetter setter, BlockState cloudState,
-                               int x, int z, int fromY, int toY,
-                               int originX, int originZ, int minY, int maxY) {
-        for (int y = fromY; y <= toY; y++) {
+                               Set<Long> blocks, int originX, int originZ, int minY, int maxY) {
+        int boundMinX = originX - SEARCH_MARGIN - CLOUD_MARGIN;
+        int boundMaxX = originX + SIZE - 1 + SEARCH_MARGIN + CLOUD_MARGIN;
+        int boundMinZ = originZ - SEARCH_MARGIN - CLOUD_MARGIN;
+        int boundMaxZ = originZ + SIZE - 1 + SEARCH_MARGIN + CLOUD_MARGIN;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (long key : blocks) {
+            int x = BlockPos.getX(key);
+            int y = BlockPos.getY(key);
+            int z = BlockPos.getZ(key);
             for (int dy = -CLOUD_MARGIN; dy <= CLOUD_MARGIN; dy++) {
                 int targetY = y + dy;
                 if (targetY < minY || targetY > maxY) {
@@ -200,7 +290,7 @@ public final class SkyIslandClouds {
                 }
                 for (int dx = -CLOUD_MARGIN; dx <= CLOUD_MARGIN; dx++) {
                     int targetX = x + dx;
-                    if (targetX < originX - CLOUD_MARGIN || targetX > originX + SIZE - 1 + CLOUD_MARGIN) {
+                    if (targetX < boundMinX || targetX > boundMaxX) {
                         continue;
                     }
                     for (int dz = -CLOUD_MARGIN; dz <= CLOUD_MARGIN; dz++) {
@@ -208,11 +298,10 @@ public final class SkyIslandClouds {
                             continue;
                         }
                         int targetZ = z + dz;
-                        if (targetZ < originZ - CLOUD_MARGIN
-                            || targetZ > originZ + SIZE - 1 + CLOUD_MARGIN) {
+                        if (targetZ < boundMinZ || targetZ > boundMaxZ) {
                             continue;
                         }
-                        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(targetX, targetY, targetZ);
+                        cursor.set(targetX, targetY, targetZ);
                         if (reader.getBlockState(cursor).isAir()) {
                             setter.set(targetX, targetY, targetZ, cloudState);
                         }
