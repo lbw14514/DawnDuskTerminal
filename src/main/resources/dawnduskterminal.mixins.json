@@ -19,6 +19,7 @@
     "PaintingVariantGuardMixin",
     "CraftingMenuMixin",
     "SkyIslandCloudMixin",
+    "GeckoLibAnimationProcessorMixin",
     "GameTestChunkWaitMixin"
   ],
   "client": [

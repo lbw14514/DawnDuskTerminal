@@ -3,6 +3,7 @@ package com.dawnduskterminal.client;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import com.dawnduskterminal.entity.TowerGhastPhysics;
+import com.dawnduskterminal.mixin.GeckoLibResetHints;
 import net.minecraft.util.Mth;
 import software.bernie.geckolib.animation.state.BoneSnapshot;
 import software.bernie.geckolib.cache.object.GeoBone;
@@ -227,6 +228,13 @@ public final class TowerGhastBonePose {
      * 那是「脖子只跟着转一半」的写法，只有把跟踪加在脖子的父级以上才成立
      */
     private static final String HEAD_BONE = "AllHead";
+
+    static {
+        // 这些骨骼由 setCustomAnimations 直接写，没有对应的 BoneSnapshot
+        // 不能让 GeckoLib 的重置剪枝把它们当静态骨骼剔掉
+        GeckoLibResetHints.markAlwaysReset(BONES);
+        GeckoLibResetHints.markAlwaysReset(List.of(HEAD_BONE));
+    }
 
     private static final int KIND_IGNORE = 0;
     private static final int KIND_EYES = 1;
