@@ -203,3 +203,62 @@ jar {
         ])
     }
 }
+
+// 可选的 native 顶点变换内核
+// 找不到编译器就跳过，jar 里没有库时 NativeVertex 会走纯 Java 路径，构建不会因此失败
+def nativeOsName = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
+def nativeArchName = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT)
+def nativeIsWindows = nativeOsName.contains('win')
+def nativeIsMac = nativeOsName.contains('mac')
+def nativeArch = nativeArchName.contains('aarch64') ? 'aarch64'
+    : (nativeArchName.contains('64') ? 'x86_64' : 'x86')
+def nativeKey = (nativeIsWindows ? 'windows' : (nativeIsMac ? 'macos' : 'linux')) + '-' + nativeArch
+def nativeLibraryName = nativeIsWindows ? 'ddt_vertex.dll' : (nativeIsMac ? 'ddt_vertex.dylib' : 'ddt_vertex.so')
+def nativeCompiler = nativeIsWindows ? 'g++' : (nativeIsMac ? 'clang++' : 'g++')
+def nativeOutput = layout.buildDirectory.dir("native/${nativeKey}")
+def javaHome = System.getProperty('java.home')
+def jniPlatform = nativeIsWindows ? 'win32' : (nativeIsMac ? 'darwin' : 'linux')
+
+def nativeCompilerAvailable = {
+    try {
+        def process = new ProcessBuilder(nativeCompiler, '--version')
+            .redirectErrorStream(true)
+            .start()
+        process.inputStream.close()
+        return process.waitFor() == 0
+    } catch (Exception ignored) {
+        return false
+    }
+}
+
+def nativeArguments = ['-O3', '-std=c++17']
+if (nativeIsWindows) {
+    nativeArguments += ['-shared', '-pthread', '-static-libgcc', '-static-libstdc++']
+} else if (nativeIsMac) {
+    nativeArguments += ['-dynamiclib', '-pthread']
+} else {
+    nativeArguments += ['-shared', '-fPIC', '-pthread']
+}
+
+def buildNative = tasks.register('buildNative', Exec) {
+    onlyIf { nativeCompilerAvailable() }
+    inputs.file layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
+    outputs.dir nativeOutput
+    doFirst {
+        nativeOutput.get().asFile.mkdirs()
+    }
+    commandLine([nativeCompiler] + nativeArguments + [
+        "-I${javaHome}/include".toString(),
+        "-I${javaHome}/include/${jniPlatform}".toString(),
+        layout.projectDirectory.file('src/main/native/ddt_vertex.cpp').asFile.absolutePath,
+        '-o',
+        new File(nativeOutput.get().asFile, nativeLibraryName).absolutePath
+    ])
+}
+
+processResources {
+    dependsOn buildNative
+    from(nativeOutput) {
+        into "native/${nativeKey}"
+    }
+}
