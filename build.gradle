@@ -343,6 +343,7 @@ def nativeExtraFlags = providers.gradleProperty('ddtNativeFlags').getOrElse('')
 def nativeOutput = layout.buildDirectory.dir("native/${nativeKey}")
 def javaHome = System.getProperty('java.home')
 def jniPlatform = nativeTargetOs == 'windows' ? 'win32' : (nativeTargetOs == 'macos' ? 'darwin' : 'linux')
+def nativeWin32Headers = layout.projectDirectory.dir('src/main/native/win32').asFile.absolutePath
 
 def nativeCompilerAvailable = {
     try {
@@ -378,7 +379,8 @@ def buildNative = tasks.register('buildNative', Exec) {
     }
     commandLine([nativeCompiler] + nativeArguments + [
         "-I${javaHome}/include".toString(),
-        "-I${javaHome}/include/${jniPlatform}".toString(),
+        "-I${javaHome}/include/${jniPlatform}".toString()
+    ] + (nativeTargetOs == 'windows' ? ["-I${nativeWin32Headers}".toString()] : []) + [
         layout.projectDirectory.file('src/main/native/ddt_vertex.cpp').asFile.absolutePath,
         '-o',
         new File(nativeOutput.get().asFile, nativeLibraryName).absolutePath
