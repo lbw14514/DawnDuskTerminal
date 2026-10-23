@@ -348,8 +348,8 @@ def nativeCompilerAvailable = {
     try {
         def process = new ProcessBuilder(nativeCompiler, '--version')
             .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .start()
-        process.inputStream.close()
         return process.waitFor() == 0
     } catch (Exception ignored) {
         return false

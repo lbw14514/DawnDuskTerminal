@@ -29,6 +29,7 @@ jobs:
             target: linux-x86_64
             compiler: g++
             flags: ''
+            apt: g++
           - os: ubuntu-latest
             target: linux-aarch64
             compiler: aarch64-linux-gnu-g++
