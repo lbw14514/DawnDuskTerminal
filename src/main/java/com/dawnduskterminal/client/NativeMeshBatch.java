@@ -23,17 +23,18 @@ import java.util.Arrays;
  * 能拿到 {@link PoseStack} 当前矩阵 内核不关心调用方是实体还是方块
  *
  * <p>只在渲染线程使用 没有做并发保护
+ * native 出错时抛出 {@link NativeMesh.NativeMeshException} 由调用方决定回退策略
  */
 public final class NativeMeshBatch {
     private static final int INITIAL_CAPACITY = 1024;
 
-    private final long pool = NativeMesh.sharedPool();
-    private final float[] matrixScratch = new float[16];
-    private final float[] normalScratch = new float[9];
-
+    private long pool;
     private NativeGeoMesh mesh;
     private boolean active;
     private int count;
+
+    private final float[] matrixScratch = new float[16];
+    private final float[] normalScratch = new float[9];
 
     private float[] matrices = new float[INITIAL_CAPACITY * 16];
     private float[] normals = new float[INITIAL_CAPACITY * 9];
@@ -48,8 +49,10 @@ public final class NativeMeshBatch {
 
     public void begin(NativeGeoMesh mesh) {
         if (mesh == null || mesh.handle() == 0L) {
-            throw new IllegalStateException("native 网格句柄无效");
+            throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_INVALID_HANDLE,
+                "native 网格句柄无效");
         }
+        ensurePool();
         reset();
         this.mesh = mesh;
         this.active = true;
@@ -99,48 +102,67 @@ public final class NativeMeshBatch {
         this.active = false;
     }
 
+    /**
+     * @throws NativeMesh.NativeMeshException native 不可用或变换失败 此时批次已经清空
+     */
     public void flush(VertexConsumer fallbackBuffer) {
         this.active = false;
-        if (this.count == 0) {
+        try {
+            if (this.count == 0) {
+                return;
+            }
+
+            ensureOutput();
+            int result = NativeMesh.transform(
+                this.pool, this.mesh.handle(),
+                this.matrices, this.normals, this.pieceIds, this.count,
+                this.output, this.output.capacity() / Float.BYTES);
+            if (result < this.mesh.vertexCount()) {
+                String detail = "native 只写出 " + result + " 个顶点 网格应有 " + this.mesh.vertexCount();
+                NativeMesh.reportRuntimeFailure(detail);
+                throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_OUTPUT_TOO_SMALL, detail);
+            }
+
+            FloatBuffer output = this.outputFloats;
+            for (int i = 0; i < this.count; i++) {
+                int pieceId = this.pieceIds[i];
+                int offset = this.mesh.offset(pieceId);
+                int count = this.mesh.count(pieceId);
+                VertexConsumer buffer = this.buffers[i] != null ? this.buffers[i] : fallbackBuffer;
+                if (buffer == null) {
+                    continue;
+                }
+                // 输出缓冲区按模型里的绝对顶点偏移写入 批处理可能跳过隐藏骨骼 不能顺序读
+                output.position(offset * NativeMesh.VERTEX_FLOATS);
+                int colour = this.colours[i];
+                int overlay = this.overlays[i];
+                int light = this.lights[i];
+                for (int v = 0; v < count; v++) {
+                    float x = output.get();
+                    float y = output.get();
+                    float z = output.get();
+                    float nx = output.get();
+                    float ny = output.get();
+                    float nz = output.get();
+                    float u = output.get();
+                    float texV = output.get();
+                    buffer.addVertex(x, y, z, colour, u, texV, overlay, light, nx, ny, nz);
+                }
+            }
+        } finally {
             reset();
+        }
+    }
+
+    private void ensurePool() {
+        if (this.pool != 0L) {
             return;
         }
-
-        ensureOutput();
-        int result = NativeMesh.transform(
-            this.pool, this.mesh.handle(),
-            this.matrices, this.normals, this.pieceIds, this.count,
-            this.output, this.output.capacity() / Float.BYTES);
-        if (result < 0) {
-            throw new IllegalStateException("native 网格变换失败");
+        this.pool = NativeMesh.sharedPool();
+        if (this.pool == 0L) {
+            throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_UNAVAILABLE,
+                "native 网格线程池不可用 " + NativeMesh.failureDescription());
         }
-
-        FloatBuffer output = this.outputFloats;
-        output.position(0);
-        for (int i = 0; i < this.count; i++) {
-            int pieceId = this.pieceIds[i];
-            int offset = this.mesh.offset(pieceId);
-            int count = this.mesh.count(pieceId);
-            VertexConsumer buffer = this.buffers[i] != null ? this.buffers[i] : fallbackBuffer;
-            if (buffer == null) {
-                continue;
-            }
-            int colour = this.colours[i];
-            int overlay = this.overlays[i];
-            int light = this.lights[i];
-            for (int v = 0; v < count; v++) {
-                float x = output.get();
-                float y = output.get();
-                float z = output.get();
-                float nx = output.get();
-                float ny = output.get();
-                float nz = output.get();
-                float u = output.get();
-                float texV = output.get();
-                buffer.addVertex(x, y, z, colour, u, texV, overlay, light, nx, ny, nz);
-            }
-        }
-        reset();
     }
 
     private void ensureCapacity(int needed) {
@@ -158,7 +180,7 @@ public final class NativeMeshBatch {
     }
 
     private void ensureOutput() {
-        int floats = this.mesh.vertexCount() * 8;
+        int floats = this.mesh.vertexCount() * NativeMesh.VERTEX_FLOATS;
         if (this.output == null || this.output.capacity() < floats * Float.BYTES) {
             this.output = ByteBuffer.allocateDirect(floats * Float.BYTES)
                 .order(ByteOrder.nativeOrder());
@@ -169,6 +191,7 @@ public final class NativeMeshBatch {
     private void reset() {
         int used = Math.min(this.count, this.buffers.length);
         this.count = 0;
+        this.mesh = null;
         Arrays.fill(this.buffers, 0, used, null);
     }
 }

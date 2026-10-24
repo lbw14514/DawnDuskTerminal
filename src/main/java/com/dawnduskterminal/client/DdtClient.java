@@ -118,6 +118,8 @@ public final class DdtClient {
     private static void onClientSetup(FMLClientSetupEvent event) {
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLUID.get(), RenderType.translucent());
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLOWING.get(), RenderType.translucent());
+        // 加载 native 并跑启动探针 不要在第一次渲染高塔恶魂时才做文件 IO
+        NativeMesh.preload();
     }
 
     /**

@@ -74,7 +74,7 @@ jar 里同时包含两样东西
 
 `ddt_native` 是通用网格变换内核：只接顶点区间、矩阵与法线取反标志，不认识实体或方块。`NativeGeoMesh` 负责 GeckoLib 模型摊平，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交，实体与方块渲染器共用
 
-`-Pddt_zig_version` 换 Zig 版本。native 没有 Java 兜底：库缺失或加载失败直接抛错，任何一个目标编不出来 `build` 直接失败
+`-Pddt_zig_version` 换 Zig 版本。构建期任何目标编不出来 `build` 直接失败；运行期加载失败或 ABI 不匹配会禁用 native 并回退 GeckoLib 的 Java 渲染路径，运行时错误则熔断禁用，硬崩溃由崩溃标记在下次启动兜底，见 `NativeMesh` 与 `docs/development.md`
 
 `jni_md.h` 是仓库自带的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 给 Linux 与 macOS
 

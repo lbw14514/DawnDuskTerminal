@@ -328,6 +328,8 @@ def javaHome = System.getProperty('java.home')
 def nativeSource = layout.projectDirectory.file('src/main/native/ddt_native.cpp')
 def nativeOutput = layout.buildDirectory.dir('native')
 def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
+// native 与 Java 的 JNI 协议版本 必须与 NativeMesh.ABI_VERSION 同步 由 verifyNativeAbi 校验
+def nativeAbiVersion = providers.gradleProperty('ddt_native_abi_version').getOrElse('1')
 def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
 def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).contains('win')
 def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
@@ -401,6 +403,7 @@ def buildNative = tasks.register('buildNative') {
     inputs.property('targets', nativeTargets.keySet().join(','))
     inputs.property('compileFlags', nativeCompileFlags.join(' '))
     inputs.property('zigVersion', zigVersion)
+    inputs.property('abiVersion', nativeAbiVersion)
     outputs.dir(nativeOutput)
     doFirst {
         // 目标集合可能变过，先清掉上一次的产物，避免旧平台的库混进 jar
@@ -417,6 +420,7 @@ def buildNative = tasks.register('buildNative') {
             def arguments = [zigExecutableFile.absolutePath, 'c++', '-target', target.triple]
             arguments.addAll(nativeCompileFlags)
             arguments.addAll(target.args)
+            arguments.add("-DDDT_NATIVE_ABI_VERSION=${nativeAbiVersion}".toString())
             arguments.addAll([
                 "-I${javaHome}/include".toString(),
                 "-I${nativeJniDirectories[key].absolutePath}".toString(),
@@ -448,4 +452,26 @@ processResources {
         into 'native'
         includeEmptyDirs = false
     }
+}
+
+// Java 侧 ABI 常量与编译 native 时用的版本必须来自同一个值
+// 两者错开时运行期会拒绝加载 但不应该在发布前才发现
+def verifyNativeAbi = tasks.register('verifyNativeAbi') {
+    description = '校验 NativeMesh.ABI_VERSION 与 ddt_native_abi_version 一致'
+    def javaSource = layout.projectDirectory.file('src/main/java/com/dawnduskterminal/client/NativeMesh.java')
+    def javaFile = javaSource.asFile
+    inputs.file(javaSource)
+    inputs.property('abiVersion', nativeAbiVersion)
+    doLast {
+        def matcher = javaFile.getText('UTF-8') =~ /ABI_VERSION\s*=\s*(\d+)/
+        def declared = matcher.find() ? matcher.group(1) : null
+        if (declared != nativeAbiVersion.toString()) {
+            throw new GradleException(
+                "NativeMesh.ABI_VERSION=${declared} 与 ddt_native_abi_version=${nativeAbiVersion} 不一致")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn verifyNativeAbi
 }

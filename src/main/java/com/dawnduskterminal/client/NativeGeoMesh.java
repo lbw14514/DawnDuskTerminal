@@ -11,22 +11,24 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * ?? GeckoLib ?????????
+ * 把 GeckoLib 烘焙模型摊平成 native 内核认识的 piece
  *
- * <p>???? 8 ? float ?? ?? UV ?? piece ???? ??????????
- * piece ???? {@link IdentityHashMap} ?? ?? {@link GeoCube} ??????? record
- * {@code equals} ?????? ??????? Map ??
+ * <p>每个顶点固定 8 个 float 坐标 法线 UV 每条 piece 记录顶点区间与法线取反标志
+ * piece 编号用 {@link IdentityHashMap} 以 {@link GeoCube} 的对象身份为键
+ * 因为 record 的 {@code equals} 会把内容相同的两个 cube 合并 那样 Map 会串号
  *
- * <p>????????????? ?????????????????? piece ???????
- * ???????????????????????? ??
+ * <p>模型换了就重新 build 旧句柄必须 close
+ * 一个渲染器只缓存当前模型的一份摊平结果
  */
 public final class NativeGeoMesh {
     private final BakedGeoModel model;
-    private final long handle;
     private final int[] offsets;
     private final int[] counts;
     private final Map<GeoCube, Integer> pieceIds;
     private final int vertexCount;
+
+    private long handle;
+    private boolean closed;
 
     private NativeGeoMesh(BakedGeoModel model, long handle,
                           int[] offsets, int[] counts,
@@ -39,6 +41,10 @@ public final class NativeGeoMesh {
         this.vertexCount = vertexCount;
     }
 
+    /**
+     * @throws IllegalStateException 模型里没有任何可见立方体
+     * @throws NativeMesh.NativeMeshException native 不可用或建网格失败
+     */
     public static NativeGeoMesh build(BakedGeoModel model) {
         FloatList vertexData = new FloatList();
         IntList offsets = new IntList();
@@ -51,7 +57,7 @@ public final class NativeGeoMesh {
         }
 
         if (offsets.size == 0) {
-            throw new IllegalStateException("GeckoLib ??????????");
+            throw new IllegalStateException("GeckoLib 模型没有可渲染的立方体");
         }
 
         int[] offsetArray = offsets.toArray();
@@ -59,18 +65,15 @@ public final class NativeGeoMesh {
         int[] flagArray = flags.toArray();
         float[] vertexArray = vertexData.toArray();
         long handle = NativeMesh.createMesh(vertexArray, offsetArray, countArray, flagArray);
-        if (handle == 0L) {
-            throw new IllegalStateException("native ??????");
-        }
 
         return new NativeGeoMesh(model, handle, offsetArray, countArray, pieceIds,
-            vertexData.size / 8);
+            vertexData.size / NativeMesh.VERTEX_FLOATS);
     }
 
     private static void collectBone(GeoBone bone, FloatList vertices, IntList offsets,
                                     IntList counts, IntList flags, Map<GeoCube, Integer> pieceIds) {
         for (GeoCube cube : bone.getCubes()) {
-            int offset = vertices.size / 8;
+            int offset = vertices.size / NativeMesh.VERTEX_FLOATS;
             int vertexCount = 0;
             Vector3f normal = null;
 
@@ -110,9 +113,9 @@ public final class NativeGeoMesh {
     }
 
     /**
-     * ? GeckoLib {@code RenderUtil.fixInvertedFlatCube} ???????
+     * 与 GeckoLib {@code RenderUtil.fixInvertedFlatCube} 的判定保持一致
      *
-     * <p>?????? X Y Z ? ???????????
+     * <p>三个坐标轴各算一位 只有当某个轴上的尺寸为零时才取反对应法线分量
      */
     private static int flatFlags(GeoCube cube) {
         // 保持与原内核一致的 float 比较 尺寸先收窄到 float 再判零
@@ -158,7 +161,13 @@ public final class NativeGeoMesh {
     }
 
     public void close() {
-        NativeMesh.destroyMesh(this.handle);
+        if (this.closed) {
+            return;
+        }
+        this.closed = true;
+        long current = this.handle;
+        this.handle = 0L;
+        NativeMesh.destroyMesh(current);
     }
 
     private static final class FloatList {

@@ -22,6 +22,7 @@ public final class DdtConfig {
     private static final int PORTAL_COOLDOWN_TICKS_DEFAULT = 100;
     private static final boolean ENTITY_DEBUFF_DEFAULT = true;
     private static final boolean TOLERATE_FEATURE_CYCLES_DEFAULT = true;
+    private static final boolean NATIVE_MESH_DEFAULT = true;
 
     private static final ModConfigSpec.DoubleValue SUN_ANGLE_MAX;
     private static final ModConfigSpec.BooleanValue SKY_LIGHT_BY_DISTANCE;
@@ -33,6 +34,7 @@ public final class DdtConfig {
     private static final ModConfigSpec.IntValue PORTAL_COOLDOWN_TICKS;
     private static final ModConfigSpec.BooleanValue ENTITY_DEBUFF;
     private static final ModConfigSpec.BooleanValue TOLERATE_FEATURE_CYCLES;
+    private static final ModConfigSpec.BooleanValue NATIVE_MESH;
 
     /**
      * 热路径用的缓存
@@ -86,6 +88,11 @@ public final class DdtConfig {
         b.push("compat");
         TOLERATE_FEATURE_CYCLES = b.comment("replace the vanilla feature sorter with a cycle tolerant one, required when both vanilla and modded biomes are used in one dimension")
             .define("tolerate_feature_cycles", TOLERATE_FEATURE_CYCLES_DEFAULT);
+        b.pop();
+
+        b.push("render");
+        NATIVE_MESH = b.comment("use the bundled native mesh kernel, disable it to force the GeckoLib Java renderer if a native crash is suspected")
+            .define("native_mesh", NATIVE_MESH_DEFAULT);
         b.pop();
 
         SPEC = b.build();
@@ -159,5 +166,9 @@ public final class DdtConfig {
 
     public static boolean tolerateFeatureCycles() {
         return safe(TOLERATE_FEATURE_CYCLES, TOLERATE_FEATURE_CYCLES_DEFAULT);
+    }
+
+    public static boolean nativeMeshEnabled() {
+        return safe(NATIVE_MESH, NATIVE_MESH_DEFAULT);
     }
 }
