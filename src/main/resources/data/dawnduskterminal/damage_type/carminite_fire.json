@@ -1,0 +1,6 @@
+{
+  "message_id": "carminite_fire",
+  "exhaustion": 0.1,
+  "scaling": "never",
+  "effects": "burning"
+}

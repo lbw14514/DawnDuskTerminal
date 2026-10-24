@@ -1,14 +1,35 @@
 package com.dawnduskterminal.gametest;
 
+import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.item.CarminiteStaffItem;
+import com.dawnduskterminal.item.ScarletMolybdArmorItem;
 import com.dawnduskterminal.registry.ModArmorMaterials;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModEquipment;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModTiers;
+import com.mojang.serialization.DynamicOps;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.armortrim.ArmorTrim;
+import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.armortrim.TrimMaterials;
+import net.minecraft.world.item.armortrim.TrimPattern;
+import net.minecraft.world.item.armortrim.TrimPatterns;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SmithingRecipe;
+import net.minecraft.world.item.crafting.SmithingRecipeInput;
+import net.minecraft.world.item.ArmorMaterial.Layer;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
@@ -328,6 +349,83 @@ public final class EquipmentTests {
         // 六套各五件工具加四件护甲
         int registered = ModEquipment.sets().values().stream().mapToInt(set -> set.items().size()).sum();
         helper.assertTrue(registered == 54, "expected 54 equipment items, got " + registered);
+        helper.succeed();
+    }
+
+    /**
+     * 绯色钼护甲用源文件那张穿戴贴图，四个槽位、内外两层都是它
+     *
+     * <p>原版 {@code ArmorItem#getArmorTexture} 是按材质名拼路径去找
+     * {@code textures/models/armor/<材质>_layer_1.png} 的，本套没有那两个文件，所以覆盖成固定路径；
+     * 顺带确认那张图真的在资源里
+     */
+    @GameTest(template = "ddt_empty")
+    public static void scarletMolybdArmorUsesTheDedicatedTexture(GameTestHelper helper) {
+        ResourceLocation expected = DawnDuskTerminal.id("textures/entities/carmarmort1.png");
+        for (ScarletMolybdArmorItem armor : List.of(
+            ModItems.SCARLET_MOLYBD_HELMET.get(),
+            ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
+            ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
+            ModItems.SCARLET_MOLYBD_BOOTS.get())) {
+            Layer layer = armor.getMaterial().value().layers().get(0);
+            for (boolean innerModel : new boolean[] {false, true}) {
+                ResourceLocation texture = armor.getArmorTexture(new ItemStack(armor), null,
+                    armor.getEquipmentSlot(), layer, innerModel);
+                helper.assertTrue(expected.equals(texture),
+                    armor.getDescriptionId() + " must use the dedicated armor texture " + expected
+                        + ", got " + texture);
+            }
+        }
+        try (InputStream stream = EquipmentTests.class
+            .getResourceAsStream("/assets/dawnduskterminal/textures/entities/carmarmort1.png")) {
+            helper.assertTrue(stream != null, "textures/entities/carmarmort1.png must ship inside the mod resources");
+        } catch (IOException e) {
+            helper.assertTrue(false, "failed to read textures/entities/carmarmort1.png: " + e);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 绯色钼护甲拒绝纹饰：不在 {@code #minecraft:trimmable_armor} 里、配不出纹饰配方、
+     * 存档里带进来的 {@code TRIM} 组件在读档与 {@code verifyComponentsAfterLoad} 两处都会掉
+     *
+     * <p>这套的穿戴贴图是一整张自绘的，叠上任意一条纹饰都会露馅，所以三个口子一起堵
+     */
+    @GameTest(template = "ddt_empty")
+    public static void scarletMolybdArmorRejectsArmorTrims(GameTestHelper helper) {
+        ItemStack template = new ItemStack(Items.RIB_ARMOR_TRIM_SMITHING_TEMPLATE);
+        ItemStack addition = new ItemStack(Items.REDSTONE);
+        Holder<TrimMaterial> material = helper.getLevel().registryAccess()
+            .lookupOrThrow(Registries.TRIM_MATERIAL).getOrThrow(TrimMaterials.REDSTONE);
+        Holder<TrimPattern> pattern = helper.getLevel().registryAccess()
+            .lookupOrThrow(Registries.TRIM_PATTERN).getOrThrow(TrimPatterns.RIB);
+        DynamicOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, helper.getLevel().registryAccess());
+
+        for (ScarletMolybdArmorItem armor : List.of(
+            ModItems.SCARLET_MOLYBD_HELMET.get(),
+            ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
+            ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
+            ModItems.SCARLET_MOLYBD_BOOTS.get())) {
+            helper.assertFalse(new ItemStack(armor).is(ItemTags.TRIMMABLE_ARMOR),
+                armor.getDescriptionId() + " must stay out of #minecraft:trimmable_armor");
+            Optional<RecipeHolder<SmithingRecipe>> recipe = helper.getLevel().getRecipeManager()
+                .getRecipeFor(RecipeType.SMITHING,
+                    new SmithingRecipeInput(template, new ItemStack(armor), addition), helper.getLevel());
+            helper.assertFalse(recipe.isPresent(),
+                armor.getDescriptionId() + " must not match a smithing trim recipe");
+
+            ItemStack trimmed = new ItemStack(armor);
+            trimmed.set(DataComponents.TRIM, new ArmorTrim(material, pattern));
+            helper.assertTrue(trimmed.get(DataComponents.TRIM) != null,
+                "sanity: the trim component must be set on " + armor.getDescriptionId());
+            Tag encoded = ItemStack.CODEC.encodeStart(ops, trimmed).getOrThrow();
+            ItemStack loaded = ItemStack.CODEC.parse(ops, encoded).getOrThrow();
+            helper.assertTrue(loaded.get(DataComponents.TRIM) == null,
+                armor.getDescriptionId() + " must drop the TRIM component when loaded from data");
+            trimmed.getItem().verifyComponentsAfterLoad(trimmed);
+            helper.assertTrue(trimmed.get(DataComponents.TRIM) == null,
+                armor.getDescriptionId() + " must drop the TRIM component on verifyComponentsAfterLoad");
+        }
         helper.succeed();
     }
 

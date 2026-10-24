@@ -3,6 +3,7 @@ package com.dawnduskterminal.registry;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
+import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
 import com.dawnduskterminal.entity.GhastPaintingEntity;
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import net.minecraft.core.registries.Registries;
@@ -48,6 +49,18 @@ public final class ModEntities {
             .clientTrackingRange(4)
             .updateInterval(1)
             .build("carminite_field"));
+
+    /**
+     * 试验物品 052 炸出来的碎片。碰撞箱比一颗球还小，跟踪范围与更新间隔按原版权杖弹体那一档：
+     * 它也是一闪就没的飞行物
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<CarminiteShrapnelEntity>> CARMINITE_SHRAPNEL =
+        ENTITIES.register("carminite_shrapnel", () -> EntityType.Builder
+            .<CarminiteShrapnelEntity>of(CarminiteShrapnelEntity::new, MobCategory.MISC)
+            .sized(0.25F, 0.25F)
+            .clientTrackingRange(4)
+            .updateInterval(1)
+            .build("carminite_shrapnel"));
 
     /**
      * 恶魂画 #1。尺寸与 updateInterval 照抄原版画：画不会移动，{@code sized} 只是占位，

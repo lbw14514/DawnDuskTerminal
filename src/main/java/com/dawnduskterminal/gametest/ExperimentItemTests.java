@@ -370,14 +370,16 @@ public final class ExperimentItemTests {
     public static void placeholdersFillEveryGapUpTo115(GameTestHelper helper) {
         SortedMap<Integer, DeferredItem<Item>> placeholders = ModExperimentItems.placeholders();
         // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、007/017 两把 4/5 裸武器、008 与 020 两件食物、027 那支画点的笔、
-        // 019 那丛植物、033/034 两支长矛、037~042 六件、046 权杖、051 拆解台、104 那个食物、114 那块蛋糕、115 暮色森林那件
-        helper.assertTrue(placeholders.size() == 94,
-            "placeholders must cover the 94 free numbers of 1..115, got " + placeholders.size());
-        for (int number : new int[] {2, 6, 9, 16, 18, 32, 35, 43, 45, 47, 113}) {
+        // 019 那丛植物、033/034 两支长矛、037~042 六件、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
+        // 051 拆解台、052 那颗方雷、104 那个食物、114 那块蛋糕、115 暮色森林那件
+        helper.assertTrue(placeholders.size() == 87,
+            "placeholders must cover the 87 free numbers of 1..115, got " + placeholders.size());
+        for (int number : new int[] {2, 6, 9, 16, 18, 32, 35, 44, 113}) {
             helper.assertTrue(placeholders.containsKey(number),
                 "number " + number + " must have a placeholder item");
         }
-        for (int number : new int[] {1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 46, 51, 104, 114, 115}) {
+        for (int number : new int[] {1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 43, 45, 46,
+            47, 48, 49, 50, 51, 52, 104, 114, 115}) {
             helper.assertFalse(placeholders.containsKey(number),
                 "number " + number + " is taken and must not get a placeholder item");
         }

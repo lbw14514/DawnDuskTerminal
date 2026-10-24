@@ -1,6 +1,7 @@
 package com.dawnduskterminal.server;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.item.FireJetProcess;
 import com.dawnduskterminal.network.ChronoLinePayload;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModItems;
@@ -42,7 +43,9 @@ import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
@@ -81,6 +84,21 @@ public final class DdtServerEvents {
 
         Registry<Structure> structures = event.getServer().registryAccess().registryOrThrow(Registries.STRUCTURE);
         StructureExclusions.validate(structures);
+    }
+
+    /**
+     * 服务端每 tick 推进一次试验物品 043 的喷火过程
+     *
+     * <p>过程挂在 {@code ServerTickEvent.Post} 上而不是玩家身上：松手、换物品、死亡都不打断，
+     * 只有服务器停下才整批清掉，见 {@link #onServerStopped}
+     */
+    public static void onServerTick(ServerTickEvent.Post event) {
+        FireJetProcess.tickAll();
+    }
+
+    /** 服务器停下：把还在跑的喷火过程清干净，别留到下一次启动 */
+    public static void onServerStopped(ServerStoppedEvent event) {
+        FireJetProcess.clear();
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

@@ -46,6 +46,18 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_HURT =
         register("tower_ghast_hurt");
 
+    /** 试验物品 052 收到红石信号、点火那一下 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_IGNITE =
+        register("experiment_052_ignite");
+
+    /**
+     * 试验物品 052 的爆炸
+     *
+     * <p>主爆炸走 {@code ServerLevel#explode} 的音效参数，只有这一个事件；碎片那次小爆炸是静音的
+     */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_EXPLODE =
+        register("experiment_052_explode");
+
     private ModSounds() {}
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {

@@ -41,6 +41,18 @@
       "dawnduskterminal:carminite_field"
     ]
   },
+  "experiment_052_ignite": {
+    "subtitle": "subtitles.dawnduskterminal.experiment_052_ignite",
+    "sounds": [
+      "dawnduskterminal:experiment_052_ignite"
+    ]
+  },
+  "experiment_052_explode": {
+    "subtitle": "subtitles.dawnduskterminal.experiment_052_explode",
+    "sounds": [
+      "dawnduskterminal:experiment_052_explode"
+    ]
+  },
   "tower_ghast_ambient": {
     "subtitle": "subtitles.dawnduskterminal.tower_ghast_ambient",
     "sounds": [

@@ -126,8 +126,15 @@ public final class ModCreativeTabs {
                 sequence.put(40, ModExperimentItems.EXPERIMENT_040.get());
                 sequence.put(41, ModExperimentItems.EXPERIMENT_041.get());
                 sequence.put(42, ModExperimentItems.EXPERIMENT_042.get());
+                sequence.put(43, ModExperimentItems.EXPERIMENT_043.get());
+                sequence.put(45, ModExperimentItems.EXPERIMENT_045.get());
                 sequence.put(46, ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get());
+                sequence.put(47, ModExperimentItems.EXPERIMENT_047.get());
+                sequence.put(48, ModExperimentItems.EXPERIMENT_048.get());
+                sequence.put(49, ModExperimentItems.EXPERIMENT_049.get());
+                sequence.put(50, ModExperimentItems.EXPERIMENT_050.get());
                 sequence.put(51, ModItems.EXPERIMENT_051.get());
+                sequence.put(52, ModItems.EXPERIMENT_052.get());
                 sequence.put(104, ModItems.EXPERIMENT_104.get());
                 sequence.put(114, ModItems.EXPERIMENT_114.get());
                 sequence.forEach((number, item) -> accept(output, item));

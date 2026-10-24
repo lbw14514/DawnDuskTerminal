@@ -60,11 +60,23 @@ public final class CarminiteParticle extends TextureSheetParticle {
                 3.0F, 79, -0.005F, 4, 20, 0.0F);
     }
 
-    /** 反应场，继承传入的向外速度，15 tick 的 8 帧淡出 */
+    /** 反应场，继承传入的向外速度，15 tick 的 8 帧淡出（帧间隔 2，照源 mod 的节奏，别动） */
     public static ParticleProvider<SimpleParticleType> effectProvider(SpriteSet sprites) {
         return (type, level, x, y, z, vx, vy, vz) ->
             new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites,
                 6.0F, 15, -0.05F, 8, 2, 0.3F);
+    }
+
+    /**
+     * 爆炸专用：同一套 8 帧贴图，帧间隔 3 tick（比 {@link #effectProvider} 慢一拍），寿命也拉长到 20 tick
+     *
+     * <p>爆炸那一圈粒子铺在球形范围里往外散，帧走得慢一点、活得久一点才看得清形状；
+     * 反应场那圈保持原样，两边各用各的类型
+     */
+    public static ParticleProvider<SimpleParticleType> blastProvider(SpriteSet sprites) {
+        return (type, level, x, y, z, vx, vy, vz) ->
+            new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites,
+                6.0F, 20, -0.03F, 8, 3, 0.3F);
     }
 
     @Override

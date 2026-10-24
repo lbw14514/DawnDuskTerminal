@@ -25,6 +25,7 @@
     "BiomeColorsFoliageMixin",
     "ClientLevelSkyColorMixin",
     "ClientLevelTimeOfDayMixin",
+    "ExperimentArmorGlowMixin",
     "LevelRendererSkyAlignMixin"
   ],
   "injectors": {

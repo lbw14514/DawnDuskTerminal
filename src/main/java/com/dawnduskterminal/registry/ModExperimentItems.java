@@ -3,13 +3,18 @@ package com.dawnduskterminal.registry;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.item.Experiment020Item;
 import com.dawnduskterminal.item.Experiment027Item;
+import com.dawnduskterminal.item.Experiment043Item;
+import com.dawnduskterminal.item.Experiment045Item;
+import com.dawnduskterminal.item.ExperimentArmorItem;
 import com.dawnduskterminal.item.ThrustSpearItem;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
@@ -20,6 +25,7 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -176,6 +182,47 @@ public final class ModExperimentItems {
     public static final DeferredItem<Item> EXPERIMENT_042 = ITEMS.registerSimpleItem(
         "experiment_042", new Item.Properties());
 
+    /**
+     * 试验物品 043：单击右键沿视线喷一次火，整套过程在 {@link Experiment043Item} 与
+     * {@link com.dawnduskterminal.item.FireJetProcess} 里
+     *
+     * <p>64 点耐久，喷一次扣 1 点；可损坏的物品默认不可堆叠（{@code MAX_STACK_SIZE} 缺省是 1）
+     */
+    public static final DeferredItem<Experiment043Item> EXPERIMENT_043 = ITEMS.register(
+        "experiment_043",
+        () -> new Experiment043Item(new Item.Properties().durability(Experiment043Item.DURABILITY)));
+
+    /**
+     * 试验物品 045：一面盾，格挡那套整份照抄原版盾（{@link Experiment045Item} 继承 {@code ShieldItem}）
+     *
+     * <p>耐久与 {@code Items.SHIELD} 同为 336，且同样带上「旗面图案」这个组件的空表：默认没有图案时盾面走
+     * {@code item/experiment_045_nopattern}，一旦被挂上图案或底色就换 {@code item/experiment_045_base}
+     * 并把图案一层层叠上去（见客户端 {@code client/Experiment045ShieldRenderer}）
+     */
+    public static final DeferredItem<Experiment045Item> EXPERIMENT_045 = ITEMS.register(
+        "experiment_045",
+        () -> new Experiment045Item(new Item.Properties()
+            .durability(Experiment045Item.DURABILITY)
+            .component(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY)));
+
+    /**
+     * 试验物品 047~050：一套护甲（047 头、048 胸、049 腿、050 脚）
+     *
+     * <p>数值在 {@link ModArmorMaterials#EXPERIMENT_ARMOR}：护甲值与铁同级（四件合计 15），每件 2 点韧性，
+     * 砷铅铁锭、绯红钼锭、䤧锭 三样都能修，耐久倍率照铁
+     *
+     * <p>穿戴外观是源文件那一份基岩版几何加一张 64×64 贴图，四件共用：模型在
+     * {@code client/model/ExperimentArmorModel}，发光层由 {@code mixin/ExperimentArmorGlowMixin} 叠上去
+     */
+    public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_047 =
+        armor("experiment_047", ArmorItem.Type.HELMET);
+    public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_048 =
+        armor("experiment_048", ArmorItem.Type.CHESTPLATE);
+    public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_049 =
+        armor("experiment_049", ArmorItem.Type.LEGGINGS);
+    public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_050 =
+        armor("experiment_050", ArmorItem.Type.BOOTS);
+
     /** 试验物品 033、034：按住右键架起来突刺的长矛，行为在 {@link ThrustSpearItem} */
     public static final DeferredItem<ThrustSpearItem> EXPERIMENT_033 = ITEMS.register(
         "experiment_033", () -> new ThrustSpearItem(new Item.Properties()));
@@ -185,6 +232,9 @@ public final class ModExperimentItems {
 
     /** 序号上限：115 及以内 */
     private static final int LAST_NUMBER = 115;
+
+    /** 铁级护甲的耐久倍率，试验物品 047~050 那套照铁 */
+    private static final int IRON_DURABILITY_FACTOR = 15;
 
     /**
      * 已经被占掉的序号
@@ -196,7 +246,10 @@ public final class ModExperimentItems {
      * 027 是上面那支画红石点的笔，019 是那丛植物（方块在 {@link ModBlocks#EXPERIMENT_019}、
      * 物品在 {@link ModItems#EXPERIMENT_019}），033/034 是上面那两支长矛，
      * 051 是拆解台那台机器（方块在
-     * {@link ModBlocks#EXPERIMENT_051}、物品在 {@link ModItems#EXPERIMENT_051}），037~042 是上面那批工具与简单物品，
+     * {@link ModBlocks#EXPERIMENT_051}、物品在 {@link ModItems#EXPERIMENT_051}），
+     * 052 是那颗方雷（方块在 {@link ModBlocks#EXPERIMENT_052}、物品在 {@link ModItems#EXPERIMENT_052}），
+     * 037~042 是上面那批工具与简单物品，043 是上面那台喷火器，045 是上面那面盾，
+     * 047~050 是上面那套护甲，
      * 046 是砷铅铁钼反应权杖（注册 ID 仍是 {@code carminite_molybdenum_reactor_staff}），
      * 104 是那个能吃的东西（在 {@link ModItems#EXPERIMENT_104}），114 是能吃能摆的那一块（在
      * {@link ModItems#EXPERIMENT_114}），115 是暮色森林自带的试验物品
@@ -204,7 +257,8 @@ public final class ModExperimentItems {
      * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
      */
     private static final Set<Integer> TAKEN =
-        Set.of(1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 46, 51, 104, 114, 115);
+        Set.of(1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50,
+            51, 52, 104, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 
@@ -251,6 +305,13 @@ public final class ModExperimentItems {
 
     private static void describe(List<Component> tooltip, String key) {
         tooltip.add(Component.translatable(key).withStyle(ChatFormatting.GRAY));
+    }
+
+    /** 试验物品 047~050 四件护甲，材质固定在 {@link ModArmorMaterials#EXPERIMENT_ARMOR} */
+    private static DeferredItem<ExperimentArmorItem> armor(String name, ArmorItem.Type type) {
+        return ITEMS.register(name, () -> new ExperimentArmorItem(
+            ModArmorMaterials.EXPERIMENT_ARMOR, type,
+            new Item.Properties().durability(type.getDurability(IRON_DURABILITY_FACTOR))));
     }
 
     private ModExperimentItems() {}

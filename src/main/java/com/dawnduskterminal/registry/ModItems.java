@@ -154,6 +154,9 @@ public final class ModItems {
     /** 试验物品 051：拆解台那台机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_051} */
     public static final DeferredItem<BlockItem> EXPERIMENT_051 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_051);
 
+    /** 试验物品 052：那颗方雷的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_052} */
+    public static final DeferredItem<BlockItem> EXPERIMENT_052 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_052);
+
     /**
      * 试验物品 104 一口的数值：10 与 0.6，也就是 10 点饥饿、饱食度 12.0，等于两块烤马铃薯
      * （一块烤马铃薯是 5 与 0.6，即 5 点饥饿、饱食度 6.0）

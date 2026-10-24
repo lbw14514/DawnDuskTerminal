@@ -120,6 +120,27 @@ public final class ModArmorMaterials {
             5.0F,
             0.0F));
 
+    /**
+     * 试验物品 047~050 那套：护甲值与铁同级（2 / 6 / 5 / 2，合计 15）、每件 2 点韧性、附魔值 9、耐久倍率 15。
+     * 维修材料是砷铅铁锭、绯红钼锭、䤧锭三样里的任意一样，{@code Ingredient.of} 收候选清单，命中一个就成立
+     */
+    public static final DeferredHolder<ArmorMaterial, ArmorMaterial> EXPERIMENT_ARMOR =
+        ARMOR_MATERIALS.register("experiment_armor", () -> new ArmorMaterial(
+            Map.of(
+                ArmorItem.Type.HELMET, 2,
+                ArmorItem.Type.CHESTPLATE, 6,
+                ArmorItem.Type.LEGGINGS, 5,
+                ArmorItem.Type.BOOTS, 2),
+            9,
+            SoundEvents.ARMOR_EQUIP_IRON,
+            () -> Ingredient.of(
+                ModItems.CARMINITE_INGOT.get(),
+                ModItems.SCARLET_MOLYBDENUM_INGOT.get(),
+                ModItems.HUI_INGOT.get()),
+            List.of(new ArmorMaterial.Layer(DawnDuskTerminal.id("experiment_armor"))),
+            2.0F,
+            0.0F));
+
     private ModArmorMaterials() {}
 
     public static void register(IEventBus bus) {

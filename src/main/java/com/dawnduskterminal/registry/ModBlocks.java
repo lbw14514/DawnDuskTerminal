@@ -1,9 +1,11 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.CarminiteFireBlock;
 import com.dawnduskterminal.block.Experiment004Block;
 import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
+import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.block.Experiment114Block;
 import com.dawnduskterminal.portal.PortalBlock;
 import net.minecraft.core.registries.Registries;
@@ -153,6 +155,45 @@ public final class ModBlocks {
             // 烧起来时发 13 级光，数字与原版熔炉的 litBlockEmission(13) 一致；
             // 原版那个辅助方法写死了 BlockStateProperties.LIT，我们用的是 active，只能自己写一行
             .lightLevel(state -> state.getValue(Experiment051Block.ACTIVE) ? 13 : 0));
+
+    /**
+     * 试验物品 052：照砷铅铁反应堆做的那颗方雷，行为在 {@link Experiment052Block}
+     *
+     * <p>方块属性的取值没有源 mod 可以照抄（这一件是本模组自己的设计），按「塔木机器」那一档给：
+     * 3.5 硬度、石头音效、红这一档地图色，挖它要镐子（进 {@code #minecraft:mineable/pickaxe}）。
+     * 光只跟着 {@code active} 走：通着电、还没炸的那 3 秒是 15 级
+     *
+     * <p>掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_052.json}
+     */
+    public static final DeferredBlock<Experiment052Block> EXPERIMENT_052 = BLOCKS.registerBlock(
+        "experiment_052",
+        Experiment052Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_RED)
+            .requiresCorrectToolForDrops()
+            .strength(3.5F)
+            .sound(SoundType.STONE)
+            .lightLevel(state -> state.getValue(Experiment052Block.ACTIVE) ? 15 : 0));
+
+    /**
+     * 砷铅铁火焰：试验物品 052 炸出来、碎片落地补上的那种火，行为在 {@link CarminiteFireBlock}
+     *
+     * <p>属性照原版火焰那一套（{@code replaceable}、{@code noCollission}、{@code instabreak}、
+     * {@code WOOL} 音效、{@code DESTROY} 推挤反应），只有两条不同：光是 10 级不是 15 级，
+     * 以及没有战利品表（敲掉什么都不掉，也没有对应的物品）
+     */
+    public static final DeferredBlock<CarminiteFireBlock> CARMINITE_FIRE = BLOCKS.registerBlock(
+        "carminite_fire",
+        CarminiteFireBlock::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.FIRE)
+            .replaceable()
+            .noCollission()
+            .instabreak()
+            .lightLevel(state -> 10)
+            .sound(SoundType.WOOL)
+            .pushReaction(PushReaction.DESTROY)
+            .noLootTable());
 
     private ModBlocks() {}
 

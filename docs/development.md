@@ -74,6 +74,16 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 纯资源改动可能报 UP-TO-DATE，要验证 jar 里的内容
 
+## VS Code 的 Gradle 任务
+
+侧栏的 Gradle 任务按钮用 Java 扩展自带的 JRE（25）起 daemon，`build.gradle` 的 `java.toolchain` 21 探测不到，`createMinecraftArtifacts` 直接报 `Cannot find a Java installation ... languageVersion=21`，于是 `runClient` 之类一点就挂
+
+`gradle.properties` 的 `org.gradle.java.installations.fromEnv=JAVA_HOME` 让自动探测也读环境变量里的 JDK，`settings.gradle` 的 `foojay-resolver-convention` 在一个 21 都找不到时自己下载，两条都与具体路径无关，命令行的 `gradlew` 与 CI 同样受益
+
+`.vscode/settings.json` 是本机配置，`.vscode/` 在 `.gitignore` 里，用 `java.import.gradle.java.home` 把 daemon 钉在本机 JDK 21，换机器要改路径
+
+Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.properties` 里写 `systemProp.http.proxyHost` `systemProp.http.proxyPort` `systemProp.https.proxyHost` `systemProp.https.proxyPort` 与 `systemProp.http.nonProxyHosts`，Gradle 的下载才会经过代理，端口随加速器改
+
 ## 游戏内测试
 
 `./gradlew runGameTestServer`

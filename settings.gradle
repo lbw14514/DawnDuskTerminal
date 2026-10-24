@@ -9,4 +9,10 @@ pluginManagement {
     }
 }
 
+// 机器上一个 21 都探测不到时由 Gradle 自己下载 JDK 21，而不是报
+// "Toolchain download repositories have not been configured" 直接停掉
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
+}
+
 rootProject.name = 'dawnduskterminal'
