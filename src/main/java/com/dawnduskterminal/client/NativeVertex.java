@@ -9,24 +9,19 @@ import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 
 /**
- * 可选的 native 顶点变换内核
+ * native 顶点变换内核
  *
- * <p>库不存在 加载失败 或平台没有构建产物时全部返回失败 调用方退回纯 Java 路径
+ * <p>jar 里必然带着当前平台对应的库 加载失败直接抛错 不做纯 Java 兜底
  * 客户端渲染线程只做一次 JNI 调用 顶点变换由库内的 C++ 线程池分块完成
  */
 public final class NativeVertex {
-    private static final boolean AVAILABLE = load();
+    static {
+        load();
+    }
 
     private NativeVertex() {}
 
-    public static boolean isAvailable() {
-        return AVAILABLE;
-    }
-
-    private static boolean load() {
-        if (Boolean.getBoolean("ddt.disableNative")) {
-            return false;
-        }
+    private static void load() {
         String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
         String arch = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
         String key;
@@ -34,7 +29,7 @@ public final class NativeVertex {
 
         if (os.contains("win")) {
             if (arch.contains("aarch64") || arch.contains("arm64")) {
-                return false;
+                throw new IllegalStateException("没有为 windows-aarch64 构建 native 顶点内核");
             }
             key = arch.contains("64") ? "windows-x86_64" : "windows-x86";
             library = "ddt_vertex.dll";
@@ -45,13 +40,13 @@ public final class NativeVertex {
             key = arch.contains("aarch64") || arch.contains("arm64") ? "linux-aarch64" : "linux-x86_64";
             library = "ddt_vertex.so";
         } else {
-            return false;
+            throw new IllegalStateException("没有为 " + os + "/" + arch + " 构建 native 顶点内核");
         }
 
         String resource = "/native/" + key + "/" + library;
         try (InputStream input = NativeVertex.class.getResourceAsStream(resource)) {
             if (input == null) {
-                return false;
+                throw new IllegalStateException("jar 里缺少 native 顶点内核 " + resource);
             }
             Path directory = Files.createTempDirectory("dawnduskterminal-native");
             Path file = directory.resolve(library);
@@ -60,12 +55,8 @@ public final class NativeVertex {
             directory.toFile().deleteOnExit();
             System.load(file.toAbsolutePath().toString());
             DawnDuskTerminal.LOGGER.info("DawnDuskTerminal native vertex kernel loaded from {}", resource);
-            return true;
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal native vertex kernel unavailable, using Java renderer: {}",
-                throwable.toString());
-            return false;
+            throw new IllegalStateException("加载 native 顶点内核失败 " + resource, throwable);
         }
     }
 
@@ -90,7 +81,7 @@ public final class NativeVertex {
     }
 
     /**
-     * @return 顶点总数；失败返回 -1，调用方应退回 Java 变换
+     * @return 顶点总数；负数表示库内部失败
      */
     public static int transform(long pool, long mesh, float[] matrices, float[] normals,
                                 int[] cubeIds, int count, java.nio.ByteBuffer output, int outputCapacityFloats) {

@@ -76,22 +76,33 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 ### native 顶点内核
 
-默认按构建机编译，产物落在 `build/native/<os>-<arch>/`，`processResources` 会把 `build/native` 下所有平台一起打进 jar
+`src/main/native/ddt_vertex.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
 
-交叉编译用
+构建固定走 Zig，`installZig` 任务会自动下载到 `.gradle/zig/<version>`，之后不再重复下载，不需要系统里预装编译器
 
-```bash
-./gradlew buildNative \
-  -PddtNativeTarget=linux-aarch64 \
-  -PddtNativeCompiler=aarch64-linux-gnu-g++ \
-  -PddtNativeFlags=""
-```
+| target | triple | 产物 |
+|---|---|---|
+| `windows-x86_64` | `x86_64-windows-gnu` | `ddt_vertex.dll` |
+| `linux-x86_64` | `x86_64-linux-gnu.2.17` | `ddt_vertex.so` |
+| `linux-aarch64` | `aarch64-linux-gnu.2.17` | `ddt_vertex.so` |
+| `macos-x86_64` | `x86_64-macos` | `ddt_vertex.dylib` |
+| `macos-aarch64` | `aarch64-macos` | `ddt_vertex.dylib` |
 
-支持的 key 是 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`
+`./gradlew build` 默认编全部五个，所以无论在哪个平台构建，`build/libs/` 里的 jar 都是全平台通用的
 
-本机没有对应编译器时 `buildNative` 跳过，`NativeVertex` 会回退纯 Java，构建不失败
+jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeVertex` 按 `os.name` 与 `os.arch` 挑对应的库
 
-Windows DLL 用 `-static`，不能依赖 `libwinpthread-1.dll`；玩家机器上只有 MinGW 开发环境才有那个 DLL
+没有纯 Java 兜底：库缺失、加载失败或变换返回错误都直接抛异常，构建期任何一个目标编不出来也会让 `gradlew build` 失败
+
+`jni.h` 取当前构建 JVM 的，`jni_md.h` 用仓库里的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 同时给 Linux 与 macOS
+
+| 属性 | 作用 |
+|---|---|
+| `-Pddt_zig_version=0.13.0` | 换 Zig 版本 |
+
+Zig 的产物先写进 `build/tools/native-work`，只把目标库拷进 `build/native/<target>/`，避免 Windows 上顺带产出的 `.lib` 与 `.pdb` 被打进 jar
+
+Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 之类的运行库
 
 ## 游戏内测试
 
@@ -237,7 +248,7 @@ Windows DLL 用 `-static`，不能依赖 `libwinpthread-1.dll`；玩家机器上
 
 `gametest.yml` 在 PR 触发，跑两遍 `./gradlew runGameTestServer`：一遍原版环境，一遍把 c2me 1.21.1 NeoForge 构建放进 `run/gametest/mods`
 
-`release.yml` 在 v 标签触发，先用矩阵编译 5 个平台的 native（Windows 在 Ubuntu 上交叉编译），再合成一个 jar，最后 `gh release create` 或 `gh release upload --clobber`
+`release.yml` 在 v 标签触发，单个 ubuntu runner 用 Zig 交叉编译出全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里，最后 `gh release create` 或 `gh release upload --clobber`
 
 c2me 的许可证是 MIT，只有 `c2me-opts-accel-opencl` 那个模块是 All Rights Reserved；1.21.1 的正式构建不带 OpenCL 模块，class 文件 major 65，就是 Java 21，不用为 Java 22 改环境
 

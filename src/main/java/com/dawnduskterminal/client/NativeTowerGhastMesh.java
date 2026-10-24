@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 高塔恶魂烘焙模型的扁平副本
  *
- * <p>每个顶点 8 个 float 位置 法线 UV 每个 cube 记录起点 顶点数 与尺寸
+ * <p>每个顶点 8 个 float 位置 法线 UV 每个 cube 记录起点与顶点数
  * cube 的身份用 {@link IdentityHashMap} 保存 因为 {@link GeoCube} 是带数组字段的 record
  * {@code equals} 比较数组引用 不适合作为普通 Map 的键
  *
@@ -22,31 +22,23 @@ import java.util.Map;
 public final class NativeTowerGhastMesh {
     private final BakedGeoModel model;
     private final long handle;
-    private final float[] vertices;
     private final int[] offsets;
     private final int[] counts;
-    private final float[] sizes;
     private final Map<GeoCube, Integer> cubeIds;
     private final int vertexCount;
 
-    private NativeTowerGhastMesh(BakedGeoModel model, long handle, float[] vertices,
-                                 int[] offsets, int[] counts, float[] sizes,
+    private NativeTowerGhastMesh(BakedGeoModel model, long handle,
+                                 int[] offsets, int[] counts,
                                  Map<GeoCube, Integer> cubeIds, int vertexCount) {
         this.model = model;
         this.handle = handle;
-        this.vertices = vertices;
         this.offsets = offsets;
         this.counts = counts;
-        this.sizes = sizes;
         this.cubeIds = cubeIds;
         this.vertexCount = vertexCount;
     }
 
     public static NativeTowerGhastMesh build(BakedGeoModel model) {
-        if (!NativeVertex.isAvailable()) {
-            return null;
-        }
-
         FloatList vertexData = new FloatList();
         IntList offsets = new IntList();
         IntList counts = new IntList();
@@ -58,7 +50,7 @@ public final class NativeTowerGhastMesh {
         }
 
         if (offsets.size == 0) {
-            return null;
+            throw new IllegalStateException("高塔恶魂模型没有可用的立方体");
         }
 
         int[] offsetArray = offsets.toArray();
@@ -67,11 +59,11 @@ public final class NativeTowerGhastMesh {
         float[] vertexArray = vertexData.toArray();
         long handle = NativeVertex.createMesh(vertexArray, offsetArray, countArray, sizeArray);
         if (handle == 0L) {
-            return null;
+            throw new IllegalStateException("native 顶点网格创建失败");
         }
 
-        return new NativeTowerGhastMesh(model, handle, vertexArray, offsetArray, countArray,
-            sizeArray, cubeIds, vertexData.size / 8);
+        return new NativeTowerGhastMesh(model, handle, offsetArray, countArray, cubeIds,
+            vertexData.size / 8);
     }
 
     private static void collectBone(GeoBone bone, FloatList vertices, IntList offsets,
@@ -141,14 +133,6 @@ public final class NativeTowerGhastMesh {
 
     public int count(int cubeId) {
         return this.counts[cubeId];
-    }
-
-    public float size(int cubeId, int axis) {
-        return this.sizes[cubeId * 3 + axis];
-    }
-
-    public float[] vertices() {
-        return this.vertices;
     }
 
     public void close() {
