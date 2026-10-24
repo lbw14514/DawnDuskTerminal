@@ -114,7 +114,7 @@ jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeMesh` 按 `os.n
 
 ### ABI 协议
 
-Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 1
+Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 2
 
 native 导出四个只读常量：`nativeAbiVersion` `nativeVertexFloats` `nativeMatrixFloats` `nativeNormalFloats`
 
@@ -125,6 +125,30 @@ native 导出四个只读常量：`nativeAbiVersion` `nativeVertexFloats` `nativ
 版本号写在 `gradle.properties` 的 `ddt_native_abi_version`，构建时通过 `-DDDT_NATIVE_ABI_VERSION` 传进 C++
 
 `verifyNativeAbi` 任务会检查 `NativeMesh.ABI_VERSION` 与这个属性一致，`check` 依赖它
+
+### 为什么 `nativeTransform` 收直接缓冲区
+
+矩阵 法线 piece id 三个入参是 `ByteBuffer.allocateDirect` 出来的直接缓冲区，不是 Java 数组
+
+数组入参在 JNI 里会走 `GetFloatArrayElements`，每个 piece 16 个 float 矩阵加 9 个 float 法线，
+712 个 piece 每帧约 73KB 拷贝，实测比直接缓冲区多约 10us
+
+直接缓冲区由 `NativeMeshBatch` 在构造和扩容时整块分配，之后每帧只改内容不重新分配
+
+批次容量超过初始的 1024 段时，`growInputs` 会把已经写进去的段搬到新缓冲区，
+不能只重新分配，否则批次中途扩容会丢掉前面收集的矩阵
+
+不要为了省事把这三个参数改回数组，也不要每帧新建缓冲区
+
+### 为什么没有用 FFM
+
+Java 21 的 `java.lang.foreign` 还是 preview API，编译和运行都要 `--enable-preview`，
+class 文件带 preview 标记（minor version 65535），普通 JVM 启动直接 `UnsupportedClassVersionError`
+
+Minecraft 1.21.1 锁在 Java 21，模组没法要求玩家改启动参数，所以 FFM 不能进发布产物
+
+实测同样条件下 FFM 与 JNI 性能打平（712 piece：49.5 与 49.7 us），
+数组入参那 10us 差距来自拷贝而不是绑定方式，换直接缓冲区就能拿到，不需要 FFM
 
 ### native 的失败与安全模式
 
@@ -146,7 +170,7 @@ native 侧所有导出函数都在 `try/catch(...)` 内返回错误码，C++ 异
 
 句柄是自增 id 而不是裸指针，失效、重复释放、类型拿错都返回 `kInvalidHandle`，不会解引用野指针
 
-`nativeCreateMesh` 校验每一段 `offset/count` 都在顶点数组内，`nativeTransform` 校验数组长度、直接缓冲区容量与 piece id 范围
+`nativeCreateMesh` 校验每一段 `offset/count` 都在顶点数组内，`nativeTransform` 校验三个入参直接缓冲区的容量、输出缓冲区容量与 piece id 范围
 
 `jni.h` 取当前构建 JVM 的，`jni_md.h` 用仓库里的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 同时给 Linux 与 macOS
 

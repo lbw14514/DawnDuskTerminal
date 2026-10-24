@@ -356,6 +356,8 @@ extern "C" {
  * <p>Java 在加载后先读这几个常量 与自己的编译期常量逐项比对
  * 版本或布局任何一个对不上就禁用 native 而不是冒险调用
  * 只要 JNI 函数签名 参数含义 顶点布局 片元布局 或返回值语义变了 就要 +1 kAbiVersion
+ *
+ * <p>2 起 nativeTransform 的矩阵 法线 piece id 三个入参从 Java 数组改成直接缓冲区
  */
 JNIEXPORT jint JNICALL
 Java_com_dawnduskterminal_client_NativeMesh_nativeAbiVersion(JNIEnv*, jclass) {
@@ -460,8 +462,7 @@ Java_com_dawnduskterminal_client_NativeMesh_nativeDestroyMesh(JNIEnv*, jclass, j
 JNIEXPORT jint JNICALL
 Java_com_dawnduskterminal_client_NativeMesh_nativeTransform(
     JNIEnv* env, jclass, jlong poolHandle, jlong meshHandle,
-    jfloatArray matrices, jfloatArray normals, jintArray pieceIds, jint count,
-    jobject output, jint outputCapacityFloats) {
+    jobject matrices, jobject normals, jobject pieceIds, jint count, jobject output) {
     try {
         if (count < 0) {
             return ddt::kInvalidArgument;
@@ -476,39 +477,35 @@ Java_com_dawnduskterminal_client_NativeMesh_nativeTransform(
             return ddt::kInvalidHandle;
         }
 
-        const jlong requiredMatrices = static_cast<jlong>(count) * ddt::kMatrixFloats;
-        const jlong requiredNormals = static_cast<jlong>(count) * ddt::kNormalFloats;
-        if (static_cast<jlong>(env->GetArrayLength(pieceIds)) < static_cast<jlong>(count)
-            || static_cast<jlong>(env->GetArrayLength(matrices)) < requiredMatrices
-            || static_cast<jlong>(env->GetArrayLength(normals)) < requiredNormals) {
+        // 三个入参都是直接缓冲区 渲染线程每帧只写一次 交给 native 直接读
+        // 不走 GetFloatArrayElements 那趟每帧约 73KB 的拷贝
+        const jlong requiredMatrixBytes =
+            static_cast<jlong>(count) * ddt::kMatrixFloats * static_cast<jlong>(sizeof(float));
+        const jlong requiredNormalBytes =
+            static_cast<jlong>(count) * ddt::kNormalFloats * static_cast<jlong>(sizeof(float));
+        const jlong requiredIdBytes = static_cast<jlong>(count) * static_cast<jlong>(sizeof(jint));
+        if (env->GetDirectBufferCapacity(matrices) < requiredMatrixBytes
+            || env->GetDirectBufferCapacity(normals) < requiredNormalBytes
+            || env->GetDirectBufferCapacity(pieceIds) < requiredIdBytes) {
             return ddt::kInvalidArgument;
         }
 
         const jlong requiredFloats = static_cast<jlong>(mesh->vertices.size()) * ddt::kVertexFloats;
-        if (static_cast<jlong>(outputCapacityFloats) < requiredFloats) {
-            return ddt::kOutputTooSmall;
-        }
-
         const jlong capacityBytes = env->GetDirectBufferCapacity(output);
         if (capacityBytes < 0
             || capacityBytes < requiredFloats * static_cast<jlong>(sizeof(float))) {
             return ddt::kOutputTooSmall;
         }
 
+        auto* matrixData = static_cast<const float*>(env->GetDirectBufferAddress(matrices));
+        auto* normalData = static_cast<const float*>(env->GetDirectBufferAddress(normals));
+        auto* idData = static_cast<const jint*>(env->GetDirectBufferAddress(pieceIds));
         auto* out = static_cast<float*>(env->GetDirectBufferAddress(output));
-        if (out == nullptr) {
+        if (matrixData == nullptr || normalData == nullptr || idData == nullptr || out == nullptr) {
             return ddt::kInvalidArgument;
         }
 
-        ddt::FloatArrayScope matrixSource(env, matrices);
-        ddt::FloatArrayScope normalSource(env, normals);
-        ddt::IntArrayScope idSource(env, pieceIds);
-        if (matrixSource.get() == nullptr || normalSource.get() == nullptr || idSource.get() == nullptr) {
-            return ddt::kInvalidArgument;
-        }
-
-        const jint result = pool->run(mesh.get(), matrixSource.get(), normalSource.get(),
-                                      idSource.get(), count, out);
+        const jint result = pool->run(mesh.get(), matrixData, normalData, idData, count, out);
         if (result < 0) {
             return result;
         }

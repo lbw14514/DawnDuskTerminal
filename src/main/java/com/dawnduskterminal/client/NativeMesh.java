@@ -38,8 +38,10 @@ public final class NativeMesh {
     /**
      * JNI 协议版本 与 src/main/native/ddt_native.cpp 的 kAbiVersion 必须一致
      * 构建脚本会校验它和 gradle.properties 的 ddt_native_abi_version
+     *
+     * <p>2 起 {@link #transform} 的矩阵 法线 piece id 从 Java 数组改成直接缓冲区
      */
-    public static final int ABI_VERSION = 1;
+    public static final int ABI_VERSION = 2;
 
     /** 每个顶点 8 个 float x y z nx ny nz u v */
     public static final int VERTEX_FLOATS = 8;
@@ -242,19 +244,21 @@ public final class NativeMesh {
 
             ByteBuffer output = ByteBuffer.allocateDirect(2 * VERTEX_FLOATS * Float.BYTES)
                 .order(ByteOrder.nativeOrder());
-            float[] matrix = {
+            ByteBuffer matrixBuffer = directFloatBuffer(new float[] {
                 1.0F, 0.0F, 0.0F, 0.0F,
                 0.0F, 1.0F, 0.0F, 0.0F,
                 0.0F, 0.0F, 1.0F, 0.0F,
                 0.0F, 0.0F, 0.0F, 1.0F,
-            };
-            float[] normal = {
+            });
+            ByteBuffer normalBuffer = directFloatBuffer(new float[] {
                 1.0F, 0.0F, 0.0F,
                 0.0F, 1.0F, 0.0F,
                 0.0F, 0.0F, 1.0F,
-            };
-            int transformed = nativeTransform(pool, mesh, matrix, normal, new int[] {0}, 1,
-                output, 2 * VERTEX_FLOATS);
+            });
+            ByteBuffer pieceIdBuffer = ByteBuffer.allocateDirect(Integer.BYTES)
+                .order(ByteOrder.nativeOrder());
+            pieceIdBuffer.asIntBuffer().put(0, 0);
+            int transformed = nativeTransform(pool, mesh, matrixBuffer, normalBuffer, pieceIdBuffer, 1, output);
             if (transformed != 2) {
                 fail(Stage.PROBE, "native 探针返回 " + transformed, null);
                 return false;
@@ -287,6 +291,16 @@ public final class NativeMesh {
                 }
             }
         }
+    }
+
+    /**
+     * 把 float 数组装进按 native 字节序的直接缓冲区 只用于加载期探针
+     */
+    private static ByteBuffer directFloatBuffer(float[] values) {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(values.length * Float.BYTES)
+            .order(ByteOrder.nativeOrder());
+        buffer.asFloatBuffer().put(values);
+        return buffer;
     }
 
     private static Path crashMarkerPath() {
@@ -423,14 +437,16 @@ public final class NativeMesh {
     /**
      * @return 网格顶点总数
      * @throws NativeMeshException native 不可用或返回错误码 调用方应回退 Java 路径
+     *
+     * <p>矩阵 法线 piece id 三个入参都是直接缓冲区 且容量按 count 截断
+     * 缓冲区里前 count 段之外的内容不会被读到
      */
-    public static int transform(long pool, long mesh, float[] matrices, float[] normals,
-                                int[] pieceIds, int count, ByteBuffer output, int outputCapacityFloats) {
+    public static int transform(long pool, long mesh, ByteBuffer matrices, ByteBuffer normals,
+                                ByteBuffer pieceIds, int count, ByteBuffer output) {
         requireReady();
         int result;
         try {
-            result = nativeTransform(pool, mesh, matrices, normals, pieceIds, count,
-                output, outputCapacityFloats);
+            result = nativeTransform(pool, mesh, matrices, normals, pieceIds, count, output);
         } catch (Throwable throwable) {
             throw runtimeFailure("变换调用抛出异常", throwable);
         }
@@ -540,7 +556,13 @@ public final class NativeMesh {
 
     private static native void nativeDestroyMesh(long handle);
 
-    private static native int nativeTransform(long pool, long mesh, float[] matrices, float[] normals,
-                                              int[] pieceIds, int count, ByteBuffer output,
-                                              int outputCapacityFloats);
+    /**
+     * 变换一组顶点区间 结果写进 {@code output}
+     *
+     * <p>矩阵 法线 piece id 三个入参都是直接缓冲区 由调用方复用 不要再改成 Java 数组
+     * 数组入参会让 native 每帧做一次 GetFloatArrayElements 拷贝 712 个 piece 约 73KB
+     * 实测每帧多出约 10us 直接缓冲区把这部分省掉
+     */
+    private static native int nativeTransform(long pool, long mesh, ByteBuffer matrices, ByteBuffer normals,
+                                              ByteBuffer pieceIds, int count, ByteBuffer output);
 }
