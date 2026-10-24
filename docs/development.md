@@ -83,6 +83,16 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 `.vscode/settings.json` 是本机配置，`.vscode/` 在 `.gitignore` 里，用 `java.import.gradle.java.home` 把 daemon 钉在本机 JDK 21，换机器要改路径
 
 Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.properties` 里写 `systemProp.http.proxyHost` `systemProp.http.proxyPort` `systemProp.https.proxyHost` `systemProp.https.proxyPort` 与 `systemProp.http.nonProxyHosts`，Gradle 的下载才会经过代理，端口随加速器改
+
+### 点 runClient 一点就挂的三种原因
+
+第一种是上面那段 JDK 探测，第二种是 wrapper 发行版拉不下来
+
+`gradle/wrapper/gradle-wrapper.properties` 的 `distributionUrl` 一旦从 `8.14.3` 改成别的版本，`gradlew` 会先去 services.gradle.org 下几十到一百多 MB 的发行版，本机直连只有 20KB/s 上下，10 秒读超时一到就退出，报 `Downloading ... failed: timeout`，连配置阶段都进不去，于是侧栏的 `runClient` `build` 按钮全部失效。`retries=0` 让它一次就放弃
+
+本项目停在 Gradle 8.14.3，本机 `~/.gradle/wrapper/dists/` 里有缓存，**不要随手升 wrapper**；真要升就先把发行版下到本机缓存里再改，并把 `networkTimeout` 提到 `60000`、`retries` 提到 3 以上
+
+第三种是 Zig 工具链：`installZig` 与 `buildNative` 在 `processResources` 的上游，所以它们的失败同样表现成「点 runClient 没反应」，见下面「native 网格内核」里关于工具链位置的说明
 ### native 网格内核
 
 `src/main/native/ddt_native.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
@@ -93,7 +103,11 @@ Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.pro
 
 `NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交。实体渲染器和方块实体渲染器都能用同一套流程
 
-构建固定走 Zig，`installZig` 任务会自动下载到 `.gradle/zig/<version>`，之后不再重复下载，不需要系统里预装编译器
+构建固定走 Zig，`installZig` 任务会自动下载到 Gradle 用户目录的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`），之后不再重复下载，不需要系统里预装编译器
+
+工具链与它的缓存（`~/.gradle/ddt-zig-cache/`）都不放工程目录：工程目录带 DSH 沙盒留下的目录权限项，zig 在那儿建编译临时目录会被拒，报 `cache: manifest_create AccessDenied`，同一份二进制搬到用户目录下就正常，与 Zig 版本无关
+
+ziglang.org 只有 20KB/s 上下，79MB 的包中途断流是常态，所以 `installZig` 的下载带断点续传、重试与 zip 完整性校验，残包会留在原地等下一次续传，不会像旧实现那样拖到 tar 解压才报错。国内网络可以从 PyPI 镜像取同一份工具链，比 ziglang.org 快两个数量级，解压到 `~/.gradle/ddt-zig/<version>` 后 `installZig` 直接跳过下载
 
 | target | triple | 产物 |
 |---|---|---|

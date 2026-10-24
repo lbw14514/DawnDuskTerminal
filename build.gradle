@@ -330,9 +330,14 @@ def nativeOutput = layout.buildDirectory.dir('native')
 def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
 // native 与 Java 的 JNI 协议版本 必须与 NativeMesh.ABI_VERSION 同步 由 verifyNativeAbi 校验
 def nativeAbiVersion = providers.gradleProperty('ddt_native_abi_version').getOrElse('1')
-def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
+// Zig 工具链与它的缓存都装在 Gradle 用户目录下，不放工程目录
+// 工程目录带 DSH 沙盒留下的目录权限项 在那里启动 zig 会在建编译临时目录时被拒
+// （同一份二进制放到用户目录下就正常 与 Zig 版本无关） 顺带 clean 也不会把它删掉
+def zigInstallRoot = new File(gradle.gradleUserHomeDir, 'ddt-zig')
+def zigCacheRoot = new File(gradle.gradleUserHomeDir, 'ddt-zig-cache')
+def zigDirectory = new File(zigInstallRoot, zigVersion)
 def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).contains('win')
-def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
+def zigExecutable = new File(zigDirectory, zigIsWindows ? 'zig.exe' : 'zig')
 // -O3 是 zig c++ 能接受的最高优化档（内部映射到 ReleaseFast）
 // -s 让链接器去掉调试符号：Zig 默认给 ELF 写完整 DWARF，linux 的 .so 会从 2.7MB 掉到 260KB 左右
 // 只去符号表，不碰动态符号，JNI 导出函数仍然可见
@@ -350,13 +355,24 @@ def zigHostOs = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
 def zigHostArch = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT).contains('aarch64') ? 'aarch64' : 'x86_64'
 def zigHostKey = zigHostOs.contains('win') ? 'windows' : (zigHostOs.contains('mac') ? 'macos' : 'linux')
 def zigArchiveExtension = zigHostKey == 'windows' ? 'zip' : 'tar.xz'
-def zigArchive = layout.buildDirectory.file("tools/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
+// 包存在用户目录下而不是 build/ 或工程 .gradle/ 下：ziglang.org 只有 20KB/s 上下
+// 79MB 的包要拉一小时 不能让 gradlew clean 或换工作副本把它删掉
+// 工程内旧位置（.gradle/zig-downloads 与 build/tools）里的整包会被认下来并搬过来
+def zigArchive = new File(new File(zigInstallRoot, 'downloads'), "zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
 def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
 
 // 配置缓存不允许任务动作在执行期碰 layout，路径在配置期先落成普通 File
-def zigExecutableFile = zigExecutable.asFile
-def zigDirectoryFile = zigDirectory.asFile
-def zigArchiveFile = zigArchive.get().asFile
+// zig 的缓存目录也放用户目录下，理由同上：工程目录里的权限项会让 zig 建临时文件被拒
+def zigExecutableFile = zigExecutable
+def zigDirectoryFile = zigDirectory
+def zigArchiveFile = zigArchive
+def zigGlobalCacheDirectory = new File(zigCacheRoot, 'global')
+def zigLocalCacheDirectory = new File(zigCacheRoot, 'local')
+// 工程内旧位置，整包存在时认下来，省掉一次一小时的下载
+def zigLegacyArchiveFiles = [
+    layout.projectDirectory.file(".gradle/zig-downloads/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}").asFile,
+    layout.buildDirectory.file("tools/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}").get().asFile,
+]
 def nativeSourceFile = nativeSource.asFile
 def nativeOutputDirectory = nativeOutput.get().asFile
 def nativeWorkDirectory = layout.buildDirectory.dir('tools/native-work').get().asFile
@@ -364,22 +380,96 @@ def nativeJniDirectories = nativeTargets.collectEntries { key, target ->
     [(key): layout.projectDirectory.dir("src/main/native/${target.jni}").asFile]
 }
 
+// Zig 只有 ziglang.org 一个官方源，直连与走代理都只有 20KB/s 上下，79MB 的包断了是常态
+// 所以下载要带断点续传 重试与完整性校验
+// 旧实现直接把流拷进文件，连接被掐断时一个字都不报，直到 tar 解压才发现包是残的
 def installZig = tasks.register('installZig') {
     description = '下载并解压编译 native 用的 Zig 工具链'
     onlyIf { !zigExecutableFile.exists() }
     inputs.property('zigVersion', zigVersion)
     inputs.property('zigHost', "${zigHostKey}-${zigHostArch}")
+    inputs.property('zigUrl', zigUrl)
     outputs.file(zigExecutable)
     doLast {
         def archive = zigArchiveFile
+        def archiveIsComplete = { File file ->
+            if (!file.exists() || file.length() == 0L) {
+                return false
+            }
+            // 截断的 zip 会丢掉中央目录，ZipFile 打开即抛异常，正好当完整性校验用
+            try {
+                new java.util.zip.ZipFile(file).withCloseable { zip -> zip.size() > 0 }
+                true
+            } catch (java.io.IOException ignored) {
+                false
+            }
+        }
+
         archive.parentFile.mkdirs()
-        logger.lifecycle("下载 Zig ${zigVersion} (${zigHostKey}-${zigHostArch})")
-        def connection = new URL(zigUrl).openConnection()
-        connection.connectTimeout = 30000
-        connection.readTimeout = 300000
-        connection.setRequestProperty('User-Agent', 'DawnDuskTerminal Gradle build')
-        connection.inputStream.withStream { input ->
-            archive.withOutputStream { output -> output << input }
+        def adoptedFrom = zigLegacyArchiveFiles.find { archiveIsComplete(it) }
+        if (!archiveIsComplete(archive) && adoptedFrom != null) {
+            logger.lifecycle("接管 ${adoptedFrom} 下已下载完整的 Zig 包")
+            java.nio.file.Files.copy(adoptedFrom.toPath(), archive.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+        if (archiveIsComplete(archive)) {
+            logger.lifecycle("复用已下载的 Zig 包（${archive.length()} 字节）")
+        } else {
+            archive.delete()
+            long expected = -1L
+            int attempts = 6
+            for (int attempt = 1; attempt <= attempts; attempt++) {
+                long have = archive.exists() ? archive.length() : 0L
+                try {
+                    def connection = new URL(zigUrl).openConnection()
+                    connection.connectTimeout = 30000
+                    connection.readTimeout = 180000
+                    connection.setRequestProperty('User-Agent', 'DawnDuskTerminal Gradle build')
+                    if (have > 0L) {
+                        connection.setRequestProperty('Range', "bytes=${have}-")
+                    }
+                    def status = connection.getResponseCode()
+                    if (status == 200 && have > 0L) {
+                        logger.lifecycle('源站没按 Range 续传，从零重下')
+                        archive.delete()
+                        have = 0L
+                    } else if (status != 200 && status != 206) {
+                        throw new java.io.IOException("HTTP ${status}")
+                    }
+                    def length = connection.getHeaderField('Content-Length')?.toLong() ?: -1L
+                    expected = length > 0L ? have + length : -1L
+                    logger.lifecycle("下载 Zig ${zigVersion} (${zigHostKey}-${zigHostArch})" +
+                        (have > 0L ? "，从 ${have} 字节续传" : '') +
+                        (expected > 0L ? "，共 ${expected} 字节" : '') +
+                        "，第 ${attempt}/${attempts} 次")
+                    def output = new FileOutputStream(archive, have > 0L)
+                    try {
+                        connection.inputStream.withStream { input -> output << input }
+                    } finally {
+                        output.close()
+                    }
+                } catch (java.io.IOException e) {
+                    logger.lifecycle("下载中断（当前 ${archive.exists() ? archive.length() : 0} 字节）：${e.message}")
+                }
+                if (archiveIsComplete(archive)) {
+                    break
+                }
+                if (attempt < attempts) {
+                    Thread.sleep(2000L * attempt)
+                }
+            }
+            if (!archiveIsComplete(archive)) {
+                throw new GradleException("下载 Zig ${zigVersion} 失败：${zigUrl}\n" +
+                    "已下载的部分保留在 ${archive}，重跑会断点续传，不要删\n" +
+                    "走代理要在 ~/.gradle/gradle.properties 里写 systemProp.http(s).proxyHost 与 proxyPort\n" +
+                    "国内网络可以从 PyPI 镜像取同一份工具链，比 ziglang.org 快两个数量级：\n" +
+                    "  curl -L -o zig.whl https://pypi.tuna.tsinghua.edu.cn/simple/ziglang/ 里对应的 ziglang-${zigVersion}-py3-none-<平台>.whl\n" +
+                    "  tar -xf zig.whl -C ${zigDirectoryFile} --strip-components=1\n" +
+                    "解压到 ${zigDirectoryFile} 后 installZig 会自动跳过下载")
+            }
+            if (expected > 0L && archive.length() != expected) {
+                logger.lifecycle("包大小 ${archive.length()} 与响应头的 ${expected} 不一致，但 zip 结构完整，继续")
+            }
         }
         zigDirectoryFile.mkdirs()
         // Windows 10 1803 之后自带 bsdtar，macOS 与 Linux 也都有 tar，zip 与 tar.xz 都能吃
@@ -429,9 +519,16 @@ def buildNative = tasks.register('buildNative') {
                 builtLibrary.absolutePath,
             ])
             logger.lifecycle("编译 native ${key} (${target.triple})")
-            def compilation = new ProcessBuilder(arguments).redirectErrorStream(true).start()
-            def compilationOutput = compilation.inputStream.getText('UTF-8')
-            def exitCode = compilation.waitFor()
+            def compilation = new ProcessBuilder(arguments).redirectErrorStream(true)
+            // 缓存目录显式指到用户目录：zig 默认把 .zig-cache 建在当前目录
+            // 工程目录下建临时文件会被目录权限项拒掉，报 cache: manifest_create AccessDenied
+            zigGlobalCacheDirectory.mkdirs()
+            zigLocalCacheDirectory.mkdirs()
+            compilation.environment().put('ZIG_GLOBAL_CACHE_DIR', zigGlobalCacheDirectory.absolutePath)
+            compilation.environment().put('ZIG_LOCAL_CACHE_DIR', zigLocalCacheDirectory.absolutePath)
+            def running = compilation.start()
+            def compilationOutput = running.inputStream.getText('UTF-8')
+            def exitCode = running.waitFor()
             if (exitCode != 0) {
                 throw new GradleException(
                     "native 编译失败 ${key} (${target.triple})\n" + compilationOutput)

@@ -67,7 +67,7 @@ jar 里同时包含两样东西
 
 本机构建就是全平台单文件：`buildNative` 用 Zig 交叉编译，任何宿主上 `./gradlew build` 都会把 5 个 native 一起打进 jar
 
-1 `installZig` 自动下载 Zig 到 `.gradle/zig/<version>`，不需要预装编译器
+1 `installZig` 自动下载 Zig 到 Gradle 用户目录的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`），不需要预装编译器。工具链与它的缓存都留在工程目录外：工程目录带 DSH 沙盒留下的目录权限项，zig 在那儿建编译临时目录会被拒（`cache: manifest_create AccessDenied`），同一份二进制放到用户目录下就正常
 2 `buildNative` 依次编 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`，产物落 `build/native/<target>/`
 3 `./gradlew build` 的 `processResources` 把 `build/native` 下全部目录打进 jar
 4 `release.yml` 校验 5 个 `ddt_native` 都在，缺一个直接失败
