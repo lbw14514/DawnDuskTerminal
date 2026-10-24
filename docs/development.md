@@ -105,6 +105,45 @@ Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.pro
 
 `NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交。实体渲染器和方块实体渲染器都能用同一套流程
 
+#### 变换内核与 SIMD 分发
+
+内核有四种实现，都在 `ddt_native.cpp` 里
+
+| 内核 | 平台 | 一次处理的顶点 | 说明 |
+|---|---|---|---|
+| `scalar` | 全部 | 1 | 基线，也是尾部余数的兜底 |
+| `sse2` | x86-64 | 4 | 128 位 4 路，x86-64 基线 |
+| `avx2+fma` | x86-64 且 CPU 支持 AVX2 与 FMA、内核保存 YMM 状态 | 8 | 256 位 8 路，乘加合并成 FMA |
+| `neon` | aarch64 | 4 | 128 位 4 路，ARMv8 基线就带 |
+
+顶点是 AoS 布局，每个顶点 8 个 float 连续放着。内核先把 4 个或 8 个顶点转置成按通道排列的向量，六个输出通道各算一次再转置回去。每个输出通道都是一条乘加链，摊到 8 个顶点上就是一条 `_mm256_mul_ps` 加两条 `_mm256_fmadd_ps`
+
+法线取反不写分支：把 `值 < 0` 的比较结果与 `0x80000000` 掩码相与再异或，和标量的 `-x` 逐位一致，`-0` 与 `NaN` 不会被翻
+
+运行期只选一次，选中的函数指针随 job 下发，每个 piece 直接调用
+
+- x86-64 用 `cpuid` 读 SSE2 AVX FMA AVX2，再用 `xgetbv` 确认 XCR0 的 SSE 与 YMM 两位都置位，也就是内核真的会保存 YMM 状态，否则不开 AVX2
+- aarch64 不探测，NEON 是基线
+- 选之前先用 16 个固定顶点与一个非单位矩阵跟标量比一遍，再补 13 个顶点走一遍尾部路径；取反标志按 0 与 X Y Z 三个单轴分别跑，只测一个组合会让写错的轴混过去
+- 判定用 `withinKernelTolerance` 随数值量级放大的 `1e-4` 相对阈值，任一值超出就退回标量
+- 结果写进日志 `DawnDuskTerminal native mesh kernel loaded ... (abi 3, kernel avx2+fma)`，代码里也能读 `NativeMesh.kernelName()`
+
+AVX2 实现用 `__attribute__((target("avx2,fma")))` 单独标注，基线编译不带 AVX 指令，老 CPU 上加载不会直接 `#UD`
+
+不用 `target_clones` 与 ifunc：ifunc 是 ELF 的东西，Windows 与 macOS 都没有，三平台统一用函数指针表
+
+`tools/native/benchmark.cpp` 是数值校验与吞吐对照台，它把 `ddt_native.cpp` 整份 include 进去，量到的就是产物里那份代码。编译要 JDK 的 `include` 与本仓库的 `src/main/native/win32`（Linux 与 macOS 用 `posix`）
+
+```
+zig c++ -O3 -std=c++17 -I<JDK>/include -Isrc/main/native/win32 tools/native/benchmark.cpp -o benchmark
+```
+
+它和运行时自检共用 `fillKernelProbe` 与 `withinKernelTolerance`，不另抄一份输入与阈值
+
+输出当前 CPU 选中的内核、每个内核在「三轴全开」与「flags 为 0」两种输入下与标量的最大绝对误差、单个大块顶点的吞吐，以及按线上形状（712 个 24 顶点 piece 各调一次）计的每帧耗时。piece 那组才是能外推到游戏里的数字，只跑大块会把广播与逐 piece 调用开销摊掉，收益偏乐观
+
+**不要把测量数字写进 README**，不同机器与不同编译器版本差距很大
+
 构建固定走 Zig，`installZig` 任务会自动下载到 Gradle 用户目录的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`），之后不再重复下载，不需要系统里预装编译器
 
 工具链与它的缓存（`~/.gradle/ddt-zig-cache/`）都不放工程目录：工程目录带 DSH 沙盒留下的目录权限项，zig 在那儿建编译临时目录会被拒，报 `cache: manifest_create AccessDenied`，同一份二进制搬到用户目录下就正常，与 Zig 版本无关
@@ -139,11 +178,13 @@ jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeMesh` 按 `os.n
 
 ### ABI 协议
 
-Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 2
+Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 3
 
 native 导出四个只读常量：`nativeAbiVersion` `nativeVertexFloats` `nativeMatrixFloats` `nativeNormalFloats`
 
-加载后先比对这四项，再跑一个最小用例：建一个两条顶点的网格，用单位矩阵变换一次，逐 float 比对输入输出
+3 起多一个 `nativeKernelName`，返回实际选中的变换内核名，只用于日志，调用时顺带触发内核自检
+
+加载后先比对这四个常量，再跑一个最小用例：建一个两条顶点的网格，用单位矩阵变换一次，逐 float 比对输入输出。最小用例断言的是逐位相等，所以 AVX2 的 FMA 舍入差异不会影响探针
 
 任何 JNI 函数签名、参数含义、顶点布局、piece 布局或返回值语义变化都要同时改两处版本号
 

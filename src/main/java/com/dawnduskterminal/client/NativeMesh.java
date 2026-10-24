@@ -45,8 +45,9 @@ public final class NativeMesh {
      * 构建脚本会校验它和 gradle.properties 的 ddt_native_abi_version
      *
      * <p>2 起 {@link #transform} 的矩阵 法线 piece id 从 Java 数组改成直接缓冲区
+     * <p>3 起多一个 {@code nativeKernelName} 导出 用来记录实际选中的 SIMD 内核
      */
-    public static final int ABI_VERSION = 2;
+    public static final int ABI_VERSION = 3;
 
     /** 每个顶点 8 个 float x y z nx ny nz u v */
     public static final int VERTEX_FLOATS = 8;
@@ -73,6 +74,7 @@ public final class NativeMesh {
 
     private static volatile boolean ready;
     private static volatile Failure failure;
+    private static volatile String kernel = "";
     private static long sharedPool;
 
     static {
@@ -90,6 +92,16 @@ public final class NativeMesh {
 
     public static boolean isAvailable() {
         return ready;
+    }
+
+    /**
+     * 实际选中的顶点变换内核 avx2+fma sse2 neon scalar 之一 不可用时返回空串
+     *
+     * <p>加载期由 native 探测一次 CPU 能力并按结果选路
+     * 这里只是把结果读出来 给日志和排查用
+     */
+    public static String kernelName() {
+        return kernel;
     }
 
     /**
@@ -180,9 +192,11 @@ public final class NativeMesh {
                 return;
             }
 
+            kernel = queryKernelName();
             ready = true;
             DawnDuskTerminal.LOGGER.info(
-                "DawnDuskTerminal native mesh kernel loaded from {} (abi {})", resource, ABI_VERSION);
+                "DawnDuskTerminal native mesh kernel loaded from {} (abi {}, kernel {})",
+                resource, ABI_VERSION, kernel);
         } catch (Throwable throwable) {
             removeMarker(marker);
             fail(Stage.LOAD, "准备 native 网格内核 " + resource + " 失败", throwable);
@@ -311,6 +325,20 @@ public final class NativeMesh {
         } catch (Throwable throwable) {
             fail(Stage.ABI, "读取 native ABI 失败", throwable);
             return false;
+        }
+    }
+
+    /**
+     * 内核名只是诊断信息 读不到不影响 native 可用性
+     */
+    private static String queryKernelName() {
+        try {
+            String name = nativeKernelName();
+            return name == null || name.isBlank() ? "unknown" : name;
+        } catch (Throwable throwable) {
+            DawnDuskTerminal.LOGGER.warn(
+                "DawnDuskTerminal 读取 native 内核名失败: {}", throwable.toString());
+            return "unknown";
         }
     }
 
@@ -647,6 +675,9 @@ public final class NativeMesh {
     private static native int nativeMatrixFloats();
 
     private static native int nativeNormalFloats();
+
+    /** 返回实际选中的变换内核名 调用它会触发一次内核自检 */
+    private static native String nativeKernelName();
 
     private static native long nativeCreatePool(int threads);
 

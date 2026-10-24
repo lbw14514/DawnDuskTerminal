@@ -12,6 +12,16 @@
 #include <utility>
 #include <vector>
 
+// 变换内核的 SIMD 实现按架构编译 x86-64 的 SSE2 与 AVX2+FMA 走 target 属性
+// aarch64 的 NEON 是基线 直接开
+#if defined(__x86_64__) || defined(_M_X64)
+#define DDT_ARCH_X86_64 1
+#include <immintrin.h>
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define DDT_ARCH_AARCH64 1
+#include <arm_neon.h>
+#endif
+
 // Java 侧 NativeMesh.ABI_VERSION 必须与这里一致
 // 构建脚本用 -DDDT_NATIVE_ABI_VERSION=<gradle.properties> 覆盖 默认值只用于手工编译
 #ifndef DDT_NATIVE_ABI_VERSION
@@ -69,6 +79,623 @@ struct Mesh {
 constexpr int kFlipX = 1;
 constexpr int kFlipY = 2;
 constexpr int kFlipZ = 4;
+
+// 顶点变换内核
+//
+// 同一段变换有四种写法 标量基线 x86-64 的 SSE2 与 AVX2+FMA aarch64 的 NEON
+// 顶点是 AoS 布局 内核先把若干个顶点转置成按通道排列的向量 算完再转回去
+// 所以一次能同时算 4 个（SSE2 / NEON）或 8 个（AVX2）顶点
+//
+// 四种写法在同一组输入上必须给出相同结果 只允许 FMA 带来的 1ulp 级差异
+// 启动时按 CPU 能力选一次 存成函数指针 之后每个 piece 都走选中的内核
+using PieceKernel = void (*)(const Vertex* vertices, int count, const float* matrix,
+                             const float* normalMatrix, int flags, float* out);
+
+void transformScalar(const Vertex* vertices, int count, const float* matrix,
+                     const float* normalMatrix, int flags, float* out) {
+    const bool flipX = (flags & kFlipX) != 0;
+    const bool flipY = (flags & kFlipY) != 0;
+    const bool flipZ = (flags & kFlipZ) != 0;
+
+    for (int i = 0; i < count; ++i) {
+        const Vertex& vertex = vertices[i];
+
+        const float x = vertex.x;
+        const float y = vertex.y;
+        const float z = vertex.z;
+
+        const float tx = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
+        const float ty = matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13];
+        const float tz = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
+
+        float nx = normalMatrix[0] * vertex.nx + normalMatrix[3] * vertex.ny + normalMatrix[6] * vertex.nz;
+        float ny = normalMatrix[1] * vertex.nx + normalMatrix[4] * vertex.ny + normalMatrix[7] * vertex.nz;
+        float nz = normalMatrix[2] * vertex.nx + normalMatrix[5] * vertex.ny + normalMatrix[8] * vertex.nz;
+
+        if (flipX && nx < 0.0f) {
+            nx = -nx;
+        }
+        if (flipY && ny < 0.0f) {
+            ny = -ny;
+        }
+        if (flipZ && nz < 0.0f) {
+            nz = -nz;
+        }
+
+        float* target = out + static_cast<std::size_t>(i) * kVertexFloats;
+        target[0] = tx;
+        target[1] = ty;
+        target[2] = tz;
+        target[3] = nx;
+        target[4] = ny;
+        target[5] = nz;
+        target[6] = vertex.u;
+        target[7] = vertex.v;
+    }
+}
+
+#if defined(DDT_ARCH_X86_64)
+
+// 4x4 转置 对合 输入是 4 行（每行 4 个 float）输出是 4 列
+static inline void transpose4x4(const __m128& a0, const __m128& a1,
+                                const __m128& a2, const __m128& a3,
+                                __m128& c0, __m128& c1, __m128& c2, __m128& c3) {
+    const __m128 t0 = _mm_unpacklo_ps(a0, a1);
+    const __m128 t1 = _mm_unpackhi_ps(a0, a1);
+    const __m128 t2 = _mm_unpacklo_ps(a2, a3);
+    const __m128 t3 = _mm_unpackhi_ps(a2, a3);
+    c0 = _mm_movelh_ps(t0, t2);
+    c1 = _mm_movehl_ps(t2, t0);
+    c2 = _mm_movelh_ps(t1, t3);
+    c3 = _mm_movehl_ps(t3, t1);
+}
+
+__attribute__((target("sse2")))
+void transformSse2(const Vertex* vertices, int count, const float* matrix,
+                   const float* normalMatrix, int flags, float* out) {
+    const __m128 m0 = _mm_set1_ps(matrix[0]);
+    const __m128 m4 = _mm_set1_ps(matrix[4]);
+    const __m128 m8 = _mm_set1_ps(matrix[8]);
+    const __m128 m12 = _mm_set1_ps(matrix[12]);
+    const __m128 m1 = _mm_set1_ps(matrix[1]);
+    const __m128 m5 = _mm_set1_ps(matrix[5]);
+    const __m128 m9 = _mm_set1_ps(matrix[9]);
+    const __m128 m13 = _mm_set1_ps(matrix[13]);
+    const __m128 m2 = _mm_set1_ps(matrix[2]);
+    const __m128 m6 = _mm_set1_ps(matrix[6]);
+    const __m128 m10 = _mm_set1_ps(matrix[10]);
+    const __m128 m14 = _mm_set1_ps(matrix[14]);
+
+    const __m128 n0 = _mm_set1_ps(normalMatrix[0]);
+    const __m128 n1 = _mm_set1_ps(normalMatrix[1]);
+    const __m128 n2 = _mm_set1_ps(normalMatrix[2]);
+    const __m128 n3 = _mm_set1_ps(normalMatrix[3]);
+    const __m128 n4 = _mm_set1_ps(normalMatrix[4]);
+    const __m128 n5 = _mm_set1_ps(normalMatrix[5]);
+    const __m128 n6 = _mm_set1_ps(normalMatrix[6]);
+    const __m128 n7 = _mm_set1_ps(normalMatrix[7]);
+    const __m128 n8 = _mm_set1_ps(normalMatrix[8]);
+
+    const __m128 zero = _mm_setzero_ps();
+    // 只翻符号位 与标量的 -x 逐位一致 -0 与 NaN 不会被翻
+    const __m128 signBit = _mm_castsi128_ps(_mm_set1_epi32(static_cast<int>(0x80000000u)));
+    const __m128 flipX = (flags & kFlipX) != 0 ? signBit : zero;
+    const __m128 flipY = (flags & kFlipY) != 0 ? signBit : zero;
+    const __m128 flipZ = (flags & kFlipZ) != 0 ? signBit : zero;
+    // 正常立方体的 flags 是 0 这时不必白做 compare/and/xor 由编译器把这个分支提到循环外
+    const bool flipAny = flags != 0;
+
+    const float* source = reinterpret_cast<const float*>(vertices);
+    int i = 0;
+    for (; i + 4 <= count; i += 4) {
+        const float* p = source + static_cast<std::size_t>(i) * kVertexFloats;
+        const __m128 r0 = _mm_loadu_ps(p + 0);
+        const __m128 r1 = _mm_loadu_ps(p + 4);
+        const __m128 r2 = _mm_loadu_ps(p + 8);
+        const __m128 r3 = _mm_loadu_ps(p + 12);
+        const __m128 r4 = _mm_loadu_ps(p + 16);
+        const __m128 r5 = _mm_loadu_ps(p + 20);
+        const __m128 r6 = _mm_loadu_ps(p + 24);
+        const __m128 r7 = _mm_loadu_ps(p + 28);
+
+        __m128 x, y, z, nx, ny, nz, u, v;
+        transpose4x4(r0, r2, r4, r6, x, y, z, nx);
+        transpose4x4(r1, r3, r5, r7, ny, nz, u, v);
+
+        __m128 tx = _mm_mul_ps(m0, x);
+        tx = _mm_add_ps(tx, _mm_mul_ps(m4, y));
+        tx = _mm_add_ps(tx, _mm_mul_ps(m8, z));
+        tx = _mm_add_ps(tx, m12);
+
+        __m128 ty = _mm_mul_ps(m1, x);
+        ty = _mm_add_ps(ty, _mm_mul_ps(m5, y));
+        ty = _mm_add_ps(ty, _mm_mul_ps(m9, z));
+        ty = _mm_add_ps(ty, m13);
+
+        __m128 tz = _mm_mul_ps(m2, x);
+        tz = _mm_add_ps(tz, _mm_mul_ps(m6, y));
+        tz = _mm_add_ps(tz, _mm_mul_ps(m10, z));
+        tz = _mm_add_ps(tz, m14);
+
+        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
+        __m128 onx = _mm_mul_ps(n0, nx);
+        onx = _mm_add_ps(onx, _mm_mul_ps(n3, ny));
+        onx = _mm_add_ps(onx, _mm_mul_ps(n6, nz));
+
+        __m128 ony = _mm_mul_ps(n1, nx);
+        ony = _mm_add_ps(ony, _mm_mul_ps(n4, ny));
+        ony = _mm_add_ps(ony, _mm_mul_ps(n7, nz));
+
+        __m128 onz = _mm_mul_ps(n2, nx);
+        onz = _mm_add_ps(onz, _mm_mul_ps(n5, ny));
+        onz = _mm_add_ps(onz, _mm_mul_ps(n8, nz));
+
+        if (flipAny) {
+            onx = _mm_xor_ps(onx, _mm_and_ps(flipX, _mm_cmplt_ps(onx, zero)));
+            ony = _mm_xor_ps(ony, _mm_and_ps(flipY, _mm_cmplt_ps(ony, zero)));
+            onz = _mm_xor_ps(onz, _mm_and_ps(flipZ, _mm_cmplt_ps(onz, zero)));
+        }
+
+        __m128 o0, o1, o2, o3, o4, o5, o6, o7;
+        transpose4x4(tx, ty, tz, onx, o0, o1, o2, o3);
+        transpose4x4(ony, onz, u, v, o4, o5, o6, o7);
+
+        float* target = out + static_cast<std::size_t>(i) * kVertexFloats;
+        _mm_storeu_ps(target + 0, o0);
+        _mm_storeu_ps(target + 4, o4);
+        _mm_storeu_ps(target + 8, o1);
+        _mm_storeu_ps(target + 12, o5);
+        _mm_storeu_ps(target + 16, o2);
+        _mm_storeu_ps(target + 20, o6);
+        _mm_storeu_ps(target + 24, o3);
+        _mm_storeu_ps(target + 28, o7);
+    }
+    if (i < count) {
+        transformScalar(vertices + i, count - i, matrix, normalMatrix, flags,
+                        out + static_cast<std::size_t>(i) * kVertexFloats);
+    }
+}
+
+// 8x8 转置 8 个 256 位寄存器 每个是一行（一个顶点的 8 个 float）
+__attribute__((target("avx2")))
+static inline void transpose8x8(__m256& r0, __m256& r1, __m256& r2, __m256& r3,
+                                __m256& r4, __m256& r5, __m256& r6, __m256& r7) {
+    const __m256 t0 = _mm256_unpacklo_ps(r0, r1);
+    const __m256 t1 = _mm256_unpackhi_ps(r0, r1);
+    const __m256 t2 = _mm256_unpacklo_ps(r2, r3);
+    const __m256 t3 = _mm256_unpackhi_ps(r2, r3);
+    const __m256 t4 = _mm256_unpacklo_ps(r4, r5);
+    const __m256 t5 = _mm256_unpackhi_ps(r4, r5);
+    const __m256 t6 = _mm256_unpacklo_ps(r6, r7);
+    const __m256 t7 = _mm256_unpackhi_ps(r6, r7);
+
+    const __m256 s0 = _mm256_shuffle_ps(t0, t2, _MM_SHUFFLE(1, 0, 1, 0));
+    const __m256 s1 = _mm256_shuffle_ps(t0, t2, _MM_SHUFFLE(3, 2, 3, 2));
+    const __m256 s2 = _mm256_shuffle_ps(t1, t3, _MM_SHUFFLE(1, 0, 1, 0));
+    const __m256 s3 = _mm256_shuffle_ps(t1, t3, _MM_SHUFFLE(3, 2, 3, 2));
+    const __m256 s4 = _mm256_shuffle_ps(t4, t6, _MM_SHUFFLE(1, 0, 1, 0));
+    const __m256 s5 = _mm256_shuffle_ps(t4, t6, _MM_SHUFFLE(3, 2, 3, 2));
+    const __m256 s6 = _mm256_shuffle_ps(t5, t7, _MM_SHUFFLE(1, 0, 1, 0));
+    const __m256 s7 = _mm256_shuffle_ps(t5, t7, _MM_SHUFFLE(3, 2, 3, 2));
+
+    r0 = _mm256_permute2f128_ps(s0, s4, 0x20);
+    r1 = _mm256_permute2f128_ps(s1, s5, 0x20);
+    r2 = _mm256_permute2f128_ps(s2, s6, 0x20);
+    r3 = _mm256_permute2f128_ps(s3, s7, 0x20);
+    r4 = _mm256_permute2f128_ps(s0, s4, 0x31);
+    r5 = _mm256_permute2f128_ps(s1, s5, 0x31);
+    r6 = _mm256_permute2f128_ps(s2, s6, 0x31);
+    r7 = _mm256_permute2f128_ps(s3, s7, 0x31);
+}
+
+__attribute__((target("avx2,fma")))
+void transformAvx2(const Vertex* vertices, int count, const float* matrix,
+                   const float* normalMatrix, int flags, float* out) {
+    const __m256 m0 = _mm256_set1_ps(matrix[0]);
+    const __m256 m4 = _mm256_set1_ps(matrix[4]);
+    const __m256 m8 = _mm256_set1_ps(matrix[8]);
+    const __m256 m12 = _mm256_set1_ps(matrix[12]);
+    const __m256 m1 = _mm256_set1_ps(matrix[1]);
+    const __m256 m5 = _mm256_set1_ps(matrix[5]);
+    const __m256 m9 = _mm256_set1_ps(matrix[9]);
+    const __m256 m13 = _mm256_set1_ps(matrix[13]);
+    const __m256 m2 = _mm256_set1_ps(matrix[2]);
+    const __m256 m6 = _mm256_set1_ps(matrix[6]);
+    const __m256 m10 = _mm256_set1_ps(matrix[10]);
+    const __m256 m14 = _mm256_set1_ps(matrix[14]);
+
+    const __m256 n0 = _mm256_set1_ps(normalMatrix[0]);
+    const __m256 n1 = _mm256_set1_ps(normalMatrix[1]);
+    const __m256 n2 = _mm256_set1_ps(normalMatrix[2]);
+    const __m256 n3 = _mm256_set1_ps(normalMatrix[3]);
+    const __m256 n4 = _mm256_set1_ps(normalMatrix[4]);
+    const __m256 n5 = _mm256_set1_ps(normalMatrix[5]);
+    const __m256 n6 = _mm256_set1_ps(normalMatrix[6]);
+    const __m256 n7 = _mm256_set1_ps(normalMatrix[7]);
+    const __m256 n8 = _mm256_set1_ps(normalMatrix[8]);
+
+    const __m256 zero = _mm256_setzero_ps();
+    const __m256 signBit = _mm256_castsi256_ps(_mm256_set1_epi32(static_cast<int>(0x80000000u)));
+    const __m256 flipX = (flags & kFlipX) != 0 ? signBit : zero;
+    const __m256 flipY = (flags & kFlipY) != 0 ? signBit : zero;
+    const __m256 flipZ = (flags & kFlipZ) != 0 ? signBit : zero;
+    // 正常立方体的 flags 是 0 这时不必白做 compare/and/xor 由编译器把这个分支提到循环外
+    const bool flipAny = flags != 0;
+
+    const float* source = reinterpret_cast<const float*>(vertices);
+    int i = 0;
+    for (; i + 8 <= count; i += 8) {
+        const float* p = source + static_cast<std::size_t>(i) * kVertexFloats;
+        __m256 r0 = _mm256_loadu_ps(p + 0);
+        __m256 r1 = _mm256_loadu_ps(p + 8);
+        __m256 r2 = _mm256_loadu_ps(p + 16);
+        __m256 r3 = _mm256_loadu_ps(p + 24);
+        __m256 r4 = _mm256_loadu_ps(p + 32);
+        __m256 r5 = _mm256_loadu_ps(p + 40);
+        __m256 r6 = _mm256_loadu_ps(p + 48);
+        __m256 r7 = _mm256_loadu_ps(p + 56);
+        // r0 = x r1 = y r2 = z r3 = nx r4 = ny r5 = nz r6 = u r7 = v
+        transpose8x8(r0, r1, r2, r3, r4, r5, r6, r7);
+
+        const __m256 x = r0;
+        const __m256 y = r1;
+        const __m256 z = r2;
+        const __m256 u = r6;
+        const __m256 v = r7;
+
+        __m256 tx = _mm256_mul_ps(m0, x);
+        tx = _mm256_fmadd_ps(m4, y, tx);
+        tx = _mm256_fmadd_ps(m8, z, tx);
+        tx = _mm256_add_ps(tx, m12);
+
+        __m256 ty = _mm256_mul_ps(m1, x);
+        ty = _mm256_fmadd_ps(m5, y, ty);
+        ty = _mm256_fmadd_ps(m9, z, ty);
+        ty = _mm256_add_ps(ty, m13);
+
+        __m256 tz = _mm256_mul_ps(m2, x);
+        tz = _mm256_fmadd_ps(m6, y, tz);
+        tz = _mm256_fmadd_ps(m10, z, tz);
+        tz = _mm256_add_ps(tz, m14);
+
+        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
+        __m256 onx = _mm256_mul_ps(n0, r3);
+        onx = _mm256_fmadd_ps(n3, r4, onx);
+        onx = _mm256_fmadd_ps(n6, r5, onx);
+
+        __m256 ony = _mm256_mul_ps(n1, r3);
+        ony = _mm256_fmadd_ps(n4, r4, ony);
+        ony = _mm256_fmadd_ps(n7, r5, ony);
+
+        __m256 onz = _mm256_mul_ps(n2, r3);
+        onz = _mm256_fmadd_ps(n5, r4, onz);
+        onz = _mm256_fmadd_ps(n8, r5, onz);
+
+        if (flipAny) {
+            onx = _mm256_xor_ps(onx, _mm256_and_ps(flipX, _mm256_cmp_ps(onx, zero, _CMP_LT_OQ)));
+            ony = _mm256_xor_ps(ony, _mm256_and_ps(flipY, _mm256_cmp_ps(ony, zero, _CMP_LT_OQ)));
+            onz = _mm256_xor_ps(onz, _mm256_and_ps(flipZ, _mm256_cmp_ps(onz, zero, _CMP_LT_OQ)));
+        }
+
+        r0 = tx;
+        r1 = ty;
+        r2 = tz;
+        r3 = onx;
+        r4 = ony;
+        r5 = onz;
+        r6 = u;
+        r7 = v;
+        transpose8x8(r0, r1, r2, r3, r4, r5, r6, r7);
+
+        float* target = out + static_cast<std::size_t>(i) * kVertexFloats;
+        _mm256_storeu_ps(target + 0, r0);
+        _mm256_storeu_ps(target + 8, r1);
+        _mm256_storeu_ps(target + 16, r2);
+        _mm256_storeu_ps(target + 24, r3);
+        _mm256_storeu_ps(target + 32, r4);
+        _mm256_storeu_ps(target + 40, r5);
+        _mm256_storeu_ps(target + 48, r6);
+        _mm256_storeu_ps(target + 56, r7);
+    }
+    if (i < count) {
+        transformScalar(vertices + i, count - i, matrix, normalMatrix, flags,
+                        out + static_cast<std::size_t>(i) * kVertexFloats);
+    }
+    // 回到只含 SSE 的 JVM 代码前清掉 ymm 上半 避免 AVX-SSE 切换惩罚
+    _mm256_zeroupper();
+}
+
+struct CpuFeatures {
+    bool sse2 = false;
+    bool avx2 = false;
+    bool fma = false;
+};
+
+static void readCpuid(unsigned leaf, unsigned subleaf, unsigned out[4]) {
+#if defined(_MSC_VER)
+    int registers[4];
+    __cpuidex(registers, static_cast<int>(leaf), static_cast<int>(subleaf));
+    for (int i = 0; i < 4; ++i) {
+        out[i] = static_cast<unsigned>(registers[i]);
+    }
+#else
+    __asm__ __volatile__("cpuid"
+                         : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3])
+                         : "a"(leaf), "c"(subleaf));
+#endif
+}
+
+// 只在 OSXSAVE 已置位时调用 否则 xgetbv 本身就会 #UD
+static unsigned long long readXcr0() {
+#if defined(_MSC_VER)
+    return _xgetbv(0);
+#else
+    unsigned low;
+    unsigned high;
+    __asm__ __volatile__("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+    return (static_cast<unsigned long long>(high) << 32) | low;
+#endif
+}
+
+static CpuFeatures cpuFeatures() {
+    CpuFeatures features;
+    unsigned registers[4] = {0, 0, 0, 0};
+
+    readCpuid(0, 0, registers);
+    const unsigned maxLeaf = registers[0];
+    if (maxLeaf < 1) {
+        return features;
+    }
+
+    readCpuid(1, 0, registers);
+    features.sse2 = (registers[3] & (1u << 26)) != 0;
+    const bool osxsave = (registers[2] & (1u << 27)) != 0;
+    const bool avx = (registers[2] & (1u << 28)) != 0;
+    const bool fma = (registers[2] & (1u << 12)) != 0;
+    // XCR0 的 SSE 与 YMM 两位都置位才说明内核会保存 ymm 状态
+    if (!osxsave || !avx || (readXcr0() & 0x6u) != 0x6u) {
+        return features;
+    }
+    features.fma = fma;
+
+    if (maxLeaf < 7) {
+        return features;
+    }
+    readCpuid(7, 0, registers);
+    features.avx2 = (registers[1] & (1u << 5)) != 0;
+    return features;
+}
+
+#endif // DDT_ARCH_X86_64
+
+#if defined(DDT_ARCH_AARCH64)
+
+// 4x4 转置 对合 aarch64 基线就带 NEON 不需要运行期判断
+static inline void transpose4x4Neon(const float32x4_t& a0, const float32x4_t& a1,
+                                    const float32x4_t& a2, const float32x4_t& a3,
+                                    float32x4_t& c0, float32x4_t& c1,
+                                    float32x4_t& c2, float32x4_t& c3) {
+    const float32x4x2_t t0 = vtrnq_f32(a0, a1);
+    const float32x4x2_t t1 = vtrnq_f32(a2, a3);
+    c0 = vcombine_f32(vget_low_f32(t0.val[0]), vget_low_f32(t1.val[0]));
+    c1 = vcombine_f32(vget_low_f32(t0.val[1]), vget_low_f32(t1.val[1]));
+    c2 = vcombine_f32(vget_high_f32(t0.val[0]), vget_high_f32(t1.val[0]));
+    c3 = vcombine_f32(vget_high_f32(t0.val[1]), vget_high_f32(t1.val[1]));
+}
+
+void transformNeon(const Vertex* vertices, int count, const float* matrix,
+                   const float* normalMatrix, int flags, float* out) {
+    const float32x4_t m0 = vdupq_n_f32(matrix[0]);
+    const float32x4_t m4 = vdupq_n_f32(matrix[4]);
+    const float32x4_t m8 = vdupq_n_f32(matrix[8]);
+    const float32x4_t m12 = vdupq_n_f32(matrix[12]);
+    const float32x4_t m1 = vdupq_n_f32(matrix[1]);
+    const float32x4_t m5 = vdupq_n_f32(matrix[5]);
+    const float32x4_t m9 = vdupq_n_f32(matrix[9]);
+    const float32x4_t m13 = vdupq_n_f32(matrix[13]);
+    const float32x4_t m2 = vdupq_n_f32(matrix[2]);
+    const float32x4_t m6 = vdupq_n_f32(matrix[6]);
+    const float32x4_t m10 = vdupq_n_f32(matrix[10]);
+    const float32x4_t m14 = vdupq_n_f32(matrix[14]);
+
+    const float32x4_t n0 = vdupq_n_f32(normalMatrix[0]);
+    const float32x4_t n1 = vdupq_n_f32(normalMatrix[1]);
+    const float32x4_t n2 = vdupq_n_f32(normalMatrix[2]);
+    const float32x4_t n3 = vdupq_n_f32(normalMatrix[3]);
+    const float32x4_t n4 = vdupq_n_f32(normalMatrix[4]);
+    const float32x4_t n5 = vdupq_n_f32(normalMatrix[5]);
+    const float32x4_t n6 = vdupq_n_f32(normalMatrix[6]);
+    const float32x4_t n7 = vdupq_n_f32(normalMatrix[7]);
+    const float32x4_t n8 = vdupq_n_f32(normalMatrix[8]);
+
+    const float32x4_t zero = vdupq_n_f32(0.0f);
+    const uint32x4_t signBit = vdupq_n_u32(0x80000000u);
+    const uint32x4_t noFlip = vdupq_n_u32(0);
+    const uint32x4_t flipX = (flags & kFlipX) != 0 ? signBit : noFlip;
+    const uint32x4_t flipY = (flags & kFlipY) != 0 ? signBit : noFlip;
+    const uint32x4_t flipZ = (flags & kFlipZ) != 0 ? signBit : noFlip;
+    // 正常立方体的 flags 是 0 这时不必白做比较与异或 由编译器把这个分支提到循环外
+    const bool flipAny = flags != 0;
+
+    const float* source = reinterpret_cast<const float*>(vertices);
+    int i = 0;
+    for (; i + 4 <= count; i += 4) {
+        const float* p = source + static_cast<std::size_t>(i) * kVertexFloats;
+        const float32x4_t r0 = vld1q_f32(p + 0);
+        const float32x4_t r1 = vld1q_f32(p + 4);
+        const float32x4_t r2 = vld1q_f32(p + 8);
+        const float32x4_t r3 = vld1q_f32(p + 12);
+        const float32x4_t r4 = vld1q_f32(p + 16);
+        const float32x4_t r5 = vld1q_f32(p + 20);
+        const float32x4_t r6 = vld1q_f32(p + 24);
+        const float32x4_t r7 = vld1q_f32(p + 28);
+
+        float32x4_t x, y, z, nx, ny, nz, u, v;
+        transpose4x4Neon(r0, r2, r4, r6, x, y, z, nx);
+        transpose4x4Neon(r1, r3, r5, r7, ny, nz, u, v);
+
+        float32x4_t tx = vfmaq_f32(vmulq_f32(m0, x), m4, y);
+        tx = vfmaq_f32(tx, m8, z);
+        tx = vaddq_f32(tx, m12);
+
+        float32x4_t ty = vfmaq_f32(vmulq_f32(m1, x), m5, y);
+        ty = vfmaq_f32(ty, m9, z);
+        ty = vaddq_f32(ty, m13);
+
+        float32x4_t tz = vfmaq_f32(vmulq_f32(m2, x), m6, y);
+        tz = vfmaq_f32(tz, m10, z);
+        tz = vaddq_f32(tz, m14);
+
+        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
+        float32x4_t onx = vfmaq_f32(vmulq_f32(n0, nx), n3, ny);
+        onx = vfmaq_f32(onx, n6, nz);
+
+        float32x4_t ony = vfmaq_f32(vmulq_f32(n1, nx), n4, ny);
+        ony = vfmaq_f32(ony, n7, nz);
+
+        float32x4_t onz = vfmaq_f32(vmulq_f32(n2, nx), n5, ny);
+        onz = vfmaq_f32(onz, n8, nz);
+
+        if (flipAny) {
+            onx = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(onx),
+                                                  vandq_u32(vcltq_f32(onx, zero), flipX)));
+            ony = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(ony),
+                                                  vandq_u32(vcltq_f32(ony, zero), flipY)));
+            onz = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(onz),
+                                                  vandq_u32(vcltq_f32(onz, zero), flipZ)));
+        }
+
+        float32x4_t o0, o1, o2, o3, o4, o5, o6, o7;
+        transpose4x4Neon(tx, ty, tz, onx, o0, o1, o2, o3);
+        transpose4x4Neon(ony, onz, u, v, o4, o5, o6, o7);
+
+        float* target = out + static_cast<std::size_t>(i) * kVertexFloats;
+        vst1q_f32(target + 0, o0);
+        vst1q_f32(target + 4, o4);
+        vst1q_f32(target + 8, o1);
+        vst1q_f32(target + 12, o5);
+        vst1q_f32(target + 16, o2);
+        vst1q_f32(target + 20, o6);
+        vst1q_f32(target + 24, o3);
+        vst1q_f32(target + 28, o7);
+    }
+    if (i < count) {
+        transformScalar(vertices + i, count - i, matrix, normalMatrix, flags,
+                        out + static_cast<std::size_t>(i) * kVertexFloats);
+    }
+}
+#endif
+
+// 自检与 tools/native/benchmark.cpp 共用的固定输入与误差判定
+// 同一个下标永远得到同一个顶点 两个调用方看到的是同一组数据 不会各抄一份再漂移
+void fillKernelProbe(Vertex* vertices, int count, float* matrix, float* normal) {
+    for (int i = 0; i < count; ++i) {
+        std::uint32_t state = 0x9E3779B9u + static_cast<std::uint32_t>(i) * 2654435761u;
+        float values[kVertexFloats];
+        for (float& value : values) {
+            state = state * 1664525u + 1013904223u;
+            value = static_cast<float>((state >> 9) & 0x3FFFu) / 512.0f - 16.0f;
+        }
+        vertices[i] = Vertex{values[0], values[1], values[2], values[3],
+                             values[4], values[5], values[6], values[7]};
+    }
+    // 列主序 旋转加非均匀缩放加平移 法线矩阵取左上角 3x3
+    static const float kMatrix[kMatrixFloats] = {
+        0.8f, 0.36f, -0.48f, 0.0f,
+        -0.6f, 0.48f, -0.64f, 0.0f,
+        0.0f, 0.8f, 0.6f, 0.0f,
+        3.0f, -2.0f, 5.0f, 1.0f,
+    };
+    static const float kNormal[kNormalFloats] = {
+        0.8f, 0.36f, -0.48f,
+        -0.6f, 0.48f, -0.64f,
+        0.0f, 0.8f, 0.6f,
+    };
+    std::memcpy(matrix, kMatrix, sizeof(kMatrix));
+    std::memcpy(normal, kNormal, sizeof(kNormal));
+}
+
+// 阈值随数值量级放大 写成 !(<=) 让 NaN 也判失败
+bool withinKernelTolerance(float expected, float received) {
+    const float difference = expected > received ? expected - received : received - expected;
+    float magnitude = 1.0f;
+    const float absExpected = expected < 0.0f ? -expected : expected;
+    const float absReceived = received < 0.0f ? -received : received;
+    if (absExpected > magnitude) {
+        magnitude = absExpected;
+    }
+    if (absReceived > magnitude) {
+        magnitude = absReceived;
+    }
+    return difference <= 1.0e-4f * magnitude;
+}
+
+// 选内核之前先用一组固定输入把候选实现和标量基线比一遍
+// 转置写错 或者编译器在某个 target 上发了不对的指令 都会在这里掉回标量
+// 16 个顶点正好两轮 AVX2 四轮 SSE2 再用 13 个顶点走一遍尾部标量路径
+// 取反标志按 0 与三个单轴各跑一遍 只测单个组合会让写错的轴混过去
+struct KernelProbe {
+    Vertex vertices[16];
+    float matrix[kMatrixFloats];
+    float normal[kNormalFloats];
+};
+
+static const KernelProbe& kernelProbe() {
+    static const KernelProbe probe = [] {
+        KernelProbe data{};
+        fillKernelProbe(data.vertices, 16, data.matrix, data.normal);
+        return data;
+    }();
+    return probe;
+}
+
+static bool kernelAgrees(const PieceKernel candidate) {
+    const KernelProbe& probe = kernelProbe();
+    const int flagsCases[4] = {0, kFlipX, kFlipY, kFlipZ};
+    const int counts[2] = {16, 13};
+    float reference[16 * kVertexFloats];
+    float actual[16 * kVertexFloats];
+    for (const int flags : flagsCases) {
+        for (const int count : counts) {
+            transformScalar(probe.vertices, count, probe.matrix, probe.normal, flags, reference);
+            candidate(probe.vertices, count, probe.matrix, probe.normal, flags, actual);
+            for (int i = 0; i < count * kVertexFloats; ++i) {
+                if (!withinKernelTolerance(reference[i], actual[i])) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+struct KernelSelection {
+    PieceKernel kernel;
+    const char* name;
+};
+
+static KernelSelection chooseKernel() {
+#if defined(DDT_ARCH_X86_64)
+    const CpuFeatures features = cpuFeatures();
+    if (features.avx2 && features.fma && kernelAgrees(transformAvx2)) {
+        return {transformAvx2, "avx2+fma"};
+    }
+    if (features.sse2 && kernelAgrees(transformSse2)) {
+        return {transformSse2, "sse2"};
+    }
+#elif defined(DDT_ARCH_AARCH64)
+    if (kernelAgrees(transformNeon)) {
+        return {transformNeon, "neon"};
+    }
+#endif
+    return {transformScalar, "scalar"};
+}
+
+// 进程内只选一次 static 局部变量的初始化在 C++11 起就是线程安全的
+static const KernelSelection& kernelSelection() {
+    static const KernelSelection selection = chooseKernel();
+    return selection;
+}
 
 /**
  * 句柄表
@@ -169,6 +796,7 @@ public:
         jobPieceIds = pieceIds;
         jobCount = count;
         jobOut = out;
+        jobKernel = kernelSelection().kernel;
         next.store(0, std::memory_order_relaxed);
         invalid.store(false, std::memory_order_relaxed);
         active = static_cast<int>(workers.size());
@@ -197,6 +825,7 @@ private:
             const float* normals = jobNormals;
             const jint* pieceIds = jobPieceIds;
             const int count = jobCount;
+            const PieceKernel kernel = jobKernel;
             float* out = jobOut;
             lock.unlock();
 
@@ -205,7 +834,7 @@ private:
                 for (int index = next.fetch_add(1, std::memory_order_relaxed);
                      index < count;
                      index = next.fetch_add(1, std::memory_order_relaxed)) {
-                    transformPiece(mesh, matrices, normals, pieceIds[index], index, out);
+                    transformPiece(mesh, matrices, normals, pieceIds[index], index, kernel, out);
                 }
             } catch (...) {
                 invalid.store(true, std::memory_order_relaxed);
@@ -219,50 +848,20 @@ private:
     }
 
     void transformPiece(const Mesh* mesh, const float* matrices, const float* normals,
-                        int pieceId, int batchIndex, float* out) {
+                        int pieceId, int batchIndex, PieceKernel kernel, float* out) {
         if (pieceId < 0 || static_cast<std::size_t>(pieceId) >= mesh->pieces.size()) {
             invalid.store(true, std::memory_order_relaxed);
             return;
         }
         const Piece& piece = mesh->pieces[static_cast<std::size_t>(pieceId)];
-        const float* matrix = matrices + static_cast<std::size_t>(batchIndex) * kMatrixFloats;
-        const float* normalMatrix = normals + static_cast<std::size_t>(batchIndex) * kNormalFloats;
-
-        for (int i = 0; i < piece.count; ++i) {
-            const Vertex& vertex = mesh->vertices[static_cast<std::size_t>(piece.offset + i)];
-
-            const float x = vertex.x;
-            const float y = vertex.y;
-            const float z = vertex.z;
-
-            const float tx = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
-            const float ty = matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13];
-            const float tz = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
-
-            float nx = normalMatrix[0] * vertex.nx + normalMatrix[3] * vertex.ny + normalMatrix[6] * vertex.nz;
-            float ny = normalMatrix[1] * vertex.nx + normalMatrix[4] * vertex.ny + normalMatrix[7] * vertex.nz;
-            float nz = normalMatrix[2] * vertex.nx + normalMatrix[5] * vertex.ny + normalMatrix[8] * vertex.nz;
-
-            if (nx < 0.0f && (piece.flags & kFlipX) != 0) {
-                nx = -nx;
-            }
-            if (ny < 0.0f && (piece.flags & kFlipY) != 0) {
-                ny = -ny;
-            }
-            if (nz < 0.0f && (piece.flags & kFlipZ) != 0) {
-                nz = -nz;
-            }
-
-            float* target = out + static_cast<std::size_t>(piece.offset + i) * kVertexFloats;
-            target[0] = tx;
-            target[1] = ty;
-            target[2] = tz;
-            target[3] = nx;
-            target[4] = ny;
-            target[5] = nz;
-            target[6] = vertex.u;
-            target[7] = vertex.v;
+        if (piece.count <= 0) {
+            return;
         }
+        const std::size_t offset = static_cast<std::size_t>(piece.offset);
+        kernel(mesh->vertices.data() + offset, piece.count,
+               matrices + static_cast<std::size_t>(batchIndex) * kMatrixFloats,
+               normals + static_cast<std::size_t>(batchIndex) * kNormalFloats,
+               piece.flags, out + offset * kVertexFloats);
     }
 
     std::vector<std::thread> workers;
@@ -274,6 +873,7 @@ private:
     const float* jobMatrices = nullptr;
     const float* jobNormals = nullptr;
     const jint* jobPieceIds = nullptr;
+    PieceKernel jobKernel = nullptr;
     float* jobOut = nullptr;
     int jobCount = 0;
     std::atomic<int> next{0};
@@ -376,6 +976,21 @@ Java_com_dawnduskterminal_client_NativeMesh_nativeMatrixFloats(JNIEnv*, jclass) 
 JNIEXPORT jint JNICALL
 Java_com_dawnduskterminal_client_NativeMesh_nativeNormalFloats(JNIEnv*, jclass) {
     return ddt::kNormalFloats;
+}
+
+/**
+ * 当前进程实际选中的变换内核名 avx2+fma sse2 neon scalar 之一
+ *
+ * <p>只用于日志与排查 加载期调用一次 顺带触发内核自检
+ * 老库没有这个导出 但 ABI 版本对不上就先被拒了 不会走到这里
+ */
+JNIEXPORT jstring JNICALL
+Java_com_dawnduskterminal_client_NativeMesh_nativeKernelName(JNIEnv* env, jclass) {
+    try {
+        return env->NewStringUTF(ddt::kernelSelection().name);
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 JNIEXPORT jlong JNICALL
