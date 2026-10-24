@@ -201,11 +201,16 @@ public class Experiment051BlockEntity extends BaseContainerBlockEntity implement
         if (manager == this.cachedManager && !itemChanged && !grew && !starved) {
             return;
         }
+        UncraftingPlan previous = this.cachedPlan;
         this.cachedManager = manager;
         this.cachedInput = input.copy();
         this.cachedPlan = UncraftingResolver.resolve(this.level, input);
-        this.cookProgress = 0;
-        this.cookTotal = Math.max(1, this.cachedPlan.cookTime());
+        // 漏斗续料只让数量变大时重扫结果通常还是同一条配方，这时进度必须保留，否则机器永远拆不完
+        // 只有配方本身变了（换了物品、数据包重载、原料不够吃了）才清零进度并重算总时长
+        if (!this.cachedPlan.equals(previous)) {
+            this.cookProgress = 0;
+            this.cookTotal = Math.max(1, this.cachedPlan.cookTime());
+        }
     }
 
     /** 有配方、原料够、并且 3x3 出料格全都放得下 */

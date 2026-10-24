@@ -2,8 +2,10 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.config.DdtConfig;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -11,7 +13,7 @@ import java.nio.FloatBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Locale;
 
 /**
@@ -130,11 +132,26 @@ public final class NativeMesh {
                 fail(Stage.MISSING, "jar 里缺少 native 网格内核 " + resource, null);
                 return;
             }
-            Path directory = Files.createTempDirectory("dawnduskterminal-native");
+            // 不再用临时目录：deleteOnExit 钩子逆序执行 删目录时 dll 还在里面 Windows 上 dll 也被映射着
+            // 结果每次启动都残留一份。改成按平台与模组版本落的稳定缓存目录，同版本直接复用
+            Path directory = nativeCacheDirectory(platform);
+            Files.createDirectories(directory);
             Path file = directory.resolve(platform.library());
-            Files.copy(input, file, StandardCopyOption.REPLACE_EXISTING);
-            file.toFile().deleteOnExit();
-            directory.toFile().deleteOnExit();
+            byte[] library = input.readAllBytes();
+            if (!Files.isRegularFile(file) || Files.size(file) != library.length) {
+                try {
+                    Files.write(file, library,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                } catch (IOException writeFailure) {
+                    if (!Files.isRegularFile(file)) {
+                        throw writeFailure;
+                    }
+                    // 另一个实例正映射着同名 dll 复用它即可 ABI 校验会拦住版本不匹配
+                    DawnDuskTerminal.LOGGER.warn(
+                        "DawnDuskTerminal 无法覆盖 native 缓存 {}，复用已有文件: {}",
+                        file, writeFailure.toString());
+                }
+            }
 
             // 先落标记再碰 native 这样连 System.load 期间的硬崩溃也能在下次启动被识别
             createMarker(marker);
@@ -190,6 +207,27 @@ public final class NativeMesh {
             return x64 ? new Platform("linux-x86_64", "libddt_native.so") : null;
         }
         return null;
+    }
+
+    /** 稳定缓存目录 平台与模组版本各一层 同版本启动直接复用 不随进程退出留下新副本 */
+    private static Path nativeCacheDirectory(Platform platform) {
+        return FMLPaths.CONFIGDIR.get()
+            .resolve("dawnduskterminal")
+            .resolve("native")
+            .resolve(platform.key())
+            .resolve(safeVersion());
+    }
+
+    private static String safeVersion() {
+        String version;
+        try {
+            version = ModList.get().getModContainerById(DawnDuskTerminal.MOD_ID)
+                .map(container -> container.getModInfo().getVersion().toString())
+                .orElse("dev");
+        } catch (Throwable throwable) {
+            version = "dev";
+        }
+        return version.replaceAll("[^A-Za-z0-9._+-]", "_");
     }
 
     /**
@@ -373,6 +411,8 @@ public final class NativeMesh {
                 sharedPool = createPool(Math.min(MAX_THREADS,
                     Math.max(1, Runtime.getRuntime().availableProcessors())));
             } catch (NativeMeshException exception) {
+                // createPool 内部已经 fail 过一次 这里再显式标记 保证后续帧不会每帧重试建池
+                fail(Stage.RUNTIME, "共享 native 线程池创建失败", exception);
                 return 0L;
             }
         }

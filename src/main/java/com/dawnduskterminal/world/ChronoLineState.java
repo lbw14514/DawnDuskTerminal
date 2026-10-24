@@ -10,8 +10,9 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 public final class ChronoLineState extends SavedData {
     private static final String DATA_NAME = "dawnduskterminal_chrono_line";
-    private static ChronoLine serverLine;
-    private static ChronoLine clientLine;
+    // 这两份快照会被 worldgen 工作线程与渲染线程读取 主线程写入 必须 volatile
+    private static volatile ChronoLine serverLine;
+    private static volatile ChronoLine clientLine;
 
     private ChronoLine line;
 
@@ -74,5 +75,10 @@ public final class ChronoLineState extends SavedData {
 
     public static void setClientLine(ChronoLine line) {
         clientLine = line;
+    }
+
+    /** 客户端断开连接时清空 否则进新存档头几帧会拿上一档的线算天光与天色 */
+    public static void resetClientLine() {
+        clientLine = null;
     }
 }

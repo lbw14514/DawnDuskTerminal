@@ -71,6 +71,8 @@ public final class TowerGhastRenderer {
 
         private final NativeMeshBatch nativeBatch = new NativeMeshBatch();
         private NativeGeoMesh nativeMesh;
+        /** 已经确认没有可渲染立方体的模型 不要再每帧重试 build */
+        private BakedGeoModel emptyNativeModel;
 
         private TowerGhastEntityRenderer(EntityRendererProvider.Context context) {
             super(context, new TowerGhastModel());
@@ -200,6 +202,9 @@ public final class TowerGhastRenderer {
             if (this.nativeMesh != null && this.nativeMesh.model() == model) {
                 return this.nativeMesh;
             }
+            if (this.emptyNativeModel == model) {
+                return null;
+            }
             if (this.nativeMesh != null) {
                 this.nativeMesh.close();
                 this.nativeMesh = null;
@@ -211,6 +216,12 @@ public final class TowerGhastRenderer {
                 this.nativeMesh = NativeGeoMesh.build(model);
             } catch (NativeMesh.NativeMeshException failure) {
                 this.nativeMesh = null;
+            } catch (IllegalStateException emptyModel) {
+                // 空模型是模型资源本身的问题 native 没坏 不能让它熔断 也不能让它每帧炸一次
+                this.nativeMesh = null;
+                this.emptyNativeModel = model;
+                DawnDuskTerminal.LOGGER.warn(
+                    "DawnDuskTerminal 高塔恶魂模型没有可渲染的立方体，本次回退 GeckoLib Java 路径");
             }
             return this.nativeMesh;
         }

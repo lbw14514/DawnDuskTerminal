@@ -1,7 +1,6 @@
 package com.dawnduskterminal.portal;
 
 import com.dawnduskterminal.config.DdtConfig;
-import com.dawnduskterminal.progression.BossProgressTracker;
 import com.dawnduskterminal.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;

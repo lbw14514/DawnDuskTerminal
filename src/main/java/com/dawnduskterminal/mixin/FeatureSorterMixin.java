@@ -24,6 +24,7 @@ public class FeatureSorterMixin {
         if (!DdtConfig.tolerateFeatureCycles()) {
             return;
         }
+        // 调色板维度混用原版与模组群系，原版 DFS 会因环直接失败，所以开启时整体换成可容忍环的实现
         callback.setReturnValue(FeatureOrderCompat.buildFeaturesPerStep(biomes, features));
     }
 }

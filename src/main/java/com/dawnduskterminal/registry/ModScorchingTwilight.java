@@ -67,7 +67,7 @@ public final class ModScorchingTwilight {
         "enthu_fluid_bucket",
         () -> new BucketItem(SOURCE.get(), new net.minecraft.world.item.Item.Properties()
             .craftRemainder(Items.BUCKET)
-            .stacksTo(64)
+            .stacksTo(1)
             .rarity(Rarity.UNCOMMON)));
 
     private ModScorchingTwilight() {}

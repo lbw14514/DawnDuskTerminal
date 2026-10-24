@@ -8,6 +8,7 @@ import com.dawnduskterminal.registry.ModMenus;
 import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
+import com.dawnduskterminal.world.ChronoLineState;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -19,17 +20,24 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.world.level.GrassColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 public final class DdtClient {
     private DdtClient() {}
 
     public static void init(IEventBus modBus) {
+        // 只在断开连接时清：换维度仍属同一存档 群系注册表与晨昏线都没变 清了反而会短暂退回兜底值
+        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) -> {
+            ChronoFoliageColors.clearCache();
+            ChronoLineState.resetClientLine();
+        });
         modBus.addListener(DdtClient::onClientSetup);
         modBus.addListener(DdtClient::registerFluidExtensions);
         modBus.addListener(DdtClient::registerBlockColors);

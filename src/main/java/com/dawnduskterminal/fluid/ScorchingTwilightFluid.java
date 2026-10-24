@@ -13,7 +13,6 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
@@ -141,9 +140,13 @@ public abstract class ScorchingTwilightFluid extends FlowingFluid {
         return delay;
     }
 
+    /**
+     * 原版 {@code FlowingFluid} 把这个方法声明成抽象，必须实现。NeoForge 的源生成路径查的是
+     * {@code FluidType.canConvertToSource}，两处都保持 false，不能再出现流体侧读岩浆规则 类型侧写 false 的矛盾
+     */
     @Override
     protected boolean canConvertToSource(Level level) {
-        return level.getGameRules().getBoolean(GameRules.RULE_LAVA_SOURCE_CONVERSION);
+        return false;
     }
 
     @Override

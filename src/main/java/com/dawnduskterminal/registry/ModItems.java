@@ -45,7 +45,7 @@ public final class ModItems {
     public static final DeferredItem<BucketItem> PORTAL_BUCKET = ITEMS.register(
         "portal_bucket",
         () -> new BucketItem(ModFluids.PORTAL_FLUID.get(),
-            new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(64)));
+            new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
 
     public static final DeferredItem<Item> ENCASED_DUST = ITEMS.registerSimpleItem(
         "encased_dust",

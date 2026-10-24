@@ -1,6 +1,7 @@
 package com.dawnduskterminal.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -49,11 +50,13 @@ public final class ChronoFoliageColors {
         if (cached != null) {
             return cached;
         }
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
+        // 取色跑在区块网格重建的工作线程上，主线程随时可能把 level 置空。先取到局部变量再判空与解引用，
+        // 否则判空和解引用之间会撞上 NPE 打断区块编译
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
             return null;
         }
-        ResourceKey<Biome> key = minecraft.level.registryAccess()
+        ResourceKey<Biome> key = level.registryAccess()
             .registryOrThrow(Registries.BIOME)
             .getResourceKey(biome)
             .orElse(null);
@@ -61,6 +64,11 @@ public final class ChronoFoliageColors {
             KEY_CACHE.put(biome, key);
         }
         return key;
+    }
+
+    /** 断开连接时清空 旧世界的 Biome 实例作为 key 会一直留住整张缓存 */
+    public static void clearCache() {
+        KEY_CACHE.clear();
     }
 
     /** 暮色森林的 {@code BiomeColorAlgorithms.enchanted}：按坐标在整个群系上做蓝色渐变 */

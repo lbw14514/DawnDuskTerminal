@@ -75,15 +75,18 @@ public final class PortalTeleporter {
         if (here != null) {
             return here;
         }
+        search:
         for (int ring = 16; ring <= LANDING_SEARCH_RADIUS; ring += 16) {
-            if (loaded.size() > MAX_CHUNK_LOADS) {
-                break;
-            }
             int step = 16;
             for (int dx = -ring; dx <= ring; dx += step) {
                 for (int dz = -ring; dz <= ring; dz += step) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) < ring) {
                         continue;
+                    }
+                    long key = ChunkPos.asLong((baseX + dx) >> 4, (baseZ + dz) >> 4);
+                    // 预算在这里严格检查：已经加载过的列不占新预算，否则一环内会远超上限
+                    if (!loaded.contains(key) && loaded.size() >= MAX_CHUNK_LOADS) {
+                        break search;
                     }
                     Vec3 found = probe(level, loaded, baseX + dx, baseZ + dz, originY);
                     if (found != null) {
@@ -132,9 +135,14 @@ public final class PortalTeleporter {
 
     private static Vec3 buildFallbackPlatform(ServerLevel level, int x, int y, int z) {
         int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        int landed = Mth.clamp(surface + 1, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
+        int floor = Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y);
+        // 自然落点仍受 LANDING_MAX_Y 限制，但兜底平台要落在真实地表之上
+        // 再按 128 夹一次会把人塞进高山内部，然后清出一个洞
+        // 上界只按维度实际建造高度留 5 格净空，防止平台与清空循环越界
+        int ceiling = Math.max(floor, level.getMaxBuildHeight() - 5);
+        int landed = Mth.clamp(surface + 1, floor, ceiling);
         if (landed < LANDING_MIN_Y + 4) {
-            landed = Mth.clamp(y, Math.max(level.getMinBuildHeight() + 4, LANDING_MIN_Y), LANDING_MAX_Y);
+            landed = Mth.clamp(y, floor, ceiling);
         }
         BlockPos center = new BlockPos(x, landed, z);
         int radius = 6;

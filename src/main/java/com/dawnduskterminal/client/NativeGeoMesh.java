@@ -7,6 +7,7 @@ import software.bernie.geckolib.cache.object.GeoCube;
 import software.bernie.geckolib.cache.object.GeoQuad;
 import software.bernie.geckolib.cache.object.GeoVertex;
 
+import java.lang.ref.Cleaner;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -21,24 +22,31 @@ import java.util.Map;
  * 一个渲染器只缓存当前模型的一份摊平结果
  */
 public final class NativeGeoMesh {
+    /**
+     * F3+T 资源重载会把实体渲染器整体换掉 旧实例没人再调 close 只能靠 Cleaner 在不可达时回收 native 句柄
+     * 每次重载约 550KB 不是小数目 而且没有别的兜底
+     */
+    private static final Cleaner CLEANER = Cleaner.create();
+
     private final BakedGeoModel model;
     private final int[] offsets;
     private final int[] counts;
     private final Map<GeoCube, Integer> pieceIds;
     private final int vertexCount;
+    private final Cleanup cleanup;
 
-    private long handle;
     private boolean closed;
 
     private NativeGeoMesh(BakedGeoModel model, long handle,
                           int[] offsets, int[] counts,
                           Map<GeoCube, Integer> pieceIds, int vertexCount) {
         this.model = model;
-        this.handle = handle;
         this.offsets = offsets;
         this.counts = counts;
         this.pieceIds = pieceIds;
         this.vertexCount = vertexCount;
+        this.cleanup = new Cleanup(handle);
+        CLEANER.register(this, this.cleanup);
     }
 
     /**
@@ -140,7 +148,7 @@ public final class NativeGeoMesh {
     }
 
     public long handle() {
-        return this.handle;
+        return this.cleanup.handle();
     }
 
     public int vertexCount() {
@@ -165,9 +173,32 @@ public final class NativeGeoMesh {
             return;
         }
         this.closed = true;
-        long current = this.handle;
-        this.handle = 0L;
-        NativeMesh.destroyMesh(current);
+        this.cleanup.run();
+    }
+
+    /** 只持有 native 句柄 不引用 NativeGeoMesh 本身 否则 Cleaner 永远等不到不可达 */
+    private static final class Cleanup implements Runnable {
+        private volatile long handle;
+
+        private Cleanup(long handle) {
+            this.handle = handle;
+        }
+
+        private long handle() {
+            return this.handle;
+        }
+
+        @Override
+        public void run() {
+            long current;
+            synchronized (this) {
+                current = this.handle;
+                this.handle = 0L;
+            }
+            if (current != 0L) {
+                NativeMesh.destroyMesh(current);
+            }
+        }
     }
 
     private static final class FloatList {

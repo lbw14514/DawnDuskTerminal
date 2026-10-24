@@ -192,6 +192,7 @@ public class Experiment114Block extends Block {
         if (level.getBlockTicks().hasScheduledTick(pos, this)) {
             return;
         }
+        // 排进去的方块刻只当去重标记用，不打算被处理；声音就在这里立刻放
         level.scheduleTick(pos, this, SIGNAL_SOUND_DELAY);
         Experiment114Item.playGhastHurt(level, pos);
     }
