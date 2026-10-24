@@ -44,13 +44,30 @@ import java.util.WeakHashMap;
  */
 @Mixin(AnimationProcessor.class)
 public abstract class GeckoLibAnimationProcessorMixin {
+    // 不在字段初始化器里建表 这个 mixin 的初始化器在部分加载组合下没有被合进
+    // AnimationProcessor 的构造函数 运行到 setActiveModel 时字段仍是 null
     @Unique
-    private final Map<AnimatableManager<?>, ObjectOpenHashSet<GeoBone>> ddt$resetBones = new WeakHashMap<>();
+    private Map<AnimatableManager<?>, ObjectOpenHashSet<GeoBone>> ddt$resetBones;
     @Unique
-    private final Set<AnimatableManager<?>> ddt$seededManagers =
-        Collections.newSetFromMap(new WeakHashMap<>());
+    private Set<AnimatableManager<?>> ddt$seededManagers;
     @Unique
     private AnimatableManager<?> ddt$manager;
+
+    @Unique
+    private Map<AnimatableManager<?>, ObjectOpenHashSet<GeoBone>> ddt$resetBonesMap() {
+        if (this.ddt$resetBones == null) {
+            this.ddt$resetBones = new WeakHashMap<>();
+        }
+        return this.ddt$resetBones;
+    }
+
+    @Unique
+    private Set<AnimatableManager<?>> ddt$seededManagerSet() {
+        if (this.ddt$seededManagers == null) {
+            this.ddt$seededManagers = Collections.newSetFromMap(new WeakHashMap<>());
+        }
+        return this.ddt$seededManagers;
+    }
 
     @Inject(method = "tickAnimation", at = @At("HEAD"))
     private void ddt$captureManager(GeoAnimatable animatable, GeoModel model,
@@ -73,9 +90,9 @@ public abstract class GeckoLibAnimationProcessorMixin {
             return processor.getRegisteredBones();
         }
 
-        ObjectOpenHashSet<GeoBone> bones = this.ddt$resetBones.computeIfAbsent(
+        ObjectOpenHashSet<GeoBone> bones = this.ddt$resetBonesMap().computeIfAbsent(
             manager, key -> new ObjectOpenHashSet<>());
-        if (this.ddt$seededManagers.add(manager)) {
+        if (this.ddt$seededManagerSet().add(manager)) {
             bones.addAll(processor.getRegisteredBones());
         }
 
@@ -104,8 +121,12 @@ public abstract class GeckoLibAnimationProcessorMixin {
 
     @Inject(method = "setActiveModel", at = @At("HEAD"))
     private void ddt$clearResetSets(BakedGeoModel model, CallbackInfo ci) {
-        this.ddt$resetBones.clear();
-        this.ddt$seededManagers.clear();
+        if (this.ddt$resetBones != null) {
+            this.ddt$resetBones.clear();
+        }
+        if (this.ddt$seededManagers != null) {
+            this.ddt$seededManagers.clear();
+        }
         this.ddt$manager = null;
     }
 
