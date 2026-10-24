@@ -362,7 +362,8 @@ def zigArchive = new File(new File(zigInstallRoot, 'downloads'), "zig-${zigVersi
 def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
 // 官方 index.json 里每个包的 shasum 下载后必须逐字节对上
 // 换 ddt_zig_version 时要么把新版本的官方哈希补进这张表 要么显式传 -Pddt_zig_sha256=<hex>
-def zigHost = "${zigHostKey}-${zigHostArch}"
+// GString 不能直接当 Map 的字符串键用 必须落成 String 否则哈希相等性判不出来
+def zigHost = "${zigHostKey}-${zigHostArch}".toString()
 def zigKnownSha256 = [
     '0.13.0': [
         'windows-x86_64': 'd859994725ef9402381e557c60bb57497215682e355204d754ee3df75ee3c158',
