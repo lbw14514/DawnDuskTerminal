@@ -19,14 +19,14 @@
     "PaintingVariantGuardMixin",
     "CraftingMenuMixin",
     "SkyIslandCloudMixin",
-    "GeckoLibAnimationProcessorMixin",
     "GameTestChunkWaitMixin"
   ],
   "client": [
     "BiomeColorsFoliageMixin",
     "ClientLevelSkyColorMixin",
     "ClientLevelTimeOfDayMixin",
-    "LevelRendererSkyAlignMixin"
+    "LevelRendererSkyAlignMixin",
+    "GeckoLibAnimationProcessorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

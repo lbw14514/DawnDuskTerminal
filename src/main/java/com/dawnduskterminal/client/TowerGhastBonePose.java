@@ -3,7 +3,6 @@ package com.dawnduskterminal.client;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import com.dawnduskterminal.entity.TowerGhastPhysics;
-import com.dawnduskterminal.mixin.GeckoLibResetHints;
 import net.minecraft.util.Mth;
 import software.bernie.geckolib.animation.state.BoneSnapshot;
 import software.bernie.geckolib.cache.object.GeoBone;

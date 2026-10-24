@@ -1,5 +1,6 @@
 package com.dawnduskterminal.mixin;
 
+import com.dawnduskterminal.client.GeckoLibResetHints;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
