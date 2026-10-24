@@ -331,6 +331,10 @@ def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
 def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
 def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).contains('win')
 def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
+// -O3 是 zig c++ 能接受的最高优化档（内部映射到 ReleaseFast）
+// -s 让链接器去掉调试符号：Zig 默认给 ELF 写完整 DWARF，linux 的 .so 会从 2.7MB 掉到 260KB 左右
+// 只去符号表，不碰动态符号，JNI 导出函数仍然可见
+def nativeCompileFlags = ['-O3', '-std=c++17', '-s']
 
 def nativeTargets = [
     'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_native.dll',     jni: 'win32', args: ['-shared']],
@@ -347,14 +351,25 @@ def zigArchiveExtension = zigHostKey == 'windows' ? 'zip' : 'tar.xz'
 def zigArchive = layout.buildDirectory.file("tools/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
 def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
 
+// 配置缓存不允许任务动作在执行期碰 layout，路径在配置期先落成普通 File
+def zigExecutableFile = zigExecutable.asFile
+def zigDirectoryFile = zigDirectory.asFile
+def zigArchiveFile = zigArchive.get().asFile
+def nativeSourceFile = nativeSource.asFile
+def nativeOutputDirectory = nativeOutput.get().asFile
+def nativeWorkDirectory = layout.buildDirectory.dir('tools/native-work').get().asFile
+def nativeJniDirectories = nativeTargets.collectEntries { key, target ->
+    [(key): layout.projectDirectory.dir("src/main/native/${target.jni}").asFile]
+}
+
 def installZig = tasks.register('installZig') {
     description = '下载并解压编译 native 用的 Zig 工具链'
-    onlyIf { !zigExecutable.asFile.exists() }
+    onlyIf { !zigExecutableFile.exists() }
     inputs.property('zigVersion', zigVersion)
     inputs.property('zigHost', "${zigHostKey}-${zigHostArch}")
     outputs.file(zigExecutable)
     doLast {
-        def archive = zigArchive.get().asFile
+        def archive = zigArchiveFile
         archive.parentFile.mkdirs()
         logger.lifecycle("下载 Zig ${zigVersion} (${zigHostKey}-${zigHostArch})")
         def connection = new URL(zigUrl).openConnection()
@@ -364,17 +379,15 @@ def installZig = tasks.register('installZig') {
         connection.inputStream.withStream { input ->
             archive.withOutputStream { output -> output << input }
         }
-        zigDirectory.asFile.mkdirs()
+        zigDirectoryFile.mkdirs()
         // Windows 10 1803 之后自带 bsdtar，macOS 与 Linux 也都有 tar，zip 与 tar.xz 都能吃
-        def extraction = providers.exec {
-            commandLine('tar', '-xf', archive.absolutePath, '-C', zigDirectory.asFile.absolutePath,
-                '--strip-components=1')
-            ignoreExitValue = true
-        }
-        def extractionExit = extraction.result.get().exitValue
-        if (extractionExit != 0 || !zigExecutable.asFile.exists()) {
+        def extraction = new ProcessBuilder('tar', '-xf', archive.absolutePath, '-C', zigDirectoryFile.absolutePath,
+            '--strip-components=1').redirectErrorStream(true).start()
+        def extractionOutput = extraction.inputStream.getText('UTF-8')
+        def extractionExit = extraction.waitFor()
+        if (extractionExit != 0 || !zigExecutableFile.exists()) {
             throw new GradleException(
-                "解压 Zig 失败（tar 退出码 ${extractionExit}）\n${extraction.standardError.asText.get()}")
+                "解压 Zig 失败（tar 退出码 ${extractionExit}）\n${extractionOutput}")
         }
     }
 }
@@ -386,42 +399,40 @@ def buildNative = tasks.register('buildNative') {
     inputs.files(layout.projectDirectory.dir('src/main/native/win32'),
         layout.projectDirectory.dir('src/main/native/posix'))
     inputs.property('targets', nativeTargets.keySet().join(','))
+    inputs.property('compileFlags', nativeCompileFlags.join(' '))
     inputs.property('zigVersion', zigVersion)
     outputs.dir(nativeOutput)
     doFirst {
         // 目标集合可能变过，先清掉上一次的产物，避免旧平台的库混进 jar
-        nativeOutput.get().asFile.deleteDir()
+        nativeOutputDirectory.deleteDir()
     }
     doLast {
         // 先编到临时目录再只拷回目标库，免得 zig 在 Windows 上顺带产出的 .lib / .pdb 被打进 jar
-        def workDirectory = layout.buildDirectory.dir('tools/native-work').get().asFile
+        def workDirectory = nativeWorkDirectory
         workDirectory.deleteDir()
         nativeTargets.each { key, target ->
             def buildDirectory = new File(workDirectory, key)
             buildDirectory.mkdirs()
             def builtLibrary = new File(buildDirectory, target.lib)
-            def arguments = [zigExecutable.asFile.absolutePath, 'c++', '-target', target.triple, '-O3', '-std=c++17']
+            def arguments = [zigExecutableFile.absolutePath, 'c++', '-target', target.triple]
+            arguments.addAll(nativeCompileFlags)
             arguments.addAll(target.args)
             arguments.addAll([
                 "-I${javaHome}/include".toString(),
-                "-I${layout.projectDirectory.dir("src/main/native/${target.jni}").asFile.absolutePath}".toString(),
-                nativeSource.asFile.absolutePath,
+                "-I${nativeJniDirectories[key].absolutePath}".toString(),
+                nativeSourceFile.absolutePath,
                 '-o',
                 builtLibrary.absolutePath,
             ])
             logger.lifecycle("编译 native ${key} (${target.triple})")
-            def compilation = providers.exec {
-                commandLine(arguments)
-                ignoreExitValue = true
-            }
-            def exitCode = compilation.result.get().exitValue
+            def compilation = new ProcessBuilder(arguments).redirectErrorStream(true).start()
+            def compilationOutput = compilation.inputStream.getText('UTF-8')
+            def exitCode = compilation.waitFor()
             if (exitCode != 0) {
                 throw new GradleException(
-                    "native 编译失败 ${key} (${target.triple})\n" +
-                    compilation.standardOutput.asText.get() + '\n' +
-                    compilation.standardError.asText.get())
+                    "native 编译失败 ${key} (${target.triple})\n" + compilationOutput)
             }
-            def outputDirectory = new File(nativeOutput.get().asFile, key)
+            def outputDirectory = new File(nativeOutputDirectory, key)
             outputDirectory.mkdirs()
             builtLibrary.withInputStream { input ->
                 new File(outputDirectory, target.lib).withOutputStream { output -> output << input }
