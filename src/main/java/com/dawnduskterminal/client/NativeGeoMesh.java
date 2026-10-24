@@ -11,63 +11,64 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * 高塔恶魂烘焙模型的扁平副本
+ * ?? GeckoLib ?????????
  *
- * <p>每个顶点 8 个 float 位置 法线 UV 每个 cube 记录起点与顶点数
- * cube 的身份用 {@link IdentityHashMap} 保存 因为 {@link GeoCube} 是带数组字段的 record
- * {@code equals} 比较数组引用 不适合作为普通 Map 的键
+ * <p>???? 8 ? float ?? ?? UV ?? piece ???? ??????????
+ * piece ???? {@link IdentityHashMap} ?? ?? {@link GeoCube} ??????? record
+ * {@code equals} ?????? ??????? Map ??
  *
- * <p>这里的顶点还是 cube 局部坐标 真正的骨骼变换在渲染时由每个 cube 的最终矩阵完成
+ * <p>????????????? ?????????????????? piece ???????
+ * ???????????????????????? ??
  */
-public final class NativeTowerGhastMesh {
+public final class NativeGeoMesh {
     private final BakedGeoModel model;
     private final long handle;
     private final int[] offsets;
     private final int[] counts;
-    private final Map<GeoCube, Integer> cubeIds;
+    private final Map<GeoCube, Integer> pieceIds;
     private final int vertexCount;
 
-    private NativeTowerGhastMesh(BakedGeoModel model, long handle,
-                                 int[] offsets, int[] counts,
-                                 Map<GeoCube, Integer> cubeIds, int vertexCount) {
+    private NativeGeoMesh(BakedGeoModel model, long handle,
+                          int[] offsets, int[] counts,
+                          Map<GeoCube, Integer> pieceIds, int vertexCount) {
         this.model = model;
         this.handle = handle;
         this.offsets = offsets;
         this.counts = counts;
-        this.cubeIds = cubeIds;
+        this.pieceIds = pieceIds;
         this.vertexCount = vertexCount;
     }
 
-    public static NativeTowerGhastMesh build(BakedGeoModel model) {
+    public static NativeGeoMesh build(BakedGeoModel model) {
         FloatList vertexData = new FloatList();
         IntList offsets = new IntList();
         IntList counts = new IntList();
-        FloatList sizes = new FloatList();
-        Map<GeoCube, Integer> cubeIds = new IdentityHashMap<>();
+        IntList flags = new IntList();
+        Map<GeoCube, Integer> pieceIds = new IdentityHashMap<>();
 
         for (GeoBone bone : model.topLevelBones()) {
-            collectBone(bone, vertexData, offsets, counts, sizes, cubeIds);
+            collectBone(bone, vertexData, offsets, counts, flags, pieceIds);
         }
 
         if (offsets.size == 0) {
-            throw new IllegalStateException("高塔恶魂模型没有可用的立方体");
+            throw new IllegalStateException("GeckoLib ??????????");
         }
 
         int[] offsetArray = offsets.toArray();
         int[] countArray = counts.toArray();
-        float[] sizeArray = sizes.toArray();
+        int[] flagArray = flags.toArray();
         float[] vertexArray = vertexData.toArray();
-        long handle = NativeVertex.createMesh(vertexArray, offsetArray, countArray, sizeArray);
+        long handle = NativeMesh.createMesh(vertexArray, offsetArray, countArray, flagArray);
         if (handle == 0L) {
-            throw new IllegalStateException("native 顶点网格创建失败");
+            throw new IllegalStateException("native ??????");
         }
 
-        return new NativeTowerGhastMesh(model, handle, offsetArray, countArray, cubeIds,
+        return new NativeGeoMesh(model, handle, offsetArray, countArray, pieceIds,
             vertexData.size / 8);
     }
 
     private static void collectBone(GeoBone bone, FloatList vertices, IntList offsets,
-                                    IntList counts, FloatList sizes, Map<GeoCube, Integer> cubeIds) {
+                                    IntList counts, IntList flags, Map<GeoCube, Integer> pieceIds) {
         for (GeoCube cube : bone.getCubes()) {
             int offset = vertices.size / 8;
             int vertexCount = 0;
@@ -96,18 +97,39 @@ public final class NativeTowerGhastMesh {
                 continue;
             }
 
-            int cubeId = offsets.size;
+            int pieceId = offsets.size;
             offsets.add(offset);
             counts.add(vertexCount);
-            sizes.add((float) cube.size().x());
-            sizes.add((float) cube.size().y());
-            sizes.add((float) cube.size().z());
-            cubeIds.put(cube, cubeId);
+            flags.add(flatFlags(cube));
+            pieceIds.put(cube, pieceId);
         }
 
         for (GeoBone child : bone.getChildBones()) {
-            collectBone(child, vertices, offsets, counts, sizes, cubeIds);
+            collectBone(child, vertices, offsets, counts, flags, pieceIds);
         }
+    }
+
+    /**
+     * ? GeckoLib {@code RenderUtil.fixInvertedFlatCube} ???????
+     *
+     * <p>?????? X Y Z ? ???????????
+     */
+    private static int flatFlags(GeoCube cube) {
+        // 保持与原内核一致的 float 比较 尺寸先收窄到 float 再判零
+        float x = (float) cube.size().x();
+        float y = (float) cube.size().y();
+        float z = (float) cube.size().z();
+        int flags = 0;
+        if (y == 0.0f || z == 0.0f) {
+            flags |= 1;
+        }
+        if (x == 0.0f || z == 0.0f) {
+            flags |= 2;
+        }
+        if (x == 0.0f || y == 0.0f) {
+            flags |= 4;
+        }
+        return flags;
     }
 
     public BakedGeoModel model() {
@@ -123,20 +145,20 @@ public final class NativeTowerGhastMesh {
     }
 
     public int id(GeoCube cube) {
-        Integer id = this.cubeIds.get(cube);
+        Integer id = this.pieceIds.get(cube);
         return id == null ? -1 : id;
     }
 
-    public int offset(int cubeId) {
-        return this.offsets[cubeId];
+    public int offset(int pieceId) {
+        return this.offsets[pieceId];
     }
 
-    public int count(int cubeId) {
-        return this.counts[cubeId];
+    public int count(int pieceId) {
+        return this.counts[pieceId];
     }
 
     public void close() {
-        NativeVertex.destroyMesh(this.handle);
+        NativeMesh.destroyMesh(this.handle);
     }
 
     private static final class FloatList {

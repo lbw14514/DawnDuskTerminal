@@ -62,7 +62,7 @@ jar 里同时包含两样东西
 
 | 内容 | 位置 |
 |---|---|
-| 5 个平台的 native 顶点内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
+| 5 个平台的 native 网格内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
 | c2me（JarJar 嵌套） | `META-INF/jars/` 加 `META-INF/jarjar/metadata.json` |
 
 本机构建就是全平台单文件：`buildNative` 用 Zig 交叉编译，任何宿主上 `./gradlew build` 都会把 5 个 native 一起打进 jar
@@ -70,7 +70,9 @@ jar 里同时包含两样东西
 1 `installZig` 自动下载 Zig 到 `.gradle/zig/<version>`，不需要预装编译器
 2 `buildNative` 依次编 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`，产物落 `build/native/<target>/`
 3 `./gradlew build` 的 `processResources` 把 `build/native` 下全部目录打进 jar
-4 `release.yml` 校验 5 个 `ddt_vertex` 都在，缺一个直接失败
+4 `release.yml` 校验 5 个 `ddt_native` 都在，缺一个直接失败
+
+`ddt_native` 是通用网格变换内核：只接顶点区间、矩阵与法线取反标志，不认识实体或方块。`NativeGeoMesh` 负责 GeckoLib 模型摊平，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交，实体与方块渲染器共用
 
 `-Pddt_zig_version` 换 Zig 版本。native 没有 Java 兜底：库缺失或加载失败直接抛错，任何一个目标编不出来 `build` 直接失败
 

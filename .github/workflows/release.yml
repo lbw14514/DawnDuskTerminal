@@ -43,16 +43,16 @@ jobs:
           jar_file=$(ls build/libs/*.jar)
           for key in windows-x86_64 linux-x86_64 linux-aarch64 macos-x86_64 macos-aarch64; do
             case "$key" in
-              windows-*) lib=ddt_vertex.dll ;;
-              macos-*) lib=ddt_vertex.dylib ;;
-              *) lib=ddt_vertex.so ;;
+              windows-*) lib=ddt_native.dll ;;
+              macos-*) lib=libddt_native.dylib ;;
+              *) lib=libddt_native.so ;;
             esac
             unzip -l "$jar_file" | grep -q "native/$key/$lib" || {
               echo "missing native/$key/$lib in $jar_file"
               exit 1
             }
           done
-          unzip -l "$jar_file" | grep -E 'native/.*/ddt_vertex\.(dll|so|dylib)$'
+          unzip -l "$jar_file" | grep -E 'native/.*/(lib)?ddt_native\.(dll|so|dylib)$'
           unzip -l "$jar_file" | grep -q 'META-INF/jars/c2me-neoforge-.*\.jar' || {
             echo "missing bundled c2me in $jar_file"
             exit 1

@@ -74,23 +74,29 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 纯资源改动可能报 UP-TO-DATE，要验证 jar 里的内容
 
-### native 顶点内核
+### native 网格内核
 
-`src/main/native/ddt_vertex.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
+`src/main/native/ddt_native.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
+
+内核只做一件事：把一段顶点按一个 4x4 矩阵与一个 3x3 法线矩阵变换，写进直接缓冲区。它不认识实体、方块、骨骼或立方体
+
+每段顶点叫一个 piece，调用方给出顶点区间、矩阵和法线取反标志。标志低三位依次对应 X Y Z 轴，只在对应法线为负时取反，用来复现 GeckoLib 退化平面的修正
+
+`NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交。实体渲染器和方块实体渲染器都能用同一套流程
 
 构建固定走 Zig，`installZig` 任务会自动下载到 `.gradle/zig/<version>`，之后不再重复下载，不需要系统里预装编译器
 
 | target | triple | 产物 |
 |---|---|---|
-| `windows-x86_64` | `x86_64-windows-gnu` | `ddt_vertex.dll` |
-| `linux-x86_64` | `x86_64-linux-gnu.2.17` | `ddt_vertex.so` |
-| `linux-aarch64` | `aarch64-linux-gnu.2.17` | `ddt_vertex.so` |
-| `macos-x86_64` | `x86_64-macos` | `ddt_vertex.dylib` |
-| `macos-aarch64` | `aarch64-macos` | `ddt_vertex.dylib` |
+| `windows-x86_64` | `x86_64-windows-gnu` | `ddt_native.dll` |
+| `linux-x86_64` | `x86_64-linux-gnu.2.17` | `libddt_native.so` |
+| `linux-aarch64` | `aarch64-linux-gnu.2.17` | `libddt_native.so` |
+| `macos-x86_64` | `x86_64-macos` | `libddt_native.dylib` |
+| `macos-aarch64` | `aarch64-macos` | `libddt_native.dylib` |
 
 `./gradlew build` 默认编全部五个，所以无论在哪个平台构建，`build/libs/` 里的 jar 都是全平台通用的
 
-jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeVertex` 按 `os.name` 与 `os.arch` 挑对应的库
+jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeMesh` 按 `os.name` 与 `os.arch` 挑对应的库
 
 没有纯 Java 兜底：库缺失、加载失败或变换返回错误都直接抛异常，构建期任何一个目标编不出来也会让 `gradlew build` 失败
 

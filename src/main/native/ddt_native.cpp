@@ -20,18 +20,26 @@ struct Vertex {
     float v;
 };
 
-struct Cube {
+/**
+ * 一个刚性变换单元 每个单元共用同一个矩阵与法线矩阵
+ *
+ * <p>flags 低三位表示法线在某个轴为负时是否取反 原先只服务立方体的
+ * sizeX/sizeY/sizeZ 判定改由调用方算好 内核不再理解几何形状
+ */
+struct Piece {
     int offset;
     int count;
-    float sizeX;
-    float sizeY;
-    float sizeZ;
+    int flags;
 };
 
 struct Mesh {
     std::vector<Vertex> vertices;
-    std::vector<Cube> cubes;
+    std::vector<Piece> pieces;
 };
+
+constexpr int kFlipX = 1;
+constexpr int kFlipY = 2;
+constexpr int kFlipZ = 4;
 
 class Pool {
 public:
@@ -57,12 +65,12 @@ public:
     }
 
     void run(const Mesh* mesh, const float* matrices, const float* normals,
-             const jint* cubeIds, int count, float* out) {
+             const jint* pieceIds, int count, float* out) {
         std::unique_lock<std::mutex> lock(mutex);
         jobMesh = mesh;
         jobMatrices = matrices;
         jobNormals = normals;
-        jobCubeIds = cubeIds;
+        jobPieceIds = pieceIds;
         jobCount = count;
         jobOut = out;
         next.store(0, std::memory_order_relaxed);
@@ -88,7 +96,7 @@ private:
             const Mesh* mesh = jobMesh;
             const float* matrices = jobMatrices;
             const float* normals = jobNormals;
-            const jint* cubeIds = jobCubeIds;
+            const jint* pieceIds = jobPieceIds;
             const int count = jobCount;
             float* out = jobOut;
             lock.unlock();
@@ -96,7 +104,7 @@ private:
             for (int index = next.fetch_add(1, std::memory_order_relaxed);
                  index < count;
                  index = next.fetch_add(1, std::memory_order_relaxed)) {
-                transformCube(mesh, matrices, normals, cubeIds[index], index, out);
+                transformPiece(mesh, matrices, normals, pieceIds[index], index, out);
             }
 
             lock.lock();
@@ -106,17 +114,17 @@ private:
         }
     }
 
-    static void transformCube(const Mesh* mesh, const float* matrices, const float* normals,
-                              int cubeId, int batchIndex, float* out) {
-        if (cubeId < 0 || cubeId >= static_cast<int>(mesh->cubes.size())) {
+    static void transformPiece(const Mesh* mesh, const float* matrices, const float* normals,
+                               int pieceId, int batchIndex, float* out) {
+        if (pieceId < 0 || pieceId >= static_cast<int>(mesh->pieces.size())) {
             return;
         }
-        const Cube& cube = mesh->cubes[static_cast<std::size_t>(cubeId)];
+        const Piece& piece = mesh->pieces[static_cast<std::size_t>(pieceId)];
         const float* matrix = matrices + batchIndex * 16;
         const float* normalMatrix = normals + batchIndex * 9;
 
-        for (int i = 0; i < cube.count; ++i) {
-            const Vertex& vertex = mesh->vertices[static_cast<std::size_t>(cube.offset + i)];
+        for (int i = 0; i < piece.count; ++i) {
+            const Vertex& vertex = mesh->vertices[static_cast<std::size_t>(piece.offset + i)];
 
             const float x = vertex.x;
             const float y = vertex.y;
@@ -130,17 +138,17 @@ private:
             float ny = normalMatrix[1] * vertex.nx + normalMatrix[4] * vertex.ny + normalMatrix[7] * vertex.nz;
             float nz = normalMatrix[2] * vertex.nx + normalMatrix[5] * vertex.ny + normalMatrix[8] * vertex.nz;
 
-            if (nx < 0.0f && (cube.sizeY == 0.0f || cube.sizeZ == 0.0f)) {
+            if (nx < 0.0f && (piece.flags & kFlipX) != 0) {
                 nx = -nx;
             }
-            if (ny < 0.0f && (cube.sizeX == 0.0f || cube.sizeZ == 0.0f)) {
+            if (ny < 0.0f && (piece.flags & kFlipY) != 0) {
                 ny = -ny;
             }
-            if (nz < 0.0f && (cube.sizeX == 0.0f || cube.sizeY == 0.0f)) {
+            if (nz < 0.0f && (piece.flags & kFlipZ) != 0) {
                 nz = -nz;
             }
 
-            float* target = out + (cube.offset + i) * 8;
+            float* target = out + static_cast<std::size_t>(piece.offset + i) * 8;
             target[0] = tx;
             target[1] = ty;
             target[2] = tz;
@@ -159,7 +167,7 @@ private:
     const Mesh* jobMesh = nullptr;
     const float* jobMatrices = nullptr;
     const float* jobNormals = nullptr;
-    const jint* jobCubeIds = nullptr;
+    const jint* jobPieceIds = nullptr;
     float* jobOut = nullptr;
     int jobCount = 0;
     std::atomic<int> next{0};
@@ -172,63 +180,74 @@ private:
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_dawnduskterminal_client_NativeVertex_nativeCreatePool(JNIEnv*, jclass, jint threadCount) {
+Java_com_dawnduskterminal_client_NativeMesh_nativeCreatePool(JNIEnv*, jclass, jint threadCount) {
     return reinterpret_cast<jlong>(new ddt::Pool(threadCount));
 }
 
 JNIEXPORT void JNICALL
-Java_com_dawnduskterminal_client_NativeVertex_nativeDestroyPool(JNIEnv*, jclass, jlong handle) {
+Java_com_dawnduskterminal_client_NativeMesh_nativeDestroyPool(JNIEnv*, jclass, jlong handle) {
     delete reinterpret_cast<ddt::Pool*>(handle);
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_dawnduskterminal_client_NativeVertex_nativeCreateMesh(
-    JNIEnv* env, jclass, jfloatArray vertexData, jintArray offsets, jintArray counts, jfloatArray sizes) {
+Java_com_dawnduskterminal_client_NativeMesh_nativeCreateMesh(
+    JNIEnv* env, jclass, jfloatArray vertexData, jintArray offsets, jintArray counts, jintArray flags) {
     const jsize vertexFloatCount = env->GetArrayLength(vertexData);
-    const jsize cubeCount = env->GetArrayLength(offsets);
-    if (vertexFloatCount % 8 != 0 || env->GetArrayLength(counts) != cubeCount
-        || env->GetArrayLength(sizes) != cubeCount * 3) {
+    const jsize pieceCount = env->GetArrayLength(offsets);
+    if (vertexFloatCount % 8 != 0 || env->GetArrayLength(counts) != pieceCount
+        || env->GetArrayLength(flags) != pieceCount) {
         return 0;
     }
 
+    const int vertexCount = static_cast<int>(vertexFloatCount / 8);
     auto* mesh = new ddt::Mesh();
-    mesh->vertices.resize(static_cast<std::size_t>(vertexFloatCount / 8));
-    mesh->cubes.resize(static_cast<std::size_t>(cubeCount));
+    mesh->vertices.resize(static_cast<std::size_t>(vertexCount));
+    mesh->pieces.resize(static_cast<std::size_t>(pieceCount));
 
     float* vertexSource = env->GetFloatArrayElements(vertexData, nullptr);
     jint* offsetSource = env->GetIntArrayElements(offsets, nullptr);
     jint* countSource = env->GetIntArrayElements(counts, nullptr);
-    float* sizeSource = env->GetFloatArrayElements(sizes, nullptr);
+    jint* flagSource = env->GetIntArrayElements(flags, nullptr);
 
     std::memcpy(mesh->vertices.data(), vertexSource,
                 static_cast<std::size_t>(vertexFloatCount) * sizeof(float));
 
-    for (jsize i = 0; i < cubeCount; ++i) {
-        ddt::Cube& cube = mesh->cubes[static_cast<std::size_t>(i)];
-        cube.offset = static_cast<int>(offsetSource[i]);
-        cube.count = static_cast<int>(countSource[i]);
-        cube.sizeX = sizeSource[i * 3];
-        cube.sizeY = sizeSource[i * 3 + 1];
-        cube.sizeZ = sizeSource[i * 3 + 2];
+    bool valid = true;
+    for (jsize i = 0; i < pieceCount; ++i) {
+        const int offset = static_cast<int>(offsetSource[i]);
+        const int count = static_cast<int>(countSource[i]);
+        if (offset < 0 || count < 0 || offset > vertexCount - count) {
+            valid = false;
+            break;
+        }
+        ddt::Piece& piece = mesh->pieces[static_cast<std::size_t>(i)];
+        piece.offset = offset;
+        piece.count = count;
+        piece.flags = static_cast<int>(flagSource[i]);
     }
 
     env->ReleaseFloatArrayElements(vertexData, vertexSource, JNI_ABORT);
     env->ReleaseIntArrayElements(offsets, offsetSource, JNI_ABORT);
     env->ReleaseIntArrayElements(counts, countSource, JNI_ABORT);
-    env->ReleaseFloatArrayElements(sizes, sizeSource, JNI_ABORT);
+    env->ReleaseIntArrayElements(flags, flagSource, JNI_ABORT);
+
+    if (!valid) {
+        delete mesh;
+        return 0;
+    }
 
     return reinterpret_cast<jlong>(mesh);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dawnduskterminal_client_NativeVertex_nativeDestroyMesh(JNIEnv*, jclass, jlong handle) {
+Java_com_dawnduskterminal_client_NativeMesh_nativeDestroyMesh(JNIEnv*, jclass, jlong handle) {
     delete reinterpret_cast<ddt::Mesh*>(handle);
 }
 
 JNIEXPORT jint JNICALL
-Java_com_dawnduskterminal_client_NativeVertex_nativeTransform(
+Java_com_dawnduskterminal_client_NativeMesh_nativeTransform(
     JNIEnv* env, jclass, jlong poolHandle, jlong meshHandle,
-    jfloatArray matrices, jfloatArray normals, jintArray cubeIds, jint count,
+    jfloatArray matrices, jfloatArray normals, jintArray pieceIds, jint count,
     jobject output, jint outputCapacityFloats) {
     auto* pool = reinterpret_cast<ddt::Pool*>(poolHandle);
     auto* mesh = reinterpret_cast<ddt::Mesh*>(meshHandle);
@@ -236,7 +255,7 @@ Java_com_dawnduskterminal_client_NativeVertex_nativeTransform(
         return -1;
     }
 
-    if (env->GetArrayLength(cubeIds) < count
+    if (env->GetArrayLength(pieceIds) < count
         || env->GetArrayLength(matrices) < count * 16
         || env->GetArrayLength(normals) < count * 9) {
         return -1;
@@ -254,13 +273,13 @@ Java_com_dawnduskterminal_client_NativeVertex_nativeTransform(
 
     float* matrixSource = env->GetFloatArrayElements(matrices, nullptr);
     float* normalSource = env->GetFloatArrayElements(normals, nullptr);
-    jint* idSource = env->GetIntArrayElements(cubeIds, nullptr);
+    jint* idSource = env->GetIntArrayElements(pieceIds, nullptr);
 
     pool->run(mesh, matrixSource, normalSource, idSource, count, out);
 
     env->ReleaseFloatArrayElements(matrices, matrixSource, JNI_ABORT);
     env->ReleaseFloatArrayElements(normals, normalSource, JNI_ABORT);
-    env->ReleaseIntArrayElements(cubeIds, idSource, JNI_ABORT);
+    env->ReleaseIntArrayElements(pieceIds, idSource, JNI_ABORT);
 
     return static_cast<jint>(mesh->vertices.size());
 }

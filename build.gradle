@@ -315,14 +315,14 @@ jar {
     }
 }
 
-// native 顶点变换内核
+// native 网格变换内核
 // native 源码是纯 C++17 + std::thread，不含任何平台 API
 // 用 Zig 做统一交叉编译：同一份工具链能出 windows / linux / macos 的 x86_64 与 aarch64
 // 所以无论在哪个平台执行 gradlew build，jar 里都带全部五个平台的 native
 // 任何一个目标编译失败或 Zig 下载失败都直接让构建失败，不产出残缺的 jar
 
 def javaHome = System.getProperty('java.home')
-def nativeSource = layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
+def nativeSource = layout.projectDirectory.file('src/main/native/ddt_native.cpp')
 def nativeOutput = layout.buildDirectory.dir('native')
 def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
 def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
@@ -330,11 +330,11 @@ def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).co
 def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
 
 def nativeTargets = [
-    'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_vertex.dll',   jni: 'win32', args: ['-shared']],
-    'linux-x86_64'  : [triple: 'x86_64-linux-gnu.2.17',  lib: 'ddt_vertex.so',    jni: 'posix', args: ['-shared', '-fPIC']],
-    'linux-aarch64' : [triple: 'aarch64-linux-gnu.2.17', lib: 'ddt_vertex.so',    jni: 'posix', args: ['-shared', '-fPIC']],
-    'macos-x86_64'  : [triple: 'x86_64-macos',           lib: 'ddt_vertex.dylib', jni: 'posix', args: ['-dynamiclib']],
-    'macos-aarch64' : [triple: 'aarch64-macos',          lib: 'ddt_vertex.dylib', jni: 'posix', args: ['-dynamiclib']],
+    'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_native.dll',     jni: 'win32', args: ['-shared']],
+    'linux-x86_64'  : [triple: 'x86_64-linux-gnu.2.17',  lib: 'libddt_native.so',   jni: 'posix', args: ['-shared', '-fPIC']],
+    'linux-aarch64' : [triple: 'aarch64-linux-gnu.2.17', lib: 'libddt_native.so',   jni: 'posix', args: ['-shared', '-fPIC']],
+    'macos-x86_64'  : [triple: 'x86_64-macos',           lib: 'libddt_native.dylib', jni: 'posix', args: ['-dynamiclib']],
+    'macos-aarch64' : [triple: 'aarch64-macos',          lib: 'libddt_native.dylib', jni: 'posix', args: ['-dynamiclib']],
 ]
 
 def zigHostOs = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
@@ -377,7 +377,7 @@ def installZig = tasks.register('installZig') {
 }
 
 def buildNative = tasks.register('buildNative') {
-    description = '用 Zig 交叉编译各平台 native 顶点内核'
+    description = '用 Zig 交叉编译各平台 native 网格内核'
     dependsOn installZig
     inputs.file(nativeSource)
     inputs.files(layout.projectDirectory.dir('src/main/native/win32'),
