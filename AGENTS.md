@@ -54,6 +54,40 @@ NeoForge 21.1.252 与 ModDevGradle，版本写在 `gradle.properties`
 
 `gradlew` 必须保持可执行位，CI 在 Linux 上跑，权限位丢了会直接失败
 
+### 单一产物
+
+最终用户只拿 `build/libs/dawnduskterminal-<version>.jar` 一个文件
+
+jar 里同时包含两样东西
+
+| 内容 | 位置 |
+|---|---|
+| 5 个平台的 native 网格内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
+| c2me（JarJar 嵌套） | `META-INF/jars/` 加 `META-INF/jarjar/metadata.json` |
+
+本机构建就是全平台单文件：`buildNative` 用 Zig 交叉编译，任何宿主上 `./gradlew build` 都会把 5 个 native 一起打进 jar
+
+1 `installZig` 自动下载 Zig 到 `.gradle/zig/<version>`，不需要预装编译器
+2 `buildNative` 依次编 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`，产物落 `build/native/<target>/`
+3 `./gradlew build` 的 `processResources` 把 `build/native` 下全部目录打进 jar
+4 `release.yml` 校验 5 个 `ddt_native` 都在，缺一个直接失败
+
+`ddt_native` 是通用网格变换内核：只接顶点区间、矩阵与法线取反标志，不认识实体或方块。`NativeGeoMesh` 负责 GeckoLib 模型摊平，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交，实体与方块渲染器共用
+
+`-Pddt_zig_version` 换 Zig 版本。构建期任何目标编不出来 `build` 直接失败；运行期加载失败或 ABI 不匹配会禁用 native 并回退 GeckoLib 的 Java 渲染路径，运行时错误则熔断禁用，硬崩溃由崩溃标记在下次启动兜底，见 `NativeMesh` 与 `docs/development.md`
+
+`jni_md.h` 是仓库自带的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 给 Linux 与 macOS
+
+Windows DLL 用 Zig 的 mingw 目标，只依赖 UCRT 与 `kernel32.dll`，不能依赖 `libwinpthread-1.dll`
+
+c2me 由 `patchC2me` 从 `c2me_version` 指定的 Modrinth Maven 坐标解析后嵌进 jar，默认保留官方全部模块。专用服固定种子对照已经验证官方 c2me 与不装 c2me 的地形高度 群系 流体指纹逐字节一致；开发环境里那 15 列差是 dev classpath 组合的假阳性，不要据此删模块
+
+不要用 ModDevGradle 的 `jarJar` 配置嵌 c2me：本地补丁 jar 在配置期解析不到。当前做法是手动写 `META-INF/jarjar/metadata.json` 并让 `jar` 任务把补丁 jar 放进 `META-INF/jars/`
+
+玩家额外安装 c2me 时由 JarJar 版本协商处理，已用“内置加外部同版本”实测能正常启动、正常生成地形、正常停服
+
+c2me 本体是 MIT，`c2me-opts-accel-opencl` 是 All Rights Reserved 且没有打进产物，嵌套 jar 里保留 `LICENSE-MIT.txt`。官方 1.21.1 OpenCL devbuild 也是 ARR，要求 Java 25 且只能外挂安装，不要内置或随产物分发
+
 ## 暮色森林
 
 运行必须装暮色森林 1.21.1

@@ -57,6 +57,34 @@ public final class SkyIslandCloudTests {
     }
 
     @GameTest(template = "ddt_empty")
+    public static void thinIslandVegetationIsReplaced(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos base = base(helper, 96, 0);
+
+        fill(level, base, 5, 5, 2);
+        for (int y = 2; y <= 4; y++) {
+            level.setBlock(base.offset(2, y, 2), Blocks.OAK_LOG.defaultBlockState(), 2);
+        }
+        for (int x = 1; x <= 3; x++) {
+            for (int z = 1; z <= 3; z++) {
+                for (int y = 5; y <= 6; y++) {
+                    level.setBlock(base.offset(x, y, z), Blocks.OAK_LEAVES.defaultBlockState(), 2);
+                }
+            }
+        }
+
+        int replaced = run(level, base, 5, 5, 2, cloud);
+
+        helper.assertTrue(replaced >= 71, "plate and vegetation must all be replaced, got " + replaced);
+        helper.assertTrue(is(level, base.offset(2, 2, 2), cloud), "trunk must become cloud");
+        helper.assertTrue(is(level, base.offset(2, 6, 2), cloud), "canopy must become cloud");
+        helper.assertTrue(is(level, base.offset(1, 6, 1), cloud), "canopy edge must become cloud");
+        helper.assertTrue(is(level, base.offset(2, 8, 2), cloud), "shell above the canopy must be cloud");
+        helper.succeed();
+    }
+
+    @GameTest(template = "ddt_empty")
     public static void thickIslandIsLeftAlone(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockState cloud = cloud(helper);

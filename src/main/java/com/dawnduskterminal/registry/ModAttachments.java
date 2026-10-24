@@ -25,6 +25,7 @@ public final class ModAttachments {
         "portal_state",
         () -> AttachmentType.builder(PortalState::empty)
             .serialize(PortalState.CODEC)
+            .copyOnDeath()
             .build());
 
     private ModAttachments() {}

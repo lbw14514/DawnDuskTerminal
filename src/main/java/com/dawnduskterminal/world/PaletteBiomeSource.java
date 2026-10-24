@@ -1,12 +1,14 @@
 package com.dawnduskterminal.world;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.config.DdtConfig;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -15,8 +17,11 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSourceParameterList;
+import net.minecraft.world.level.levelgen.DensityFunction;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +100,20 @@ public final class PaletteBiomeSource extends BiomeSource {
     /** 原版气候表 + {@link #extra}，构建理由同 {@link #replacements} */
     private volatile Climate.ParameterList<Holder<Biome>> extended;
     private volatile Holder<Biome> floatrees;
+
+    /**
+     * 每线程一份的晨昏线温度缓存
+     *
+     * <p>{@code LevelChunkSection#fillBiomesFromNoise} 的循环是 x 外层 y 中层 z 内层，同一个
+     * {@code (x, z)} 在一节里被问四次、跨二十四节被问九十六次。晨昏线维度的温度只由 x/z 决定
+     * （{@code noise_settings/chrono.json} 里 {@code y_scale} 与 {@code shift_y} 都是 0），所以直接缓存
+     * 换好的温度，命中率在区块填充里超过 95%
+     *
+     * <p>缓存按采样器身份分代：换区块时采样器跟着换，整张表清空。这样既不会把上一个区块的值带过来，
+     * 也不会长期持有 {@code NoiseChunk} 的函数图（采样器用弱引用比较）
+     */
+    private static final ThreadLocal<ShiftedTemperatureCache> SHIFTED_TEMPERATURES =
+        ThreadLocal.withInitial(ShiftedTemperatureCache::new);
 
     public PaletteBiomeSource(Holder<MultiNoiseBiomeSourceParameterList> preset, HolderSet<Biome> palette) {
         this(preset, palette, List.of());
@@ -197,7 +216,18 @@ public final class PaletteBiomeSource extends BiomeSource {
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-        Climate.TargetPoint target = sampler.sample(quartX, quartY, quartZ);
+        DensityFunction.SinglePointContext context = new DensityFunction.SinglePointContext(
+            QuartPos.toBlock(quartX), QuartPos.toBlock(quartY), QuartPos.toBlock(quartZ));
+        // 原版 Climate.Sampler#sample 的六项照抄，只把温度换成晨昏线分段映射。这样结构判定 区块落盘
+        // locate biome 刷怪读的是同一个群系函数，两边不可能再分叉
+        double temperature = SHIFTED_TEMPERATURES.get().shifted(sampler, quartX, quartZ, context);
+        Climate.TargetPoint target = Climate.target(
+            (float) temperature,
+            (float) sampler.humidity().compute(context),
+            (float) sampler.continentalness().compute(context),
+            (float) sampler.erosion().compute(context),
+            (float) sampler.depth().compute(context),
+            (float) sampler.weirdness().compute(context));
         Holder<Biome> floatreesHolder = floatrees();
         if (floatreesHolder != null && Climate.unquantizeCoord(target.depth()) < FLOATREES_DEPTH) {
             return floatreesHolder;
@@ -210,5 +240,47 @@ public final class PaletteBiomeSource extends BiomeSource {
         }
         Holder<Biome> replacement = replacements().get(key);
         return replacement != null ? replacement : base;
+    }
+
+    /**
+     * {@code (x, z)} 到「已换好的温度」的直映射缓存，八个槽位
+     *
+     * <p>八个槽位对应原版填充循环里同一 x 的四个 z（跨 y 与跨节都会命中）。换采样器时整表失效，
+     * 所以不会跨区块串值；线或 {@code max_distance} 变了也失效
+     */
+    private static final class ShiftedTemperatureCache {
+        private static final int SLOTS = 8;
+
+        private final boolean[] valid = new boolean[SLOTS];
+        private final int[] xs = new int[SLOTS];
+        private final int[] zs = new int[SLOTS];
+        private final double[] values = new double[SLOTS];
+        private WeakReference<Climate.Sampler> sampler;
+        private ChronoLine line;
+        private double maxDistance;
+
+        double shifted(Climate.Sampler current, int quartX, int quartZ,
+                       DensityFunction.SinglePointContext context) {
+            ChronoLine currentLine = ChronoLineState.serverLine();
+            double currentMaxDistance = DdtConfig.maxDistance();
+            if (this.sampler == null || this.sampler.get() != current
+                || this.line != currentLine || this.maxDistance != currentMaxDistance) {
+                this.sampler = new WeakReference<>(current);
+                this.line = currentLine;
+                this.maxDistance = currentMaxDistance;
+                Arrays.fill(this.valid, false);
+            }
+            int slot = (quartX * 31 + quartZ) & (SLOTS - 1);
+            if (this.valid[slot] && this.xs[slot] == quartX && this.zs[slot] == quartZ) {
+                return this.values[slot];
+            }
+            double vanilla = current.temperature().compute(context);
+            double shifted = ChronoTemperature.shift(vanilla, context.blockX(), context.blockZ());
+            this.valid[slot] = true;
+            this.xs[slot] = quartX;
+            this.zs[slot] = quartZ;
+            this.values[slot] = shifted;
+            return shifted;
+        }
     }
 }

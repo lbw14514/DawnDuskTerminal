@@ -115,12 +115,114 @@ configurations {
     clientDevMods {
         canBeConsumed = false
     }
+    // 只用来取 c2me 原始 jar，打补丁后再 JarJar，不进编译或运行 classpath
+    c2meCompat {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+// 专用服对照证明官方 c2me 的地形高度与不装 c2me 逐字节一致，开发环境那 15 列差是 dev 侧
+// classpath 组合造成的假阳性，所以这里保留全部模块，只把 jar 嵌进产物
+def c2meRemovedModules = []
+// JarJar 元数据只写 mod 版本，加载器后缀 +1.21.1 不进 range 和 artifactVersion
+// 官方 c2me 自己的 metadata.json 也是这么写的
+def c2meBundleVersion = c2me_version.split('\\+')[0]
+def c2meBundleGroup = 'com.ishland.c2me'
+def c2meBundleArtifact = 'c2me-neoforge'
+def patchC2me = tasks.register('patchC2me') {
+    def c2meJar = configurations.c2meCompat
+    inputs.files(c2meJar)
+    inputs.property('removed', c2meRemovedModules.join(','))
+    def output = layout.buildDirectory.file('c2me/c2me-patched.jar')
+    outputs.file(output)
+    doLast {
+        def source = c2meJar.singleFile
+        def target = output.get().asFile
+        target.parentFile.mkdirs()
+        if (c2meRemovedModules.isEmpty()) {
+            java.nio.file.Files.copy(source.toPath(), target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("c2me bundled unmodified")
+            return
+        }
+        def found = new HashSet<String>()
+        def put = { out, name, bytes ->
+            out.putNextEntry(new java.util.zip.ZipEntry(name))
+            out.write(bytes)
+            out.closeEntry()
+        }
+        new java.util.zip.ZipFile(source).withCloseable { zip ->
+            new java.util.zip.ZipOutputStream(new FileOutputStream(target)).withCloseable { out ->
+                def entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    def entry = entries.nextElement()
+                    def name = entry.name
+                    if (name == 'META-INF/jarjar/metadata.json') {
+                        def json = new groovy.json.JsonSlurper().parse(zip.getInputStream(entry))
+                        def kept = []
+                        json.jars.each { jar ->
+                            def artifact = jar.identifier.artifact
+                            if (c2meRemovedModules.contains(artifact)) {
+                                found.add(artifact)
+                            } else {
+                                kept.add(jar)
+                            }
+                        }
+                        json.jars = kept
+                        put(out, name, groovy.json.JsonOutput.toJson(json).getBytes('UTF-8'))
+                    } else if (name.startsWith('META-INF/jars/')
+                        && c2meRemovedModules.any { name.contains(it.replace('c2me-', '')) }) {
+                        found.add(c2meRemovedModules.find { name.contains(it.replace('c2me-', '')) })
+                    } else {
+                        put(out, name, zip.getInputStream(entry).bytes)
+                    }
+                }
+            }
+        }
+        def missing = c2meRemovedModules - found
+        if (!missing.isEmpty()) {
+            throw new GradleException("c2me jar did not contain ${missing}, update the patch list")
+        }
+        logger.lifecycle("c2me patched without ${c2meRemovedModules}")
+    }
+}
+
+// 手写 JarJar 元数据，避免 ModDevGradle 的 jarJar 配置在配置期就去解析本地补丁 jar
+def c2meJarJarMetadata = tasks.register('generateC2meJarJarMetadata') {
+    def output = layout.buildDirectory.file('c2me/META-INF/jarjar/metadata.json')
+    inputs.property('version', c2meBundleVersion)
+    outputs.file(output)
+    doLast {
+        def file = output.get().asFile
+        file.parentFile.mkdirs()
+        def payload = """{
+  "jars": [
+    {
+      "identifier": {
+        "group": "${c2meBundleGroup}",
+        "artifact": "${c2meBundleArtifact}"
+      },
+      "version": {
+        "range": "[${c2meBundleVersion},)",
+        "artifactVersion": "${c2meBundleVersion}"
+      },
+      "path": "META-INF/jars/${c2meBundleArtifact}-${c2meBundleVersion}.jar"
+    }
+  ]
+}
+"""
+        file.setText(payload, 'UTF-8')
+    }
 }
 
 // 两个前置模组都用 compileOnly 加 runtimeOnly：
 // compileOnly 供编译，runtimeOnly 让 runClient runServer runData 这些开发运行也加载它们
 // 它们都是普通模组，运行时必须装在游戏端，jar 不会被打进本模组的产物
 dependencies {
+    // c2me 本体打进 jar，保留官方全部模块；外部安装时由 FML 的 JarJar 协商处理
+    c2meCompat "maven.modrinth:c2me-neoforge:${c2me_version}"
+
     // 4.9.3 是 1.21.1 线上当前的版本，它声明 neoforge >= 21.1.150，本项目满足
     // GeckoLib 另有一个 geckoanimfix 是 incompatible 依赖，两者不能同时装
     compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
@@ -154,6 +256,18 @@ dependencies {
     // BoccHUD 0.4.1 的必装前置就是 MaFgLib，不需要另写一条
     clientDevMods "maven.modrinth:appleskin:${appleskin_version}"
     clientDevMods "maven.modrinth:bocchud:${bocchud_version}"
+}
+
+// 把打过补丁的 c2me 作为嵌套 jar 打进产物，元数据手写
+tasks.named('jar', Jar) {
+    dependsOn patchC2me, c2meJarJarMetadata
+    from(patchC2me) {
+        into 'META-INF/jars'
+        rename { "${c2meBundleArtifact}-${c2meBundleVersion}.jar" }
+    }
+    from(c2meJarJarMetadata) {
+        into 'META-INF/jarjar'
+    }
 }
 
 // run 的 classpath 在任务执行时才从 classpathProvider 取，所以要加在 provider 上，加 classpath 会被覆盖
@@ -204,61 +318,160 @@ jar {
     }
 }
 
-// 可选的 native 顶点变换内核
-// 找不到编译器就跳过，jar 里没有库时 NativeVertex 会走纯 Java 路径，构建不会因此失败
-def nativeOsName = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
-def nativeArchName = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT)
-def nativeIsWindows = nativeOsName.contains('win')
-def nativeIsMac = nativeOsName.contains('mac')
-def nativeArch = nativeArchName.contains('aarch64') ? 'aarch64'
-    : (nativeArchName.contains('64') ? 'x86_64' : 'x86')
-def nativeKey = (nativeIsWindows ? 'windows' : (nativeIsMac ? 'macos' : 'linux')) + '-' + nativeArch
-def nativeLibraryName = nativeIsWindows ? 'ddt_vertex.dll' : (nativeIsMac ? 'ddt_vertex.dylib' : 'ddt_vertex.so')
-def nativeCompiler = nativeIsWindows ? 'g++' : (nativeIsMac ? 'clang++' : 'g++')
-def nativeOutput = layout.buildDirectory.dir("native/${nativeKey}")
+// native 网格变换内核
+// native 源码是纯 C++17 + std::thread，不含任何平台 API
+// 用 Zig 做统一交叉编译：同一份工具链能出 windows / linux / macos 的 x86_64 与 aarch64
+// 所以无论在哪个平台执行 gradlew build，jar 里都带全部五个平台的 native
+// 任何一个目标编译失败或 Zig 下载失败都直接让构建失败，不产出残缺的 jar
+
 def javaHome = System.getProperty('java.home')
-def jniPlatform = nativeIsWindows ? 'win32' : (nativeIsMac ? 'darwin' : 'linux')
+def nativeSource = layout.projectDirectory.file('src/main/native/ddt_native.cpp')
+def nativeOutput = layout.buildDirectory.dir('native')
+def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
+// native 与 Java 的 JNI 协议版本 必须与 NativeMesh.ABI_VERSION 同步 由 verifyNativeAbi 校验
+def nativeAbiVersion = providers.gradleProperty('ddt_native_abi_version').getOrElse('1')
+def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
+def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).contains('win')
+def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
+// -O3 是 zig c++ 能接受的最高优化档（内部映射到 ReleaseFast）
+// -s 让链接器去掉调试符号：Zig 默认给 ELF 写完整 DWARF，linux 的 .so 会从 2.7MB 掉到 260KB 左右
+// 只去符号表，不碰动态符号，JNI 导出函数仍然可见
+def nativeCompileFlags = ['-O3', '-std=c++17', '-s']
 
-def nativeCompilerAvailable = {
-    try {
-        def process = new ProcessBuilder(nativeCompiler, '--version')
-            .redirectErrorStream(true)
-            .start()
-        process.inputStream.close()
-        return process.waitFor() == 0
-    } catch (Exception ignored) {
-        return false
+def nativeTargets = [
+    'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_native.dll',     jni: 'win32', args: ['-shared']],
+    'linux-x86_64'  : [triple: 'x86_64-linux-gnu.2.17',  lib: 'libddt_native.so',   jni: 'posix', args: ['-shared', '-fPIC']],
+    'linux-aarch64' : [triple: 'aarch64-linux-gnu.2.17', lib: 'libddt_native.so',   jni: 'posix', args: ['-shared', '-fPIC']],
+    'macos-x86_64'  : [triple: 'x86_64-macos',           lib: 'libddt_native.dylib', jni: 'posix', args: ['-dynamiclib']],
+    'macos-aarch64' : [triple: 'aarch64-macos',          lib: 'libddt_native.dylib', jni: 'posix', args: ['-dynamiclib']],
+]
+
+def zigHostOs = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
+def zigHostArch = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT).contains('aarch64') ? 'aarch64' : 'x86_64'
+def zigHostKey = zigHostOs.contains('win') ? 'windows' : (zigHostOs.contains('mac') ? 'macos' : 'linux')
+def zigArchiveExtension = zigHostKey == 'windows' ? 'zip' : 'tar.xz'
+def zigArchive = layout.buildDirectory.file("tools/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
+def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
+
+// 配置缓存不允许任务动作在执行期碰 layout，路径在配置期先落成普通 File
+def zigExecutableFile = zigExecutable.asFile
+def zigDirectoryFile = zigDirectory.asFile
+def zigArchiveFile = zigArchive.get().asFile
+def nativeSourceFile = nativeSource.asFile
+def nativeOutputDirectory = nativeOutput.get().asFile
+def nativeWorkDirectory = layout.buildDirectory.dir('tools/native-work').get().asFile
+def nativeJniDirectories = nativeTargets.collectEntries { key, target ->
+    [(key): layout.projectDirectory.dir("src/main/native/${target.jni}").asFile]
+}
+
+def installZig = tasks.register('installZig') {
+    description = '下载并解压编译 native 用的 Zig 工具链'
+    onlyIf { !zigExecutableFile.exists() }
+    inputs.property('zigVersion', zigVersion)
+    inputs.property('zigHost', "${zigHostKey}-${zigHostArch}")
+    outputs.file(zigExecutable)
+    doLast {
+        def archive = zigArchiveFile
+        archive.parentFile.mkdirs()
+        logger.lifecycle("下载 Zig ${zigVersion} (${zigHostKey}-${zigHostArch})")
+        def connection = new URL(zigUrl).openConnection()
+        connection.connectTimeout = 30000
+        connection.readTimeout = 300000
+        connection.setRequestProperty('User-Agent', 'DawnDuskTerminal Gradle build')
+        connection.inputStream.withStream { input ->
+            archive.withOutputStream { output -> output << input }
+        }
+        zigDirectoryFile.mkdirs()
+        // Windows 10 1803 之后自带 bsdtar，macOS 与 Linux 也都有 tar，zip 与 tar.xz 都能吃
+        def extraction = new ProcessBuilder('tar', '-xf', archive.absolutePath, '-C', zigDirectoryFile.absolutePath,
+            '--strip-components=1').redirectErrorStream(true).start()
+        def extractionOutput = extraction.inputStream.getText('UTF-8')
+        def extractionExit = extraction.waitFor()
+        if (extractionExit != 0 || !zigExecutableFile.exists()) {
+            throw new GradleException(
+                "解压 Zig 失败（tar 退出码 ${extractionExit}）\n${extractionOutput}")
+        }
     }
 }
 
-def nativeArguments = ['-O3', '-std=c++17']
-if (nativeIsWindows) {
-    nativeArguments += ['-shared', '-pthread', '-static-libgcc', '-static-libstdc++']
-} else if (nativeIsMac) {
-    nativeArguments += ['-dynamiclib', '-pthread']
-} else {
-    nativeArguments += ['-shared', '-fPIC', '-pthread']
-}
-
-def buildNative = tasks.register('buildNative', Exec) {
-    onlyIf { nativeCompilerAvailable() }
-    inputs.file layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
-    outputs.dir nativeOutput
+def buildNative = tasks.register('buildNative') {
+    description = '用 Zig 交叉编译各平台 native 网格内核'
+    dependsOn installZig
+    inputs.file(nativeSource)
+    inputs.files(layout.projectDirectory.dir('src/main/native/win32'),
+        layout.projectDirectory.dir('src/main/native/posix'))
+    inputs.property('targets', nativeTargets.keySet().join(','))
+    inputs.property('compileFlags', nativeCompileFlags.join(' '))
+    inputs.property('zigVersion', zigVersion)
+    inputs.property('abiVersion', nativeAbiVersion)
+    outputs.dir(nativeOutput)
     doFirst {
-        nativeOutput.get().asFile.mkdirs()
+        // 目标集合可能变过，先清掉上一次的产物，避免旧平台的库混进 jar
+        nativeOutputDirectory.deleteDir()
     }
-    commandLine([nativeCompiler] + nativeArguments + [
-        "-I${javaHome}/include".toString(),
-        "-I${javaHome}/include/${jniPlatform}".toString(),
-        layout.projectDirectory.file('src/main/native/ddt_vertex.cpp').asFile.absolutePath,
-        '-o',
-        new File(nativeOutput.get().asFile, nativeLibraryName).absolutePath
-    ])
+    doLast {
+        // 先编到临时目录再只拷回目标库，免得 zig 在 Windows 上顺带产出的 .lib / .pdb 被打进 jar
+        def workDirectory = nativeWorkDirectory
+        workDirectory.deleteDir()
+        nativeTargets.each { key, target ->
+            def buildDirectory = new File(workDirectory, key)
+            buildDirectory.mkdirs()
+            def builtLibrary = new File(buildDirectory, target.lib)
+            def arguments = [zigExecutableFile.absolutePath, 'c++', '-target', target.triple]
+            arguments.addAll(nativeCompileFlags)
+            arguments.addAll(target.args)
+            arguments.add("-DDDT_NATIVE_ABI_VERSION=${nativeAbiVersion}".toString())
+            arguments.addAll([
+                "-I${javaHome}/include".toString(),
+                "-I${nativeJniDirectories[key].absolutePath}".toString(),
+                nativeSourceFile.absolutePath,
+                '-o',
+                builtLibrary.absolutePath,
+            ])
+            logger.lifecycle("编译 native ${key} (${target.triple})")
+            def compilation = new ProcessBuilder(arguments).redirectErrorStream(true).start()
+            def compilationOutput = compilation.inputStream.getText('UTF-8')
+            def exitCode = compilation.waitFor()
+            if (exitCode != 0) {
+                throw new GradleException(
+                    "native 编译失败 ${key} (${target.triple})\n" + compilationOutput)
+            }
+            def outputDirectory = new File(nativeOutputDirectory, key)
+            outputDirectory.mkdirs()
+            builtLibrary.withInputStream { input ->
+                new File(outputDirectory, target.lib).withOutputStream { output -> output << input }
+            }
+        }
+        workDirectory.deleteDir()
+    }
 }
 
 processResources {
     dependsOn buildNative
     from(nativeOutput) {
-        into "native/${nativeKey}"
+        into 'native'
+        includeEmptyDirs = false
     }
+}
+
+// Java 侧 ABI 常量与编译 native 时用的版本必须来自同一个值
+// 两者错开时运行期会拒绝加载 但不应该在发布前才发现
+def verifyNativeAbi = tasks.register('verifyNativeAbi') {
+    description = '校验 NativeMesh.ABI_VERSION 与 ddt_native_abi_version 一致'
+    def javaSource = layout.projectDirectory.file('src/main/java/com/dawnduskterminal/client/NativeMesh.java')
+    def javaFile = javaSource.asFile
+    inputs.file(javaSource)
+    inputs.property('abiVersion', nativeAbiVersion)
+    doLast {
+        def matcher = javaFile.getText('UTF-8') =~ /ABI_VERSION\s*=\s*(\d+)/
+        def declared = matcher.find() ? matcher.group(1) : null
+        if (declared != nativeAbiVersion.toString()) {
+            throw new GradleException(
+                "NativeMesh.ABI_VERSION=${declared} 与 ddt_native_abi_version=${nativeAbiVersion} 不一致")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn verifyNativeAbi
 }

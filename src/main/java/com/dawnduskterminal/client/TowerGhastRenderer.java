@@ -26,11 +26,6 @@ import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import software.bernie.geckolib.util.RenderUtil;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.util.Arrays;
-
 /**
  * 高塔恶魂的客户端渲染接线
  *
@@ -73,41 +68,16 @@ public final class TowerGhastRenderer {
         private final Vector3f normalScratch = new Vector3f();
         private final Vector4f positionScratch = new Vector4f();
         private final Quaternionf rotationScratch = new Quaternionf();
-        private final float[] matrixScratch = new float[16];
-        private final float[] normalMatrixScratch = new float[9];
 
-        private final long nativePool;
-        private NativeTowerGhastMesh nativeMesh;
-        private boolean nativeFailed;
-
-        private boolean batching;
-        private int batchCount;
-        private float[] batchMatrices = new float[1024 * 16];
-        private float[] batchNormals = new float[1024 * 9];
-        private int[] batchCubeIds = new int[1024];
-        private int[] batchLights = new int[1024];
-        private int[] batchOverlays = new int[1024];
-        private int[] batchColours = new int[1024];
-        private VertexConsumer[] batchBuffers = new VertexConsumer[1024];
-        private ByteBuffer nativeOutput;
-        private FloatBuffer nativeOutputFloats;
+        private final NativeMeshBatch nativeBatch = new NativeMeshBatch();
+        private NativeGeoMesh nativeMesh;
+        /** 已经确认没有可渲染立方体的模型 不要再每帧重试 build */
+        private BakedGeoModel emptyNativeModel;
 
         private TowerGhastEntityRenderer(EntityRendererProvider.Context context) {
             super(context, new TowerGhastModel());
             // 缩放取自 TowerGhastEntity：碰撞箱用同一个常数，两者不能各写一份
             withScale(TowerGhastEntity.MODEL_SCALE);
-            long pool = 0L;
-            if (NativeVertex.isAvailable()) {
-                try {
-                    pool = NativeVertex.createPool(
-                        Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors())));
-                } catch (Throwable throwable) {
-                    DawnDuskTerminal.LOGGER.warn(
-                        "DawnDuskTerminal native vertex pool unavailable, using Java renderer: {}",
-                        throwable.toString());
-                }
-            }
-            this.nativePool = pool;
         }
 
         @Override
@@ -120,19 +90,34 @@ public final class TowerGhastRenderer {
                                    RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                    boolean isReRender, float partialTick, int packedLight, int packedOverlay,
                                    int colour) {
-            if (!isReRender && buffer != null && model != null && this.nativePool != 0L && !this.nativeFailed) {
-                ensureNativeMesh(model);
-                if (this.nativeMesh != null) {
-                    this.batching = true;
-                    this.batchCount = 0;
+            if (!isReRender && buffer != null && model != null && NativeMesh.isAvailable()) {
+                NativeGeoMesh mesh = ensureNativeMesh(model);
+                if (mesh != null) {
                     try {
-                        super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
-                            false, partialTick, packedLight, packedOverlay, colour);
-                    } finally {
-                        this.batching = false;
+                        this.nativeBatch.begin(mesh);
+                    } catch (NativeMesh.NativeMeshException failure) {
+                        this.nativeMesh.close();
+                        this.nativeMesh = null;
+                        mesh = null;
                     }
-                    flushNative(buffer);
-                    return;
+                    if (mesh != null) {
+                        try {
+                            super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
+                                false, partialTick, packedLight, packedOverlay, colour);
+                        } finally {
+                            this.nativeBatch.end();
+                        }
+                        try {
+                            this.nativeBatch.flush(buffer);
+                            return;
+                        } catch (NativeMesh.NativeMeshException failure) {
+                            // native 已熔断 flush 在 finally 里清空了批次 这一帧改走 Java 路径
+                            if (this.nativeMesh != null) {
+                                this.nativeMesh.close();
+                                this.nativeMesh = null;
+                            }
+                        }
+                    }
                 }
             }
             super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
@@ -142,25 +127,10 @@ public final class TowerGhastRenderer {
         @Override
         public void renderCube(PoseStack poseStack, GeoCube cube, VertexConsumer buffer,
                                int packedLight, int packedOverlay, int colour) {
-            if (this.batching && this.nativeMesh != null) {
-                int cubeId = this.nativeMesh.id(cube);
-                if (cubeId >= 0) {
-                    applyCubeTransform(poseStack, cube);
-                    ensureBatchCapacity(this.batchCount + 1);
-                    int matrixOffset = this.batchCount * 16;
-                    int normalOffset = this.batchCount * 9;
-                    poseStack.last().pose().get(this.matrixScratch);
-                    System.arraycopy(this.matrixScratch, 0, this.batchMatrices, matrixOffset, 16);
-                    poseStack.last().normal().get(this.normalMatrixScratch);
-                    System.arraycopy(this.normalMatrixScratch, 0, this.batchNormals, normalOffset, 9);
-                    int index = this.batchCount++;
-                    this.batchCubeIds[index] = cubeId;
-                    this.batchLights[index] = packedLight;
-                    this.batchOverlays[index] = packedOverlay;
-                    this.batchColours[index] = colour;
-                    this.batchBuffers[index] = buffer;
-                    return;
-                }
+            if (this.nativeBatch.isActive()) {
+                applyCubeTransform(poseStack, cube);
+                this.nativeBatch.add(cube, poseStack, buffer, packedLight, packedOverlay, colour);
+                return;
             }
 
             applyCubeTransform(poseStack, cube);
@@ -225,172 +195,37 @@ public final class TowerGhastRenderer {
             }
         }
 
-        private void ensureNativeMesh(BakedGeoModel model) {
+        /**
+         * @return 可用的 native 网格 加载或建网格失败时返回 null 调用方改走 GeckoLib 的 Java 路径
+         */
+        private NativeGeoMesh ensureNativeMesh(BakedGeoModel model) {
             if (this.nativeMesh != null && this.nativeMesh.model() == model) {
-                return;
+                return this.nativeMesh;
+            }
+            if (this.emptyNativeModel == model) {
+                return null;
             }
             if (this.nativeMesh != null) {
                 this.nativeMesh.close();
                 this.nativeMesh = null;
             }
+            if (!NativeMesh.isAvailable()) {
+                return null;
+            }
             try {
-                this.nativeMesh = NativeTowerGhastMesh.build(model);
-            } catch (Throwable throwable) {
-                this.nativeFailed = true;
+                this.nativeMesh = NativeGeoMesh.build(model);
+            } catch (NativeMesh.NativeMeshException failure) {
+                this.nativeMesh = null;
+            } catch (IllegalStateException emptyModel) {
+                // 空模型是模型资源本身的问题 native 没坏 不能让它熔断 也不能让它每帧炸一次
+                this.nativeMesh = null;
+                this.emptyNativeModel = model;
                 DawnDuskTerminal.LOGGER.warn(
-                    "DawnDuskTerminal native mesh build failed, using Java renderer: {}",
-                    throwable.toString());
+                    "DawnDuskTerminal 高塔恶魂模型没有可渲染的立方体，本次回退 GeckoLib Java 路径");
             }
+            return this.nativeMesh;
         }
 
-        private void ensureBatchCapacity(int needed) {
-            if (needed <= this.batchCubeIds.length) {
-                return;
-            }
-            int size = Math.max(needed, this.batchCubeIds.length * 2);
-            this.batchMatrices = Arrays.copyOf(this.batchMatrices, size * 16);
-            this.batchNormals = Arrays.copyOf(this.batchNormals, size * 9);
-            this.batchCubeIds = Arrays.copyOf(this.batchCubeIds, size);
-            this.batchLights = Arrays.copyOf(this.batchLights, size);
-            this.batchOverlays = Arrays.copyOf(this.batchOverlays, size);
-            this.batchColours = Arrays.copyOf(this.batchColours, size);
-            this.batchBuffers = Arrays.copyOf(this.batchBuffers, size);
-        }
-
-        private void ensureNativeOutput() {
-            int floats = this.nativeMesh.vertexCount() * 8;
-            if (this.nativeOutput == null || this.nativeOutput.capacity() < floats * Float.BYTES) {
-                this.nativeOutput = ByteBuffer.allocateDirect(floats * Float.BYTES)
-                    .order(ByteOrder.nativeOrder());
-                this.nativeOutputFloats = this.nativeOutput.asFloatBuffer();
-            }
-        }
-
-        private void flushNative(VertexConsumer fallbackBuffer) {
-            if (this.batchCount == 0) {
-                return;
-            }
-            if (this.nativeMesh == null) {
-                resetBatch();
-                return;
-            }
-            if (this.nativePool == 0L) {
-                writeJavaBatch(fallbackBuffer);
-                resetBatch();
-                return;
-            }
-
-            ensureNativeOutput();
-            int result;
-            try {
-                result = NativeVertex.transform(
-                    this.nativePool, this.nativeMesh.handle(),
-                    this.batchMatrices, this.batchNormals, this.batchCubeIds, this.batchCount,
-                    this.nativeOutput, this.nativeOutput.capacity() / Float.BYTES);
-            } catch (Throwable throwable) {
-                this.nativeFailed = true;
-                DawnDuskTerminal.LOGGER.warn(
-                    "DawnDuskTerminal native vertex transform failed, using Java renderer: {}",
-                    throwable.toString());
-                result = -1;
-            }
-
-            if (result < 0) {
-                writeJavaBatch(fallbackBuffer);
-            } else {
-                FloatBuffer output = this.nativeOutputFloats;
-                output.position(0);
-                for (int i = 0; i < this.batchCount; i++) {
-                    int cubeId = this.batchCubeIds[i];
-                    int offset = this.nativeMesh.offset(cubeId);
-                    int count = this.nativeMesh.count(cubeId);
-                    VertexConsumer buffer = this.batchBuffers[i] != null ? this.batchBuffers[i] : fallbackBuffer;
-                    if (buffer == null) {
-                        continue;
-                    }
-                    int colour = this.batchColours[i];
-                    int overlay = this.batchOverlays[i];
-                    int light = this.batchLights[i];
-                    for (int v = 0; v < count; v++) {
-                        float x = output.get();
-                        float y = output.get();
-                        float z = output.get();
-                        float nx = output.get();
-                        float ny = output.get();
-                        float nz = output.get();
-                        float u = output.get();
-                        float texV = output.get();
-                        buffer.addVertex(x, y, z, colour, u, texV, overlay, light, nx, ny, nz);
-                    }
-                }
-            }
-            resetBatch();
-        }
-
-        private void writeJavaBatch(VertexConsumer fallbackBuffer) {
-            float[] vertices = this.nativeMesh.vertices();
-            for (int i = 0; i < this.batchCount; i++) {
-                int cubeId = this.batchCubeIds[i];
-                int offset = this.nativeMesh.offset(cubeId);
-                int count = this.nativeMesh.count(cubeId);
-                float sizeX = this.nativeMesh.size(cubeId, 0);
-                float sizeY = this.nativeMesh.size(cubeId, 1);
-                float sizeZ = this.nativeMesh.size(cubeId, 2);
-                VertexConsumer buffer = this.batchBuffers[i] != null ? this.batchBuffers[i] : fallbackBuffer;
-                if (buffer == null) {
-                    continue;
-                }
-                int matrixOffset = i * 16;
-                int normalOffset = i * 9;
-                int colour = this.batchColours[i];
-                int overlay = this.batchOverlays[i];
-                int light = this.batchLights[i];
-                for (int v = 0; v < count; v++) {
-                    int source = (offset + v) * 8;
-                    float x = vertices[source];
-                    float y = vertices[source + 1];
-                    float z = vertices[source + 2];
-                    float vertexX = this.batchMatrices[matrixOffset] * x
-                        + this.batchMatrices[matrixOffset + 4] * y
-                        + this.batchMatrices[matrixOffset + 8] * z
-                        + this.batchMatrices[matrixOffset + 12];
-                    float vertexY = this.batchMatrices[matrixOffset + 1] * x
-                        + this.batchMatrices[matrixOffset + 5] * y
-                        + this.batchMatrices[matrixOffset + 9] * z
-                        + this.batchMatrices[matrixOffset + 13];
-                    float vertexZ = this.batchMatrices[matrixOffset + 2] * x
-                        + this.batchMatrices[matrixOffset + 6] * y
-                        + this.batchMatrices[matrixOffset + 10] * z
-                        + this.batchMatrices[matrixOffset + 14];
-                    float nx = this.batchNormals[normalOffset] * vertices[source + 3]
-                        + this.batchNormals[normalOffset + 3] * vertices[source + 4]
-                        + this.batchNormals[normalOffset + 6] * vertices[source + 5];
-                    float ny = this.batchNormals[normalOffset + 1] * vertices[source + 3]
-                        + this.batchNormals[normalOffset + 4] * vertices[source + 4]
-                        + this.batchNormals[normalOffset + 7] * vertices[source + 5];
-                    float nz = this.batchNormals[normalOffset + 2] * vertices[source + 3]
-                        + this.batchNormals[normalOffset + 5] * vertices[source + 4]
-                        + this.batchNormals[normalOffset + 8] * vertices[source + 5];
-                    if (nx < 0.0F && (sizeY == 0.0F || sizeZ == 0.0F)) {
-                        nx = -nx;
-                    }
-                    if (ny < 0.0F && (sizeX == 0.0F || sizeZ == 0.0F)) {
-                        ny = -ny;
-                    }
-                    if (nz < 0.0F && (sizeX == 0.0F || sizeY == 0.0F)) {
-                        nz = -nz;
-                    }
-                    buffer.addVertex(vertexX, vertexY, vertexZ, colour,
-                        vertices[source + 6], vertices[source + 7], overlay, light, nx, ny, nz);
-                }
-            }
-        }
-
-        private void resetBatch() {
-            int count = this.batchCount;
-            this.batchCount = 0;
-            Arrays.fill(this.batchBuffers, 0, Math.min(this.batchBuffers.length, count), null);
-        }
     }
 
     /**

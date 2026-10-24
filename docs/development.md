@@ -83,6 +83,113 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 `.vscode/settings.json` 是本机配置，`.vscode/` 在 `.gitignore` 里，用 `java.import.gradle.java.home` 把 daemon 钉在本机 JDK 21，换机器要改路径
 
 Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.properties` 里写 `systemProp.http.proxyHost` `systemProp.http.proxyPort` `systemProp.https.proxyHost` `systemProp.https.proxyPort` 与 `systemProp.http.nonProxyHosts`，Gradle 的下载才会经过代理，端口随加速器改
+### native 网格内核
+
+`src/main/native/ddt_native.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
+
+内核只做一件事：把一段顶点按一个 4x4 矩阵与一个 3x3 法线矩阵变换，写进直接缓冲区。它不认识实体、方块、骨骼或立方体
+
+每段顶点叫一个 piece，调用方给出顶点区间、矩阵和法线取反标志。标志低三位依次对应 X Y Z 轴，只在对应法线为负时取反，用来复现 GeckoLib 退化平面的修正
+
+`NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交。实体渲染器和方块实体渲染器都能用同一套流程
+
+构建固定走 Zig，`installZig` 任务会自动下载到 `.gradle/zig/<version>`，之后不再重复下载，不需要系统里预装编译器
+
+| target | triple | 产物 |
+|---|---|---|
+| `windows-x86_64` | `x86_64-windows-gnu` | `ddt_native.dll` |
+| `linux-x86_64` | `x86_64-linux-gnu.2.17` | `libddt_native.so` |
+| `linux-aarch64` | `aarch64-linux-gnu.2.17` | `libddt_native.so` |
+| `macos-x86_64` | `x86_64-macos` | `libddt_native.dylib` |
+| `macos-aarch64` | `aarch64-macos` | `libddt_native.dylib` |
+
+`./gradlew build` 默认编全部五个，所以无论在哪个平台构建，`build/libs/` 里的 jar 都是全平台通用的
+
+jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeMesh` 按 `os.name` 与 `os.arch` 挑对应的库
+
+构建期仍是硬失败：任何一个目标编不出来都会让 `gradlew build` 失败，`release.yml` 也会校验五个平台都在 jar 里
+
+运行期分成加载类失败与运行类失败两条路径
+
+| 阶段 | 失败情形 | 处理 |
+|---|---|---|
+| 加载 | 平台无产物、资源缺失、`System.load` 失败 | warn 一次，禁用 native，渲染走 GeckoLib 的 Java 路径 |
+| 加载 | ABI 版本或顶点/矩阵/法线布局不匹配 | error 带上两边常量，禁用 native |
+| 加载 | ABI 通过后启动探针失败 | error，禁用 native |
+| 运行 | JNI 抛异常、返回负错误码、句柄失效 | error 一次，整个进程熔断，本帧起回退 Java 路径 |
+| 硬崩溃 | SIGSEGV 之类 | 进程内无法捕获，由下次启动的崩溃标记兜底 |
+
+`NativeMesh` 不做纯 Java 顶点变换，Java 路径就是 `TowerGhastRenderer.renderCube` 里 GeckoLib 自带的那套实现
+
+### ABI 协议
+
+Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 2
+
+native 导出四个只读常量：`nativeAbiVersion` `nativeVertexFloats` `nativeMatrixFloats` `nativeNormalFloats`
+
+加载后先比对这四项，再跑一个最小用例：建一个两条顶点的网格，用单位矩阵变换一次，逐 float 比对输入输出
+
+任何 JNI 函数签名、参数含义、顶点布局、piece 布局或返回值语义变化都要同时改两处版本号
+
+版本号写在 `gradle.properties` 的 `ddt_native_abi_version`，构建时通过 `-DDDT_NATIVE_ABI_VERSION` 传进 C++
+
+`verifyNativeAbi` 任务会检查 `NativeMesh.ABI_VERSION` 与这个属性一致，`check` 依赖它
+
+### 为什么 `nativeTransform` 收直接缓冲区
+
+矩阵 法线 piece id 三个入参是 `ByteBuffer.allocateDirect` 出来的直接缓冲区，不是 Java 数组
+
+数组入参在 JNI 里会走 `GetFloatArrayElements`，每个 piece 16 个 float 矩阵加 9 个 float 法线，
+712 个 piece 每帧约 73KB 拷贝，实测比直接缓冲区多约 10us
+
+直接缓冲区由 `NativeMeshBatch` 在构造和扩容时整块分配，之后每帧只改内容不重新分配
+
+批次容量超过初始的 1024 段时，`growInputs` 会把已经写进去的段搬到新缓冲区，
+不能只重新分配，否则批次中途扩容会丢掉前面收集的矩阵
+
+不要为了省事把这三个参数改回数组，也不要每帧新建缓冲区
+
+### 为什么没有用 FFM
+
+Java 21 的 `java.lang.foreign` 还是 preview API，编译和运行都要 `--enable-preview`，
+class 文件带 preview 标记（minor version 65535），普通 JVM 启动直接 `UnsupportedClassVersionError`
+
+Minecraft 1.21.1 锁在 Java 21，模组没法要求玩家改启动参数，所以 FFM 不能进发布产物
+
+实测同样条件下 FFM 与 JNI 性能打平（712 piece：49.5 与 49.7 us），
+数组入参那 10us 差距来自拷贝而不是绑定方式，换直接缓冲区就能拿到，不需要 FFM
+
+### native 的失败与安全模式
+
+加载成功时在 `config/dawnduskterminal-native.crash-marker` 写一个标记，正常退出由 `deleteOnExit` 删除
+
+如果上次运行期间进程硬崩溃，标记会留下，下次启动直接禁用 native 并打一条 error，玩家删掉该文件即可重试
+
+手动关闭 native 的三种方式，优先级从高到低
+
+| 方式 | 写法 |
+|---|---|
+| 配置 | `render.native_mesh = false` |
+| 系统属性 | `-Ddawnduskterminal.disableNative=true` |
+| 环境变量 | `DAWNDUSKTERMINAL_DISABLE_NATIVE=true` |
+
+`-Ddawnduskterminal.forceNative=true` 可以单次忽略崩溃标记，用于排查
+
+native 侧所有导出函数都在 `try/catch(...)` 内返回错误码，C++ 异常不会穿过 JNI 边界
+
+句柄是自增 id 而不是裸指针，失效、重复释放、类型拿错都返回 `kInvalidHandle`，不会解引用野指针
+
+`nativeCreateMesh` 校验每一段 `offset/count` 都在顶点数组内，`nativeTransform` 校验三个入参直接缓冲区的容量、输出缓冲区容量与 piece id 范围
+
+`jni.h` 取当前构建 JVM 的，`jni_md.h` 用仓库里的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 同时给 Linux 与 macOS
+
+| 属性 | 作用 |
+|---|---|
+| `-Pddt_zig_version=0.13.0` | 换 Zig 版本 |
+
+Zig 的产物先写进 `build/tools/native-work`，只把目标库拷进 `build/native/<target>/`，避免 Windows 上顺带产出的 `.lib` 与 `.pdb` 被打进 jar
+
+Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 之类的运行库
 
 ## 游戏内测试
 
@@ -226,9 +333,19 @@ Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.pro
 
 `build.yml` 在 push main 与 v 标签 与 PR 触发，跑 `./gradlew build` 并上传 jar
 
-`gametest.yml` 在 PR 触发，跑 `./gradlew runGameTestServer` 并上传日志
+`gametest.yml` 在 PR 触发，跑两遍 `./gradlew runGameTestServer`：一遍原版环境，一遍把 c2me 1.21.1 NeoForge 构建放进 `run/gametest/mods`
 
-`release.yml` 在 v 标签触发，校验标签与 `mod_version` 一致，构建并 `gh release create`
+`release.yml` 在任意分支收到提交后自动把 `mod_version` 的补丁号加一并提交回该分支，再用 Zig 交叉编译全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里并发布 GitHub Release `main` 发布正式版 其他分支发布带分支名与运行序号的预发布版本 推送 `v*` 标签仍可按标签发布 标签必须匹配 `gradle.properties` 的 `mod_version`
+
+c2me 本体是 MIT，只有 `c2me-opts-accel-opencl` 是 All Rights Reserved，没有打进产物。1.21.1 NeoForge 现在有官方单独的 OpenCL Acceleration Module devbuild，但它同样是 ARR，要求 Java 25，只支持服务端，而且 c2me 会按驱动拉黑设备；本机 gfx90c 实测被标记 `BROKEN_DRIVER_AMD_GCN`，强行绕过会在 `amdocl64.dll` 编译阶段崩 JVM。不要内置，也不要承诺开箱可用
+
+c2me 由 `patchC2me` 从 `c2me_version` 解析后以嵌套 jar 打进产物，保留官方全部模块。Manifest 手动写在 `META-INF/jarjar/metadata.json`，不要换成 ModDevGradle 的 `jarJar` 配置，本地补丁 jar 在配置期解析不到
+
+专用服固定种子 12345 的对照已经跑过：官方 c2me 与不装 c2me 的 3072 列地表高度 群系 流体指纹逐字节一致。开发环境里出现过 15 列高度差，是 dev classpath 组合的假阳性，不要据此删 c2me 模块
+
+“内置 c2me 加外部同版本 c2me”也实测过：JarJar 协商后正常启动 正常生成地形 正常停服，地形指纹仍是生产基线
+
+地形指纹探针 `ChronoParityProbe` 只在 `DDT_CHRONO_PARITY=1` 或 `-Dddt.chronoParity=true` 时运行，固定种子专用服会写出 `ddt-chrono-fingerprint.txt` 并停服
 
 concurrency 只在 PR 上 cancel-in-progress
 

@@ -35,6 +35,16 @@ public final class PortalBuilder {
         for (BlockPos pos : targets) {
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
         }
+        // 池面不平时高列的水还在门平面之上，反应会扫正上方，灌门前必须把这整列水也清掉
+        // 每列最多清 16 格，与 PortalShape.find 找地板的上限一致
+        for (BlockPos pos : targets) {
+            BlockPos above = pos.above();
+            int guard = 0;
+            while (level.getBlockState(above).is(Blocks.WATER) && guard++ < 16) {
+                level.setBlock(above, Blocks.AIR.defaultBlockState(), 3);
+                above = above.above();
+            }
+        }
         BlockState portal = ModBlocks.PORTAL_FLUID.get().defaultBlockState();
         for (BlockPos pos : targets) {
             level.setBlock(pos, portal, 3);

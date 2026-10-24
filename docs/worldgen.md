@@ -188,9 +188,11 @@ ID 仍是 `birch_forest`，因为占位不改注册名，看 ID 就知道它顶�
 
 ## 温带分带与温度映射
 
-`NoiseChunkTemperatureMixin` 把维度的温度密度函数包进 `ChronoTemperature`
+偏移点在 `PaletteBiomeSource#getNoiseBiome`：照抄原版 `Climate.Sampler#sample` 的六项，只把温度换成 `ChronoTemperature.shift`
 
-包装点在 `NoiseChunk.cachedClimateSampler`，所以只有区块落盘的群系带映射；结构判定与 `/locate biome` 读的 `RandomState.sampler()` 不带，两边会判出不同群系，补救见「两个采样器」
+所以区块落盘 结构判定 `/locate biome` 刷怪 雕刻读的是同一个群系函数。`RandomState` 与 `NoiseChunk` 一个字没改，`router` 不进包装器，`locate structure` 不会再被插值层拖慢
+
+采样器只提供原版温度，偏移不依赖它来自哪个采样器，见「偏移只在一处」
 
 ### 七带与断点
 
@@ -294,7 +296,7 @@ ID 仍是 `birch_forest`，因为占位不改注册名，看 ID 就知道它顶�
 
 `NoiseChunkVeinPaletteMixin` 处理大矿脉的花岗岩与凝灰岩
 
-`NoiseChunkTemperatureMixin` 给温度噪声加晨昏线偏移，群系随昼夜侧分布
+温度的晨昏线偏移不在这里，走群系源，见「温带分带与温度映射」
 
 `MineshaftHeightMixin` 与 `MineshaftChestLootMixin` 限制废弃矿井高度并换战利品表
 
@@ -316,13 +318,19 @@ ID 仍是 `birch_forest`，因为占位不改注册名，看 ID 就知道它顶�
 
 结构集 `twilightforest:hollow_tree` 的 spacing 7 separation 5，池子里一半权重是 `twilightforest:swamp_hollow_tree`，那个结构把群系写死为 `twilightforest:swamp`，在晨昏线里不存在，所以实际密度大约再减半
 
-### 群系标签不够：两个采样器
+### 偏移只在一处
 
-曾经的问题：温度偏移包在 `NoiseChunk.cachedClimateSampler` 里，区块落盘的群系走这条带偏移的路，而树洞判定读的 `context.randomState().sampler()` 没有偏移。两边会给出不同群系——结构看到草原，地表实际是红沙漠或雪原，巨树于是长在沙漠中间。实测一个存档：24 棵里有 14 棵的地表群系是 `dawnduskterminal:red_desert`（那个群系后来删了，现在同样的位置是白地）
+早先温度偏移包在 `NoiseChunk.cachedClimateSampler` 里，只有区块落盘的群系带偏移；树洞判定读的 `context.randomState().sampler()` 不带，两边判出不同群系，巨树长在沙漠中间。当时用 `HollowTreeSurfaceBiomeMixin` 只给树洞复算一次，其它白名单结构与 `/locate biome` 仍然是错的
 
-`HollowTreeSurfaceBiomeMixin` 在 `findValidGenerationPoint` 返回处用同样包过温度的采样器复算一次，不在标签里就取消。注入必须写 `cancellable = true`，否则 `setReturnValue` 会在世界生成线程里抛 `CancellationException`。注入点只能选 `RETURN`：`Structure.findValidGenerationPoint` 上已有 `StructureExclusionMixin` 的 `HEAD` 注入
+试过把偏移整体搬到 `RandomState`（`router` 与 `sampler` 一起包装），能跑通但性能崩了：包装器进了 `NoiseChunk` 的噪声图，`locate structure` 从 0.1 秒变成单刻超过 60 秒、直接触发看门狗
 
-试过把偏移整体搬到 `RandomState`（`router` 与 `sampler` 一起包装）来根治，能跑通但性能崩了：`NoiseChunk` 会为包装器再建一层噪声插值，`locate structure` 从 0.1 秒变成单刻超过 60 秒、直接触发看门狗，于是退回结构级复核
+现在偏移只在 `PaletteBiomeSource#getNoiseBiome` 里做一次。两个采样器在同一坐标给出的原版温度数值相同（只是缓存包装不同），偏移又只在这一处，最终群系就不可能再分叉。`NoiseChunkTemperatureMixin` 与 `HollowTreeSurfaceBiomeMixin` 已删除，`ChronoTemperature` 也不再包装任何 `DensityFunction`
+
+### 温度缓存
+
+`PaletteBiomeSource` 里有一份每线程八槽的缓存键是 `(quartX, quartZ)`，因为晨昏线维度的温度与 y 无关（`noise_settings/chrono.json` 的 `y_scale` 与 `shift_y` 都是 0）
+
+原版 `LevelChunkSection#fillBiomesFromNoise` 的循环是 x 外层 y 中层 z 内层，同一 `(x, z)` 在区块填充里会被问 96 次，命中率超过 95%。换采样器（换区块）或线 `max_distance` 变化时整表失效，不会跨区块串值，也不会持有旧 `NoiseChunk` 的函数图
 
 ## 高度
 

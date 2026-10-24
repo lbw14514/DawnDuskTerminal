@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: gametest-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -32,3 +35,35 @@ jobs:
           name: gametest-log
           path: run/gametest/logs/
           if-no-files-found: ignore
+
+  # 带 c2me 再跑一遍 先保证 mixin 能共存 再谈地形是否完全一致
+  # 0.4.0-alpha.0.123+1.21.1 是 2026-10-11 的 1.21.1 NeoForge 构建 升级时连同 URL 一起换
+  gametest-c2me:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Install c2me
+        run: |
+          mkdir -p run/gametest/mods
+          curl -fL \
+            "https://cdn.modrinth.com/data/COlSi5iR/versions/avwWYPbG/c2me-neoforge-mc1.21.1-0.4.0-alpha.0.123.jar" \
+            -o run/gametest/mods/c2me-neoforge-0.4.0-alpha.0.123.jar
+      - name: Run game tests with c2me
+        run: ./gradlew runGameTestServer --no-daemon --stacktrace
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gametest-c2me-log
+          path: run/gametest/logs/
+          if-no-files-found: ignore
+

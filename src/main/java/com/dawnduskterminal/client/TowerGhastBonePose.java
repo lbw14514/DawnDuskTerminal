@@ -228,6 +228,13 @@ public final class TowerGhastBonePose {
      */
     private static final String HEAD_BONE = "AllHead";
 
+    static {
+        // 这些骨骼由 setCustomAnimations 直接写，没有对应的 BoneSnapshot
+        // 不能让 GeckoLib 的重置剪枝把它们当静态骨骼剔掉
+        GeckoLibResetHints.markAlwaysReset(BONES);
+        GeckoLibResetHints.markAlwaysReset(List.of(HEAD_BONE));
+    }
+
     private static final int KIND_IGNORE = 0;
     private static final int KIND_EYES = 1;
     private static final int KIND_BREAST = 2;

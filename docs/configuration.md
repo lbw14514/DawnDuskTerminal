@@ -65,3 +65,21 @@ false 时维度内天光恒为 15
 同一维度混用原版与模组群系时需要开启
 
 调色板维度正属于这种情况
+
+## render
+
+`native_mesh` 默认 true
+
+高塔恶魂渲染是否使用 jar 里自带的 native 网格内核
+
+false 时改用 GeckoLib 的 Java 顶点变换，画面一致，只是每帧多出约两万个临时对象
+
+怀疑 native 崩溃时先关这一项，再重启
+
+对应的系统属性是 `-Ddawnduskterminal.disableNative=true`，环境变量是 `DAWNDUSKTERMINAL_DISABLE_NATIVE=true`
+
+native 在加载成功时会在 `config/dawnduskterminal-native.crash-marker` 写标记，正常退出自动删除
+
+如果上次进程硬崩溃，标记会留下，下次启动自动禁用 native；确认稳定后删除该文件即可恢复
+
+`-Ddawnduskterminal.forceNative=true` 可单次忽略标记

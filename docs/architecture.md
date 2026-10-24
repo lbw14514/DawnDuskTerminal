@@ -217,7 +217,7 @@
 
 `NoiseChunkVeinPaletteMixin` 用 `world/ChronoVeinPalette` 把大矿脉的花岗岩与凝灰岩换成赭石与暮光石
 
-`NoiseChunkTemperatureMixin` 用 `world/ChronoTemperature` 给温度噪声加晨昏线偏移
+温度的晨昏线偏移不在这里，走 `world/PaletteBiomeSource` 与 `world/ChronoTemperature`，见「世界生成补丁」
 
 `MineshaftHeightMixin` 把废弃矿井压到 y -64 到 -10
 
@@ -291,7 +291,7 @@
 
 `LavaBandPaletteMixin` `LavaAquiferPaletteMixin` `PillarsFluidBlockMixin` 见「世界生成补丁」
 
-`NoiseChunkVeinPaletteMixin` `NoiseChunkTemperatureMixin` 见「世界生成补丁」
+`NoiseChunkVeinPaletteMixin` 见「世界生成补丁」
 
 `MineshaftHeightMixin` `MineshaftChestLootMixin` 见「世界生成补丁」
 

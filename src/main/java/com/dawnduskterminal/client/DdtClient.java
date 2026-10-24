@@ -13,6 +13,7 @@ import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
 import net.minecraft.client.model.HumanoidModel;
+import com.dawnduskterminal.world.ChronoLineState;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -30,6 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GrassColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
@@ -39,11 +41,17 @@ import net.neoforged.neoforge.client.event.RegisterRenderBuffersEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import org.jetbrains.annotations.Nullable;
+import net.neoforged.neoforge.common.NeoForge;
 
 public final class DdtClient {
     private DdtClient() {}
 
     public static void init(IEventBus modBus) {
+        // 只在断开连接时清：换维度仍属同一存档 群系注册表与晨昏线都没变 清了反而会短暂退回兜底值
+        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) -> {
+            ChronoFoliageColors.clearCache();
+            ChronoLineState.resetClientLine();
+        });
         modBus.addListener(DdtClient::onClientSetup);
         modBus.addListener(DdtClient::registerFluidExtensions);
         modBus.addListener(DdtClient::registerItemExtensions);
@@ -228,6 +236,8 @@ public final class DdtClient {
     private static void onClientSetup(FMLClientSetupEvent event) {
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLUID.get(), RenderType.translucent());
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLOWING.get(), RenderType.translucent());
+        // 加载 native 并跑启动探针 不要在第一次渲染高塔恶魂时才做文件 IO
+        NativeMesh.preload();
     }
 
     /**
