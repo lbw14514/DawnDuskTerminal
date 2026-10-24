@@ -86,7 +86,7 @@ c2me 由 `patchC2me` 从 `c2me_version` 指定的 Modrinth Maven 坐标解析后
 
 玩家额外安装 c2me 时由 JarJar 版本协商处理，已用“内置加外部同版本”实测能正常启动、正常生成地形、正常停服
 
-c2me 许可证 MIT，`c2me-opts-accel-opencl` 是 All Rights Reserved 且没有打进产物，嵌套 jar 里保留 `LICENSE-MIT.txt`
+c2me 本体是 MIT，`c2me-opts-accel-opencl` 是 All Rights Reserved 且没有打进产物，嵌套 jar 里保留 `LICENSE-MIT.txt`。官方 1.21.1 OpenCL devbuild 也是 ARR，要求 Java 25 且只能外挂安装，不要内置或随产物分发
 
 ## 暮色森林
 

@@ -256,7 +256,7 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `release.yml` 在 v 标签触发，单个 ubuntu runner 用 Zig 交叉编译出全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里，最后 `gh release create` 或 `gh release upload --clobber`
 
-c2me 的许可证是 MIT，只有 `c2me-opts-accel-opencl` 那个模块是 All Rights Reserved；1.21.1 的正式构建不带 OpenCL 模块，class 文件 major 65，就是 Java 21，不用为 Java 22 改环境
+c2me 本体是 MIT，只有 `c2me-opts-accel-opencl` 是 All Rights Reserved，没有打进产物。1.21.1 NeoForge 现在有官方单独的 OpenCL Acceleration Module devbuild，但它同样是 ARR，要求 Java 25，只支持服务端，而且 c2me 会按驱动拉黑设备；本机 gfx90c 实测被标记 `BROKEN_DRIVER_AMD_GCN`，强行绕过会在 `amdocl64.dll` 编译阶段崩 JVM。不要内置，也不要承诺开箱可用
 
 c2me 由 `patchC2me` 从 `c2me_version` 解析后以嵌套 jar 打进产物，保留官方全部模块。Manifest 手动写在 `META-INF/jarjar/metadata.json`，不要换成 ModDevGradle 的 `jarJar` 配置，本地补丁 jar 在配置期解析不到
 
