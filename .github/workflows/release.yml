@@ -2,23 +2,71 @@ name: Release
 
 on:
   push:
+    branches: [ '**' ]
     tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  contents: read
 
 jobs:
+  bump-version:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      commit: ${{ steps.bump.outputs.commit }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Increment patch version and push
+        id: bump
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$BRANCH"
+            git checkout -B release-source "origin/$BRANCH"
+            current=$(sed -n 's/^mod_version=//p' gradle.properties)
+            if [[ ! "$current" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "mod_version must be numeric major.minor.patch, got: $current"
+              exit 1
+            fi
+            next="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+            sed -i "s/^mod_version=.*/mod_version=$next/" gradle.properties
+            git add gradle.properties
+            git commit -m "build(release): 自动递增版本号" \
+              -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            if git push origin "HEAD:refs/heads/$BRANCH"; then
+              echo "version=$next" >> "$GITHUB_OUTPUT"
+              echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "Unable to push the version bump after 5 attempts"
+          exit 1
+
   build:
+    needs: bump-version
+    if: always() && needs.bump-version.result != 'failure' && needs.bump-version.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      commit: ${{ steps.release.outputs.commit }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.bump-version.outputs.commit || github.sha }}
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
@@ -61,6 +109,27 @@ jobs:
             echo "missing c2me jarjar metadata in $jar_file"
             exit 1
           }
+      - name: Prepare release metadata
+        id: release
+        env:
+          VERSION: ${{ needs.bump-version.outputs.version }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            tag="$GITHUB_REF_NAME"
+            prerelease=false
+          else
+            branch=$(printf '%s' "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.-]+/-/g; s/^[.-]+//; s/[.-]+$//')
+            if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+              tag="v$VERSION"
+              prerelease=false
+            else
+              tag="v${VERSION}-${branch}.${GITHUB_RUN_NUMBER}"
+              prerelease=true
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Upload jar
         uses: actions/upload-artifact@v7
         with:
@@ -69,9 +138,11 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ bump-version, build ]
+    if: always() && needs.build.result == 'success' && needs.bump-version.result != 'failure' && needs.bump-version.result != 'cancelled'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download jar
         uses: actions/download-artifact@v7
@@ -81,10 +152,18 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.build.outputs.tag }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.commit }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/*.jar --clobber --repo "$GITHUB_REPOSITORY"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/*.jar --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$GITHUB_REF_NAME" dist/*.jar \
-              --title "$GITHUB_REF_NAME" --generate-notes --repo "$GITHUB_REPOSITORY"
+            args=()
+            if [[ "$PRERELEASE" == "true" ]]; then
+              args+=(--prerelease)
+            fi
+            gh release create "$RELEASE_TAG" dist/*.jar \
+              --title "$RELEASE_TAG" --generate-notes "${args[@]}" \
+              --target "$RELEASE_COMMIT" --repo "$GITHUB_REPOSITORY"
           fi

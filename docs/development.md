@@ -326,7 +326,7 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `gametest.yml` 在 PR 触发，跑两遍 `./gradlew runGameTestServer`：一遍原版环境，一遍把 c2me 1.21.1 NeoForge 构建放进 `run/gametest/mods`
 
-`release.yml` 在 v 标签触发，单个 ubuntu runner 用 Zig 交叉编译出全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里，最后 `gh release create` 或 `gh release upload --clobber`
+`release.yml` 在任意分支收到提交后自动把 `mod_version` 的补丁号加一并提交回该分支，再用 Zig 交叉编译全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里并发布 GitHub Release `main` 发布正式版 其他分支发布带分支名与运行序号的预发布版本 推送 `v*` 标签仍可按标签发布 标签必须匹配 `gradle.properties` 的 `mod_version`
 
 c2me 本体是 MIT，只有 `c2me-opts-accel-opencl` 是 All Rights Reserved，没有打进产物。1.21.1 NeoForge 现在有官方单独的 OpenCL Acceleration Module devbuild，但它同样是 ARR，要求 Java 25，只支持服务端，而且 c2me 会按驱动拉黑设备；本机 gfx90c 实测被标记 `BROKEN_DRIVER_AMD_GCN`，强行绕过会在 `amdocl64.dll` 编译阶段崩 JVM。不要内置，也不要承诺开箱可用
 
