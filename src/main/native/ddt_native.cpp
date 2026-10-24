@@ -1,5 +1,4 @@
 #include <jni.h>
-
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>

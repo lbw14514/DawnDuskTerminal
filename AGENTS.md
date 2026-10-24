@@ -88,6 +88,9 @@ c2me 由 `patchC2me` 从 `c2me_version` 指定的 Modrinth Maven 坐标解析后
 
 c2me 本体是 MIT，`c2me-opts-accel-opencl` 是 All Rights Reserved 且没有打进产物，嵌套 jar 里保留 `LICENSE-MIT.txt`。官方 1.21.1 OpenCL devbuild 也是 ARR，要求 Java 25 且只能外挂安装，不要内置或随产物分发
 
+不许在readme等文件中写本机独有环境！
+
+
 ## 暮色森林
 
 运行必须装暮色森林 1.21.1
