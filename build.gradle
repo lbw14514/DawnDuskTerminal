@@ -125,7 +125,9 @@ configurations {
 // 专用服对照证明官方 c2me 的地形高度与不装 c2me 逐字节一致，开发环境那 15 列差是 dev 侧
 // classpath 组合造成的假阳性，所以这里保留全部模块，只把 jar 嵌进产物
 def c2meRemovedModules = []
-def c2meBundleVersion = '0.4.0-alpha.0.123.1'
+// JarJar 元数据只写 mod 版本，加载器后缀 +1.21.1 不进 range 和 artifactVersion
+// 官方 c2me 自己的 metadata.json 也是这么写的
+def c2meBundleVersion = c2me_version.split('\\+')[0]
 def c2meBundleGroup = 'com.ishland.c2me'
 def c2meBundleArtifact = 'c2me-neoforge'
 def patchC2me = tasks.register('patchC2me') {
@@ -189,6 +191,7 @@ def patchC2me = tasks.register('patchC2me') {
 // 手写 JarJar 元数据，避免 ModDevGradle 的 jarJar 配置在配置期就去解析本地补丁 jar
 def c2meJarJarMetadata = tasks.register('generateC2meJarJarMetadata') {
     def output = layout.buildDirectory.file('c2me/META-INF/jarjar/metadata.json')
+    inputs.property('version', c2meBundleVersion)
     outputs.file(output)
     doLast {
         def file = output.get().asFile
@@ -217,7 +220,7 @@ def c2meJarJarMetadata = tasks.register('generateC2meJarJarMetadata') {
 // compileOnly 供编译，runtimeOnly 让 runClient runServer runData 这些开发运行也加载它们
 // 它们都是普通模组，运行时必须装在游戏端，jar 不会被打进本模组的产物
 dependencies {
-    // c2me 本体打进 jar，先去掉会改地形的两个模块；外部安装时由 FML 的 JarJar 协商处理
+    // c2me 本体打进 jar，保留官方全部模块；外部安装时由 FML 的 JarJar 协商处理
     c2meCompat "maven.modrinth:c2me-neoforge:${c2me_version}"
 
     // 4.9.3 是 1.21.1 线上当前的版本，它声明 neoforge >= 21.1.150，本项目满足
