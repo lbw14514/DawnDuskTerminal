@@ -8,19 +8,19 @@
   "portal_enter": {
     "subtitle": "subtitles.dawnduskterminal.portal_enter",
     "sounds": [
-      "dawnduskterminal:portal_enter"
+      "dawnduskterminal:portal_open"
     ]
   },
   "portal_exit": {
     "subtitle": "subtitles.dawnduskterminal.portal_exit",
     "sounds": [
-      "dawnduskterminal:portal_exit"
+      "dawnduskterminal:portal_open"
     ]
   },
   "chrono_ambient": {
     "subtitle": "subtitles.dawnduskterminal.chrono_ambient",
     "sounds": [
-      "dawnduskterminal:chrono_ambient"
+      "dawnduskterminal:carminite_field"
     ]
   },
   "portal_hurt": {

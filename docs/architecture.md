@@ -40,7 +40,7 @@
 
 `registry/` 全部 `DeferredRegister`
 
-`server/` 服务端事件与刷怪规则
+`server/` 服务端事件
 
 `structure/` 结构白名单与摆放表
 
@@ -332,8 +332,6 @@
 `onPlayerTick` 每 10 tick 扫玩家附近的投料物，进维度后触发进度判定
 
 `onLivingDeath` 记录 Boss 击杀
-
-`onSpawnPlacement` 走 `SpawnRules`
 
 `onRightClickItem` 拦截原版桶，禁止舀两种模组流体
 

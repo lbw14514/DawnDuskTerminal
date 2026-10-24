@@ -81,8 +81,12 @@ public abstract class GeckoLibAnimationProcessorMixin {
         method = "tickAnimation",
         at = @At(
             value = "INVOKE",
-            target = "Lsoftware/bernie/geckolib/animation/AnimationProcessor;getRegisteredBones()Ljava/util/Collection;"
-        )
+            target = "Lsoftware/bernie/geckolib/animation/AnimationProcessor;getRegisteredBones()Ljava/util/Collection;",
+            // 4.9.3 的 tickAnimation 里只有重置循环这一处调用 升版后若前面多出新调用点
+            // 没有 ordinal 会静默改到错误的位置 钉死第一处并让 require 在匹配不到时直接报错
+            ordinal = 0
+        ),
+        require = 1
     )
     private Collection<GeoBone> ddt$bonesToReset(AnimationProcessor<?> processor) {
         AnimatableManager<?> manager = this.ddt$manager;

@@ -301,8 +301,8 @@
   "subtitles.dawnduskterminal.experiment_052_explode": "试验物品052爆炸",
   "subtitles.dawnduskterminal.tower_ghast_ambient": "高塔恶魂低语",
   "subtitles.dawnduskterminal.tower_ghast_hurt": "高塔恶魂受击",
-  "death.attack.dawnduskterminal.carminite_field": "%1$s 被砷铅铁反应场溶解",
-  "death.attack.dawnduskterminal.carminite_fire": "%1$s 被砷铅铁火焰烧尽",
+  "death.attack.carminite_field": "%1$s 被砷铅铁反应场溶解",
+  "death.attack.carminite_fire": "%1$s 被砷铅铁火焰烧尽",
   "entity.dawnduskterminal.tower_ghast": "测试恶魂591",
   "entity.dawnduskterminal.painting_ghast_1": "恶魂壁画"
 }

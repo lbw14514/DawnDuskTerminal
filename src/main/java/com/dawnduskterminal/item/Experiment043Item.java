@@ -3,7 +3,7 @@ package com.dawnduskterminal.item;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -35,7 +35,7 @@ public class Experiment043Item extends Item {
             if (level instanceof ServerLevel server) {
                 FireJetProcess.start(server, player, hand);
                 player.getCooldowns().addCooldown(this, 201);
-                stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+                stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
             }
 
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());

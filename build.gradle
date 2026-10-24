@@ -360,6 +360,20 @@ def zigArchiveExtension = zigHostKey == 'windows' ? 'zip' : 'tar.xz'
 // 工程内旧位置（.gradle/zig-downloads 与 build/tools）里的整包会被认下来并搬过来
 def zigArchive = new File(new File(zigInstallRoot, 'downloads'), "zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
 def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
+// 官方 index.json 里每个包的 shasum 下载后必须逐字节对上
+// 换 ddt_zig_version 时要么把新版本的官方哈希补进这张表 要么显式传 -Pddt_zig_sha256=<hex>
+def zigHost = "${zigHostKey}-${zigHostArch}"
+def zigKnownSha256 = [
+    '0.13.0': [
+        'windows-x86_64': 'd859994725ef9402381e557c60bb57497215682e355204d754ee3df75ee3c158',
+        'linux-x86_64'  : 'd45312e61ebcc48032b77bc4cf7fd6915c11fa16e4aad116b66c9468211230ea',
+        'linux-aarch64' : '041ac42323837eb5624068acd8b00cd5777dac4cf91179e8dad7a7e90dd0c556',
+        'macos-x86_64'  : '8b06ed1091b2269b700b3b07f8e3be3b833000841bae5aa6a09b1a8b4773effd',
+        'macos-aarch64' : '46fae219656545dfaf4dce12fb4e8685cec5b51d721beee9389ab4194d43394c',
+    ],
+]
+def zigSha256Override = providers.gradleProperty('ddt_zig_sha256').getOrNull()
+def zigSha256 = (zigKnownSha256[zigVersion]?.get(zigHost) ?: zigSha256Override)?.trim()?.toLowerCase(Locale.ROOT)
 
 // 配置缓存不允许任务动作在执行期碰 layout，路径在配置期先落成普通 File
 // zig 的缓存目录也放用户目录下，理由同上：工程目录里的权限项会让 zig 建临时文件被拒
@@ -387,10 +401,17 @@ def installZig = tasks.register('installZig') {
     description = '下载并解压编译 native 用的 Zig 工具链'
     onlyIf { !zigExecutableFile.exists() }
     inputs.property('zigVersion', zigVersion)
-    inputs.property('zigHost', "${zigHostKey}-${zigHostArch}")
+    inputs.property('zigHost', zigHost)
     inputs.property('zigUrl', zigUrl)
+    inputs.property('zigSha256', zigSha256 ?: '')
     outputs.file(zigExecutable)
     doLast {
+        if (zigSha256 == null) {
+            throw new GradleException(
+                "没有 Zig ${zigVersion} (${zigHost}) 的官方 SHA-256，拒绝下载未经校验的工具链\n" +
+                "把 https://ziglang.org/download/index.json 里对应条目的 shasum 补进 build.gradle 的 zigKnownSha256\n" +
+                "或者给本次构建传 -Pddt_zig_sha256=<hex>")
+        }
         def archive = zigArchiveFile
         // 完整性校验要按包格式分开做：zip 看中央目录，tar.xz 看尾部 footer 的 "YZ" 魔数
         // 只按 zip 判定会让 linux 与 macOS 的 tar.xz 永远算不完整 下满后再续传只会得到 HTTP 416
@@ -420,15 +441,32 @@ def installZig = tasks.register('installZig') {
             footer[10] == (byte) 0x59 && footer[11] == (byte) 0x5A
         }
 
+        // 结构完整只能证明包没被截断 不能证明内容就是官方那份
+        // 被替换过中间字节的压缩包照样能通过 zip 中央目录与 xz footer 检查
+        def sha256Of = { File file ->
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            file.withInputStream { stream ->
+                byte[] buffer = new byte[65536]
+                int read
+                while ((read = stream.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+            digest.digest().collect { String.format('%02x', it & 0xff) }.join()
+        }
+        def archiveMatches = { File file ->
+            archiveIsComplete(file) && sha256Of(file) == zigSha256
+        }
+
         archive.parentFile.mkdirs()
-        def adoptedFrom = zigLegacyArchiveFiles.find { archiveIsComplete(it) }
-        if (!archiveIsComplete(archive) && adoptedFrom != null) {
+        def adoptedFrom = zigLegacyArchiveFiles.find { archiveMatches(it) }
+        if (!archiveMatches(archive) && adoptedFrom != null) {
             logger.lifecycle("接管 ${adoptedFrom} 下已下载完整的 Zig 包")
             java.nio.file.Files.copy(adoptedFrom.toPath(), archive.toPath(),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
-        if (archiveIsComplete(archive)) {
-            logger.lifecycle("复用已下载的 Zig 包（${archive.length()} 字节）")
+        if (archiveMatches(archive)) {
+            logger.lifecycle("复用已下载并通过 SHA-256 校验的 Zig 包（${archive.length()} 字节）")
         } else {
             archive.delete()
             long expected = -1L
@@ -449,12 +487,12 @@ def installZig = tasks.register('installZig') {
                         archive.delete()
                         have = 0L
                     } else if (status == 416) {
-                        // 续传起点越过文件尾：本地这份已经下满，本地校验通过就当完成
-                        if (archiveIsComplete(archive)) {
+                        // 续传起点越过文件尾：本地这份已经下满，校验通过就当完成
+                        if (archiveMatches(archive)) {
                             logger.lifecycle("服务端拒绝续传（HTTP 416，本地 ${have} 字节），本地包已完整")
                             break
                         }
-                        logger.lifecycle('服务端拒绝续传（HTTP 416），本地包不完整，从零重下')
+                        logger.lifecycle('服务端拒绝续传（HTTP 416），本地包不完整或校验不符，从零重下')
                         archive.delete()
                         throw new java.io.IOException('HTTP 416')
                     } else if (status != 200 && status != 206) {
@@ -476,15 +514,20 @@ def installZig = tasks.register('installZig') {
                     logger.lifecycle("下载中断（当前 ${archive.exists() ? archive.length() : 0} 字节）：${e.message}")
                 }
                 if (archiveIsComplete(archive)) {
-                    break
+                    if (archiveMatches(archive)) {
+                        break
+                    }
+                    logger.lifecycle("Zig 包结构完整但 SHA-256 与官方值不符，删除后重新下载")
+                    archive.delete()
                 }
                 if (attempt < attempts) {
                     Thread.sleep(2000L * attempt)
                 }
             }
-            if (!archiveIsComplete(archive)) {
+            if (!archiveMatches(archive)) {
                 throw new GradleException("下载 Zig ${zigVersion} 失败：${zigUrl}\n" +
                     "已下载的部分保留在 ${archive}，重跑会断点续传，不要删\n" +
+                    "校验期望 SHA-256 ${zigSha256}，实际 ${archive.exists() ? sha256Of(archive) : '文件不存在'}\n" +
                     "走代理要在 ~/.gradle/gradle.properties 里写 systemProp.http(s).proxyHost 与 proxyPort\n" +
                     "国内网络可以从 PyPI 镜像取同一份工具链，比 ziglang.org 快两个数量级：\n" +
                     "  curl -L -o zig.whl https://pypi.tuna.tsinghua.edu.cn/simple/ziglang/ 里对应的 ziglang-${zigVersion}-py3-none-<平台>.whl\n" +
@@ -494,6 +537,9 @@ def installZig = tasks.register('installZig') {
             if (expected > 0L && archive.length() != expected) {
                 logger.lifecycle("包大小 ${archive.length()} 与响应头的 ${expected} 不一致，但包结构完整，继续")
             }
+        }
+        if (!archiveMatches(archive)) {
+            throw new GradleException("Zig 安装包 SHA-256 校验失败，拒绝解压 ${archive}")
         }
         zigDirectoryFile.mkdirs()
         // Windows 10 1803 之后自带 bsdtar，macOS 与 Linux 也都有 tar，zip 与 tar.xz 都能吃

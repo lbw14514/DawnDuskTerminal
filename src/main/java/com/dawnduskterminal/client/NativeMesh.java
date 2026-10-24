@@ -14,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Locale;
 
 /**
@@ -137,21 +140,25 @@ public final class NativeMesh {
             Path directory = nativeCacheDirectory(platform);
             Files.createDirectories(directory);
             Path file = directory.resolve(platform.library());
+            Path checksum = directory.resolve(platform.library() + ".sha256");
             byte[] library = input.readAllBytes();
-            if (!Files.isRegularFile(file) || Files.size(file) != library.length) {
+            // 只比长度会放过同长度的坏库：缓存文件与 jar 里的资源必须逐字节一致才复用
+            String expected = sha256(library);
+            if (!cachedLibraryMatches(file, expected)) {
                 try {
                     Files.write(file, library,
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (IOException writeFailure) {
-                    if (!Files.isRegularFile(file)) {
+                    // 另一个实例正映射着同名 dll 时覆盖会失败，但复用前仍要确认内容没被动过
+                    if (!cachedLibraryMatches(file, expected)) {
                         throw writeFailure;
                     }
-                    // 另一个实例正映射着同名 dll 复用它即可 ABI 校验会拦住版本不匹配
                     DawnDuskTerminal.LOGGER.warn(
                         "DawnDuskTerminal 无法覆盖 native 缓存 {}，复用已有文件: {}",
                         file, writeFailure.toString());
                 }
             }
+            writeChecksumIfNeeded(checksum, expected);
 
             // 先落标记再碰 native 这样连 System.load 期间的硬崩溃也能在下次启动被识别
             createMarker(marker);
@@ -228,6 +235,59 @@ public final class NativeMesh {
             version = "dev";
         }
         return version.replaceAll("[^A-Za-z0-9._+-]", "_");
+    }
+
+    /** 缓存库与 jar 内资源逐字节一致才允许交给 System.load */
+    private static boolean cachedLibraryMatches(Path file, String expected) {
+        try {
+            return Files.isRegularFile(file) && expected.equals(sha256(file));
+        } catch (IOException exception) {
+            return false;
+        }
+    }
+
+    private static String sha256(byte[] bytes) {
+        MessageDigest digest = sha256Digest();
+        digest.update(bytes);
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String sha256(Path file) throws IOException {
+        MessageDigest digest = sha256Digest();
+        try (InputStream stream = Files.newInputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = stream.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static MessageDigest sha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is not available", exception);
+        }
+    }
+
+    /** .sha256 只是给人看的旁路文件 复用判断始终以缓存库本身的摘要为准 */
+    private static void writeChecksumIfNeeded(Path path, String expected) {
+        try {
+            if (Files.isRegularFile(path)
+                && expected.equals(Files.readString(path, StandardCharsets.UTF_8).trim())) {
+                return;
+            }
+        } catch (IOException ignored) {
+            // 读不到就重写
+        }
+        try {
+            Files.writeString(path, expected + System.lineSeparator(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            DawnDuskTerminal.LOGGER.warn(
+                "DawnDuskTerminal 无法写入 native 校验文件 {}: {}", path, exception.toString());
+        }
     }
 
     /**

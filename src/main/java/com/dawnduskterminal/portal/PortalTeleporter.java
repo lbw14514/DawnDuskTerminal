@@ -28,6 +28,12 @@ import java.util.Set;
  */
 public final class PortalTeleporter {
     private static final int MAX_CHUNK_LOADS = 64;
+    /**
+     * 落点搜索跑在主线程 每个未加载的区块都是一次同步生成
+     * 只限区块数挡不住单块很慢的情况 再加一层软时间预算 超时就铺兜底平台
+     */
+    private static final long LANDING_SEARCH_BUDGET_NANOS = 8_000_000L;
+    private static final long ARRIVAL_SEARCH_BUDGET_NANOS = 4_000_000L;
     public static final int LANDING_SEARCH_RADIUS = 320;
     public static final int LANDING_MIN_Y = 0;
     public static final int LANDING_MAX_Y = 128;
@@ -68,6 +74,7 @@ public final class PortalTeleporter {
     public static Vec3 findSafeLanding(ServerLevel level, double originX, double originZ, int originY) {
         int baseX = Mth.floor(originX);
         int baseZ = Mth.floor(originZ);
+        long deadline = System.nanoTime() + LANDING_SEARCH_BUDGET_NANOS;
         Set<Long> loaded = new HashSet<>();
         loaded.add(ChunkPos.asLong(baseX >> 4, baseZ >> 4));
         level.getChunk(baseX >> 4, baseZ >> 4);
@@ -82,6 +89,9 @@ public final class PortalTeleporter {
                 for (int dz = -ring; dz <= ring; dz += step) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) < ring) {
                         continue;
+                    }
+                    if (System.nanoTime() >= deadline) {
+                        break search;
                     }
                     long key = ChunkPos.asLong((baseX + dx) >> 4, (baseZ + dz) >> 4);
                     // 预算在这里严格检查：已经加载过的列不占新预算，否则一环内会远超上限
@@ -188,11 +198,18 @@ public final class PortalTeleporter {
         int chosenX = Integer.MIN_VALUE;
         int chosenZ = 0;
         int chosenFloor = 0;
+        long deadline = System.nanoTime() + ARRIVAL_SEARCH_BUDGET_NANOS;
         for (int ring = 0; ring <= 24 && chosenX == Integer.MIN_VALUE; ring += 4) {
+            if (System.nanoTime() >= deadline) {
+                break;
+            }
             for (int dx = -ring; dx <= ring && chosenX == Integer.MIN_VALUE; dx += 4) {
                 for (int dz = -ring; dz <= ring; dz += 4) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
                         continue;
+                    }
+                    if (System.nanoTime() >= deadline) {
+                        break;
                     }
                     int x = reqX + dx;
                     int z = reqZ + dz;

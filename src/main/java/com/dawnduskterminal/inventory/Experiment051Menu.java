@@ -95,8 +95,8 @@ public class Experiment051Menu extends AbstractContainerMenu {
         this.data = data;
         this.level = inventory.player.level();
 
-        this.addSlot(new Slot(container, INPUT_SLOT, INPUT_X, INPUT_Y));
-        this.addSlot(new Slot(container, FUEL_SLOT, FUEL_X, FUEL_Y));
+        this.addSlot(new MachineSlot(container, INPUT_SLOT, INPUT_X, INPUT_Y));
+        this.addSlot(new MachineSlot(container, FUEL_SLOT, FUEL_X, FUEL_Y));
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
                 this.addSlot(new OutputSlot(container,
@@ -187,6 +187,18 @@ public class Experiment051Menu extends AbstractContainerMenu {
         int total = this.data.get(Experiment051BlockEntity.DATA_COOK_TOTAL);
         int progress = this.data.get(Experiment051BlockEntity.DATA_COOK_PROGRESS);
         return total != 0 && progress != 0 ? Mth.clamp((float) progress / (float) total, 0.0F, 1.0F) : 0.0F;
+    }
+
+    /** 原料与燃料格都直接问容器，界面与漏斗共用同一套 canPlaceItem 判定 */
+    private static class MachineSlot extends Slot {
+        MachineSlot(Container container, int index, int x, int y) {
+            super(container, index, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return this.container.canPlaceItem(this.getContainerSlot(), stack);
+        }
     }
 
     /** 出料格：能拿不能放 */

@@ -296,8 +296,10 @@
   "subtitles.dawnduskterminal.experiment_052_explode": "Experiment 052 explodes",
   "subtitles.dawnduskterminal.tower_ghast_ambient": "Tower ghast mutters",
   "subtitles.dawnduskterminal.tower_ghast_hurt": "Tower ghast hurts",
-  "death.attack.dawnduskterminal.carminite_field": "%1$s dissolved in a carminite field",
-  "death.attack.dawnduskterminal.carminite_fire": "%1$s burned away in carminite fire",
+  "death.attack.carminite_field": "%1$s dissolved in a carminite field",
+  "death.attack.carminite_fire": "%1$s burned away in carminite fire",
+  "death.attack.enthu_fluid": "%1$s was embraced by the enthused twilight",
+  "death.attack.stability": "%1$s was lost in the twilight",
   "entity.dawnduskterminal.tower_ghast": "Tower Ghast",
   "entity.dawnduskterminal.painting_ghast_1": "Ghast Mural"
 }

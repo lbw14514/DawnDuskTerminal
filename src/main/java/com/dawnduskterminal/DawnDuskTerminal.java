@@ -84,7 +84,6 @@ public final class DawnDuskTerminal {
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onLivingDeath);
-        NeoForge.EVENT_BUS.addListener(DdtServerEvents::onSpawnPlacement);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onRightClickItem);
         // 试验物品 052 的连锁：主爆炸进行中把范围内的同类方块从破坏名单里摘出来、排到下一 tick 引爆
         NeoForge.EVENT_BUS.addListener(CarminiteBlast::protectArmedBlocks);

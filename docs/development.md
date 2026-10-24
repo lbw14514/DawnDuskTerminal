@@ -74,6 +74,8 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 纯资源改动可能报 UP-TO-DATE，要验证 jar 里的内容
 
+依赖校验：仓库带 `gradle/verification-metadata.xml`，解析依赖时逐个核对 SHA-256，Twilight Forest 与 c2me 也在覆盖范围内。新增或升级依赖后跑 `./gradlew --write-verification-metadata sha256 compileJava` 更新；LWJGL 的 native 包按平台分发，Windows 上生成后记得补上 Linux 与 macOS 的校验值，否则 CI 第一次解析 native 时会报缺少校验
+
 ## VS Code 的 Gradle 任务
 
 侧栏的 Gradle 任务按钮用 Java 扩展自带的 JRE（25）起 daemon，`build.gradle` 的 `java.toolchain` 21 探测不到，`createMinecraftArtifacts` 直接报 `Cannot find a Java installation ... languageVersion=21`，于是 `runClient` 之类一点就挂
@@ -107,7 +109,7 @@ Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.pro
 
 工具链与它的缓存（`~/.gradle/ddt-zig-cache/`）都不放工程目录：工程目录带 DSH 沙盒留下的目录权限项，zig 在那儿建编译临时目录会被拒，报 `cache: manifest_create AccessDenied`，同一份二进制搬到用户目录下就正常，与 Zig 版本无关
 
-ziglang.org 只有 20KB/s 上下，79MB 的包中途断流是常态，所以 `installZig` 的下载带断点续传、重试与 zip 完整性校验，残包会留在原地等下一次续传，不会像旧实现那样拖到 tar 解压才报错。国内网络可以从 PyPI 镜像取同一份工具链，比 ziglang.org 快两个数量级，解压到 `~/.gradle/ddt-zig/<version>` 后 `installZig` 直接跳过下载
+ziglang.org 只有 20KB/s 上下，79MB 的包中途断流是常态，所以 `installZig` 的下载带断点续传、重试、zip/xz 结构校验与官方 SHA-256 校验，残包会留在原地等下一次续传，不会像旧实现那样拖到 tar 解压才报错。换 `ddt_zig_version` 时必须把对应版本的官方 shasum 补进 `build.gradle` 的 `zigKnownSha256`，或用 `-Pddt_zig_sha256=<hex>` 显式给出，否则 `installZig` 拒绝下载。国内网络可以从 PyPI 镜像取同一份工具链，比 ziglang.org 快两个数量级，解压到 `~/.gradle/ddt-zig/<version>` 后 `installZig` 直接跳过下载
 
 | target | triple | 产物 |
 |---|---|---|
@@ -199,7 +201,8 @@ native 侧所有导出函数都在 `try/catch(...)` 内返回错误码，C++ 异
 
 | 属性 | 作用 |
 |---|---|
-| `-Pddt_zig_version=0.13.0` | 换 Zig 版本 |
+| `-Pddt_zig_version=0.13.0` | 换 Zig 版本，非内置版本还要配 `-Pddt_zig_sha256` |
+| `-Pddt_zig_sha256=<hex>` | 覆盖当前目标的官方包 SHA-256 |
 
 Zig 的产物先写进 `build/tools/native-work`，只把目标库拷进 `build/native/<target>/`，避免 Windows 上顺带产出的 `.lib` 与 `.pdb` 被打进 jar
 
@@ -349,7 +352,7 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `gametest.yml` 在 PR 触发，跑两遍 `./gradlew runGameTestServer`：一遍原版环境，一遍把 c2me 1.21.1 NeoForge 构建放进 `run/gametest/mods`
 
-`release.yml` 在任意分支收到提交后自动把 `mod_version` 的补丁号加一并提交回该分支，再用 Zig 交叉编译全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里并发布 GitHub Release `main` 发布正式版 其他分支发布带分支名与运行序号的预发布版本 推送 `v*` 标签仍可按标签发布 标签必须匹配 `gradle.properties` 的 `mod_version`
+`release.yml` 只在 push `main` 与推送 `v*` 标签时触发。`main` 自动把 `mod_version` 的补丁号加一并提交回 `main`，再用 Zig 交叉编译全平台 jar，校验五个 native 与嵌套的 c2me 都在 jar 里并发布 GitHub Release。其他分支不会再自动发版，需要时手动跑 `workflow_dispatch`。标签必须匹配 `gradle.properties` 的 `mod_version`
 
 c2me 本体是 MIT，只有 `c2me-opts-accel-opencl` 是 All Rights Reserved，没有打进产物。1.21.1 NeoForge 现在有官方单独的 OpenCL Acceleration Module devbuild，但它同样是 ARR，要求 Java 25，只支持服务端，而且 c2me 会按驱动拉黑设备；本机 gfx90c 实测被标记 `BROKEN_DRIVER_AMD_GCN`，强行绕过会在 `amdocl64.dll` 编译阶段崩 JVM。不要内置，也不要承诺开箱可用
 

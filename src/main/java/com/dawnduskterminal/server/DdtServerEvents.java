@@ -39,7 +39,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -165,15 +164,6 @@ public final class DdtServerEvents {
             return;
         }
         BossProgressTracker.onBossKilled(dead, killer);
-    }
-
-    public static void onSpawnPlacement(MobSpawnEvent.SpawnPlacementCheck event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
-            return;
-        }
-        if (!SpawnRules.allow(level, event.getPos(), event.getEntityType())) {
-            event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
-        }
     }
 
     /**

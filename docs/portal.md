@@ -84,15 +84,15 @@
 
 落点搜索 `findSafeLanding`
 
-先用原点列，再按 16 格环扩到半径 320，最多加载 64 个区块
+先用原点列，再按 16 格环扩到半径 320，最多加载 64 个区块，并受 8ms 软时间预算限制
 
 单列判定用 `MOTION_BLOCKING_NO_LEAVES` 表面，表面须在 0 到 128，下方能站，脚部无碰撞且无流体
 
-搜不到时铺一块半径 6 的兜底平台，用霞草 霞土 苍穹石
+搜不到或超出时间预算时铺一块半径 6 的兜底平台，用霞草 霞土 苍穹石
 
 进入维度时在落点附近建到达门 `buildArrivalPortal`
 
-先在 24 格环内找平缓地面，铺半径 4 的苍穹石台面
+先在 24 格环内找平缓地面（4ms 预算），铺半径 4 的苍穹石台面
 
 台面上开 2 乘 2 的传送门流体池，池边铺霞草与霞土
 
@@ -152,13 +152,13 @@
 
 `portal_open` 开门
 
-`portal_enter` 进入
+`portal_enter` 进入 暂借 `portal_open` 的音频
 
-`portal_exit` 离开
+`portal_exit` 离开 暂借 `portal_open` 的音频
 
 `portal_hurt` 受侵蚀
 
-`chrono_ambient` 维度环境音
+`chrono_ambient` 维度环境音 暂借 `carminite_field` 的音频
 
 ## 命令
 
