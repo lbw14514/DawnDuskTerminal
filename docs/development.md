@@ -98,7 +98,55 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 jar 里的 `native/<target>/` 一次带齐，运行时由 `NativeMesh` 按 `os.name` 与 `os.arch` 挑对应的库
 
-没有纯 Java 兜底：库缺失、加载失败或变换返回错误都直接抛异常，构建期任何一个目标编不出来也会让 `gradlew build` 失败
+构建期仍是硬失败：任何一个目标编不出来都会让 `gradlew build` 失败，`release.yml` 也会校验五个平台都在 jar 里
+
+运行期分成加载类失败与运行类失败两条路径
+
+| 阶段 | 失败情形 | 处理 |
+|---|---|---|
+| 加载 | 平台无产物、资源缺失、`System.load` 失败 | warn 一次，禁用 native，渲染走 GeckoLib 的 Java 路径 |
+| 加载 | ABI 版本或顶点/矩阵/法线布局不匹配 | error 带上两边常量，禁用 native |
+| 加载 | ABI 通过后启动探针失败 | error，禁用 native |
+| 运行 | JNI 抛异常、返回负错误码、句柄失效 | error 一次，整个进程熔断，本帧起回退 Java 路径 |
+| 硬崩溃 | SIGSEGV 之类 | 进程内无法捕获，由下次启动的崩溃标记兜底 |
+
+`NativeMesh` 不做纯 Java 顶点变换，Java 路径就是 `TowerGhastRenderer.renderCube` 里 GeckoLib 自带的那套实现
+
+### ABI 协议
+
+Java 侧 `NativeMesh.ABI_VERSION` 与 native 侧 `ddt::kAbiVersion` 必须一致，当前都是 1
+
+native 导出四个只读常量：`nativeAbiVersion` `nativeVertexFloats` `nativeMatrixFloats` `nativeNormalFloats`
+
+加载后先比对这四项，再跑一个最小用例：建一个两条顶点的网格，用单位矩阵变换一次，逐 float 比对输入输出
+
+任何 JNI 函数签名、参数含义、顶点布局、piece 布局或返回值语义变化都要同时改两处版本号
+
+版本号写在 `gradle.properties` 的 `ddt_native_abi_version`，构建时通过 `-DDDT_NATIVE_ABI_VERSION` 传进 C++
+
+`verifyNativeAbi` 任务会检查 `NativeMesh.ABI_VERSION` 与这个属性一致，`check` 依赖它
+
+### native 的失败与安全模式
+
+加载成功时在 `config/dawnduskterminal-native.crash-marker` 写一个标记，正常退出由 `deleteOnExit` 删除
+
+如果上次运行期间进程硬崩溃，标记会留下，下次启动直接禁用 native 并打一条 error，玩家删掉该文件即可重试
+
+手动关闭 native 的三种方式，优先级从高到低
+
+| 方式 | 写法 |
+|---|---|
+| 配置 | `render.native_mesh = false` |
+| 系统属性 | `-Ddawnduskterminal.disableNative=true` |
+| 环境变量 | `DAWNDUSKTERMINAL_DISABLE_NATIVE=true` |
+
+`-Ddawnduskterminal.forceNative=true` 可以单次忽略崩溃标记，用于排查
+
+native 侧所有导出函数都在 `try/catch(...)` 内返回错误码，C++ 异常不会穿过 JNI 边界
+
+句柄是自增 id 而不是裸指针，失效、重复释放、类型拿错都返回 `kInvalidHandle`，不会解引用野指针
+
+`nativeCreateMesh` 校验每一段 `offset/count` 都在顶点数组内，`nativeTransform` 校验数组长度、直接缓冲区容量与 piece id 范围
 
 `jni.h` 取当前构建 JVM 的，`jni_md.h` 用仓库里的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 同时给 Linux 与 macOS
 

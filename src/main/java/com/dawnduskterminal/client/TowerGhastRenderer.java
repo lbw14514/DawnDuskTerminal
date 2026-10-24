@@ -88,17 +88,35 @@ public final class TowerGhastRenderer {
                                    RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                    boolean isReRender, float partialTick, int packedLight, int packedOverlay,
                                    int colour) {
-            if (!isReRender && buffer != null && model != null) {
-                ensureNativeMesh(model);
-                this.nativeBatch.begin(this.nativeMesh);
-                try {
-                    super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
-                        false, partialTick, packedLight, packedOverlay, colour);
-                } finally {
-                    this.nativeBatch.end();
+            if (!isReRender && buffer != null && model != null && NativeMesh.isAvailable()) {
+                NativeGeoMesh mesh = ensureNativeMesh(model);
+                if (mesh != null) {
+                    try {
+                        this.nativeBatch.begin(mesh);
+                    } catch (NativeMesh.NativeMeshException failure) {
+                        this.nativeMesh.close();
+                        this.nativeMesh = null;
+                        mesh = null;
+                    }
+                    if (mesh != null) {
+                        try {
+                            super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
+                                false, partialTick, packedLight, packedOverlay, colour);
+                        } finally {
+                            this.nativeBatch.end();
+                        }
+                        try {
+                            this.nativeBatch.flush(buffer);
+                            return;
+                        } catch (NativeMesh.NativeMeshException failure) {
+                            // native 已熔断 flush 在 finally 里清空了批次 这一帧改走 Java 路径
+                            if (this.nativeMesh != null) {
+                                this.nativeMesh.close();
+                                this.nativeMesh = null;
+                            }
+                        }
+                    }
                 }
-                this.nativeBatch.flush(buffer);
-                return;
             }
             super.actuallyRender(poseStack, animatable, model, renderType, bufferSource, buffer,
                 isReRender, partialTick, packedLight, packedOverlay, colour);
@@ -175,15 +193,26 @@ public final class TowerGhastRenderer {
             }
         }
 
-        private void ensureNativeMesh(BakedGeoModel model) {
+        /**
+         * @return 可用的 native 网格 加载或建网格失败时返回 null 调用方改走 GeckoLib 的 Java 路径
+         */
+        private NativeGeoMesh ensureNativeMesh(BakedGeoModel model) {
             if (this.nativeMesh != null && this.nativeMesh.model() == model) {
-                return;
+                return this.nativeMesh;
             }
             if (this.nativeMesh != null) {
                 this.nativeMesh.close();
                 this.nativeMesh = null;
             }
-            this.nativeMesh = NativeGeoMesh.build(model);
+            if (!NativeMesh.isAvailable()) {
+                return null;
+            }
+            try {
+                this.nativeMesh = NativeGeoMesh.build(model);
+            } catch (NativeMesh.NativeMeshException failure) {
+                this.nativeMesh = null;
+            }
+            return this.nativeMesh;
         }
 
     }
