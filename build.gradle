@@ -315,82 +315,122 @@ jar {
     }
 }
 
-// 可选的 native 顶点变换内核
-// 找不到编译器就跳过，jar 里没有库时 NativeVertex 会走纯 Java 路径，构建不会因此失败
-//
-// 默认按构建机编译。交叉编译时传：
-//   -PddtNativeTarget=linux-aarch64
-//   -PddtNativeCompiler=aarch64-linux-gnu-g++
-//   -PddtNativeFlags="-arch x86_64"
-// 产物落在 build/native/<os>-<arch>/，processResources 会把 build/native 下所有平台一起打进 jar
-def nativeOsName = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
-def nativeArchName = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT)
-def nativeHostOs = nativeOsName.contains('win') ? 'windows' : (nativeOsName.contains('mac') ? 'macos' : 'linux')
-def nativeHostArch = (nativeArchName.contains('aarch64') || nativeArchName.contains('arm64')) ? 'aarch64'
-    : (nativeArchName.contains('64') ? 'x86_64' : 'x86')
+// native 顶点变换内核
+// native 源码是纯 C++17 + std::thread，不含任何平台 API
+// 用 Zig 做统一交叉编译：同一份工具链能出 windows / linux / macos 的 x86_64 与 aarch64
+// 所以无论在哪个平台执行 gradlew build，jar 里都带全部五个平台的 native
+// 任何一个目标编译失败或 Zig 下载失败都直接让构建失败，不产出残缺的 jar
 
-def nativeTarget = providers.gradleProperty('ddtNativeTarget').getOrElse("${nativeHostOs}-${nativeHostArch}")
-def nativeTargetParts = nativeTarget.split('-')
-def nativeTargetOs = nativeTargetParts[0]
-def nativeTargetArch = nativeTargetParts.length > 1 ? nativeTargetParts[1] : nativeHostArch
-def nativeKey = "${nativeTargetOs}-${nativeTargetArch}"
-def nativeLibraryName = nativeTargetOs == 'windows' ? 'ddt_vertex.dll'
-    : (nativeTargetOs == 'macos' ? 'ddt_vertex.dylib' : 'ddt_vertex.so')
-def nativeCompiler = providers.gradleProperty('ddtNativeCompiler')
-    .getOrElse(nativeTargetOs == 'windows' ? 'g++' : 'c++')
-def nativeExtraFlags = providers.gradleProperty('ddtNativeFlags').getOrElse('')
-    .split(' ').findAll { !it.isBlank() }
-def nativeOutput = layout.buildDirectory.dir("native/${nativeKey}")
 def javaHome = System.getProperty('java.home')
-def jniPlatform = nativeTargetOs == 'windows' ? 'win32' : (nativeTargetOs == 'macos' ? 'darwin' : 'linux')
-def nativeWin32Headers = layout.projectDirectory.dir('src/main/native/win32').asFile.absolutePath
+def nativeSource = layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
+def nativeOutput = layout.buildDirectory.dir('native')
+def zigVersion = providers.gradleProperty('ddt_zig_version').getOrElse('0.13.0')
+def zigDirectory = layout.projectDirectory.dir(".gradle/zig/${zigVersion}")
+def zigIsWindows = System.getProperty('os.name', '').toLowerCase(Locale.ROOT).contains('win')
+def zigExecutable = zigDirectory.file(zigIsWindows ? 'zig.exe' : 'zig')
 
-def nativeCompilerAvailable = {
-    try {
-        def process = new ProcessBuilder(nativeCompiler, '--version')
-            .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-            .start()
-        return process.waitFor() == 0
-    } catch (Exception ignored) {
-        return false
+def nativeTargets = [
+    'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_vertex.dll',   jni: 'win32', args: ['-shared']],
+    'linux-x86_64'  : [triple: 'x86_64-linux-gnu.2.17',  lib: 'ddt_vertex.so',    jni: 'posix', args: ['-shared', '-fPIC']],
+    'linux-aarch64' : [triple: 'aarch64-linux-gnu.2.17', lib: 'ddt_vertex.so',    jni: 'posix', args: ['-shared', '-fPIC']],
+    'macos-x86_64'  : [triple: 'x86_64-macos',           lib: 'ddt_vertex.dylib', jni: 'posix', args: ['-dynamiclib']],
+    'macos-aarch64' : [triple: 'aarch64-macos',          lib: 'ddt_vertex.dylib', jni: 'posix', args: ['-dynamiclib']],
+]
+
+def zigHostOs = System.getProperty('os.name', '').toLowerCase(Locale.ROOT)
+def zigHostArch = System.getProperty('os.arch', '').toLowerCase(Locale.ROOT).contains('aarch64') ? 'aarch64' : 'x86_64'
+def zigHostKey = zigHostOs.contains('win') ? 'windows' : (zigHostOs.contains('mac') ? 'macos' : 'linux')
+def zigArchiveExtension = zigHostKey == 'windows' ? 'zip' : 'tar.xz'
+def zigArchive = layout.buildDirectory.file("tools/zig-${zigVersion}-${zigHostKey}-${zigHostArch}.${zigArchiveExtension}")
+def zigUrl = "https://ziglang.org/download/${zigVersion}/zig-${zigHostKey}-${zigHostArch}-${zigVersion}.${zigArchiveExtension}"
+
+def installZig = tasks.register('installZig') {
+    description = '下载并解压编译 native 用的 Zig 工具链'
+    onlyIf { !zigExecutable.asFile.exists() }
+    inputs.property('zigVersion', zigVersion)
+    inputs.property('zigHost', "${zigHostKey}-${zigHostArch}")
+    outputs.file(zigExecutable)
+    doLast {
+        def archive = zigArchive.get().asFile
+        archive.parentFile.mkdirs()
+        logger.lifecycle("下载 Zig ${zigVersion} (${zigHostKey}-${zigHostArch})")
+        def connection = new URL(zigUrl).openConnection()
+        connection.connectTimeout = 30000
+        connection.readTimeout = 300000
+        connection.setRequestProperty('User-Agent', 'DawnDuskTerminal Gradle build')
+        connection.inputStream.withStream { input ->
+            archive.withOutputStream { output -> output << input }
+        }
+        zigDirectory.asFile.mkdirs()
+        // Windows 10 1803 之后自带 bsdtar，macOS 与 Linux 也都有 tar，zip 与 tar.xz 都能吃
+        def extraction = providers.exec {
+            commandLine('tar', '-xf', archive.absolutePath, '-C', zigDirectory.asFile.absolutePath,
+                '--strip-components=1')
+            ignoreExitValue = true
+        }
+        def extractionExit = extraction.result.get().exitValue
+        if (extractionExit != 0 || !zigExecutable.asFile.exists()) {
+            throw new GradleException(
+                "解压 Zig 失败（tar 退出码 ${extractionExit}）\n${extraction.standardError.asText.get()}")
+        }
     }
 }
 
-def nativeArguments = ['-O3', '-std=c++17'] + nativeExtraFlags
-if (nativeTargetOs == 'windows') {
-    // -static 把 libwinpthread 与 gcc/stdc++ 运行库一起塞进 DLL 玩家机器上没有 MinGW 的 DLL
-    nativeArguments += ['-shared', '-pthread', '-static']
-} else if (nativeTargetOs == 'macos') {
-    nativeArguments += ['-dynamiclib', '-pthread']
-} else {
-    nativeArguments += ['-shared', '-fPIC', '-pthread', '-static-libgcc', '-static-libstdc++']
-}
-
-def buildNative = tasks.register('buildNative', Exec) {
-    onlyIf { nativeCompilerAvailable() }
-    inputs.file layout.projectDirectory.file('src/main/native/ddt_vertex.cpp')
-    inputs.property('target', nativeKey)
-    inputs.property('compiler', nativeCompiler)
-    inputs.property('flags', nativeExtraFlags.join(' '))
-    outputs.dir nativeOutput
+def buildNative = tasks.register('buildNative') {
+    description = '用 Zig 交叉编译各平台 native 顶点内核'
+    dependsOn installZig
+    inputs.file(nativeSource)
+    inputs.files(layout.projectDirectory.dir('src/main/native/win32'),
+        layout.projectDirectory.dir('src/main/native/posix'))
+    inputs.property('targets', nativeTargets.keySet().join(','))
+    inputs.property('zigVersion', zigVersion)
+    outputs.dir(nativeOutput)
     doFirst {
-        nativeOutput.get().asFile.mkdirs()
+        // 目标集合可能变过，先清掉上一次的产物，避免旧平台的库混进 jar
+        nativeOutput.get().asFile.deleteDir()
     }
-    commandLine([nativeCompiler] + nativeArguments + [
-        "-I${javaHome}/include".toString(),
-        "-I${javaHome}/include/${jniPlatform}".toString()
-    ] + (nativeTargetOs == 'windows' ? ["-I${nativeWin32Headers}".toString()] : []) + [
-        layout.projectDirectory.file('src/main/native/ddt_vertex.cpp').asFile.absolutePath,
-        '-o',
-        new File(nativeOutput.get().asFile, nativeLibraryName).absolutePath
-    ])
+    doLast {
+        // 先编到临时目录再只拷回目标库，免得 zig 在 Windows 上顺带产出的 .lib / .pdb 被打进 jar
+        def workDirectory = layout.buildDirectory.dir('tools/native-work').get().asFile
+        workDirectory.deleteDir()
+        nativeTargets.each { key, target ->
+            def buildDirectory = new File(workDirectory, key)
+            buildDirectory.mkdirs()
+            def builtLibrary = new File(buildDirectory, target.lib)
+            def arguments = [zigExecutable.asFile.absolutePath, 'c++', '-target', target.triple, '-O3', '-std=c++17']
+            arguments.addAll(target.args)
+            arguments.addAll([
+                "-I${javaHome}/include".toString(),
+                "-I${layout.projectDirectory.dir("src/main/native/${target.jni}").asFile.absolutePath}".toString(),
+                nativeSource.asFile.absolutePath,
+                '-o',
+                builtLibrary.absolutePath,
+            ])
+            logger.lifecycle("编译 native ${key} (${target.triple})")
+            def compilation = providers.exec {
+                commandLine(arguments)
+                ignoreExitValue = true
+            }
+            def exitCode = compilation.result.get().exitValue
+            if (exitCode != 0) {
+                throw new GradleException(
+                    "native 编译失败 ${key} (${target.triple})\n" +
+                    compilation.standardOutput.asText.get() + '\n' +
+                    compilation.standardError.asText.get())
+            }
+            def outputDirectory = new File(nativeOutput.get().asFile, key)
+            outputDirectory.mkdirs()
+            builtLibrary.withInputStream { input ->
+                new File(outputDirectory, target.lib).withOutputStream { output -> output << input }
+            }
+        }
+        workDirectory.deleteDir()
+    }
 }
 
-// build/native 下已经有交叉编译产物的目录也一起打包，CI 先跑矩阵再把产物落到这里
 processResources {
     dependsOn buildNative
-    from(layout.buildDirectory.dir('native')) {
+    from(nativeOutput) {
         into 'native'
         includeEmptyDirs = false
     }

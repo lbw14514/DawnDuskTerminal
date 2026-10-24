@@ -65,14 +65,18 @@ jar 里同时包含两样东西
 | 5 个平台的 native 顶点内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
 | c2me（JarJar 嵌套） | `META-INF/jars/` 加 `META-INF/jarjar/metadata.json` |
 
-本机构建只包含构建机自己的 native，要产出全平台单文件必须走 `.github/workflows/release.yml`
+本机构建就是全平台单文件：`buildNative` 用 Zig 交叉编译，任何宿主上 `./gradlew build` 都会把 5 个 native 一起打进 jar
 
-1 矩阵在 Ubuntu 和 macOS 上分别编译 5 个 native，产物落 `build/native/<os>-<arch>/`
-2 合并任务把 5 个目录下载到 `build/native`
+1 `installZig` 自动下载 Zig 到 `.gradle/zig/<version>`，不需要预装编译器
+2 `buildNative` 依次编 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`，产物落 `build/native/<target>/`
 3 `./gradlew build` 的 `processResources` 把 `build/native` 下全部目录打进 jar
-4 工作流逐个校验 5 个 `ddt_vertex` 都在，缺一个直接失败
+4 `release.yml` 校验 5 个 `ddt_vertex` 都在，缺一个直接失败
 
-Windows DLL 用 `-static` 链接，不能依赖 `libwinpthread-1.dll`
+`-Pddt_zig_version` 换 Zig 版本。native 没有 Java 兜底：库缺失或加载失败直接抛错，任何一个目标编不出来 `build` 直接失败
+
+`jni_md.h` 是仓库自带的：`src/main/native/win32` 给 Windows，`src/main/native/posix` 给 Linux 与 macOS
+
+Windows DLL 用 Zig 的 mingw 目标，只依赖 UCRT 与 `kernel32.dll`，不能依赖 `libwinpthread-1.dll`
 
 c2me 由 `patchC2me` 从 `c2me_version` 指定的 Modrinth Maven 坐标解析后嵌进 jar，默认保留官方全部模块。专用服固定种子对照已经验证官方 c2me 与不装 c2me 的地形高度 群系 流体指纹逐字节一致；开发环境里那 15 列差是 dev classpath 组合的假阳性，不要据此删模块
 
