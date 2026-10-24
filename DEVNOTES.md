@@ -104,12 +104,12 @@ TF 的树叶着色不是群系 JSON 字段，而是 ASM 变换器给 `BiomeColor
 - 只对这两个群系生效，其它（含 TF 自己维度）走原 resolver，不破坏 TF 的 ASM 补丁
 - 反向查群系 key 用 `registryAccess().registryOrThrow(Registries.BIOME).getResourceKey(biome)`（`lookupOrThrow` 返回 RegistryLookup，没有 getResourceKey；TF 源码里写 lookupOrThrow 是它有 AT/不同版本）
 
-### 温度晨昏偏移（temperature += 晨昏线 param）
-`NoiseChunkTemperatureMixin` 在 `cachedClimateSampler` 里用 `ChronoTemperature.wrap` 包住 `router.temperature()`
-把 `ChronoLineState.serverLine().param(blockX, blockZ) * 1.5`（原点 0 沿法向 ±5000 到 ±1.5 垂直方向不变）加到温度上
-于是群系判定朝向太阳变暖 背向变冷
-- 识别维度同矿脉调色板：`settings.defaultFluid().is(portal_fluid)` 在 `<init>` 里存 `ddt$isChrono` 标志
-- `ChronoTemperature.Wrapped` 必须 override `mapAll` 递归进 delegate 否则温度噪声的 NoiseHolder 不被解析 群系全错
+### 温度晨昏偏移（temperature 换成晨昏线 param 的分段映射）
+偏移点在 `PaletteBiomeSource.getNoiseBiome`：照抄 `Climate.Sampler.sample` 的六项 只把温度换成 `ChronoTemperature.shift`
+于是区块落盘 结构判定 `/locate biome` 刷怪 雕刻走同一个群系函数 不会再出现两个采样器判出不同群系
+- 不再包装 `RandomState.router` 或 `NoiseChunk` 的 `DensityFunction`，`locate structure` 不会被插值层拖慢
+- 温度缓存在 `PaletteBiomeSource` 每线程八槽 键是 `(quartX, quartZ)`，前提是本维度温度与 y 无关
+- 换采样器或 `max_distance` 变化时缓存整表失效
 - 只有 chrono 维度受影响 主世界温度不受影响
 
 ### 方块调色板（两层）

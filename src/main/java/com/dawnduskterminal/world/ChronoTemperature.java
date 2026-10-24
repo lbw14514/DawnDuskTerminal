@@ -1,16 +1,16 @@
 package com.dawnduskterminal.world;
 
 import com.dawnduskterminal.config.DdtConfig;
-import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.levelgen.DensityFunction;
 
 /**
  * 把温度改写成晨昏线 {@code param} 的分段函数，让群系按极昼 昼区 热带 温带 寒带 夜区 极夜七段分布
  *
- * <p>包装点在 {@code NoiseChunk.cachedClimateSampler}（{@code NoiseChunkTemperatureMixin}），因此只有区块
- * 落盘的群系带这个映射；结构判定用的 {@code RandomState.sampler()} 不带，需要 {@code HollowTreeSurfaceBiomeMixin}
- * 那条复核
+ * <p>偏移点在 {@code PaletteBiomeSource#getNoiseBiome}：先照常算原版温度，再用 {@link #shift} 换成
+ * {@code param} 的分段映射。放在群系源而不是密度函数图里，是因为区块落盘 结构判定 {@code locate biome}
+ * 刷怪 雕刻最终都走同一个 {@code getNoiseBiome}，而 {@code RandomState} 与 {@code NoiseChunk} 完全不用改。
+ * 曾经把包装塞进 {@code RandomState} 的 {@code router}，{@code NoiseChunk} 会为包装器再建插值层，
+ * {@code locate structure} 直接慢到触发看门狗，这条路不要再走
  *
  * <p>{@code param} 是 {@link ChronoLine#param(double, double)}：方块坐标投影到线的法向上，除以
  * {@code maxDistance} 后钳到 {@code [-1, 1]}。六个断点 {@link #BREAKPOINTS} 把 {@code param} 切成七段，
@@ -104,6 +104,25 @@ public final class ChronoTemperature {
     private ChronoTemperature() {}
 
     /**
+     * 把原版温度换成晨昏线的分段温度
+     *
+     * <p>这是整个偏移唯一的落点：所有采样器给出的原版温度都从这里过一遍，结构判定与区块落盘因此不可能
+     * 再判出不同群系。纯函数，只依赖坐标 线 配置与传入的原版温度
+     *
+     * @param vanillaTemperature 采样器算出的原版温度
+     * @param blockX 方块坐标 X（与 {@code Climate.Sampler#sample} 一致，不是 quart 坐标）
+     * @param blockZ 方块坐标 Z
+     */
+    public static double shift(double vanillaTemperature, int blockX, int blockZ) {
+        double param = ChronoLineState.serverLine().param(blockX, blockZ);
+        double band = bandTemperature(param);
+        // 极带不叠温度噪声：噪声一压就可能掉回原版那一行，极端侧还会推出 extra 的 ±1 ~ ±2 跨度，
+        // 极带边界会变成一条毛边。交界抖动另算，它幅度小，推不出那一行
+        double jitter = band <= -1.0D || band >= 1.0D ? 0.0D : vanillaTemperature * SPREAD;
+        return band + jitter + seamDither(param, blockX, blockZ);
+    }
+
+    /**
      * {@code param} 到温度的纯函数，不带噪声
      *
      * <p>抽出来是为了能在游戏测试里直接断言断点：温度档一旦错位，某个带里就会冒出别的带的群系
@@ -118,13 +137,25 @@ public final class ChronoTemperature {
             double ratio = Mth.clamp((POLAR_NIGHT - param) / (POLAR_NIGHT + 1.0D), 0.0D, 1.0D);
             return Mth.lerp(ratio, BAND_TEMPERATURE[0], -POLAR_TEMPERATURE);
         }
-        for (int i = 1; i < BREAKPOINTS.length; i++) {
-            if (param < BREAKPOINTS[i]) {
-                double ratio = (param - BREAKPOINTS[i - 1]) / (BREAKPOINTS[i] - BREAKPOINTS[i - 1]);
-                return Mth.lerp(ratio, BAND_TEMPERATURE[i - 1], BAND_TEMPERATURE[i]);
-            }
+        // 中间五段用比较直接落段，算式与逐段循环完全一致（断点取下一段，ratio 为 0）
+        if (param < NIGHT_ZONE) {
+            return lerpSegment(0, param);
         }
-        return BAND_TEMPERATURE[BAND_TEMPERATURE.length - 1];
+        if (param < COLD_ZONE) {
+            return lerpSegment(1, param);
+        }
+        if (param < TROPIC_ZONE) {
+            return lerpSegment(2, param);
+        }
+        if (param < DAY_ZONE) {
+            return lerpSegment(3, param);
+        }
+        return lerpSegment(4, param);
+    }
+
+    private static double lerpSegment(int index, double param) {
+        double ratio = (param - BREAKPOINTS[index]) / (BREAKPOINTS[index + 1] - BREAKPOINTS[index]);
+        return Mth.lerp(ratio, BAND_TEMPERATURE[index], BAND_TEMPERATURE[index + 1]);
     }
 
     /**
@@ -134,15 +165,38 @@ public final class ChronoTemperature {
      * 时一模一样
      */
     public static double seamWeight(double param) {
-        double nearest = Double.MAX_VALUE;
-        for (double breakpoint : BREAKPOINTS) {
-            nearest = Math.min(nearest, Math.abs(param - breakpoint));
-        }
-        double t = nearest / SEAM_WIDTH;
+        double t = nearestBreakpointDistance(param) / SEAM_WIDTH;
         if (t >= 1.0D) {
             return 0.0D;
         }
         return 1.0D - t * t * (3.0D - 2.0D * t);
+    }
+
+    /**
+     * 到最近断点的距离，单位是 {@code param}
+     *
+     * <p>落在哪一段就只看那一段的两个端点，和遍历全部六个断点取最小值的结果一样，少四次绝对值
+     */
+    private static double nearestBreakpointDistance(double param) {
+        if (param <= POLAR_NIGHT) {
+            return POLAR_NIGHT - param;
+        }
+        if (param >= POLAR_DAY) {
+            return param - POLAR_DAY;
+        }
+        if (param < NIGHT_ZONE) {
+            return Math.min(param - POLAR_NIGHT, NIGHT_ZONE - param);
+        }
+        if (param < COLD_ZONE) {
+            return Math.min(param - NIGHT_ZONE, COLD_ZONE - param);
+        }
+        if (param < TROPIC_ZONE) {
+            return Math.min(param - COLD_ZONE, TROPIC_ZONE - param);
+        }
+        if (param < DAY_ZONE) {
+            return Math.min(param - TROPIC_ZONE, DAY_ZONE - param);
+        }
+        return Math.min(param - DAY_ZONE, POLAR_DAY - param);
     }
 
     /**
@@ -152,12 +206,15 @@ public final class ChronoTemperature {
      * 值噪声在十倍于波长以上的尺度也能保持连续，因此丢到气候采样里不会在林子里切出格子状断层
      */
     public static double seamDither(double param, double blockX, double blockZ) {
+        return seamDither(param, blockX, blockZ, Math.max(1.0D, DdtConfig.maxDistance()));
+    }
+
+    private static double seamDither(double param, double blockX, double blockZ, double scale) {
         double weight = seamWeight(param);
         if (weight == 0.0D) {
             return 0.0D;
         }
         // 波长是 param 的比例，所以先把坐标除回 param 的尺度。除数与 ChronoLine.param 用的那个一致
-        double scale = Math.max(1.0D, DdtConfig.maxDistance());
         double nx = blockX / scale;
         double nz = blockZ / scale;
         double noise = 0.0D;
@@ -190,55 +247,5 @@ public final class ChronoTemperature {
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
         h ^= h >>> 31;
         return (h >>> 11) * 0x1.0p-53 * 2.0D - 1.0D;
-    }
-
-    /**
-     * 包住一个温度 {@link DensityFunction}，让所有采样结果都改成 {@code param} 的分段映射
-     *
-     * <p>{@code mapAll} 必须递归进 delegate：{@code NoiseChunk} 用 {@code .mapAll(this::wrap)} 把
-     * router 上的函数重新映射成区块内的噪声，好把温度的噪声 holder 解析成真正的 {@code NormalNoise}；
-     * 包装器不递归的话噪声解析不了，每次群系查询都会得到错误结果
-     */
-    public static DensityFunction wrap(DensityFunction temperature) {
-        return new Wrapped(temperature);
-    }
-
-    private static final class Wrapped implements DensityFunction.SimpleFunction {
-        private final DensityFunction delegate;
-
-        Wrapped(DensityFunction delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public double compute(DensityFunction.FunctionContext context) {
-            double param = ChronoLineState.serverLine().param(context.blockX(), context.blockZ());
-            double band = bandTemperature(param);
-            // 极带不叠温度噪声：噪声一压就可能掉回原版那一行，极端侧还会推出 extra 的 ±1 ~ ±2 跨度，
-            // 极带边界会变成一条毛边。交界抖动另算，它幅度小，推不出那一行
-            double jitter = band <= -1.0D || band >= 1.0D ? 0.0D : this.delegate.compute(context) * SPREAD;
-            return band + jitter + seamDither(param, context.blockX(), context.blockZ());
-        }
-
-        @Override
-        public DensityFunction mapAll(DensityFunction.Visitor visitor) {
-            return new Wrapped(this.delegate.mapAll(visitor));
-        }
-
-        @Override
-        public double minValue() {
-            return -POLAR_TEMPERATURE;
-        }
-
-        @Override
-        public double maxValue() {
-            return POLAR_TEMPERATURE;
-        }
-
-        @Override
-        public KeyDispatchDataCodec<? extends DensityFunction> codec() {
-            throw new UnsupportedOperationException(
-                "ChronoTemperature is a runtime wrapper and is not serializable");
-        }
     }
 }

@@ -15,6 +15,7 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -436,59 +437,55 @@ public final class WorldgenTests {
 
         BiomeSource delegate = MultiNoiseBiomeSource.createFromPreset(overworld);
         PaletteBiomeSource source = new PaletteBiomeSource(overworld, palette);
-        Set<ResourceLocation> leaked = new LinkedHashSet<>();
-        int sampled = 0;
-        for (double temperature : new double[] {-1.5D, -1.0D, -0.5D, 0.0D, 0.5D, 1.0D, 1.5D}) {
-            for (double humidity : new double[] {-1.0D, 0.0D, 1.0D}) {
-                for (double continentalness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
-                    for (double erosion : new double[] {-1.0D, 0.0D, 1.0D}) {
-                        for (double weirdness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
-                            Climate.Sampler sampler = new Climate.Sampler(
-                                DensityFunctions.constant(temperature),
-                                DensityFunctions.constant(humidity),
-                                DensityFunctions.constant(continentalness),
-                                DensityFunctions.constant(erosion),
-                                DensityFunctions.constant(0.0D),
-                                DensityFunctions.constant(weirdness),
-                                List.of());
-                            Holder<Biome> got = source.getNoiseBiome(0, 16, 0, sampler);
-                            sampled++;
-                            ResourceLocation key = got.unwrapKey().map(ResourceKey::location).orElse(null);
-                            if (key == null || !MOD_ID.equals(key.getNamespace())) {
-                                leaked.add(key);
+        ChronoLine previous = ChronoLineState.hasServerLine() ? ChronoLineState.serverLine() : null;
+        ChronoLineState.setServerLine(ChronoLine.fallback());
+        try {
+            Set<ResourceLocation> leaked = new LinkedHashSet<>();
+            int sampled = 0;
+            // 温度现在由坐标上的晨昏线 param 决定，采样器里的 temperature 不再参与选格。
+            // 几个 x 覆盖夜区 寒带 温带 热带 昼区，确保每一档都真的取样到
+            for (double param : new double[] {-0.7D, -0.5D, -0.2D, 0.0D, 0.45D, 0.7D}) {
+                int quartX = QuartPos.fromBlock((int) Math.round(param * 5000.0D));
+                for (double humidity : new double[] {-1.0D, 0.0D, 1.0D}) {
+                    for (double continentalness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
+                        for (double erosion : new double[] {-1.0D, 0.0D, 1.0D}) {
+                            for (double weirdness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
+                                Climate.Sampler sampler = constantSampler(0.0D, humidity,
+                                    continentalness, erosion, weirdness);
+                                Holder<Biome> got = source.getNoiseBiome(quartX, 16, 0, sampler);
+                                sampled++;
+                                ResourceLocation key =
+                                    got.unwrapKey().map(ResourceKey::location).orElse(null);
+                                if (key == null || !MOD_ID.equals(key.getNamespace())) {
+                                    leaked.add(key);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        helper.assertTrue(leaked.isEmpty(),
-            "these biomes were not substituted out of " + sampled + " samples: " + leaked);
+            helper.assertTrue(leaked.isEmpty(),
+                "these biomes were not substituted out of " + sampled + " samples: " + leaked);
 
-        // 昼区：温度被钉在热档，气候表报出的原版沙漠换成白地
-        ResourceKey<Biome> vanillaDesert = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.withDefaultNamespace("desert"));
-        ResourceKey<Biome> whiteLand = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "white_land"));
-        int desertSamples = 0;
-        for (double temperature : new double[] {0.55D, 1.0D}) {
+            // 昼区：温度被钉在热档，气候表报出的原版沙漠换成白地
+            ResourceKey<Biome> vanillaDesert = ResourceKey.create(Registries.BIOME,
+                ResourceLocation.withDefaultNamespace("desert"));
+            ResourceKey<Biome> whiteLand = ResourceKey.create(Registries.BIOME,
+                ResourceLocation.fromNamespaceAndPath(MOD_ID, "white_land"));
+            // param 0.7 映射到 0.775，正好在原版热档 0.55 ~ 1.00 中间
+            int hotQuartX = QuartPos.fromBlock(3500);
+            int desertSamples = 0;
             for (double humidity : new double[] {-1.0D, -0.5D}) {
                 for (double continentalness : new double[] {0.3D, 1.0D}) {
                     for (double erosion : new double[] {-1.0D, 0.0D, 1.0D}) {
                         for (double weirdness : new double[] {-1.0D, -0.5D, 0.5D, 1.0D}) {
-                            Climate.Sampler sampler = new Climate.Sampler(
-                                DensityFunctions.constant(temperature),
-                                DensityFunctions.constant(humidity),
-                                DensityFunctions.constant(continentalness),
-                                DensityFunctions.constant(erosion),
-                                DensityFunctions.constant(0.0D),
-                                DensityFunctions.constant(weirdness),
-                                List.of());
+                            Climate.Sampler sampler = constantSampler(0.775D, humidity,
+                                continentalness, erosion, weirdness);
                             if (!delegate.getNoiseBiome(0, 16, 0, sampler).is(vanillaDesert)) {
                                 continue;
                             }
                             desertSamples++;
-                            Holder<Biome> got = source.getNoiseBiome(0, 16, 0, sampler);
+                            Holder<Biome> got = source.getNoiseBiome(hotQuartX, 16, 0, sampler);
                             helper.assertTrue(got.is(whiteLand),
                                 "vanilla desert must become the white land copy, got "
                                     + got.unwrapKey().map(ResourceKey::location).orElse(null));
@@ -496,8 +493,12 @@ public final class WorldgenTests {
                     }
                 }
             }
+            helper.assertTrue(desertSamples > 0, "no sampler produced a vanilla desert to swap");
+        } finally {
+            if (previous != null) {
+                ChronoLineState.setServerLine(previous);
+            }
         }
-        helper.assertTrue(desertSamples > 0, "no sampler produced a vanilla desert to swap");
 
         // 分带映射：六个断点把 param 切七段，每段端点必须落在原版温度档的边界上，
         // 否则某一带会跨档，带里就冒出别的带的群系（比如热带刷出针叶林）
@@ -578,6 +579,55 @@ public final class WorldgenTests {
     }
 
     /**
+     * 结构判定读 {@code RandomState.sampler()}，区块落盘读 {@code NoiseChunk.cachedClimateSampler}。
+     * 两者的温度是两套不同的函数对象，但同一个坐标上的数值相同。群系结果只能由数值决定，不能被函数身份
+     * 或缓存分代带偏，否则两个采样器又会判出不同群系
+     */
+    @GameTest(template = "ddt_empty")
+    public static void biomeSelectionIgnoresTheSamplerIdentity(GameTestHelper helper) {
+        var access = helper.getLevel().getServer().registryAccess();
+        Registry<Biome> biomes = access.registryOrThrow(Registries.BIOME);
+        Registry<MultiNoiseBiomeSourceParameterList> presets =
+            access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
+        Holder<MultiNoiseBiomeSourceParameterList> overworld = presets.getHolderOrThrow(ResourceKey.create(
+            Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST, ResourceLocation.withDefaultNamespace("overworld")));
+        HolderSet<Biome> palette = biomes.getTag(TagKey.create(Registries.BIOME,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes"))).orElseThrow();
+        PaletteBiomeSource source = new PaletteBiomeSource(overworld, palette);
+
+        ChronoLine previous = ChronoLineState.hasServerLine() ? ChronoLineState.serverLine() : null;
+        ChronoLineState.setServerLine(ChronoLine.fallback());
+        try {
+            int compared = 0;
+            for (int quartX : new int[] {-875, -500, -200, 0, 200, 500, 875}) {
+                for (int quartZ : new int[] {-200, 0, 200}) {
+                    for (double humidity : new double[] {-1.0D, 0.0D, 1.0D}) {
+                        for (double weirdness : new double[] {-1.0D, 0.0D, 1.0D}) {
+                            // 两次调用各建一个 constant 函数对象，数值一样；缓存必须按数值重置而不是串值
+                            ResourceKey<Biome> first = source.getNoiseBiome(quartX, 16, quartZ,
+                                    constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
+                                .unwrapKey().orElse(null);
+                            ResourceKey<Biome> second = source.getNoiseBiome(quartX, 16, quartZ,
+                                    constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
+                                .unwrapKey().orElse(null);
+                            helper.assertTrue(first != null && first.equals(second),
+                                "sampler identity leaked into the biome choice at quart ("
+                                    + quartX + ", " + quartZ + "): " + first + " vs " + second);
+                            compared++;
+                        }
+                    }
+                }
+            }
+            helper.assertTrue(compared > 0, "the sampler-independence grid must not be empty");
+        } finally {
+            if (previous != null) {
+                ChronoLineState.setServerLine(previous);
+            }
+        }
+        helper.succeed();
+    }
+
+    /**
      * 极带靠 {@code extra} 那几条自建点选群系：{@link ChronoTemperature} 把 {@code param} 推到 {@code ±1}
      * 时温度到 {@link ChronoTemperature#POLAR_TEMPERATURE}，正好落进温度跨度 {@code ±1 ~ ±2} 的那几条；
      * 极夜那条按湿度切成两半，干的一半是蓝沙沙漠。线中同一套采样器必须还是原版那一侧，否则说明加点的
@@ -606,7 +656,7 @@ public final class WorldgenTests {
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "blue_desert"));
         // 湿度可调，用来验极夜那两条是按干湿分开的
         java.util.function.Function<Double, Climate.Sampler> sampler = humidity -> new Climate.Sampler(
-            ChronoTemperature.wrap(DensityFunctions.constant(0.0D)),
+            DensityFunctions.constant(0.0D),
             DensityFunctions.constant(humidity),
             DensityFunctions.constant(0.0D),
             DensityFunctions.constant(0.0D),
@@ -644,4 +694,16 @@ public final class WorldgenTests {
         helper.succeed();
     }
 
+    private static Climate.Sampler constantSampler(double temperature, double humidity,
+                                                   double continentalness, double erosion,
+                                                   double weirdness) {
+        return new Climate.Sampler(
+            DensityFunctions.constant(temperature),
+            DensityFunctions.constant(humidity),
+            DensityFunctions.constant(continentalness),
+            DensityFunctions.constant(erosion),
+            DensityFunctions.constant(0.0D),
+            DensityFunctions.constant(weirdness),
+            List.of());
+    }
 }
