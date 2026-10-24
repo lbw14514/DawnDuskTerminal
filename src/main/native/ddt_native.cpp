@@ -1,9 +1,21 @@
+// C++20 native 网格变换内核
+//
+// 输入输出保持 AoS 每个顶点 8 个 float 连续放
+// SIMD 内核先把 4 个或 8 个顶点转置成按通道排列的向量 算完再转回去
+// SoA 原型在同一套 benchmark 上更慢 结论留在 docs/development.md
+
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <jni.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <latch>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -11,6 +23,22 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#endif
+#include <windows.h>
+#elif defined(__linux__)
+#include <pthread.h>
+#include <sched.h>
+#endif
 
 // 变换内核的 SIMD 实现按架构编译 x86-64 的 SSE2 与 AVX2+FMA 走 target 属性
 // aarch64 的 NEON 是基线 直接开
@@ -25,7 +53,7 @@
 // Java 侧 NativeMesh.ABI_VERSION 必须与这里一致
 // 构建脚本用 -DDDT_NATIVE_ABI_VERSION=<gradle.properties> 覆盖 默认值只用于手工编译
 #ifndef DDT_NATIVE_ABI_VERSION
-#define DDT_NATIVE_ABI_VERSION 1
+#define DDT_NATIVE_ABI_VERSION 3
 #endif
 
 static_assert(DDT_NATIVE_ABI_VERSION >= 1, "DDT_NATIVE_ABI_VERSION must be positive");
@@ -150,9 +178,10 @@ static inline void transpose4x4(const __m128& a0, const __m128& a1,
     c3 = _mm_movehl_ps(t3, t1);
 }
 
+template <bool kFlip>
 __attribute__((target("sse2")))
-void transformSse2(const Vertex* vertices, int count, const float* matrix,
-                   const float* normalMatrix, int flags, float* out) {
+static void transformSse2Impl(const Vertex* vertices, int count, const float* matrix,
+                              const float* normalMatrix, int flags, float* out) {
     const __m128 m0 = _mm_set1_ps(matrix[0]);
     const __m128 m4 = _mm_set1_ps(matrix[4]);
     const __m128 m8 = _mm_set1_ps(matrix[8]);
@@ -177,13 +206,11 @@ void transformSse2(const Vertex* vertices, int count, const float* matrix,
     const __m128 n8 = _mm_set1_ps(normalMatrix[8]);
 
     const __m128 zero = _mm_setzero_ps();
-    // 只翻符号位 与标量的 -x 逐位一致 -0 与 NaN 不会被翻
+    // 取反折进掩码 只翻负值的符号位 -0 与 NaN 的比较结果为假所以不会动
     const __m128 signBit = _mm_castsi128_ps(_mm_set1_epi32(static_cast<int>(0x80000000u)));
-    const __m128 flipX = (flags & kFlipX) != 0 ? signBit : zero;
-    const __m128 flipY = (flags & kFlipY) != 0 ? signBit : zero;
-    const __m128 flipZ = (flags & kFlipZ) != 0 ? signBit : zero;
-    // 正常立方体的 flags 是 0 这时不必白做 compare/and/xor 由编译器把这个分支提到循环外
-    const bool flipAny = flags != 0;
+    const __m128 flipMaskX = kFlip && (flags & kFlipX) != 0 ? signBit : zero;
+    const __m128 flipMaskY = kFlip && (flags & kFlipY) != 0 ? signBit : zero;
+    const __m128 flipMaskZ = kFlip && (flags & kFlipZ) != 0 ? signBit : zero;
 
     const float* source = reinterpret_cast<const float*>(vertices);
     int i = 0;
@@ -217,7 +244,6 @@ void transformSse2(const Vertex* vertices, int count, const float* matrix,
         tz = _mm_add_ps(tz, _mm_mul_ps(m10, z));
         tz = _mm_add_ps(tz, m14);
 
-        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
         __m128 onx = _mm_mul_ps(n0, nx);
         onx = _mm_add_ps(onx, _mm_mul_ps(n3, ny));
         onx = _mm_add_ps(onx, _mm_mul_ps(n6, nz));
@@ -230,10 +256,10 @@ void transformSse2(const Vertex* vertices, int count, const float* matrix,
         onz = _mm_add_ps(onz, _mm_mul_ps(n5, ny));
         onz = _mm_add_ps(onz, _mm_mul_ps(n8, nz));
 
-        if (flipAny) {
-            onx = _mm_xor_ps(onx, _mm_and_ps(flipX, _mm_cmplt_ps(onx, zero)));
-            ony = _mm_xor_ps(ony, _mm_and_ps(flipY, _mm_cmplt_ps(ony, zero)));
-            onz = _mm_xor_ps(onz, _mm_and_ps(flipZ, _mm_cmplt_ps(onz, zero)));
+        if constexpr (kFlip) {
+            onx = _mm_xor_ps(onx, _mm_and_ps(flipMaskX, _mm_cmplt_ps(onx, zero)));
+            ony = _mm_xor_ps(ony, _mm_and_ps(flipMaskY, _mm_cmplt_ps(ony, zero)));
+            onz = _mm_xor_ps(onz, _mm_and_ps(flipMaskZ, _mm_cmplt_ps(onz, zero)));
         }
 
         __m128 o0, o1, o2, o3, o4, o5, o6, o7;
@@ -253,6 +279,15 @@ void transformSse2(const Vertex* vertices, int count, const float* matrix,
     if (i < count) {
         transformScalar(vertices + i, count - i, matrix, normalMatrix, flags,
                         out + static_cast<std::size_t>(i) * kVertexFloats);
+    }
+}
+
+static void transformSse2(const Vertex* vertices, int count, const float* matrix,
+                          const float* normalMatrix, int flags, float* out) {
+    if (flags != 0) {
+        transformSse2Impl<true>(vertices, count, matrix, normalMatrix, flags, out);
+    } else {
+        transformSse2Impl<false>(vertices, count, matrix, normalMatrix, flags, out);
     }
 }
 
@@ -288,9 +323,10 @@ static inline void transpose8x8(__m256& r0, __m256& r1, __m256& r2, __m256& r3,
     r7 = _mm256_permute2f128_ps(s3, s7, 0x31);
 }
 
+template <bool kFlip>
 __attribute__((target("avx2,fma")))
-void transformAvx2(const Vertex* vertices, int count, const float* matrix,
-                   const float* normalMatrix, int flags, float* out) {
+static void transformAvx2Impl(const Vertex* vertices, int count, const float* matrix,
+                              const float* normalMatrix, int flags, float* out) {
     const __m256 m0 = _mm256_set1_ps(matrix[0]);
     const __m256 m4 = _mm256_set1_ps(matrix[4]);
     const __m256 m8 = _mm256_set1_ps(matrix[8]);
@@ -315,12 +351,11 @@ void transformAvx2(const Vertex* vertices, int count, const float* matrix,
     const __m256 n8 = _mm256_set1_ps(normalMatrix[8]);
 
     const __m256 zero = _mm256_setzero_ps();
+    // 取反折进掩码 只翻负值的符号位 -0 与 NaN 的比较结果为假所以不会动
     const __m256 signBit = _mm256_castsi256_ps(_mm256_set1_epi32(static_cast<int>(0x80000000u)));
-    const __m256 flipX = (flags & kFlipX) != 0 ? signBit : zero;
-    const __m256 flipY = (flags & kFlipY) != 0 ? signBit : zero;
-    const __m256 flipZ = (flags & kFlipZ) != 0 ? signBit : zero;
-    // 正常立方体的 flags 是 0 这时不必白做 compare/and/xor 由编译器把这个分支提到循环外
-    const bool flipAny = flags != 0;
+    const __m256 flipMaskX = kFlip && (flags & kFlipX) != 0 ? signBit : zero;
+    const __m256 flipMaskY = kFlip && (flags & kFlipY) != 0 ? signBit : zero;
+    const __m256 flipMaskZ = kFlip && (flags & kFlipZ) != 0 ? signBit : zero;
 
     const float* source = reinterpret_cast<const float*>(vertices);
     int i = 0;
@@ -334,7 +369,6 @@ void transformAvx2(const Vertex* vertices, int count, const float* matrix,
         __m256 r5 = _mm256_loadu_ps(p + 40);
         __m256 r6 = _mm256_loadu_ps(p + 48);
         __m256 r7 = _mm256_loadu_ps(p + 56);
-        // r0 = x r1 = y r2 = z r3 = nx r4 = ny r5 = nz r6 = u r7 = v
         transpose8x8(r0, r1, r2, r3, r4, r5, r6, r7);
 
         const __m256 x = r0;
@@ -358,7 +392,6 @@ void transformAvx2(const Vertex* vertices, int count, const float* matrix,
         tz = _mm256_fmadd_ps(m10, z, tz);
         tz = _mm256_add_ps(tz, m14);
 
-        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
         __m256 onx = _mm256_mul_ps(n0, r3);
         onx = _mm256_fmadd_ps(n3, r4, onx);
         onx = _mm256_fmadd_ps(n6, r5, onx);
@@ -371,10 +404,10 @@ void transformAvx2(const Vertex* vertices, int count, const float* matrix,
         onz = _mm256_fmadd_ps(n5, r4, onz);
         onz = _mm256_fmadd_ps(n8, r5, onz);
 
-        if (flipAny) {
-            onx = _mm256_xor_ps(onx, _mm256_and_ps(flipX, _mm256_cmp_ps(onx, zero, _CMP_LT_OQ)));
-            ony = _mm256_xor_ps(ony, _mm256_and_ps(flipY, _mm256_cmp_ps(ony, zero, _CMP_LT_OQ)));
-            onz = _mm256_xor_ps(onz, _mm256_and_ps(flipZ, _mm256_cmp_ps(onz, zero, _CMP_LT_OQ)));
+        if constexpr (kFlip) {
+            onx = _mm256_xor_ps(onx, _mm256_and_ps(flipMaskX, _mm256_cmp_ps(onx, zero, _CMP_LT_OQ)));
+            ony = _mm256_xor_ps(ony, _mm256_and_ps(flipMaskY, _mm256_cmp_ps(ony, zero, _CMP_LT_OQ)));
+            onz = _mm256_xor_ps(onz, _mm256_and_ps(flipMaskZ, _mm256_cmp_ps(onz, zero, _CMP_LT_OQ)));
         }
 
         r0 = tx;
@@ -403,6 +436,15 @@ void transformAvx2(const Vertex* vertices, int count, const float* matrix,
     }
     // 回到只含 SSE 的 JVM 代码前清掉 ymm 上半 避免 AVX-SSE 切换惩罚
     _mm256_zeroupper();
+}
+
+static void transformAvx2(const Vertex* vertices, int count, const float* matrix,
+                          const float* normalMatrix, int flags, float* out) {
+    if (flags != 0) {
+        transformAvx2Impl<true>(vertices, count, matrix, normalMatrix, flags, out);
+    } else {
+        transformAvx2Impl<false>(vertices, count, matrix, normalMatrix, flags, out);
+    }
 }
 
 struct CpuFeatures {
@@ -483,8 +525,9 @@ static inline void transpose4x4Neon(const float32x4_t& a0, const float32x4_t& a1
     c3 = vcombine_f32(vget_high_f32(t0.val[1]), vget_high_f32(t1.val[1]));
 }
 
-void transformNeon(const Vertex* vertices, int count, const float* matrix,
-                   const float* normalMatrix, int flags, float* out) {
+template <bool kFlip>
+static void transformNeonImpl(const Vertex* vertices, int count, const float* matrix,
+                              const float* normalMatrix, int flags, float* out) {
     const float32x4_t m0 = vdupq_n_f32(matrix[0]);
     const float32x4_t m4 = vdupq_n_f32(matrix[4]);
     const float32x4_t m8 = vdupq_n_f32(matrix[8]);
@@ -510,12 +553,9 @@ void transformNeon(const Vertex* vertices, int count, const float* matrix,
 
     const float32x4_t zero = vdupq_n_f32(0.0f);
     const uint32x4_t signBit = vdupq_n_u32(0x80000000u);
-    const uint32x4_t noFlip = vdupq_n_u32(0);
-    const uint32x4_t flipX = (flags & kFlipX) != 0 ? signBit : noFlip;
-    const uint32x4_t flipY = (flags & kFlipY) != 0 ? signBit : noFlip;
-    const uint32x4_t flipZ = (flags & kFlipZ) != 0 ? signBit : noFlip;
-    // 正常立方体的 flags 是 0 这时不必白做比较与异或 由编译器把这个分支提到循环外
-    const bool flipAny = flags != 0;
+    const uint32x4_t flipMaskX = kFlip && (flags & kFlipX) != 0 ? signBit : vdupq_n_u32(0);
+    const uint32x4_t flipMaskY = kFlip && (flags & kFlipY) != 0 ? signBit : vdupq_n_u32(0);
+    const uint32x4_t flipMaskZ = kFlip && (flags & kFlipZ) != 0 ? signBit : vdupq_n_u32(0);
 
     const float* source = reinterpret_cast<const float*>(vertices);
     int i = 0;
@@ -546,7 +586,6 @@ void transformNeon(const Vertex* vertices, int count, const float* matrix,
         tz = vfmaq_f32(tz, m10, z);
         tz = vaddq_f32(tz, m14);
 
-        // 法线三个输出都读同一组输入 先算到独立变量 不能就地覆盖
         float32x4_t onx = vfmaq_f32(vmulq_f32(n0, nx), n3, ny);
         onx = vfmaq_f32(onx, n6, nz);
 
@@ -556,13 +595,13 @@ void transformNeon(const Vertex* vertices, int count, const float* matrix,
         float32x4_t onz = vfmaq_f32(vmulq_f32(n2, nx), n5, ny);
         onz = vfmaq_f32(onz, n8, nz);
 
-        if (flipAny) {
+        if constexpr (kFlip) {
             onx = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(onx),
-                                                  vandq_u32(vcltq_f32(onx, zero), flipX)));
+                                                  vandq_u32(vcltq_f32(onx, zero), flipMaskX)));
             ony = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(ony),
-                                                  vandq_u32(vcltq_f32(ony, zero), flipY)));
+                                                  vandq_u32(vcltq_f32(ony, zero), flipMaskY)));
             onz = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(onz),
-                                                  vandq_u32(vcltq_f32(onz, zero), flipZ)));
+                                                  vandq_u32(vcltq_f32(onz, zero), flipMaskZ)));
         }
 
         float32x4_t o0, o1, o2, o3, o4, o5, o6, o7;
@@ -584,7 +623,17 @@ void transformNeon(const Vertex* vertices, int count, const float* matrix,
                         out + static_cast<std::size_t>(i) * kVertexFloats);
     }
 }
-#endif
+
+static void transformNeon(const Vertex* vertices, int count, const float* matrix,
+                          const float* normalMatrix, int flags, float* out) {
+    if (flags != 0) {
+        transformNeonImpl<true>(vertices, count, matrix, normalMatrix, flags, out);
+    } else {
+        transformNeonImpl<false>(vertices, count, matrix, normalMatrix, flags, out);
+    }
+}
+
+#endif // DDT_ARCH_AARCH64
 
 // 自检与 tools/native/benchmark.cpp 共用的固定输入与误差判定
 // 同一个下标永远得到同一个顶点 两个调用方看到的是同一组数据 不会各抄一份再漂移
@@ -697,6 +746,93 @@ static const KernelSelection& kernelSelection() {
     return selection;
 }
 
+// 亲和性默认关闭 只在环境变量显式打开时钉
+// 实测硬亲和会让每帧睡醒的 worker 被绑在可能已经停核的 CPU 上
+// 8 线程以上反而比不钉慢一个数量级 大小核与 SMT 机器上更不可控
+// NUMA 机器上硬亲和只减少迁移 不代表内存就在本节点
+// 网格由渲染线程分配 输出是 Java 直接缓冲区 两边都不受 worker 控制
+static bool affinityEnabled() {
+    static const bool enabled = [] {
+        const char* value = std::getenv("DAWNDUSKTERMINAL_NATIVE_AFFINITY");
+        if (value == nullptr || value[0] == '\0') {
+            return false;
+        }
+        const char first = value[0];
+        return !(first == '0' || first == 'f' || first == 'F'
+                 || first == 'n' || first == 'N' || first == 'o' || first == 'O');
+    }();
+    return enabled;
+}
+
+#if defined(_WIN32)
+
+// Windows 用 processor group 感知的接口 超过 64 个逻辑核时单个 mask 已经不够
+// 只在有富余核时跳过第一颗 把 0 号核留给渲染线程
+static void pinCurrentThread(int index, int count) {
+    if (!affinityEnabled()) {
+        return;
+    }
+    const WORD groups = GetActiveProcessorGroupCount();
+    int total = 0;
+    for (WORD group = 0; group < groups; ++group) {
+        total += static_cast<int>(GetActiveProcessorCount(group));
+    }
+    if (total <= 1) {
+        return;
+    }
+    int slot = total > count ? index + 1 : index;
+    slot %= total;
+    for (WORD group = 0; group < groups; ++group) {
+        const int processors = static_cast<int>(GetActiveProcessorCount(group));
+        if (slot < processors) {
+            GROUP_AFFINITY affinity{};
+            affinity.Group = group;
+            affinity.Mask = static_cast<KAFFINITY>(1) << slot;
+            SetThreadGroupAffinity(GetCurrentThread(), &affinity, nullptr);
+            return;
+        }
+        slot -= processors;
+    }
+}
+
+#elif defined(__linux__)
+
+// Linux 从 sched_getaffinity 的允许集里挑 不假设 CPU 编号连续
+// cgroup 限制配额时仍可能被 throttle 这里只解决迁移不解决配额
+static void pinCurrentThread(int index, int count) {
+    if (!affinityEnabled()) {
+        return;
+    }
+    cpu_set_t allowed;
+    CPU_ZERO(&allowed);
+    if (sched_getaffinity(0, sizeof(allowed), &allowed) != 0) {
+        return;
+    }
+    int cpus[CPU_SETSIZE];
+    int total = 0;
+    for (int cpu = 0; cpu < CPU_SETSIZE; ++cpu) {
+        if (CPU_ISSET(cpu, &allowed)) {
+            cpus[total++] = cpu;
+        }
+    }
+    if (total <= 1) {
+        return;
+    }
+    int slot = total > count ? index + 1 : index;
+    slot %= total;
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(cpus[slot], &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+}
+
+#else
+
+// macOS 没有公开的硬亲和 API thread_policy_set 的 affinity 只是建议值
+static void pinCurrentThread(int, int) {}
+
+#endif
+
 /**
  * 句柄表
  *
@@ -741,47 +877,41 @@ HandleTable<Mesh>& meshHandles() {
     return table;
 }
 
+/**
+ * worker 池
+ *
+ * <p>每个 job 前按线程数把 piece 均分成连续区间 每个 worker 只跑自己的 [begin,end)
+ * 不再用 fetch_add 抢同一个原子计数器 完成同步用 std::latch 不用 generation+CV
+ * 线程用 std::jthread 析构自动 join
+ *
+ * <p>latch 是单次对象 每帧用一个 shared_ptr 持有 worker 里再拿一份
+ * 最后一个引用释放时才析构 避免 wait 返回时还有 worker 停在 count_down 里面
+ */
 class Pool {
 public:
-    explicit Pool(int threadCount) {
-        const int count = threadCount < 1 ? 1 : (threadCount > kMaxThreads ? kMaxThreads : threadCount);
-        workers.reserve(static_cast<std::size_t>(count));
+    explicit Pool(int threadCount)
+        : workerCount(threadCount < 1 ? 1 : (threadCount > kMaxThreads ? kMaxThreads : threadCount)) {
+        workers.reserve(static_cast<std::size_t>(workerCount));
         try {
-            for (int i = 0; i < count; ++i) {
-                workers.emplace_back([this] { worker(); });
+            for (int i = 0; i < workerCount; ++i) {
+                workers.emplace_back([this, i] { worker(i); });
             }
         } catch (...) {
-            // 构造失败时 vector 里已经有 joinable 线程 直接展开会 terminate 先收干净再抛
-            {
-                std::lock_guard<std::mutex> lock(mutex);
-                stop = true;
-            }
-            startCv.notify_all();
-            for (std::thread& workerThread : workers) {
-                if (workerThread.joinable()) {
-                    workerThread.join();
-                }
-            }
+            shutdown();
             throw;
         }
     }
 
     ~Pool() {
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            stop = true;
-        }
-        startCv.notify_all();
-        for (std::thread& workerThread : workers) {
-            if (workerThread.joinable()) {
-                workerThread.join();
-            }
-        }
+        shutdown();
     }
 
+    Pool(const Pool&) = delete;
+    Pool& operator=(const Pool&) = delete;
+
     jint run(const Mesh* mesh, const float* matrices, const float* normals,
-             const jint* pieceIds, int count, float* out) {
-        if (mesh == nullptr || out == nullptr || count < 0
+             const jint* pieceIds, int count, float* out, PieceKernel kernel) {
+        if (mesh == nullptr || out == nullptr || kernel == nullptr || count < 0
             || (count > 0 && (matrices == nullptr || normals == nullptr || pieceIds == nullptr))) {
             return kInvalidArgument;
         }
@@ -789,60 +919,96 @@ public:
         // 渲染线程之外也允许调用 这里串行化 避免两个 job 互相覆盖共享字段
         std::lock_guard<std::mutex> serialized(runMutex);
 
-        std::unique_lock<std::mutex> lock(mutex);
-        jobMesh = mesh;
-        jobMatrices = matrices;
-        jobNormals = normals;
-        jobPieceIds = pieceIds;
-        jobCount = count;
-        jobOut = out;
-        jobKernel = kernelSelection().kernel;
-        next.store(0, std::memory_order_relaxed);
-        invalid.store(false, std::memory_order_relaxed);
-        active = static_cast<int>(workers.size());
-        ++generation;
+        auto latch = std::make_shared<std::latch>(static_cast<std::ptrdiff_t>(workers.size()));
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            jobMesh = mesh;
+            jobMatrices = matrices;
+            jobNormals = normals;
+            jobPieceIds = pieceIds;
+            jobCount = count;
+            jobOut = out;
+            jobKernel = kernel;
+            jobLatch = latch;
+            invalid.store(false, std::memory_order_relaxed);
+            ++generation;
+        }
         startCv.notify_all();
-        doneCv.wait(lock, [this] { return active == 0; });
+        latch->wait();
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            jobLatch.reset();
+        }
 
         return invalid.load(std::memory_order_relaxed) ? kInvalidArgument : kOk;
     }
 
+    jint run(const Mesh* mesh, const float* matrices, const float* normals,
+             const jint* pieceIds, int count, float* out) {
+        return run(mesh, matrices, normals, pieceIds, count, out, kernelSelection().kernel);
+    }
+
 private:
-    void worker() {
+    static std::pair<int, int> partition(int index, int workers, int count) {
+        const int base = count / workers;
+        const int extra = count % workers;
+        const int begin = index * base + (index < extra ? index : extra);
+        const int end = begin + base + (index < extra ? 1 : 0);
+        return {begin, end};
+    }
+
+    void shutdown() {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            stop = true;
+        }
+        startCv.notify_all();
+        workers.clear();
+    }
+
+    void worker(int index) {
+        pinCurrentThread(index, workerCount);
         std::uint64_t seenGeneration = 0;
         for (;;) {
-            std::unique_lock<std::mutex> lock(mutex);
-            startCv.wait(lock, [this, seenGeneration] {
-                return stop || generation != seenGeneration;
-            });
-            if (stop) {
-                return;
+            std::shared_ptr<std::latch> latch;
+            const Mesh* mesh;
+            const float* matrices;
+            const float* normals;
+            const jint* pieceIds;
+            PieceKernel kernel;
+            float* out;
+            int count;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                startCv.wait(lock, [this, seenGeneration] {
+                    return stop || generation != seenGeneration;
+                });
+                if (stop) {
+                    return;
+                }
+                seenGeneration = generation;
+                mesh = jobMesh;
+                matrices = jobMatrices;
+                normals = jobNormals;
+                pieceIds = jobPieceIds;
+                kernel = jobKernel;
+                out = jobOut;
+                count = jobCount;
+                latch = jobLatch;
             }
-            seenGeneration = generation;
-
-            const Mesh* mesh = jobMesh;
-            const float* matrices = jobMatrices;
-            const float* normals = jobNormals;
-            const jint* pieceIds = jobPieceIds;
-            const int count = jobCount;
-            const PieceKernel kernel = jobKernel;
-            float* out = jobOut;
-            lock.unlock();
 
             // C++ 异常不允许穿过 JNI 边界 任何线程内失败都只记标志 由 run 返回错误码
             try {
-                for (int index = next.fetch_add(1, std::memory_order_relaxed);
-                     index < count;
-                     index = next.fetch_add(1, std::memory_order_relaxed)) {
-                    transformPiece(mesh, matrices, normals, pieceIds[index], index, kernel, out);
+                const auto range = partition(index, workerCount, count);
+                for (int i = range.first; i < range.second; ++i) {
+                    transformPiece(mesh, matrices, normals, pieceIds[i], i, kernel, out);
                 }
             } catch (...) {
                 invalid.store(true, std::memory_order_relaxed);
             }
 
-            lock.lock();
-            if (--active == 0) {
-                doneCv.notify_all();
+            if (latch) {
+                latch->count_down();
             }
         }
     }
@@ -864,11 +1030,11 @@ private:
                piece.flags, out + offset * kVertexFloats);
     }
 
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
+    int workerCount;
     std::mutex runMutex;
     std::mutex mutex;
     std::condition_variable startCv;
-    std::condition_variable doneCv;
     const Mesh* jobMesh = nullptr;
     const float* jobMatrices = nullptr;
     const float* jobNormals = nullptr;
@@ -876,9 +1042,8 @@ private:
     PieceKernel jobKernel = nullptr;
     float* jobOut = nullptr;
     int jobCount = 0;
-    std::atomic<int> next{0};
+    std::shared_ptr<std::latch> jobLatch;
     std::atomic<bool> invalid{false};
-    int active = 0;
     bool stop = false;
     std::uint64_t generation = 0;
 };

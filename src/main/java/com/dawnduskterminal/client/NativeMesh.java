@@ -66,7 +66,8 @@ public final class NativeMesh {
     /** Java 侧状态错误 native 不会返回 */
     public static final int ERROR_UNAVAILABLE = -5;
 
-    private static final int MAX_THREADS = 4;
+    /** 712 piece 的 TowerGhast 扫描在 2 线程最好 4 线程反而慢约 15% 见 docs/development.md */
+    private static final int MAX_THREADS = 2;
     private static final String DISABLE_PROPERTY = "dawnduskterminal.disableNative";
     private static final String FORCE_PROPERTY = "dawnduskterminal.forceNative";
     private static final String DISABLE_ENV = "DAWNDUSKTERMINAL_DISABLE_NATIVE";

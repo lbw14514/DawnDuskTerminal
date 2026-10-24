@@ -83,3 +83,9 @@ native 在加载成功时会在 `config/dawnduskterminal-native.crash-marker` �
 如果上次进程硬崩溃，标记会留下，下次启动自动禁用 native；确认稳定后删除该文件即可恢复
 
 `-Ddawnduskterminal.forceNative=true` 可单次忽略标记
+
+`DAWNDUSKTERMINAL_NATIVE_AFFINITY=1` 才把 native worker 钉到核上 默认不钉
+
+实测 4 线程起硬亲和会让每帧睡醒的 worker 反复等停核 8 线程以上比不钉慢一个数量级 不确定机器拓扑时不要开
+
+macOS 没有公开的硬亲和 API 这条环境变量在那上面无效

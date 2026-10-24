@@ -319,7 +319,8 @@ jar {
 }
 
 // native 网格变换内核
-// native 源码是纯 C++17 + std::thread，不含任何平台 API
+// native 源码是 C++20，线程用 std::jthread，完成同步用 std::latch
+// 亲和性代码只在 Windows 与 Linux 上存在，默认关闭，macOS 没有公开的硬亲和 API 直接跳过
 // 用 Zig 做统一交叉编译：同一份工具链能出 windows / linux / macos 的 x86_64 与 aarch64
 // 所以无论在哪个平台执行 gradlew build，jar 里都带全部五个平台的 native
 // 任何一个目标编译失败或 Zig 下载失败都直接让构建失败，不产出残缺的 jar
@@ -341,7 +342,9 @@ def zigExecutable = new File(zigDirectory, zigIsWindows ? 'zig.exe' : 'zig')
 // -O3 是 zig c++ 能接受的最高优化档（内部映射到 ReleaseFast）
 // -s 让链接器去掉调试符号：Zig 默认给 ELF 写完整 DWARF，linux 的 .so 会从 2.7MB 掉到 260KB 左右
 // 只去符号表，不碰动态符号，JNI 导出函数仍然可见
-def nativeCompileFlags = ['-O3', '-std=c++17', '-s']
+// Zig 0.13 自带的 libc++ 把 stop_token / jthread 标成实验接口
+// 不打开 _LIBCPP_ENABLE_EXPERIMENTAL 时 <thread> 里根本没有 std::jthread
+def nativeCompileFlags = ['-O3', '-std=c++20', '-D_LIBCPP_ENABLE_EXPERIMENTAL', '-s']
 
 def nativeTargets = [
     'windows-x86_64': [triple: 'x86_64-windows-gnu',     lib: 'ddt_native.dll',     jni: 'win32', args: ['-shared']],

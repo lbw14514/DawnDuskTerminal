@@ -97,52 +97,164 @@ Java 不读 `HTTP_PROXY` 环境变量，走加速器要在 `~/.gradle/gradle.pro
 第三种是 Zig 工具链：`installZig` 与 `buildNative` 在 `processResources` 的上游，所以它们的失败同样表现成「点 runClient 没反应」，见下面「native 网格内核」里关于工具链位置的说明
 ### native 网格内核
 
-`src/main/native/ddt_native.cpp` 是纯 C++17 与 `std::thread`，不含平台 API，所以五个平台的库都能在同一台机器上编出来
+`src/main/native/ddt_native.cpp` 是 C++20 线程用 `std::jthread` 完成同步用 `std::latch`
+亲和性只在 Windows 与 Linux 上做 best-effort 且默认关闭 macOS 直接跳过
+其余仍是纯计算代码 五个平台的库都能在同一台机器上编出来
 
-内核只做一件事：把一段顶点按一个 4x4 矩阵与一个 3x3 法线矩阵变换，写进直接缓冲区。它不认识实体、方块、骨骼或立方体
+内核只做一件事 把一段顶点按一个 4x4 矩阵与一个 3x3 法线矩阵变换 写进直接缓冲区 它不认识实体 方块 骨骼或立方体
 
-每段顶点叫一个 piece，调用方给出顶点区间、矩阵和法线取反标志。标志低三位依次对应 X Y Z 轴，只在对应法线为负时取反，用来复现 GeckoLib 退化平面的修正
+每段顶点叫一个 piece 调用方给出顶点区间 矩阵和法线取反标志 标志低三位依次对应 X Y Z 轴 只在对应法线为负时取反 用来复现 GeckoLib 退化平面的修正
 
-`NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece，`NativeMeshBatch` 负责一帧内收集并一次 JNI 提交。实体渲染器和方块实体渲染器都能用同一套流程
+piece 的顶点区间必须互不重叠 native 不做重叠检查 并发写同一段输出是调用方错误 `NativeGeoMesh` 摊平出来的区间天然不重叠
+
+`NativeGeoMesh` 把任意 GeckoLib 烘焙模型摊平成 piece `NativeMeshBatch` 负责一帧内收集并一次 JNI 提交 实体渲染器和方块实体渲染器都能用同一套流程
 
 #### 变换内核与 SIMD 分发
 
-内核有四种实现，都在 `ddt_native.cpp` 里
+内核有四种实现 都在 `ddt_native.cpp` 里
 
 | 内核 | 平台 | 一次处理的顶点 | 说明 |
 |---|---|---|---|
-| `scalar` | 全部 | 1 | 基线，也是尾部余数的兜底 |
-| `sse2` | x86-64 | 4 | 128 位 4 路，x86-64 基线 |
-| `avx2+fma` | x86-64 且 CPU 支持 AVX2 与 FMA、内核保存 YMM 状态 | 8 | 256 位 8 路，乘加合并成 FMA |
-| `neon` | aarch64 | 4 | 128 位 4 路，ARMv8 基线就带 |
+| `scalar` | 全部 | 1 | 基线 也是尾部余数的兜底 |
+| `sse2` | x86-64 | 4 | 128 位 4 路 x86-64 基线 |
+| `avx2+fma` | x86-64 且 CPU 支持 AVX2 与 FMA 内核保存 YMM 状态 | 8 | 256 位 8 路 乘加合并成 FMA |
+| `neon` | aarch64 | 4 | 128 位 4 路 ARMv8 基线就带 |
 
-顶点是 AoS 布局，每个顶点 8 个 float 连续放着。内核先把 4 个或 8 个顶点转置成按通道排列的向量，六个输出通道各算一次再转置回去。每个输出通道都是一条乘加链，摊到 8 个顶点上就是一条 `_mm256_mul_ps` 加两条 `_mm256_fmadd_ps`
+顶点是 AoS 布局 每个顶点 8 个 float 连续放着 内核先把 4 个或 8 个顶点转置成按通道排列的向量 六个输出通道各算一次再转置回去 每个输出通道都是一条乘加链 摊到 8 个顶点上就是一条 `_mm256_mul_ps` 加两条 `_mm256_fmadd_ps`
 
-法线取反不写分支：把 `值 < 0` 的比较结果与 `0x80000000` 掩码相与再异或，和标量的 `-x` 逐位一致，`-0` 与 `NaN` 不会被翻
+法线取反折进掩码 把 `值 < 0` 的比较结果与 `0x80000000` 掩码相与再异或 和标量的 `-x` 逐位一致 `-0` 与 `NaN` 不会被翻 翻转由模板参数分成 `kFlip` 为真与假两份实例 循环里没有分支
 
-运行期只选一次，选中的函数指针随 job 下发，每个 piece 直接调用
+运行期只选一次 选中的函数指针随 job 下发 每个 piece 直接调用
 
-- x86-64 用 `cpuid` 读 SSE2 AVX FMA AVX2，再用 `xgetbv` 确认 XCR0 的 SSE 与 YMM 两位都置位，也就是内核真的会保存 YMM 状态，否则不开 AVX2
-- aarch64 不探测，NEON 是基线
-- 选之前先用 16 个固定顶点与一个非单位矩阵跟标量比一遍，再补 13 个顶点走一遍尾部路径；取反标志按 0 与 X Y Z 三个单轴分别跑，只测一个组合会让写错的轴混过去
-- 判定用 `withinKernelTolerance` 随数值量级放大的 `1e-4` 相对阈值，任一值超出就退回标量
-- 结果写进日志 `DawnDuskTerminal native mesh kernel loaded ... (abi 3, kernel avx2+fma)`，代码里也能读 `NativeMesh.kernelName()`
+- x86-64 用 `cpuid` 读 SSE2 AVX FMA AVX2 再用 `xgetbv` 确认 XCR0 的 SSE 与 YMM 两位都置位 也就是内核真的会保存 YMM 状态 否则不开 AVX2
+- aarch64 不探测 NEON 是基线
+- 选之前先用 16 个固定顶点与一个非单位矩阵跟标量比一遍 再补 13 个顶点走一遍尾部路径 取反标志按 0 与 X Y Z 三个单轴分别跑 只测一个组合会让写错的轴混过去
+- 判定用 `withinKernelTolerance` 随数值量级放大的 `1e-4` 相对阈值 任一值超出就退回标量
+- 结果写进日志 `DawnDuskTerminal native mesh kernel loaded ... (abi 3, kernel avx2+fma)` 代码里也能读 `NativeMesh.kernelName()`
 
-AVX2 实现用 `__attribute__((target("avx2,fma")))` 单独标注，基线编译不带 AVX 指令，老 CPU 上加载不会直接 `#UD`
+AVX2 实现用 `__attribute__((target("avx2,fma")))` 单独标注 基线编译不带 AVX 指令 老 CPU 上加载不会直接 `#UD`
 
-不用 `target_clones` 与 ifunc：ifunc 是 ELF 的东西，Windows 与 macOS 都没有，三平台统一用函数指针表
+不用 `target_clones` 与 ifunc ifunc 是 ELF 的东西 Windows 与 macOS 都没有 三平台统一用函数指针表
 
-`tools/native/benchmark.cpp` 是数值校验与吞吐对照台，它把 `ddt_native.cpp` 整份 include 进去，量到的就是产物里那份代码。编译要 JDK 的 `include` 与本仓库的 `src/main/native/win32`（Linux 与 macOS 用 `posix`）
+#### 线程池与完成同步
+
+每个 job 开始前按线程数把 piece 均分成连续区间 每个 worker 只跑自己的 `[begin,end)`
+不再用 `fetch_add` 抢同一个原子计数器 完成同步用 `std::latch(workers.size())`
+latch 是单次对象 每帧 `make_shared` 一份 worker 里再拿一份 最后一个引用释放时才析构 避免 `wait` 返回时还有 worker 停在 `count_down` 里面
+启动仍用 `condition_variable` 加 generation 唤醒 worker 线程用 `std::jthread` 析构自动 join
+
+Zig 0.13 自带的 libc++ 把 `stop_token` 与 `jthread` 标成实验接口 构建固定加 `-D_LIBCPP_ENABLE_EXPERIMENTAL` 否则 `<thread>` 里没有 `std::jthread`
+
+#### benchmark
+
+`tools/native/benchmark.cpp` 是数值校验与吞吐对照台 它把 `ddt_native.cpp` 整份 include 进去 量到的就是产物里那份代码 编译要 JDK 的 `include` 与本仓库的 `src/main/native/win32` Linux 与 macOS 用 `posix`
 
 ```
-zig c++ -O3 -std=c++17 -I<JDK>/include -Isrc/main/native/win32 tools/native/benchmark.cpp -o benchmark
+zig c++ -O3 -std=c++20 -D_LIBCPP_ENABLE_EXPERIMENTAL -I<JDK>/include -Isrc/main/native/win32 tools/native/benchmark.cpp -o benchmark
 ```
 
-它和运行时自检共用 `fillKernelProbe` 与 `withinKernelTolerance`，不另抄一份输入与阈值
+它和运行时自检共用 `fillKernelProbe` 与 `withinKernelTolerance` 不另抄一份输入与阈值
+默认不钉核 加 `--affinity` 才是打开亲和性的那一组
 
-输出当前 CPU 选中的内核、每个内核在「三轴全开」与「flags 为 0」两种输入下与标量的最大绝对误差、单个大块顶点的吞吐，以及按线上形状（712 个 24 顶点 piece 各调一次）计的每帧耗时。piece 那组才是能外推到游戏里的数字，只跑大块会把广播与逐 piece 调用开销摊掉，收益偏乐观
+以下数字是一次快照 机器是 AMD Ryzen 7 5800H 8 核 16 线程 Windows Zig 0.13.0 `-O3`
+不同 CPU 不同编译器版本差距很大 **不要把数字当成保证值 也不要写进 README**
 
-**不要把测量数字写进 README**，不同机器与不同编译器版本差距很大
+大块 65536 顶点 400 轮 三轴全开
+
+每组跑三次取最短 抵消机器上的后台负载
+
+| 实现 | 总耗时 | Mvertices/s | GB/s | 相对 scalar auto |
+|---|---|---|---|---|
+| scalar auto | 105.61 ms | 248.2 | 15.9 | 1.00x |
+| scalar novec | 132.25 ms | 198.2 | 12.7 | 0.80x |
+| sse2 | 67.86 ms | 386.3 | 24.7 | 1.56x |
+| avx2+fma | 67.15 ms | 390.4 | 25.0 | 1.57x |
+
+线上形状 712 个 piece 每个 24 顶点 3000 帧
+
+| 实现 | 每帧 | frames/s | 相对 scalar auto |
+|---|---|---|---|
+| scalar auto | 65.19 us | 15340.8 | 1.00x |
+| scalar novec | 84.11 us | 11889.5 | 0.78x |
+| sse2 | 43.80 us | 22833.6 | 1.49x |
+| avx2+fma | 38.61 us | 25898.8 | 1.69x |
+
+手写 AVX2 相对编译器自动向量化约 1.6 到 1.7 倍 相对禁用向量化的标量在大块上约 2.0 倍 在 24 顶点 piece 上约 2.2 倍
+SSE2 在大块上已经追平 AVX2 在 24 顶点的小 piece 上 AVX2 还有约 13% 优势 因为逐 piece 调用让编译器没法跨 piece 做更好的调度
+
+线程扫描 同一份 712 piece 负载 固定用选中的 avx2+fma 内核 默认不钉核
+
+| 线程数 | 每帧 | frames/s | 相对 1 线程 |
+|---|---|---|---|
+| 1 | 38.35 us | 26074.0 | 1.00x |
+| 2 | 26.68 us | 37482.3 | 1.44x |
+| 4 | 30.72 us | 32556.3 | 1.25x |
+| 8 | 48.12 us | 20782.6 | 0.80x |
+| 16 | 65.51 us | 15265.2 | 0.59x |
+
+这个负载的最佳点在 2 线程 4 线程反而慢约 15% 再往上唤醒与调度开销超过分块收益
+Java 侧共享池上限从 4 改成 2 与扫描结果一致
+
+#### SoA 原型为什么没留下
+
+另做了一版临时 SoA 原型 没有留在最终树里
+`nativeCreateMesh` 时把顶点摊成 8 条连续通道 输出也走 SoA 内核完全去掉转置 Java 侧按通道读
+同一套 benchmark 的结果 原型只跑了单次 数值只用于看方向 结论在多次运行里一致
+
+| 实现 | 大块 65536 | TowerGhast 712x24 |
+|---|---|---|
+| AoS scalar | 96.41 ms | 70.37 us/frame |
+| AoS avx2+fma | 50.62 ms | 38.95 us/frame |
+| SoA 输入 AoS 输出 | 50.15 ms | 39.15 us/frame |
+| SoA scalar | 123.05 ms | 158.40 us/frame |
+| SoA avx2+fma | 129.68 ms | 43.17 us/frame |
+
+全 SoA 输出在大块上比 AoS AVX2 慢约 2.6 倍 真实形状也慢约 11%
+转置不是瓶颈 8 条输入流加 8 条输出流把预取器和 TLB 压垮了
+混合布局只追平 AoS 所以生产代码保留 AoS 这条数据比“教科书布局”重要
+
+#### 线程亲和性
+
+默认关闭 只有环境变量 `DAWNDUSKTERMINAL_NATIVE_AFFINITY=1` 才钉
+Windows 用 `SetThreadGroupAffinity` 走 processor group 感知的路径 Linux 从 `sched_getaffinity` 的允许集里选核再 `pthread_setaffinity_np` macOS 没有公开的硬亲和 API 直接 no-op
+
+同一台机器打开亲和性后的线程扫描
+
+| 线程数 | 每帧 | frames/s | 相对 1 线程 |
+|---|---|---|---|
+| 1 | 41.36 us | 24175.6 | 1.00x |
+| 2 | 29.41 us | 34002.8 | 1.41x |
+| 4 | 87.68 us | 11405.5 | 0.47x |
+| 8 | 154.13 us | 6488.1 | 0.27x |
+| 16 | 1894.28 us | 527.9 | 0.02x |
+
+2 线程时钉核已略差于不钉核 4 线程起就崩 8 线程以上慢一个数量级
+原因是 worker 每帧会睡 硬亲和把唤醒绑在可能已经停核的 CPU 上 唤醒延迟压过了迁移成本
+大小核与 SMT 机器上还会更不可控 所以这项功能保留 默认关
+
+NUMA 机器上硬亲和只减少迁移 不代表内存就在本节点
+网格由渲染线程分配 输出是 Java 直接缓冲区 两边都不受 worker 控制 不要指望钉核能带来 NUMA 局部性
+
+#### JNI ABI fuzz
+
+`tools/native/fuzz_abi.cpp` 直接把 `ddt_native.cpp` include 进来 用一张假 `JNIEnv` 函数表喂 `nativeCreateMesh` 与 `nativeTransform`
+覆盖 null 数组 长度不匹配 负 count 缓冲区容量不足 越界 piece 与 NaN/Inf 顶点
+
+Linux 与 macOS 用 clang 的 libFuzzer
+
+```
+clang++ -O1 -g -std=c++20 -D_LIBCPP_ENABLE_EXPERIMENTAL -fsanitize=fuzzer,address -I<JDK>/include -Isrc/main/native/posix tools/native/fuzz_abi.cpp -o fuzz_abi
+./fuzz_abi -max_total_time=60
+```
+
+Windows 没有 libFuzzer 运行时 用固定畸形语料入口
+
+```
+zig c++ -O1 -g -std=c++20 -D_LIBCPP_ENABLE_EXPERIMENTAL -DDDT_FUZZ_STANDALONE -I<JDK>/include -Isrc/main/native/win32 tools/native/fuzz_abi.cpp -o fuzz_abi.exe
+./fuzz_abi.exe
+```
+
+fuzz 目标只在本机跑 不打进 jar **不要把测量数字写进 README**
 
 构建固定走 Zig，`installZig` 任务会自动下载到 Gradle 用户目录的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`），之后不再重复下载，不需要系统里预装编译器
 
