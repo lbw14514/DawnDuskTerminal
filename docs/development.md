@@ -74,7 +74,7 @@ OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发
 
 纯资源改动可能报 UP-TO-DATE，要验证 jar 里的内容
 
-依赖校验：仓库带 `gradle/verification-metadata.xml`，解析依赖时逐个核对 SHA-256，Twilight Forest 与 c2me 也在覆盖范围内。新增或升级依赖后跑 `./gradlew --write-verification-metadata sha256 compileJava` 更新；LWJGL 的 native 包按平台分发，Windows 上生成后记得补上 Linux 与 macOS 的校验值，否则 CI 第一次解析 native 时会报缺少校验
+依赖校验：仓库带 `gradle/verification-metadata.xml`，解析依赖时逐个核对 SHA-256，Twilight Forest 与 c2me 也在覆盖范围内。新增或升级依赖后跑 `./gradlew --write-verification-metadata sha256 compileJava` 更新；NeoForm 运行时的 `neoFormRuntimeDependenciesCompileClasspath` 在不同平台解析出的模块元数据不完全一样，至少再跑一次 `./gradlew --write-verification-metadata sha256 dependencies --configuration neoFormRuntimeDependenciesCompileClasspath`；LWJGL 的 native 包按平台分发，Windows 上生成后记得补上 Linux 与 macOS 的校验值，否则 CI 第一次解析 native 时会报缺少校验
 
 ## VS Code 的 Gradle 任务
 
