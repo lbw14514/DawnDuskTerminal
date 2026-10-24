@@ -392,17 +392,32 @@ def installZig = tasks.register('installZig') {
     outputs.file(zigExecutable)
     doLast {
         def archive = zigArchiveFile
+        // 完整性校验要按包格式分开做：zip 看中央目录，tar.xz 看尾部 footer 的 "YZ" 魔数
+        // 只按 zip 判定会让 linux 与 macOS 的 tar.xz 永远算不完整 下满后再续传只会得到 HTTP 416
         def archiveIsComplete = { File file ->
             if (!file.exists() || file.length() == 0L) {
                 return false
             }
-            // 截断的 zip 会丢掉中央目录，ZipFile 打开即抛异常，正好当完整性校验用
-            try {
-                new java.util.zip.ZipFile(file).withCloseable { zip -> zip.size() > 0 }
-                true
-            } catch (java.io.IOException ignored) {
-                false
+            if (file.name.endsWith('.zip')) {
+                // 截断的 zip 会丢掉中央目录，ZipFile 打开即抛异常，正好当完整性校验用
+                try {
+                    new java.util.zip.ZipFile(file).withCloseable { zip -> zip.size() > 0 }
+                    return true
+                } catch (java.io.IOException ignored) {
+                    return false
+                }
             }
+            long footerOffset = file.length() - 12L
+            if (footerOffset < 0L) {
+                return false
+            }
+            // xz 流尾部 footer 共 12 字节：CRC32(4) 反向大小(4) 流标志(2) 魔数 "YZ"(2)
+            byte[] footer = new byte[12]
+            new RandomAccessFile(file, 'r').withCloseable { raf ->
+                raf.seek(footerOffset)
+                raf.readFully(footer)
+            }
+            footer[10] == (byte) 0x59 && footer[11] == (byte) 0x5A
         }
 
         archive.parentFile.mkdirs()
@@ -433,6 +448,15 @@ def installZig = tasks.register('installZig') {
                         logger.lifecycle('源站没按 Range 续传，从零重下')
                         archive.delete()
                         have = 0L
+                    } else if (status == 416) {
+                        // 续传起点越过文件尾：本地这份已经下满，本地校验通过就当完成
+                        if (archiveIsComplete(archive)) {
+                            logger.lifecycle("服务端拒绝续传（HTTP 416，本地 ${have} 字节），本地包已完整")
+                            break
+                        }
+                        logger.lifecycle('服务端拒绝续传（HTTP 416），本地包不完整，从零重下')
+                        archive.delete()
+                        throw new java.io.IOException('HTTP 416')
                     } else if (status != 200 && status != 206) {
                         throw new java.io.IOException("HTTP ${status}")
                     }
@@ -468,7 +492,7 @@ def installZig = tasks.register('installZig') {
                     "解压到 ${zigDirectoryFile} 后 installZig 会自动跳过下载")
             }
             if (expected > 0L && archive.length() != expected) {
-                logger.lifecycle("包大小 ${archive.length()} 与响应头的 ${expected} 不一致，但 zip 结构完整，继续")
+                logger.lifecycle("包大小 ${archive.length()} 与响应头的 ${expected} 不一致，但包结构完整，继续")
             }
         }
         zigDirectoryFile.mkdirs()
