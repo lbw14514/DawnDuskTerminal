@@ -5,6 +5,7 @@ import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
 import com.dawnduskterminal.entity.GhastPaintingEntity;
+import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityDimensions;
@@ -63,6 +64,22 @@ public final class ModEntities {
             .build("carminite_shrapnel"));
 
     /**
+     * 「弦」。碰撞箱的基准值是小型，真正的尺寸由 {@link StringEntity#getDefaultDimensions} 按变种
+     * 与随机体型偏移算；这里只要给一个能通过构造期校验的占位值。
+     *
+     * <p>updateInterval 2：它水平移动很快，位置包慢一点就会看到明显的折线
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<StringEntity>> STRING =
+        ENTITIES.register("string", () -> EntityType.Builder
+            .of(StringEntity::new, MobCategory.CREATURE)
+            .sized(1.8F, 1.8F)
+            .eyeHeight(0.9F)
+            .fireImmune()
+            .clientTrackingRange(10)
+            .updateInterval(2)
+            .build("string"));
+
+    /**
      * 恶魂画 #1。尺寸与 updateInterval 照抄原版画：画不会移动，{@code sized} 只是占位，
      * 真正的包围盒由 {@link GhastPaintingEntity} 按变体的 3x2 算出来；
      * updateInterval 拉到 {@link Integer#MAX_VALUE} 是原版的做法，非初始同步不发位置包
@@ -86,5 +103,6 @@ public final class ModEntities {
 
     private static void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(TOWER_GHAST.get(), TowerGhastEntity.createAttributes().build());
+        event.put(STRING.get(), StringEntity.createAttributes().build());
     }
 }

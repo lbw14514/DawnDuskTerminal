@@ -301,5 +301,9 @@
   "death.attack.enthu_fluid": "%1$s was embraced by the enthused twilight",
   "death.attack.stability": "%1$s was lost in the twilight",
   "entity.dawnduskterminal.tower_ghast": "Tower Ghast",
-  "entity.dawnduskterminal.painting_ghast_1": "Ghast Mural"
+  "entity.dawnduskterminal.painting_ghast_1": "Ghast Mural",
+  "entity.dawnduskterminal.string": "String",
+  "item.dawnduskterminal.string": "String",
+  "subtitles.dawnduskterminal.string_ambient": "String hums",
+  "subtitles.dawnduskterminal.string_hit": "String hurts"
 }

@@ -82,6 +82,7 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.CARMINITE_GHAST_MEAT.get());
                 accept(output, ModItems.COOKED_CARMIN_GHAST_MEAT.get());
                 accept(output, ModItems.CARMINITE_BALL.get());
+                accept(output, ModItems.STRING.get());
                 ModEquipment.sets().values().forEach(set -> set.items().forEach(item -> accept(output, item.get())));
             })
             .build());
