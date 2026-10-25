@@ -3,8 +3,11 @@ package com.dawnduskterminal.client;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.registry.ModEntities;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -15,6 +18,9 @@ import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 「弦」的客户端接线
  *
@@ -24,16 +30,57 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
  * {@code .mcmeta} 并按帧上传，所以实体贴图和方块流体一样会动；geo 里的 texture_width/height
  * 正好是单帧尺寸 16x16 与 32x32。
  *
- * <p>渲染类型用半透明实体层：流体贴图的 alpha 是 230/255，默认的 cutout 会把它当成不透明。
+ * <p>渲染类型用半透明的自发光实体层：流体贴图的 alpha 是 230/255，默认的 cutout 会把它当成不透明；
+ * 自发光让整张贴图不受天光与方块光压暗，全身一直亮。
+ *
+ * <p><b>为什么不用原版的 {@code RenderType.entityTranslucentEmissive}</b>：那个类型的写掩码是
+ * {@code COLOR_WRITE}，**不写深度**。1.21 的绘制顺序是「实体 → 半透明区块层（流体就这一层）→ 云」，
+ * 流体与云都在实体之后画、按深度测试混合；实体一旦不进深度缓冲，这两层就会整片盖在它身上，
+ * 看起来就是被流体和天上的云挡在后面。这里按 {@code entityTranslucent} 的配方自己配一个：
+ * 自发光 shader、不挂光图、保留半透明，写掩码用默认的 {@code COLOR_DEPTH_WRITE}。
+ * 于是亮度和自发光一样，遮挡顺序和普通半透明实体一样
+ *
+ * <p>贴图动画不受影响：纹理状态在 draw 时按贴图 id 解析，而逐帧上传由 GeckoLib 的
+ * {@code updateAnimatedTextureFrame → AnimatableTexture.setAndUpdate} 负责，与选哪个 RenderType 无关
  *
  * <p>死亡不播倒地动画：{@code getDeathMaxRotation} 覆写为 0。模型本身也没有死亡片段，
  * 姿态层会继续按液面游走的动作摆动，只是不再位移。
  */
 public final class StringRenderer {
+    /** 每种贴图一个类型（小型与大型各一张），第一次用时配好缓存住 */
+    private static final Map<ResourceLocation, RenderType> GLOW_TYPES = new ConcurrentHashMap<>();
+
     private StringRenderer() {}
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.STRING.get(), StringEntityRenderer::new);
+    }
+
+    /**
+     * 自发光 + 写深度 + 半透明，就是 {@code entityTranslucent} 换个自发光着色器
+     *
+     * <p>两个类型只差三处：着色器（{@code RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER}）、
+     * 不挂光图（{@code NO_LIGHTMAP}，自发光本来就不采样它）、写掩码保留默认的
+     * {@code COLOR_DEPTH_WRITE}。原版自发光类型在这里显式写成了 {@code COLOR_WRITE}，
+     * 那正是遮挡问题的来源
+     */
+    private static RenderType glowRenderType(ResourceLocation texture) {
+        return GLOW_TYPES.computeIfAbsent(texture, location -> RenderType.create(
+            "ddt_string_glow/" + location,
+            DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS,
+            1536,
+            true,
+            true,
+            RenderType.CompositeState.builder()
+                .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                .setTextureState(new RenderStateShard.TextureStateShard(location, false, false))
+                .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                .setCullState(RenderStateShard.NO_CULL)
+                .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+                .setLightmapState(RenderStateShard.NO_LIGHTMAP)
+                .setOverlayState(RenderStateShard.OVERLAY)
+                .createCompositeState(true)));
     }
 
     private static final class StringEntityRenderer extends GeoEntityRenderer<StringEntity> {
@@ -58,7 +105,7 @@ public final class StringRenderer {
         @Override
         public RenderType getRenderType(StringEntity animatable, ResourceLocation texture,
                                         @Nullable MultiBufferSource bufferSource, float partialTick) {
-            return RenderType.entityTranslucent(texture);
+            return glowRenderType(texture);
         }
     }
 

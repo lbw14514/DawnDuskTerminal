@@ -7,6 +7,7 @@ import com.dawnduskterminal.item.CarminiteStaffItem;
 import com.dawnduskterminal.item.Experiment114Item;
 import com.dawnduskterminal.item.GhastPaintingItem;
 import com.dawnduskterminal.item.ScarletMolybdArmorItem;
+import com.dawnduskterminal.item.StringSpawnEggItem;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
@@ -15,6 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -128,6 +130,29 @@ public final class ModItems {
     /** 「弦」的掉落物，贴图来自模型包里的 string.png */
     public static final DeferredItem<Item> STRING = ITEMS.registerSimpleItem(
         "string", new Item.Properties());
+
+    /**
+     * 高塔恶魂的刷怪蛋
+     *
+     * <p>走 NeoForge 的 {@link DeferredSpawnEggItem}：原版 {@code SpawnEggItem} 的构造器要一个现成的
+     * {@code EntityType}，而物品注册跑在实体类型之前；这个子类收的是 {@code Supplier}，
+     * 第一次真正取值（放生、刷怪箱、创造栏取色）时注册表已经就绪，同时它自己把发射器行为与
+     * 两层染色的注册也接上了，不用另写客户端代码
+     *
+     * <p>两个颜色就是 {@code template_spawn_egg} 的两层染色：底与斑点。取的是高塔恶魂贴图上的
+     * 暮紫与骨白，弦取的是它脚下传送门流体的紫（{@code 0x7F159E}，见 {@code PortalFluidExtensions}）
+     * 与流体上那层浅色高光
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> TOWER_GHAST_SPAWN_EGG = ITEMS.register(
+        "tower_ghast_spawn_egg",
+        () -> new DeferredSpawnEggItem(ModEntities.TOWER_GHAST, 0x4A3B5C, 0xD8C6A0,
+            new Item.Properties()));
+
+    /** 只肯放在传送门流体边上，见 {@link StringSpawnEggItem} */
+    public static final DeferredItem<StringSpawnEggItem> STRING_SPAWN_EGG = ITEMS.register(
+        "string_spawn_egg",
+        () -> new StringSpawnEggItem(ModEntities.STRING, 0x7F159E, 0xE6D5F5,
+            new Item.Properties()));
 
     public static final DeferredItem<CarminiteStaffItem> CARMINITE_MOLYBDENUM_REACTOR_STAFF = ITEMS.register(
         "carminite_molybdenum_reactor_staff",

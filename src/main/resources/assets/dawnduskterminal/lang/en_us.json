@@ -304,6 +304,8 @@
   "entity.dawnduskterminal.painting_ghast_1": "Ghast Mural",
   "entity.dawnduskterminal.string": "String",
   "item.dawnduskterminal.string": "String",
+  "item.dawnduskterminal.tower_ghast_spawn_egg": "Tower Ghast Spawn Egg",
+  "item.dawnduskterminal.string_spawn_egg": "String Spawn Egg",
   "subtitles.dawnduskterminal.string_ambient": "String hums",
   "subtitles.dawnduskterminal.string_hit": "String hurts"
 }

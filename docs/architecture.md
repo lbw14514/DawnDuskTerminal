@@ -66,7 +66,25 @@
 
 ## 生物
 
-`registry/ModEntities` 注册 `tower_ghast`（高塔恶魂），属性走 `EntityAttributeCreationEvent`
+`registry/ModEntities` 注册 `tower_ghast`（高塔恶魂）与 `string`（弦），属性走 `EntityAttributeCreationEvent`
+
+两种生物的刷怪蛋在 `ModItems`（`tower_ghast_spawn_egg`、`string_spawn_egg`），用的是 NeoForge 的 `DeferredSpawnEggItem`：原版 `SpawnEggItem` 的构造器要一个现成的 `EntityType`，而物品注册跑在实体类型之前，这个子类收的是 `Supplier`，同时在 `FMLCommonSetupEvent` 里补发射器行为、在 `RegisterColorHandlersEvent` 里登记两层染色，客户端只剩一个 `minecraft:item/template_spawn_egg` 模型（贴图与原版刷怪蛋共用，颜色由染色层给）。`gametest/SpawnEggTests` 从 `SpawnEggItem#byId` 反查一遍，钉住这张表确实填上了
+
+`entity/StringEntity`（弦）的默认形态（滑行型）只在不稳定流体的液面上活动：每 tick 把脚底钉回液面，位置一旦离开流体就弹回上一个合法点，所以它不会飞出去也不会沉下去。水平移动由 `StringMoveControl` 驱动，不经过地面寻路：行为层每 8 到 17 tick 给一个落在液面上的目标点，控制器**每 tick 都朝它推一次**，目标点进入 0.35 格才回到 `WAIT`。不能照抄原版 `MoveControl` —— 它一进 `MOVE_TO` 就把自己改回 `WAIT`，假设行为层每 tick 重给目标点（`PathNavigation` 正是这么做的），照抄的结果是「推一 tick 滑一程」，实测 20 tick 只走 0.2 格。空中每 tick 的推进量由 `getFlyingSpeed` 从移动速度属性折算成 `速度 × 0.045`：原版这一格对非玩家操控的生物返回恒定 0.02，速度属性完全不参与，大小变种与「追击比巡航快」那一档都会失效。折算后小型巡航约 9.2 格每秒、追击 12.4 格每秒（行走的玩家是 4.3，冲刺 5.6）。移速随体型走：大型的基准是小型的 1.35 倍（巡航 12.4、追击 16.7 格每秒），0.85~1.15 的随机体型偏移也一起乘，巡航与追击的倍率两档共用。它全身自发光：渲染层自己配了一个材质——自发光着色器（`RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER`）、不挂光图、保留半透明（流体贴图 alpha 230）、写掩码保持 `COLOR_DEPTH_WRITE`，贴图动画由 GeckoLib 的 `AnimatableTexture` 逐帧上传，与选哪个 RenderType 无关。**不能直接用原版 `RenderType.entityTranslucentEmissive`**：它的写掩码是 `COLOR_WRITE`，不写深度；1.21 的绘制顺序是「实体 → 半透明区块层（流体在这一层）→ 云」，后两者在实体之后按深度测试混合，实体不进深度缓冲就会被这两层整片盖住，看起来像被流体和云挡在后面。渲染层的实现在 `client/StringRenderer` 的 `glowRenderType`
+
+「弦」的待机音要一直响，所以不用原版那条「每隔一段随机间隔掷一次」的路：`getAmbientSound` 返回 null，由 `tickAmbientSound` 按音效长度排期。`string_ambient` 的三个变体取自同一段素材、长度一致（413192 采样 / 44100 Hz = 9.37 秒 = 187 tick），当前这条还剩 8 tick 时起下一条，两条叠在一起听不出断点；音高固定 1.0，变调会改变实际时长、排期就对不上。`gametest/StringEntityTests` 手动跑「控制器写速度 → 原版 air 分支」两个动作，钉住每 tick 都推、到位即停、推进量跟速度属性走三件事
+
+「弦」有三个行为变种（`StringEntity.Kind`，序号进同步数据 `DATA_KIND` 与存档 `Kind`），三种共用模型、贴图与属性，区别只在运动系统与索敌范围。运动系统由 `applyKind` 按变种整套装配，能借原版的直接借：
+
+**滑行型**贴液面，`StringMoveControl` 只给水平推进（每 tick 推一次、到 0.35 格算到达），垂直位置由 `keepOnFluidSurface` 钉住；只打脚边一格有流体的玩家
+
+**低空飞行型**整套是蜜蜂那套：`moveControl = new FlyingMoveControl(this, 20, true)`（原版类，蜂用的就是它）、`FlyingPathNavigation`、追人用原版 `MeleeAttackGoal`（寻路自己算三维路径，空中与岸上的玩家都追得到，索敌不看流体）。没有目标时 `FlyerWanderGoal` 照 `Bee.BeeWanderGoal` 的写法——`navigation.isDone() && nextInt(10)==0` 就挑一个液面上方两格的盘旋点、`navigation.moveTo(navigation.createPath(...), 1.0)` 飞过去；目标没了（被打死或跑掉）由 `ReturnToFluidGoal` 带回液体上空：远处寻路飞回去，近了照蜜蜂在巢口悬停那样每 tick 用 0.35 的速度给一次目标点。它的 `travel` 照 `FlyingMob#travel`（恶魂与幻翼的父类）**整段不扣重力**，`checkFallDamage` 照 `FlyingMob` 写成空实现——**光靠 `setNoGravity(true)` 飘着是不够的**：重力标记一旦被读档或别的代码改掉就会自由落体，而且俯冲追击时 `fallDistance` 会照常累计、落地结算摔伤；传送门流体不是 `#minecraft:water`，进水也不会像原版水那样清零 `fallDistance`
+
+**游动型**是鱼那一套：`moveControl = FluidMoveControl` 照抄 `AbstractFish.FishMoveControl`——眼睛泡在流体里每 tick 补 0.005 浮力、速度按 0.125 的比重渐变、按目标点补垂直推力、只改朝向；`travel` 照抄 `AbstractFish#travel` 的水下分支（`moveRelative(0.01)` 推、`move` 走、整体乘 0.9、没目标时缓慢下沉）。原版判定里的 `isInWater()`（`#minecraft:water` 标签）换成本模组的传送门流体判定，这是唯一改动；`keepSubmerged` 再把脚夹在「池底往上 0.2」到「液面往下 0.9」之间兜住范围。只打泡在流体里的玩家
+
+三种变种**只主动索敌玩家**（`NearestAttackableTargetGoal<Player>` + `isValidPrey` 里再判一次类型）。自然生成只出滑行型（`world/StringSpawner`，每 5 秒扫列，玩家周围 48 格内 5 只封顶）；低空飞行型与游动型只由滑行型分裂产生。滑行型每次受到**高于 2 点**的伤害有 **10%** 概率裂成一对——低空飞行型（抬高 1.5 格悬空）加游动型，自己 `discard` 掉（不是 `die`：不掉战利品、不算击杀、不播倒地动画），伴随末影人传送音与 60 颗传送粒子。两种新变种不会二次分裂
+
+「弦」的刷怪蛋（`item/StringSpawnEggItem`）只肯放在传送门流体边上：`useOn`（点方块）、`use`（点流体源格）、`createDispenseBehavior`（发射器；默认行为在 `DeferredSpawnEggItem` 里是私有的，照着重写了一份）三条发放路径都先过 `StringEntity.canSpawnAt`——落点那一格是流体，或它正下方是流体，才准放，否则蛋不消耗
 
 `entity/TowerGhastEntity` 由 GeckoLib 驱动，模型 动画 贴图从 Yes Steve Model 的 Bedrock 文件转换而来，转换与校验在 `tools/ysm/`
 

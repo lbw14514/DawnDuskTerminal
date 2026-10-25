@@ -304,9 +304,11 @@
   "death.attack.carminite_field": "%1$s 被砷铅铁反应场溶解",
   "death.attack.carminite_fire": "%1$s 被砷铅铁火焰烧尽",
   "entity.dawnduskterminal.tower_ghast": "测试恶魂591",
-  "entity.dawnduskterminal.painting_ghast_1": "恶魂壁画",
-  "entity.dawnduskterminal.string": "游丝",
-  "item.dawnduskterminal.string": "弦丝",
-  "subtitles.dawnduskterminal.string_ambient": "游丝低鸣",
-  "subtitles.dawnduskterminal.string_hit": "游丝受击"
+  "entity.dawnduskterminal.painting_ghast_1": "日出",
+  "entity.dawnduskterminal.string": "弦",
+  "item.dawnduskterminal.string": "弦",
+  "item.dawnduskterminal.tower_ghast_spawn_egg": "测试恶魂591刷怪蛋",
+  "item.dawnduskterminal.string_spawn_egg": "弦刷怪蛋",
+  "subtitles.dawnduskterminal.string_ambient": "弦鸣",
+  "subtitles.dawnduskterminal.string_hit": "弦震"
 }

@@ -30,6 +30,8 @@ import net.minecraft.world.phys.AABB;
  * <p>{@link Heightmap.Types#WORLD_SURFACE} 把流体也算作非空气，它的高度正好是液面之上的第一格空气。
  * 因此取一列的高度、检查下面那一格是传送门流体、这一格是空气，就是一个合法的生成点。
  * 每 5 秒对每个玩家最多找十个列，命中的列有半概率生成，附近已有五只就不再刷。
+ *
+ * <p>自然生成只出滑行型；低空飞行型与游动型只能由滑行型分裂出来（见 {@code StringEntity}）
  */
 public final class StringSpawner {
     /** 每 100 tick 扫一轮 */
