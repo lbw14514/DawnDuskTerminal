@@ -132,6 +132,16 @@ public final class TowerGhastPhysics {
         return STBPerlin.stb_perlin_noise3_seed((float) x, 0.0F, 0.0F, 0, 0, 0, seed);
     }
 
+    /**
+     * 三轴版本，给「弦」的 {@code parallel1} 用
+     *
+     * <p>源动画把 {@code query.life_time} 分别放在 x、y、z 三个不同的轴上取噪声，
+     * 单轴版本复现不了这种错位，所以这里直接透传三个坐标
+     */
+    public static double perlinNoise(int seed, double x, double y, double z) {
+        return STBPerlin.stb_perlin_noise3_seed((float) x, (float) y, (float) z, 0, 0, 0, seed);
+    }
+
     /** 与 YSM 的 {@code math.clamp} 同义 */
     public static double clamp(double value, double min, double max) {
         return value < min ? min : (value > max ? max : value);

@@ -125,6 +125,10 @@ public final class ModItems {
     public static final DeferredItem<Item> CARMINITE_BALL = ITEMS.registerSimpleItem(
         "carminite_ball", new Item.Properties().rarity(Rarity.UNCOMMON));
 
+    /** 「弦」的掉落物，贴图来自模型包里的 string.png */
+    public static final DeferredItem<Item> STRING = ITEMS.registerSimpleItem(
+        "string", new Item.Properties());
+
     public static final DeferredItem<CarminiteStaffItem> CARMINITE_MOLYBDENUM_REACTOR_STAFF = ITEMS.register(
         "carminite_molybdenum_reactor_staff",
         () -> new CarminiteStaffItem(new Item.Properties()

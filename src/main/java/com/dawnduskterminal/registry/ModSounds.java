@@ -46,6 +46,14 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_HURT =
         register("tower_ghast_hurt");
 
+    /** 「弦」的常驻音，3 条随机取一条 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_AMBIENT =
+        register("string_ambient");
+
+    /** 「弦」的受伤与死亡音，3 条随机取一条 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_HIT =
+        register("string_hit");
+
     /** 试验物品 052 收到红石信号、点火那一下 */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_IGNITE =
         register("experiment_052_ignite");

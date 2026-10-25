@@ -11,6 +11,7 @@ import com.dawnduskterminal.portal.PortalTrigger;
 import com.dawnduskterminal.progression.BossProgressTracker;
 import com.dawnduskterminal.structure.StructureExclusions;
 import com.dawnduskterminal.world.ChronoLineState;
+import com.dawnduskterminal.world.StringSpawner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -99,6 +100,7 @@ public final class DdtServerEvents {
      */
     public static void onServerTick(ServerTickEvent.Post event) {
         FireJetProcess.tickAll();
+        StringSpawner.tick(event.getServer());
     }
 
     /** 服务器停下：把还在跑的喷火过程清干净，别留到下一次启动 */

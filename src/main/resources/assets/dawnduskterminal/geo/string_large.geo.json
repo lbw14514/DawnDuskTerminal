@@ -1,0 +1,296 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.unknown",
+				"texture_width": 32,
+				"texture_height": 32,
+				"visible_bounds_width": 6,
+				"visible_bounds_height": 3,
+				"visible_bounds_offset": [0, 0.5, 0]
+			},
+			"bones": [
+				{
+					"name": "root",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "spoke1",
+					"parent": "root",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segimentlocator1",
+					"parent": "spoke1",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke2",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 30]
+				},
+				{
+					"name": "segimentlocator2",
+					"parent": "spoke2",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke3",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 60]
+				},
+				{
+					"name": "segimentlocator3",
+					"parent": "spoke3",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke4",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 90]
+				},
+				{
+					"name": "segimentlocator4",
+					"parent": "spoke4",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke5",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 120]
+				},
+				{
+					"name": "segimentlocator5",
+					"parent": "spoke5",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke6",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 150]
+				},
+				{
+					"name": "segimentlocator6",
+					"parent": "spoke6",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke7",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, 180]
+				},
+				{
+					"name": "segimentlocator7",
+					"parent": "spoke7",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke8",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, -150]
+				},
+				{
+					"name": "segimentlocator8",
+					"parent": "spoke8",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke9",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, -120]
+				},
+				{
+					"name": "segimentlocator9",
+					"parent": "spoke9",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke10",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, -90]
+				},
+				{
+					"name": "segimentlocator10",
+					"parent": "spoke10",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke11",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, -60]
+				},
+				{
+					"name": "segimentlocator11",
+					"parent": "spoke11",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "spoke12",
+					"parent": "root",
+					"pivot": [0, 0, 0],
+					"rotation": [0, 0, -30]
+				},
+				{
+					"name": "segimentlocator12",
+					"parent": "spoke12",
+					"pivot": [0, 40, 0]
+				},
+				{
+					"name": "segiment_1",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_1",
+					"parent": "segiment_1",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_2",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_2",
+					"parent": "segiment_2",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_3",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_3",
+					"parent": "segiment_3",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_4",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_4",
+					"parent": "segiment_4",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_5",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_5",
+					"parent": "segiment_5",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_6",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_6",
+					"parent": "segiment_6",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_7",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_7",
+					"parent": "segiment_7",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_8",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_8",
+					"parent": "segiment_8",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_9",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_9",
+					"parent": "segiment_9",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_10",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_10",
+					"parent": "segiment_10",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_11",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_11",
+					"parent": "segiment_11",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				},
+				{
+					"name": "segiment_12",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "segiment_Y_12",
+					"parent": "segiment_12",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [-4, 0, -4], "size": [8, 20.7055, 8], "uv": [0, 0]}
+					]
+				}
+			]
+		}
+	]
+}

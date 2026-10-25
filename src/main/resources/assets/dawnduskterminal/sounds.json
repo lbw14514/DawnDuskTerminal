@@ -74,5 +74,21 @@
       "dawnduskterminal:tower_ghast_hurt_4",
       "dawnduskterminal:tower_ghast_hurt_5"
     ]
+  },
+  "string_ambient": {
+    "subtitle": "subtitles.dawnduskterminal.string_ambient",
+    "sounds": [
+      "dawnduskterminal:string_ambient_1",
+      "dawnduskterminal:string_ambient_2",
+      "dawnduskterminal:string_ambient_3"
+    ]
+  },
+  "string_hit": {
+    "subtitle": "subtitles.dawnduskterminal.string_hit",
+    "sounds": [
+      "dawnduskterminal:string_hit_1",
+      "dawnduskterminal:string_hit_2",
+      "dawnduskterminal:string_hit_3"
+    ]
   }
 }
