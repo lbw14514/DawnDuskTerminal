@@ -95,7 +95,8 @@ public final class ModCreativeTabs {
      * <p>全部按序号升序排，靠一张 {@link TreeMap} 排出来，不走手写顺序：001 是方块，004 是照熔炉工作的那台机器，
      * 007 与 017 是那两把近战
      * 伤害 4、攻速 5 的裸武器，008 是那件 5 点饥饿 5 点饱和度的食物，027 是那支画红石点的笔，033/034 是两支长矛，
-     * 037~042 是高塔工具与简单物品，046 是权杖，051 是拆解台那台机器，104 是那个食物，114 是能吃能摆的那一块，
+     * 037~042 是高塔工具与简单物品，046 是权杖，051 是拆解台那台机器，065 是压出「打不出伤害」的场的机器，
+     * 069 是压出「更新不处理」的场的机器，104 是那个食物，114 是能吃能摆的那一块，
      * 其余空号是 {@link ModExperimentItems#placeholders()} 补的占位物品
      *
      * <p>图标用暮色森林的试验物品 115，没装暮色森林时退化成试验物品 046
@@ -138,6 +139,8 @@ public final class ModCreativeTabs {
                 sequence.put(50, ModExperimentItems.EXPERIMENT_050.get());
                 sequence.put(51, ModItems.EXPERIMENT_051.get());
                 sequence.put(52, ModItems.EXPERIMENT_052.get());
+                sequence.put(65, ModItems.EXPERIMENT_065.get());
+                sequence.put(69, ModItems.EXPERIMENT_069.get());
                 sequence.put(104, ModItems.EXPERIMENT_104.get());
                 sequence.put(114, ModItems.EXPERIMENT_114.get());
                 sequence.forEach((number, item) -> accept(output, item));

@@ -11,6 +11,8 @@ import com.dawnduskterminal.portal.PortalTrigger;
 import com.dawnduskterminal.progression.BossProgressTracker;
 import com.dawnduskterminal.structure.StructureExclusions;
 import com.dawnduskterminal.world.ChronoLineState;
+import com.dawnduskterminal.world.Experiment065Field;
+import com.dawnduskterminal.world.Experiment069Field;
 import com.dawnduskterminal.world.StringSpawner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -103,9 +105,11 @@ public final class DdtServerEvents {
         StringSpawner.tick(event.getServer());
     }
 
-    /** 服务器停下：把还在跑的喷火过程清干净，别留到下一次启动 */
+    /** 服务器停下：把还在跑的喷火过程与 065 / 069 两张场的场心表清干净，别留到下一次启动 */
     public static void onServerStopped(ServerStoppedEvent event) {
         FireJetProcess.clear();
+        Experiment065Field.clear();
+        Experiment069Field.clear();
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {

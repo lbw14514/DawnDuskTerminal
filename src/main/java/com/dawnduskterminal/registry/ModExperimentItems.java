@@ -248,6 +248,10 @@ public final class ModExperimentItems {
      * 051 是拆解台那台机器（方块在
      * {@link ModBlocks#EXPERIMENT_051}、物品在 {@link ModItems#EXPERIMENT_051}），
      * 052 是那颗方雷（方块在 {@link ModBlocks#EXPERIMENT_052}、物品在 {@link ModItems#EXPERIMENT_052}），
+     * 065 是那台压出「打不出伤害」的场的机器（方块在 {@link ModBlocks#EXPERIMENT_065}、
+     * 物品在 {@link ModItems#EXPERIMENT_065}），
+     * 069 是那台压出「更新不处理」的场的机器（方块在 {@link ModBlocks#EXPERIMENT_069}、
+     * 物品在 {@link ModItems#EXPERIMENT_069}），
      * 037~042 是上面那批工具与简单物品，043 是上面那台喷火器，045 是上面那面盾，
      * 047~050 是上面那套护甲，
      * 046 是砷铅铁钼反应权杖（注册 ID 仍是 {@code carminite_molybdenum_reactor_staff}），
@@ -258,7 +262,7 @@ public final class ModExperimentItems {
      */
     private static final Set<Integer> TAKEN =
         Set.of(1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50,
-            51, 52, 104, 114, 115);
+            51, 52, 65, 69, 104, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 

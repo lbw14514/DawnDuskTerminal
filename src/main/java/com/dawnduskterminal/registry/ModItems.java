@@ -186,6 +186,12 @@ public final class ModItems {
     /** 试验物品 052：那颗方雷的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_052} */
     public static final DeferredItem<BlockItem> EXPERIMENT_052 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_052);
 
+    /** 试验物品 065：那台让人打不出伤害的机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_065} */
+    public static final DeferredItem<BlockItem> EXPERIMENT_065 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_065);
+
+    /** 试验物品 069：那台让方块更新不处理的机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_069} */
+    public static final DeferredItem<BlockItem> EXPERIMENT_069 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_069);
+
     /**
      * 试验物品 104 一口的数值：10 与 0.6，也就是 10 点饥饿、饱食度 12.0，等于两块烤马铃薯
      * （一块烤马铃薯是 5 与 0.6，即 5 点饥饿、饱食度 6.0）

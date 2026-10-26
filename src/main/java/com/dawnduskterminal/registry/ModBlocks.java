@@ -6,6 +6,8 @@ import com.dawnduskterminal.block.Experiment004Block;
 import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
 import com.dawnduskterminal.block.Experiment052Block;
+import com.dawnduskterminal.block.Experiment065Block;
+import com.dawnduskterminal.block.Experiment069Block;
 import com.dawnduskterminal.block.Experiment114Block;
 import com.dawnduskterminal.portal.PortalBlock;
 import net.minecraft.core.registries.Registries;
@@ -174,6 +176,49 @@ public final class ModBlocks {
             .strength(3.5F)
             .sound(SoundType.STONE)
             .lightLevel(state -> state.getValue(Experiment052Block.ACTIVE) ? 15 : 0));
+
+    /**
+     * 试验物品 065：反建器那一档里更高级的一台，压出一张 17×17×17 的「打不出伤害」场
+     *
+     * <p>方块属性照 052 那一档的塔木机器给：3.5 硬度、石头音效、红这一档地图色，挖它要镐子
+     * （进 {@code #minecraft:mineable/pickaxe}）。方块自己发 15 级光，贴图只有一张、直接读满亮；
+     * 场有多大由 {@code world/CubeFieldMarker} 那圈立方框粒子画出来（客户端画，服务端不挂 ticker）
+     *
+     * <p>场没有状态，方块实体只用来登记场心，见 {@link Experiment065Block} 与
+     * {@code world/Experiment065Field}；掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_065.json}
+     */
+    public static final DeferredBlock<Experiment065Block> EXPERIMENT_065 = BLOCKS.registerBlock(
+        "experiment_065",
+        Experiment065Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_ORANGE)
+            .requiresCorrectToolForDrops()
+            .strength(3.5F)
+            .sound(SoundType.STONE)
+            .lightLevel(state -> 15));
+
+    /**
+     * 试验物品 069：反建器那一档里更高级的第二台，压出一张 17×17×17 的「更新不处理」场
+     *
+     * <p>方块属性与 065 同档（3.5 硬度、石头音效、红这一档地图色、要镐子、常亮 15 级光），
+     * 地图色用 {@code TERRACOTTA_ORANGE}：比 065 那个 {@code COLOR_ORANGE} 偏棕一档，与 069 那张更暗的贴图
+     * 对得上，两台摆在一起在地图上分得清
+     *
+     * <p>场不扫方块，服务端也不挂 ticker，方块实体只用来登记场心，见 {@link Experiment069Block} 与
+     * {@code world/Experiment069Field}；场有多大由 {@code world/CubeFieldMarker} 那圈立方框粒子画出来
+     * （客户端画）。贴图只有一张，方块自己发 15 级光
+     *
+     * <p>掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_069.json}
+     */
+    public static final DeferredBlock<Experiment069Block> EXPERIMENT_069 = BLOCKS.registerBlock(
+        "experiment_069",
+        Experiment069Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.TERRACOTTA_ORANGE)
+            .requiresCorrectToolForDrops()
+            .strength(3.5F)
+            .sound(SoundType.STONE)
+            .lightLevel(state -> 15));
 
     /**
      * 砷铅铁火焰：试验物品 052 炸出来、碎片落地补上的那种火，行为在 {@link CarminiteFireBlock}

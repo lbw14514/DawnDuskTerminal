@@ -28,6 +28,7 @@ import com.dawnduskterminal.registry.ModTerrainBlocks;
 import com.dawnduskterminal.registry.ModTrunkPlacers;
 import com.dawnduskterminal.server.DdtServerEvents;
 import com.dawnduskterminal.world.CarminiteBlast;
+import com.dawnduskterminal.world.Experiment065Field;
 import com.dawnduskterminal.world.FluidReactions;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -85,6 +86,8 @@ public final class DawnDuskTerminal {
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(DdtServerEvents::onRightClickItem);
+        // 试验物品 065 的场：范围里打出的伤害一律无效，判定与场心登记都在 Experiment065Field
+        NeoForge.EVENT_BUS.addListener(Experiment065Field::onLivingIncomingDamage);
         // 试验物品 052 的连锁：主爆炸进行中把范围内的同类方块从破坏名单里摘出来、排到下一 tick 引爆
         NeoForge.EVENT_BUS.addListener(CarminiteBlast::protectArmedBlocks);
         NeoForge.EVENT_BUS.addListener(DdtCommands::register);
