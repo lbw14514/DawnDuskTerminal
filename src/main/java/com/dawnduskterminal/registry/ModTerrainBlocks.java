@@ -19,8 +19,10 @@ import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.SnowyDirtBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.TransparentBlock;
 import net.minecraft.world.level.block.grower.TreeGrower;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
@@ -165,6 +167,31 @@ public final class ModTerrainBlocks {
 
     public static final DeferredItem<BlockItem> ENCASED_TOWERBEAM_ITEM =
         ITEMS.registerSimpleBlockItem(ENCASED_TOWERBEAM);
+
+    // 锻铁玻璃。是一种玻璃，所以方块类直接用原版玻璃那一支（TransparentBlock：视觉形状为空、天光直穿、
+    // 亮度按满亮给），属性逐条照抄原版 Blocks.GLASS 的注册参数——0.3 硬度、GLASS 音效、HAT 乐器，
+    // 四条 never 分别关掉刷怪 红石导通 窒息 遮挡视线，noOcclusion 则是半透明整方块的硬要求
+    // （会遮挡的方块会剔除邻居的面，没画出来的面就是一个洞）
+    //
+    // 竖直方向的连接纹理由 WroughtIronGlassModel 在客户端画，方块本身不存连接状态；
+    // 同种方块之间的内部面由 HalfTransparentBlock 的 skipRendering 剔掉，柱子只留最外一圈
+    public static final DeferredBlock<TransparentBlock> WROUGHT_IRON_GLASS = BLOCKS.registerBlock(
+        "wrought_iron_glass",
+        TransparentBlock::new,
+        BlockBehaviour.Properties.of()
+            .instrument(NoteBlockInstrument.HAT)
+            .strength(0.3F)
+            .sound(SoundType.GLASS)
+            .noOcclusion()
+            .isValidSpawn(Blocks::never)
+            // 原版玻璃这三条写的是 Blocks::never，但 3 参的那个 never 在 Blocks 里是 private，
+            // 只有 4 参的刷怪版本是 public，所以红石导通 窒息 遮挡视线三条只能自己写 lambda
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false));
+
+    public static final DeferredItem<BlockItem> WROUGHT_IRON_GLASS_ITEM =
+        ITEMS.registerSimpleBlockItem(WROUGHT_IRON_GLASS);
 
     public static final DeferredBlock<Block> SCARLET_MOLYBDENUM_ORE = BLOCKS.registerSimpleBlock(
         "scarlet_molybdenum_ore", stone(MapColor.COLOR_RED, 2.5F));

@@ -4,6 +4,8 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.client.model.ExperimentArmorModel;
 import com.dawnduskterminal.client.model.MountedTowerWoodModel;
 import com.dawnduskterminal.client.model.ScarletMolybdenumArmorModel;
+import com.dawnduskterminal.client.model.WroughtIronGlassModel;
+import com.dawnduskterminal.registry.ModBlockEntities;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModExperimentItems;
 import com.dawnduskterminal.registry.ModFluids;
@@ -42,6 +44,8 @@ import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import org.jetbrains.annotations.Nullable;
 import net.neoforged.neoforge.common.NeoForge;
+
+import java.util.List;
 
 public final class DdtClient {
     private DdtClient() {}
@@ -120,6 +124,20 @@ public final class DdtClient {
                 return renderer;
             }
         }, ModExperimentItems.EXPERIMENT_045.get());
+        // 试验物品 076 的物品图标与手持：静态烘焙模型换不了贴图，整个交给 BEWLR 每帧现画，
+        // 见 Experiment076ItemRenderer；世界里的方块那边是 Experiment076Renderer
+        event.registerItem(new IClientItemExtensions() {
+            @Nullable
+            private Experiment076ItemRenderer renderer;
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                if (renderer == null) {
+                    renderer = new Experiment076ItemRenderer();
+                }
+                return renderer;
+            }
+        }, ModItems.EXPERIMENT_076.get());
         event.registerItem(SCARLET_MOLYBDENUM_ARMOR,
             ModItems.SCARLET_MOLYBD_HELMET.get(),
             ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
@@ -174,6 +192,7 @@ public final class DdtClient {
     private static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
         wrapCtm(event, "mounted_towerwood");
         wrapCtm(event, "encased_towerbeam");
+        wrapGlassCtm(event, "wrought_iron_glass");
     }
 
     private static void wrapCtm(ModelEvent.ModifyBakingResult event, String name) {
@@ -181,6 +200,27 @@ public final class DdtClient {
         BakedModel original = event.getModels().get(blockLoc);
         if (original != null) {
             event.getModels().put(blockLoc, new MountedTowerWoodModel(original));
+        }
+    }
+
+    /**
+     * 「锻铁玻璃」竖直连接纹理的模型替换
+     *
+     * <p>和镶边塔木不一样，这件要换两个位置：方块本身烘在 {@code #}（无变体），
+     * 物品栏图标走另一条单独的烘焙路径，键是 {@code ModelResourceLocation.inventory(物品 ID)}，
+     * 也就是 {@code #inventory}，模型文件却是 {@code item/wrought_iron_glass}。只换方块那一处的话，
+     * 手上和物品栏里的图标会把整张 48x48 的九格图糊在立方体的每个面上
+     */
+    private static void wrapGlassCtm(ModelEvent.ModifyBakingResult event, String name) {
+        ResourceLocation id = DawnDuskTerminal.id(name);
+        ModelResourceLocation blockLoc = new ModelResourceLocation(id, "");
+        // 物品的键不用 id.withPrefix("item/")：烘焙时用的是物品 ID 加 inventory 变体
+        ModelResourceLocation itemLoc = new ModelResourceLocation(id, ModelResourceLocation.INVENTORY_VARIANT);
+        for (ModelResourceLocation location : List.of(blockLoc, itemLoc)) {
+            BakedModel original = event.getModels().get(location);
+            if (original != null) {
+                event.getModels().put(location, new WroughtIronGlassModel(original));
+            }
         }
     }
 
@@ -258,6 +298,8 @@ public final class DdtClient {
         // 试验物品 052 的碎片不画贴图，外观只有每 tick 那几颗红石粒子，见 CarminiteShrapnelEntity
         event.registerEntityRenderer(ModEntities.CARMINITE_SHRAPNEL.get(), NoopRenderer::new);
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_1.get(), PaintingRenderer::new);
+        // 试验物品 076 的外观整个在这一边：每个面每 tick 抽一张贴图，见 Experiment076Renderer
+        event.registerBlockEntityRenderer(ModBlockEntities.EXPERIMENT_076.get(), Experiment076Renderer::new);
     }
 
     /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle}；027 的红石点与 043 的大火焰各一支 */

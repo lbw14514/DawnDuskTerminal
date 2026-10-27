@@ -8,6 +8,7 @@ import com.dawnduskterminal.block.Experiment051Block;
 import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.block.Experiment065Block;
 import com.dawnduskterminal.block.Experiment069Block;
+import com.dawnduskterminal.block.Experiment076Block;
 import com.dawnduskterminal.block.Experiment114Block;
 import com.dawnduskterminal.portal.PortalBlock;
 import net.minecraft.core.registries.Registries;
@@ -221,8 +222,28 @@ public final class ModBlocks {
             .lightLevel(state -> 15));
 
     /**
-     * 砷铅铁火焰：试验物品 052 炸出来、碎片落地补上的那种火，行为在 {@link CarminiteFireBlock}
+     * 试验物品 076：那个每个面每一刻都在换贴图的异常方块，外观整个在客户端
+     * {@code client/Experiment076Renderer}，方块本身只挂一个空方块实体当落点
      *
+     * <p>它是<b>光源方块</b>：15 级光，外壳在渲染器那一侧也一律按满亮画（{@link
+     * com.dawnduskterminal.client.Experiment076Cube} 里连光图都不吃），所以不管摆在洞里还是夜里，
+     * 六个面都是亮的。这一条是它「发光」的全部来源，别把 {@code lightLevel} 删了
+     *
+     * <p>剩下的属性：黑这一档地图色、镐子能挖但 5 点硬度、爆炸抗性 1200（与黑曜石同档）、石头音效。
+     * 挖掉掉自己，走 {@code data/dawnduskterminal/loot_table/blocks/experiment_076.json}
+     */
+    public static final DeferredBlock<Experiment076Block> EXPERIMENT_076 = BLOCKS.registerBlock(
+        "experiment_076",
+        Experiment076Block::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .requiresCorrectToolForDrops()
+            .strength(5.0F, 1200.0F)
+            .sound(SoundType.STONE)
+            .lightLevel(state -> 15));
+
+    /**
+     * 砷铅铁火焰：试验物品 052 炸出来、碎片落地补上的那种火，行为在 {@link CarminiteFireBlock}
      * <p>属性照原版火焰那一套（{@code replaceable}、{@code noCollission}、{@code instabreak}、
      * {@code WOOL} 音效、{@code DESTROY} 推挤反应），只有两条不同：光是 10 级不是 15 级，
      * 以及没有战利品表（敲掉什么都不掉，也没有对应的物品）

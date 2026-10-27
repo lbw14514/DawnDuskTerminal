@@ -2,6 +2,7 @@ package com.dawnduskterminal.server;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.item.FireJetProcess;
+import com.dawnduskterminal.item.GhastTrapProcess;
 import com.dawnduskterminal.network.ChronoLinePayload;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModItems;
@@ -13,6 +14,7 @@ import com.dawnduskterminal.structure.StructureExclusions;
 import com.dawnduskterminal.world.ChronoLineState;
 import com.dawnduskterminal.world.Experiment065Field;
 import com.dawnduskterminal.world.Experiment069Field;
+import com.dawnduskterminal.world.Experiment076Reaction;
 import com.dawnduskterminal.world.StringSpawner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -95,19 +97,23 @@ public final class DdtServerEvents {
     }
 
     /**
-     * 服务端每 tick 推进一次试验物品 043 的喷火过程
+     * 服务端每 tick 推进一次试验物品 043 的喷火过程、试验物品 066 的恶魂陷阱场与试验物品 076 被挖掉之后的那场反应
      *
-     * <p>过程挂在 {@code ServerTickEvent.Post} 上而不是玩家身上：松手、换物品、死亡都不打断，
-     * 只有服务器停下才整批清掉，见 {@link #onServerStopped}
+     * <p>三个过程都挂在 {@code ServerTickEvent.Post} 上而不是玩家或方块实体身上：松手、换物品、死亡、
+     * 方块被挖掉都不打断，只有服务器停下才整批清掉，见 {@link #onServerStopped}
      */
     public static void onServerTick(ServerTickEvent.Post event) {
         FireJetProcess.tickAll();
+        GhastTrapProcess.tickAll();
+        Experiment076Reaction.tickAll();
         StringSpawner.tick(event.getServer());
     }
 
-    /** 服务器停下：把还在跑的喷火过程与 065 / 069 两张场的场心表清干净，别留到下一次启动 */
+    /** 服务器停下：把还在跑的喷火过程、恶魂陷阱场、076 的反应与 065 / 069 两张场的场心表清干净，别留到下一次启动 */
     public static void onServerStopped(ServerStoppedEvent event) {
         FireJetProcess.clear();
+        GhastTrapProcess.clear();
+        Experiment076Reaction.clear();
         Experiment065Field.clear();
         Experiment069Field.clear();
     }

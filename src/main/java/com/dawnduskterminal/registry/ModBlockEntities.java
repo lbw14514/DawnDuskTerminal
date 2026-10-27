@@ -5,13 +5,17 @@ import com.dawnduskterminal.block.entity.Experiment004BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment051BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment065BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment069BlockEntity;
+import com.dawnduskterminal.block.entity.Experiment076BlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-/** 方块实体类型。目前有试验物品 004 那台熔炉、051 那台机器与 065 那台不让人打伤害的机器 */
+/**
+ * 方块实体类型。目前有试验物品 004 那台熔炉、051 那台机器、065 那台不让人打伤害的机器、069 那台让更新不处理的机器，
+ * 以及 076 那个没有数据、只为挂客户端渲染器的异常方块
+ */
 public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, DawnDuskTerminal.MOD_ID);
@@ -36,6 +40,14 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<Experiment069BlockEntity>> EXPERIMENT_069 =
         BLOCK_ENTITIES.register("experiment_069",
             () -> BlockEntityType.Builder.of(Experiment069BlockEntity::new, ModBlocks.EXPERIMENT_069.get()).build(null));
+
+    /**
+     * 试验物品 076 的方块实体：没有任何数据，只为让客户端的 {@code Experiment076Renderer} 有个落点。
+     * 那个方块的外观每 tick 现算，见 {@link Experiment076BlockEntity}
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<Experiment076BlockEntity>> EXPERIMENT_076 =
+        BLOCK_ENTITIES.register("experiment_076",
+            () -> BlockEntityType.Builder.of(Experiment076BlockEntity::new, ModBlocks.EXPERIMENT_076.get()).build(null));
 
     private ModBlockEntities() {}
 

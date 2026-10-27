@@ -31,6 +31,18 @@ public final class ModDamageTypes {
         ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_043"));
 
     /**
+     * 试验物品 066 那本恶魂陷阱书的持续伤害，每一下 7 点
+     *
+     * <p>只进 {@code data/minecraft/tags/damage_type/} 下的 {@code no_knockback}：书自己每 tick 把场里的
+     * 活物往视线轴上拽，伤害要是再推一把，两边会互相打架
+     *
+     * <p><b>不进 {@code bypasses_cooldown}</b>：场每 tick 都试一次 {@code hurt}，原版无敌帧会把连续的施压
+     * 自动排成每 0.5 秒一下——无敌帧就是这个场的节拍，绕过去反而是错的。也不进 {@code is_fire}，它不是火
+     */
+    public static final ResourceKey<DamageType> EXPERIMENT_066 =
+        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_066"));
+
+    /**
      * 砷铅铁火焰的接触伤害，每次 2 点，自定义死亡信息
      *
      * <p>只进 {@code data/minecraft/tags/damage_type/} 下的 {@code no_knockback}（不产生击退），

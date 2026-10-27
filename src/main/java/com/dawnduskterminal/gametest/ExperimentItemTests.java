@@ -50,7 +50,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.neoforged.neoforge.registries.DeferredItem;
 
 /**
- * 试验物品 007、008、017、037~042 与 104 的规格：007/017 是近战伤害 4 攻速 5 的裸武器，
+ * 试验物品 007、008、017、036~038 与 040~042、104 的规格：007/017 是近战伤害 4 攻速 5 的裸武器，
  * 008 是 5 饥饿 5 饱和度的食物，五件工具是钻石级，042 是普通物品，104 是两口吃完的食物
  *
  * <p>「钻石级」断言成 {@code getTier() == Tiers.DIAMOND} 而不是逐个比数值：耐久 1561、速度 8、
@@ -61,9 +61,9 @@ import net.neoforged.neoforge.registries.DeferredItem;
 @PrefixGameTestTemplate(false)
 public final class ExperimentItemTests {
     private static final List<Item> TOOLS = List.of(
+        ModExperimentItems.EXPERIMENT_036.get(),
         ModExperimentItems.EXPERIMENT_037.get(),
         ModExperimentItems.EXPERIMENT_038.get(),
-        ModExperimentItems.EXPERIMENT_039.get(),
         ModExperimentItems.EXPERIMENT_040.get(),
         ModExperimentItems.EXPERIMENT_041.get());
 
@@ -92,9 +92,9 @@ public final class ExperimentItemTests {
     @GameTest(template = "ddt_empty")
     public static void toolsSitInVanillaToolTags(GameTestHelper helper) {
         // 原版附魔标签是从这五个物品标签派生的，缺一个这工具在附魔台上就没有附魔可给
-        assertTagged(helper, ModExperimentItems.EXPERIMENT_037.get(), ItemTags.SWORDS, "swords");
-        assertTagged(helper, ModExperimentItems.EXPERIMENT_038.get(), ItemTags.PICKAXES, "pickaxes");
-        assertTagged(helper, ModExperimentItems.EXPERIMENT_039.get(), ItemTags.HOES, "hoes");
+        assertTagged(helper, ModExperimentItems.EXPERIMENT_036.get(), ItemTags.SWORDS, "swords");
+        assertTagged(helper, ModExperimentItems.EXPERIMENT_037.get(), ItemTags.PICKAXES, "pickaxes");
+        assertTagged(helper, ModExperimentItems.EXPERIMENT_038.get(), ItemTags.HOES, "hoes");
         assertTagged(helper, ModExperimentItems.EXPERIMENT_040.get(), ItemTags.SHOVELS, "shovels");
         assertTagged(helper, ModExperimentItems.EXPERIMENT_041.get(), ItemTags.AXES, "axes");
         helper.succeed();
@@ -370,16 +370,16 @@ public final class ExperimentItemTests {
     public static void placeholdersFillEveryGapUpTo115(GameTestHelper helper) {
         SortedMap<Integer, DeferredItem<Item>> placeholders = ModExperimentItems.placeholders();
         // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、007/017 两把 4/5 裸武器、008 与 020 两件食物、027 那支画点的笔、
-        // 019 那丛植物、033/034 两支长矛、037~042 六件、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
-        // 051 拆解台、052 那颗方雷、065 与 069 两台反建器、104 那个食物、114 那块蛋糕、115 暮色森林那件
-        helper.assertTrue(placeholders.size() == 85,
-            "placeholders must cover the 85 free numbers of 1..115, got " + placeholders.size());
-        for (int number : new int[] {2, 6, 9, 16, 18, 32, 35, 44, 113}) {
+        // 019 那丛植物、032/033 两支长矛、036~038 与 040~042 六件（039 号空着）、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
+        // 051 拆解台、052 那颗方雷、065 与 069 两台反建器、066 那本恶魂陷阱书、076 那个每刻换贴图的异常方块、104 那个食物、114 那块蛋糕、115 暮色森林那件
+        helper.assertTrue(placeholders.size() == 83,
+            "placeholders must cover the 83 free numbers of 1..115, got " + placeholders.size());
+        for (int number : new int[] {2, 6, 9, 16, 18, 34, 39, 44, 113}) {
             helper.assertTrue(placeholders.containsKey(number),
                 "number " + number + " must have a placeholder item");
         }
-        for (int number : new int[] {1, 4, 7, 8, 17, 19, 20, 27, 33, 34, 37, 38, 39, 40, 41, 42, 43, 45, 46,
-            47, 48, 49, 50, 51, 52, 65, 69, 104, 114, 115}) {
+        for (int number : new int[] {1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46,
+            47, 48, 49, 50, 51, 52, 65, 66, 69, 76, 104, 114, 115}) {
             helper.assertFalse(placeholders.containsKey(number),
                 "number " + number + " is taken and must not get a placeholder item");
         }
@@ -412,8 +412,8 @@ public final class ExperimentItemTests {
 
     @GameTest(template = "ddt_empty")
     public static void spearItemsUseBowAnimation(GameTestHelper helper) {
-        for (Item spear : List.of(ModExperimentItems.EXPERIMENT_033.get(),
-            ModExperimentItems.EXPERIMENT_034.get())) {
+        for (Item spear : List.of(ModExperimentItems.EXPERIMENT_032.get(),
+            ModExperimentItems.EXPERIMENT_033.get())) {
             ItemStack stack = new ItemStack(spear);
             // 拉弓动画走原版 UseAnim.BOW：第一人称的拉满过程与第三人称的双臂姿势都由此而来，
             // 前提是模型带上 item/bow 那套 thirdperson 变换，见两个 model json

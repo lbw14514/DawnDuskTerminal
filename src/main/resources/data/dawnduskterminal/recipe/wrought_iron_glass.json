@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "twilightforest:wrought_iron_bar" }
+  ],
+  "result": {
+    "id": "dawnduskterminal:wrought_iron_glass",
+    "count": 8
+  }
+}

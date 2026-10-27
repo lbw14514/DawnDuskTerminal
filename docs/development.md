@@ -348,6 +348,30 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `portalFluidCullsTheFaceBetweenTwoOfItself` 传送门流体之间剔除面
 
+### WroughtIronGlassTests
+
+`wroughtIronGlassIsVanillaGlassClass` 方块与原版玻璃同一个类（`TransparentBlock`），`noOcclusion`、不窒息、不挡视线、天光直穿、硬度 0.3
+
+`stackedGlassCullsTheFaceBetweenThem` 竖直叠起来中间的面剔除、最上面那块的顶面保留，并排两块之间的侧面也剔除，竖直连接纹理靠的就是这条
+
+`wroughtIronGlassIsInTheCommonGlassTag` 在 `#c:glass_blocks` 里
+
+`wroughtIronGlassCraftsShapelesslyFromGlassAndWroughtIron` 无序配方九格：8 个原版玻璃 + 1 个 `twilightforest:wrought_iron_bar`，一次给 8 个
+
+### Experiment076Tests
+
+`blockReplacesThePlaceholder` 076 不再是占位空壳，物品就是 `dawnduskterminal:experiment_076` 那个方块的 `BlockItem`
+
+`placingItCreatesItsBlockEntity` 摆下来就有自己的方块实体（渲染落点），服务端与客户端都不挂 ticker——外观是渲染器按世界时间现算的
+
+`itLightsTheRoom` 是 15 级光源方块；外观那一侧六个面也一律按满亮画（`Experiment076Cube` 里不吃光图），摆在洞里、夜里也是亮的
+
+`miningItRunsTheReactorReactionWithoutFakeBlocks` 被玩家<b>挖掉</b>才跑一场砷铅铁反应堆的反应（换成别的方块、被炸掉都不算，挂的是 `playerWillDestroy`）：推过计数 5 那一拍，3x3x3 里一个假金块/假钻石块都没有；推到计数 120，塌陷已经把 `twilightforest:reactor_debris` 灌进壳里。反应是全局的，跑完必须 `clear()` 并清场
+
+`assetsMatchTheBlock` 方块状态一个变体、方块模型是 cube_all 且兜底贴图是候选之一（netherrack）、物品模型走 `builtin/entity` 并写全方块那套 `display` 姿势、战利品表掉自己、在 `#minecraft:mineable/pickaxe` 里
+
+> 外观本身（六个面每 tick 各抽一张贴图，世界里的是 `client/Experiment076Renderer`、物品栏与手持的是 `client/Experiment076ItemRenderer`，几何共用 `client/Experiment076Cube`）是纯客户端的，服务端测不到
+
 ### PaintingTests
 
 `variantIsThreeByTwo` 变体是 3x2，贴图指向 `dawnduskterminal:painting_ghast_1`

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "all": "dawnduskterminal:block/wrought_iron_glass",
+    "particle": "dawnduskterminal:block/wrought_iron_glass_particle"
+  }
+}
