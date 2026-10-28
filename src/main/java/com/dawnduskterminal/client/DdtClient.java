@@ -1,6 +1,7 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.client.model.CountertopModel;
 import com.dawnduskterminal.client.model.ExperimentArmorModel;
 import com.dawnduskterminal.client.model.MountedTowerWoodModel;
 import com.dawnduskterminal.client.model.ScarletMolybdenumArmorModel;
@@ -26,10 +27,13 @@ import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.GrassColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -179,7 +183,7 @@ public final class DdtClient {
     }
 
     /**
-     * 试验物品 051 的界面：菜单类型在 {@code ModMenus}，屏幕在这里挂上去
+     * 试验物品 051 的界面与 115 再生机的界面：菜单类型在 {@code ModMenus}，屏幕在这里挂上去
      *
      * <p>只有客户端才认这个事件，所以挂在 {@link #init} 里——那一层已经由主类按 {@code FMLEnvironment.dist}
      * 挡住，服务端不会走到这里
@@ -187,12 +191,18 @@ public final class DdtClient {
     private static void registerMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.EXPERIMENT_004.get(), Experiment004Screen::new);
         event.register(ModMenus.EXPERIMENT_051.get(), Experiment051Screen::new);
+        event.register(ModMenus.E_115_REGENERATOR.get(), E115RegeneratorScreen::new);
     }
 
     private static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
         wrapCtm(event, "mounted_towerwood");
         wrapCtm(event, "encased_towerbeam");
+        wrapCtm(event, "chiseled_towerbeam");
+        wrapCtm(event, "warning_towerwood");
+        wrapCountertop(event, "dark_log_countertop");
+        wrapCountertop(event, "stripped_dark_log_countertop");
         wrapGlassCtm(event, "wrought_iron_glass");
+        wrapGlassTrapdoorCtm(event, "wrought_iron_glass_trapdoor");
     }
 
     private static void wrapCtm(ModelEvent.ModifyBakingResult event, String name) {
@@ -204,25 +214,63 @@ public final class DdtClient {
     }
 
     /**
-     * 「锻铁玻璃」竖直连接纹理的模型替换
+     * 黑木台面的顶面连接纹理：只换方块那一处，键是 {@code #}（无变体）
      *
-     * <p>和镶边塔木不一样，这件要换两个位置：方块本身烘在 {@code #}（无变体），
-     * 物品栏图标走另一条单独的烘焙路径，键是 {@code ModelResourceLocation.inventory(物品 ID)}，
-     * 也就是 {@code #inventory}，模型文件却是 {@code item/wrought_iron_glass}。只换方块那一处的话，
-     * 手上和物品栏里的图标会把整张 48x48 的九格图糊在立方体的每个面上
+     * <p>物品图标不走这条：{@code models/item/<id>.json} 是它自己的 {@code cube_bottom_top}，顶面贴的是
+     * 16x16 的单图 {@code block/countertop_top}，没有 8x8 图集可裁
      */
-    private static void wrapGlassCtm(ModelEvent.ModifyBakingResult event, String name) {
-        ResourceLocation id = DawnDuskTerminal.id(name);
-        ModelResourceLocation blockLoc = new ModelResourceLocation(id, "");
-        // 物品的键不用 id.withPrefix("item/")：烘焙时用的是物品 ID 加 inventory 变体
-        ModelResourceLocation itemLoc = new ModelResourceLocation(id, ModelResourceLocation.INVENTORY_VARIANT);
-        for (ModelResourceLocation location : List.of(blockLoc, itemLoc)) {
-            BakedModel original = event.getModels().get(location);
-            if (original != null) {
-                event.getModels().put(location, new WroughtIronGlassModel(original));
-            }
+    private static void wrapCountertop(ModelEvent.ModifyBakingResult event, String name) {
+        ModelResourceLocation blockLoc = new ModelResourceLocation(DawnDuskTerminal.id(name), "");
+        BakedModel original = event.getModels().get(blockLoc);
+        if (original != null) {
+            event.getModels().put(blockLoc, new CountertopModel(original));
         }
     }
+
+    /**
+     * 「锻铁玻璃」竖直连接纹理的模型替换：只换方块那一处，键是 {@code #}（无变体）
+     *
+     * <p>物品图标不走这条：{@code models/item/wrought_iron_glass.json} 是它自己的
+     * {@code cube_bottom_top}，上下贴拆出来的 {@code block/wrought_iron_glass_top}、
+     * 四面贴 {@code block/wrought_iron_glass_particle}，<b>完全不碰 48x48 九宫图</b>，
+     * 所以这里也不能再去包 {@code #inventory}——那份模型没有九宫格可裁
+     *
+     * <p>包装器本身按「这个面是哪一面」选格子：上下两面取顶/底那一格、四个侧面按上下邻居接段
+     */
+    private static void wrapGlassCtm(ModelEvent.ModifyBakingResult event, String name) {
+        ModelResourceLocation blockLoc = new ModelResourceLocation(DawnDuskTerminal.id(name), "");
+        BakedModel original = event.getModels().get(blockLoc);
+        if (original != null) {
+            event.getModels().put(blockLoc, new WroughtIronGlassModel(original));
+        }
+    }
+
+    /**
+     * 锻铁玻璃活板门的模型替换：按 id 把<b>所有</b>键都包一遍
+     *
+     * <p>活板门是按 blockstate 变体烘的（{@code facing} × {@code half} × {@code open} 共 16 个键，
+     * 形如 {@code wrought_iron_glass_trapdoor#facing=north,open=false,half=bottom}），不像锻铁玻璃那样只有
+     * 一个空变体，所以不能拿固定键去取，得把 id 对得上的键全换掉——物品那个 {@code #inventory} 也在其中
+     *
+     * <p>规则与方块同一个：两块 16x16 的大面用九宫图，由包装器按「这个面是哪一面」裁格
+     * （关着时那两块是顶底面 → 顶/底那一格；打开时是正反面 → 侧面那一格，再按上下邻居接段），
+     * 四条薄边贴的是单面图 {@code block/wrought_iron_glass_particle}，包装器按 sprite 名认出来、不裁格
+     *
+     * <p>物品图标不在这条链上：{@code models/item/wrought_iron_glass_trapdoor.json} 是它自己的薄板模型，
+     * 大面贴拆出来的 {@code block/wrought_iron_glass_top}、薄边贴 {@code block/wrought_iron_glass_particle}，
+     * 一个像素都不来自 48x48 九宫图
+     */
+    private static void wrapGlassTrapdoorCtm(ModelEvent.ModifyBakingResult event, String name) {
+        ResourceLocation id = DawnDuskTerminal.id(name);
+        // 物品图标那一份（{@code #inventory}）不包：它自己贴的是拆出来的两张 16x16，没有九宫格可裁
+        event.getModels().replaceAll((location, model) ->
+            location.id().equals(id) && !location.variant().equals(ModelResourceLocation.INVENTORY_VARIANT)
+                ? new WroughtIronGlassModel(model)
+                : model);
+    }
+
+
+
 
     private static void registerBlockColors(RegisterColorHandlersEvent.Block event) {
         event.register((state, level, pos, tintIndex) -> {
@@ -257,6 +305,15 @@ public final class DdtClient {
         // 树叶在背包和手里渲染时 level 为空，所以落到默认树叶色（与上面方块取色器用的 0x48B518 兜底一致）
         event.register((stack, tintIndex) -> tintIndex == 0 ? 0x48B518 : -1,
             ModTerrainBlocks.SKYGATE_PINE_LEAVES_ITEM.get());
+        // 药水瓶的紫色不来自贴图：瓶子模型 {@code item/potion} 的 layer0 是那张白色液体遮罩 potion_overlay，
+        // 颜色靠物品取色器往 tintindex 0 上刷。原版 ItemColors.createDefault 只给 Items.POTION /
+        // SPLASH_POTION / LINGERING_POTION / TIPPED_ARROW 注册了这条（按 potion_contents 取色），
+        // 模组药水瓶不在那张表里，不补就渲染成纯白
+        event.register((stack, tintIndex) -> tintIndex != 0
+                ? -1
+                : FastColor.ARGB32.opaque(
+                    stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).getColor()),
+            ModItems.STABILITY_POTION.get());
     }
 
     /**

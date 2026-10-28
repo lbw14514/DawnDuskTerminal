@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MountedTowerWoodModel extends BakedModelWrapper<BakedModel> {
     /** Create 的 OMNIDIRECTIONAL 图集大小：8x8 栅格 */
-    public static final int SHEET_SIZE = 8;
+    public static final int SHEET_SIZE = ConnectedTexture47.SHEET_SIZE;
 
     private static final ModelProperty<int[]> CT_INDICES = new ModelProperty<>();
 
@@ -37,16 +37,6 @@ public class MountedTowerWoodModel extends BakedModelWrapper<BakedModel> {
     private static final int VERTEX_STRIDE = 8;
     private static final int U_OFFSET = 4;
     private static final int V_OFFSET = 5;
-
-    /** 面序号（0 到 5）对应的面内 [右, 上] 方向，与 Create 的 buildContext 一致 */
-    private static final Direction[][] HV = {
-        { Direction.EAST, Direction.SOUTH },   // DOWN
-        { Direction.EAST, Direction.NORTH },   // UP
-        { Direction.WEST, Direction.UP },      // NORTH
-        { Direction.EAST, Direction.UP },      // SOUTH
-        { Direction.SOUTH, Direction.UP },     // WEST
-        { Direction.NORTH, Direction.UP },     // EAST
-    };
 
     public MountedTowerWoodModel(BakedModel original) {
         super(original);
@@ -109,102 +99,11 @@ public class MountedTowerWoodModel extends BakedModelWrapper<BakedModel> {
         return new BakedQuad(vertices, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), quad.isShade());
     }
 
-    /** Create 的 {@code OMNIDIRECTIONAL.getTextureIndex}，一比一移植 */
+    /** Create 的 {@code OMNIDIRECTIONAL.getTextureIndex}，「47 格」索引公式本身在 {@link ConnectedTexture47}
+     *
+     * <p>判据是「邻居是同一种方块」：两种塔木是两块不同的方块，各自的图集各画各的
+     */
     private static int ctmIndex(BlockAndTintGetter level, BlockPos pos, Block block, Direction face) {
-        int side = sideOf(face);
-        Direction h = HV[side][0];
-        Direction v = HV[side][1];
-
-        boolean up = connects(level, pos, block, v);
-        boolean down = connects(level, pos, block, v.getOpposite());
-        boolean left = connects(level, pos, block, h.getOpposite());
-        boolean right = connects(level, pos, block, h);
-
-        boolean topLeft = up && left && connects(level, pos, block, h.getOpposite(), v);
-        boolean topRight = up && right && connects(level, pos, block, h, v);
-        boolean bottomLeft = down && left && connects(level, pos, block, h.getOpposite(), v.getOpposite());
-        boolean bottomRight = down && right && connects(level, pos, block, h, v.getOpposite());
-
-        int tileX = 0;
-        int tileY = 0;
-        int borders = (!up ? 1 : 0) + (!down ? 1 : 0) + (!left ? 1 : 0) + (!right ? 1 : 0);
-
-        if (up) {
-            tileX++;
-        }
-        if (down) {
-            tileX += 2;
-        }
-        if (left) {
-            tileY++;
-        }
-        if (right) {
-            tileY += 2;
-        }
-
-        if (borders == 0) {
-            if (topRight) {
-                tileX++;
-            }
-            if (topLeft) {
-                tileX += 2;
-            }
-            if (bottomRight) {
-                tileY += 2;
-            }
-            if (bottomLeft) {
-                tileY++;
-            }
-        }
-
-        if (borders == 1) {
-            if (!right && (topLeft || bottomLeft)) {
-                tileY = 4;
-                tileX = -1 + (bottomLeft ? 1 : 0) + (topLeft ? 2 : 0);
-            }
-            if (!left && (topRight || bottomRight)) {
-                tileY = 5;
-                tileX = -1 + (bottomRight ? 1 : 0) + (topRight ? 2 : 0);
-            }
-            if (!down && (topLeft || topRight)) {
-                tileY = 6;
-                tileX = -1 + (topLeft ? 1 : 0) + (topRight ? 2 : 0);
-            }
-            if (!up && (bottomLeft || bottomRight)) {
-                tileY = 7;
-                tileX = -1 + (bottomLeft ? 1 : 0) + (bottomRight ? 2 : 0);
-            }
-        }
-
-        if (borders == 2) {
-            if ((up && left && topLeft) || (down && left && bottomLeft) || (up && right && topRight)
-                || (down && right && bottomRight)) {
-                tileX += 3;
-            }
-        }
-
-        return tileX + 8 * tileY;
-    }
-
-    private static int sideOf(Direction face) {
-        return switch (face) {
-            case DOWN -> 0;
-            case UP -> 1;
-            case NORTH -> 2;
-            case SOUTH -> 3;
-            case WEST -> 4;
-            case EAST -> 5;
-        };
-    }
-
-    private static boolean connects(BlockAndTintGetter level, BlockPos pos, Block block, Direction d) {
-        return level.getBlockState(pos.relative(d)).is(block);
-    }
-
-    private static boolean connects(BlockAndTintGetter level, BlockPos pos, Block block, Direction d1, Direction d2) {
-        int dx = d1.getStepX() + d2.getStepX();
-        int dy = d1.getStepY() + d2.getStepY();
-        int dz = d1.getStepZ() + d2.getStepZ();
-        return level.getBlockState(pos.offset(dx, dy, dz)).is(block);
+        return ConnectedTexture47.index(level, pos, face, state -> state.is(block));
     }
 }

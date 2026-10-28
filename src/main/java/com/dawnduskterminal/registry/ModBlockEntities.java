@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.entity.E115RegeneratorBlockEntity;
 import com.dawnduskterminal.block.entity.Experiment004BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment051BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment065BlockEntity;
@@ -13,8 +14,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * 方块实体类型。目前有试验物品 004 那台熔炉、051 那台机器、065 那台不让人打伤害的机器、069 那台让更新不处理的机器，
- * 以及 076 那个没有数据、只为挂客户端渲染器的异常方块
+ * 方块实体类型。目前有试验物品 004 那台熔炉、051 那台机器、065 那台不让人打伤害的机器、069 那台让更新不处理的机器、
+ * 076 那个没有数据、只为挂客户端渲染器的异常方块，以及 115 再生机那一格产物格加一个进度
  */
 public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
@@ -23,6 +24,12 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<Experiment004BlockEntity>> EXPERIMENT_004 =
         BLOCK_ENTITIES.register("experiment_004",
             () -> BlockEntityType.Builder.of(Experiment004BlockEntity::new, ModBlocks.EXPERIMENT_004.get()).build(null));
+
+    /** 115 再生机：一格产物格加一个攒着的进度，见 {@link E115RegeneratorBlockEntity} */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<E115RegeneratorBlockEntity>> E_115_REGENERATOR =
+        BLOCK_ENTITIES.register("e_115_regenerator",
+            () -> BlockEntityType.Builder.of(E115RegeneratorBlockEntity::new, ModBlocks.E_115_REGENERATOR.get())
+                .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<Experiment051BlockEntity>> EXPERIMENT_051 =
         BLOCK_ENTITIES.register("experiment_051",

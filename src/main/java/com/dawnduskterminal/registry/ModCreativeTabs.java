@@ -34,6 +34,7 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.CANOCAN.get());
                 accept(output, ModItems.PORTAL_BUCKET.get());
                 accept(output, ModScorchingTwilight.BUCKET.get());
+                accept(output, ModItems.STABILITY_POTION.get());
                 accept(output, ModItems.CHRONO_CRUST.get());
                 accept(output, ModTerrainBlocks.ROSY_GRASS_ITEM.get());
                 accept(output, ModTerrainBlocks.ROSY_DIRT_ITEM.get());
@@ -54,7 +55,12 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.BLAZING_BLOCK_ITEM.get());
                 accept(output, ModTerrainBlocks.MOUNTED_TOWERWOOD_ITEM.get());
                 accept(output, ModTerrainBlocks.ENCASED_TOWERBEAM_ITEM.get());
+                accept(output, ModTerrainBlocks.CHISELED_TOWERBEAM_ITEM.get());
+                accept(output, ModTerrainBlocks.WARNING_TOWERWOOD_ITEM.get());
+                accept(output, ModTerrainBlocks.DARK_LOG_COUNTERTOP_ITEM.get());
+                accept(output, ModTerrainBlocks.STRIPPED_DARK_LOG_COUNTERTOP_ITEM.get());
                 accept(output, ModTerrainBlocks.WROUGHT_IRON_GLASS_ITEM.get());
+                accept(output, ModTerrainBlocks.WROUGHT_IRON_GLASS_TRAPDOOR_ITEM.get());
                 accept(output, ModTerrainBlocks.SKYGATE_PINE_LOG_ITEM.get());
                 accept(output, ModTerrainBlocks.STRIPPED_SKYGATE_PINE_LOG_ITEM.get());
                 accept(output, ModTerrainBlocks.SKYGATE_PINE_LEAVES_ITEM.get());
@@ -82,8 +88,12 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.CARMINITED_LEATHER.get());
                 accept(output, ModItems.CARMINITE_GHAST_MEAT.get());
                 accept(output, ModItems.COOKED_CARMIN_GHAST_MEAT.get());
+                // 115 的七种衍生物：一片 6 饥饿 4 饱和（血橙与红丝绒是 8 与 8），摆下来那块不用撒红石粉也会自己补片
+                ModItems.susCakes().values().forEach(cake -> accept(output, cake.get()));
                 accept(output, ModItems.CARMINITE_BALL.get());
                 accept(output, ModItems.STRING.get());
+                // 115 再生机不是有号的试验物品，排在主栏目这一档机器里
+                accept(output, ModItems.E_115_REGENERATOR.get());
                 accept(output, ModItems.TOWER_GHAST_SPAWN_EGG.get());
                 accept(output, ModItems.STRING_SPAWN_EGG.get());
                 ModEquipment.sets().values().forEach(set -> set.items().forEach(item -> accept(output, item.get())));

@@ -41,6 +41,8 @@ for label, path in (("1.21.1 client resources", EXTRA), ("Twilight Forest 1.21.1
 JARS = {"minecraft": zipfile.ZipFile(EXTRA), "twilightforest": zipfile.ZipFile(TF21)}
 BASES = {"minecraft": "assets/minecraft/blockstates/",
          "twilightforest": "assets/twilightforest/blockstates/"}
+# this repo's own blocks live in src/main/resources, not in a jar
+REPO_ASSETS = os.path.join(REPO, "src", "main", "resources", "assets")
 
 # properties that are real BlockState fields but never appear in a blockstates json
 NON_MODEL = {
@@ -59,15 +61,23 @@ NON_MODEL = {
     "north": {"false", "true", "none", "low", "tall"},
     "south": {"false", "true", "none", "low", "tall"},
     "is_one_way": {"false", "true"},
+    # chest/double-chest shape; chest's blockstates json is a single static model
+    "type": {"single", "left", "right"},
 }
 
 
 def props_of(block):
     ns, name = block.split(":")
-    try:
-        d = json.loads(JARS[ns].read(BASES[ns] + name + ".json"))
-    except KeyError:
-        return None
+    if ns in JARS:
+        try:
+            d = json.loads(JARS[ns].read(BASES[ns] + name + ".json"))
+        except KeyError:
+            return None
+    else:
+        path = os.path.join(REPO_ASSETS, ns, "blockstates", name + ".json")
+        if not os.path.exists(path):
+            return None
+        d = json.load(open(path, encoding="utf-8"))
     props = collections.defaultdict(set)
     if "variants" in d:
         for k in d["variants"]:
@@ -109,7 +119,7 @@ def main(path):
         p = {k: v.value for k, v in e["Properties"].value.items()} if "Properties" in e else {}
         real = props_of(nm)
         if real is None:
-            print(f"  !! [{i}] {nm} DOES NOT EXIST in 1.21.1")
+            print(f"  !! [{i}] {nm} DOES NOT EXIST in this 1.21.1 loadout")
             problems += 1
             continue
         for k, v in p.items():

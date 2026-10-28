@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "dawnduskterminal:block/warning_towerwood_connected",
+    "particle": "dawnduskterminal:block/warning_towerwood"
+  }
+}

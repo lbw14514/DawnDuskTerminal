@@ -1,6 +1,9 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.CountertopBlock;
+import com.dawnduskterminal.block.WroughtIronGlassBlock;
+import com.dawnduskterminal.block.WroughtIronGlassTrapdoorBlock;
 import com.dawnduskterminal.world.CanopyFrostLayerBlock;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.Registries;
@@ -168,6 +171,40 @@ public final class ModTerrainBlocks {
     public static final DeferredItem<BlockItem> ENCASED_TOWERBEAM_ITEM =
         ITEMS.registerSimpleBlockItem(ENCASED_TOWERBEAM);
 
+    // 錾制塔木梁与警示塔木。跟封装塔木梁一个路子：整方块、六个面全走 47 格图集，只是各换一张图集，所以依旧套
+    // MountedTowerWoodModel；图集互不相干，故两者都只跟同种方块接
+    public static final DeferredBlock<Block> CHISELED_TOWERBEAM = BLOCKS.registerSimpleBlock(
+        "chiseled_towerbeam", BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(3.0F, 9.0F)
+            .sound(SoundType.WOOD));
+
+    public static final DeferredItem<BlockItem> CHISELED_TOWERBEAM_ITEM =
+        ITEMS.registerSimpleBlockItem(CHISELED_TOWERBEAM);
+
+    public static final DeferredBlock<Block> WARNING_TOWERWOOD = BLOCKS.registerSimpleBlock(
+        "warning_towerwood", BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
+            .strength(3.0F, 9.0F)
+            .sound(SoundType.WOOD));
+
+    public static final DeferredItem<BlockItem> WARNING_TOWERWOOD_ITEM =
+        ITEMS.registerSimpleBlockItem(WARNING_TOWERWOOD);
+
+    // 黑木台面与去皮黑木台面。两块共用同一张顶面：顶面贴的是封装塔木梁那张 8x8 图集，连接纹理由
+    // CountertopModel 在客户端按「邻居是不是台面」裁格，方块本身不存连接状态；侧面与底面各是两张
+    // 16x16 单图。属性同原木一档：硬度 2、木头音效、徒手可挖（掉落自身），挂进 mineable/axe 以便用斧更快
+    public static final DeferredBlock<CountertopBlock> DARK_LOG_COUNTERTOP = BLOCKS.registerBlock(
+        "dark_log_countertop", CountertopBlock::new, countertop());
+
+    public static final DeferredBlock<CountertopBlock> STRIPPED_DARK_LOG_COUNTERTOP = BLOCKS.registerBlock(
+        "stripped_dark_log_countertop", CountertopBlock::new, countertop());
+
+    public static final DeferredItem<BlockItem> DARK_LOG_COUNTERTOP_ITEM =
+        ITEMS.registerSimpleBlockItem(DARK_LOG_COUNTERTOP);
+    public static final DeferredItem<BlockItem> STRIPPED_DARK_LOG_COUNTERTOP_ITEM =
+        ITEMS.registerSimpleBlockItem(STRIPPED_DARK_LOG_COUNTERTOP);
+
     // 锻铁玻璃。是一种玻璃，所以方块类直接用原版玻璃那一支（TransparentBlock：视觉形状为空、天光直穿、
     // 亮度按满亮给），属性逐条照抄原版 Blocks.GLASS 的注册参数——0.3 硬度、GLASS 音效、HAT 乐器，
     // 四条 never 分别关掉刷怪 红石导通 窒息 遮挡视线，noOcclusion 则是半透明整方块的硬要求
@@ -177,7 +214,7 @@ public final class ModTerrainBlocks {
     // 同种方块之间的内部面由 HalfTransparentBlock 的 skipRendering 剔掉，柱子只留最外一圈
     public static final DeferredBlock<TransparentBlock> WROUGHT_IRON_GLASS = BLOCKS.registerBlock(
         "wrought_iron_glass",
-        TransparentBlock::new,
+        WroughtIronGlassBlock::new,
         BlockBehaviour.Properties.of()
             .instrument(NoteBlockInstrument.HAT)
             .strength(0.3F)
@@ -192,6 +229,29 @@ public final class ModTerrainBlocks {
 
     public static final DeferredItem<BlockItem> WROUGHT_IRON_GLASS_ITEM =
         ITEMS.registerSimpleBlockItem(WROUGHT_IRON_GLASS);
+
+    // 锻铁玻璃的活板门。状态与开合逻辑全走原版 TrapDoorBlock（facing/half/open/powered/waterlogged），
+    // 方块组是 BlockSetType.IRON，所以空手点不开、只吃红石，开合声是铁那一档；
+    // 方块属性照上一件玻璃给：0.3 硬度、GLASS 音效、HAT 乐器、三条 never 与 noOcclusion。
+    // 纹理分两套：两块 16x16 的大面用整张九宫图（由 WroughtIronGlassModel 按竖直连接裁格），
+    // 四条薄边用拆出来的单面图 block/wrought_iron_glass_single 最前几行像素，见
+    // WroughtIronGlassTrapdoorBlock 的类注释
+    public static final DeferredBlock<WroughtIronGlassTrapdoorBlock> WROUGHT_IRON_GLASS_TRAPDOOR =
+        BLOCKS.registerBlock(
+            "wrought_iron_glass_trapdoor",
+            WroughtIronGlassTrapdoorBlock::new,
+            BlockBehaviour.Properties.of()
+                .instrument(NoteBlockInstrument.HAT)
+                .strength(0.3F)
+                .sound(SoundType.GLASS)
+                .noOcclusion()
+                .isValidSpawn(Blocks::never)
+                .isRedstoneConductor((state, level, pos) -> false)
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos) -> false));
+
+    public static final DeferredItem<BlockItem> WROUGHT_IRON_GLASS_TRAPDOOR_ITEM =
+        ITEMS.registerSimpleBlockItem(WROUGHT_IRON_GLASS_TRAPDOOR);
 
     public static final DeferredBlock<Block> SCARLET_MOLYBDENUM_ORE = BLOCKS.registerSimpleBlock(
         "scarlet_molybdenum_ore", stone(MapColor.COLOR_RED, 2.5F));
@@ -258,6 +318,14 @@ public final class ModTerrainBlocks {
     private static BlockBehaviour.Properties log(MapColor color) {
         return BlockBehaviour.Properties.of()
             .mapColor(color)
+            .strength(2.0F)
+            .sound(SoundType.WOOD);
+    }
+
+    /** 台面的属性：跟原木一档，徒手可挖、吃斧更快 */
+    private static BlockBehaviour.Properties countertop() {
+        return BlockBehaviour.Properties.of()
+            .mapColor(MapColor.WOOD)
             .strength(2.0F)
             .sound(SoundType.WOOD);
     }

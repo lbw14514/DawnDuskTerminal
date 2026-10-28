@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "omnomnom=0": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_8_8"
+    },
+    "omnomnom=1": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_7_8"
+    },
+    "omnomnom=2": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_6_8"
+    },
+    "omnomnom=3": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_5_8"
+    },
+    "omnomnom=4": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_4_8"
+    },
+    "omnomnom=5": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_3_8"
+    },
+    "omnomnom=6": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_2_8"
+    },
+    "omnomnom=7": {
+      "model": "dawnduskterminal:block/sus_cheese_cake_1_8"
+    }
+  }
+}

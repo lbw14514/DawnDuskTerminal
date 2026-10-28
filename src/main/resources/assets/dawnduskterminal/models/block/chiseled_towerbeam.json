@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "dawnduskterminal:block/chiseled_towerbeam_connected",
+    "particle": "dawnduskterminal:block/chiseled_towerbeam"
+  }
+}

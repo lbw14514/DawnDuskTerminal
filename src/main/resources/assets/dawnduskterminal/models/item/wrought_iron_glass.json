@@ -1,3 +1,9 @@
 {
-  "parent": "dawnduskterminal:block/wrought_iron_glass"
+  "parent": "minecraft:block/cube_bottom_top",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "top": "dawnduskterminal:block/wrought_iron_glass_top",
+    "bottom": "dawnduskterminal:block/wrought_iron_glass_top",
+    "side": "dawnduskterminal:block/wrought_iron_glass_particle"
+  }
 }

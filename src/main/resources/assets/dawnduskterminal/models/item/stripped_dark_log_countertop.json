@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "dawnduskterminal:block/countertop_top",
+    "bottom": "dawnduskterminal:block/stripped_dark_log_countertop_bottom",
+    "side": "dawnduskterminal:block/stripped_dark_log_countertop"
+  }
+}

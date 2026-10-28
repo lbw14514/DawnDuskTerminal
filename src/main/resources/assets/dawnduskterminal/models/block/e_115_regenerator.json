@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "dawnduskterminal:block/e_115_regenerator_top",
+    "bottom": "dawnduskterminal:block/e_115_regenerator_bottom",
+    "side": "dawnduskterminal:block/e_115_regenerator_side"
+  }
+}

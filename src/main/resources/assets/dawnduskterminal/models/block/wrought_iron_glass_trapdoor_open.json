@@ -1,0 +1,23 @@
+{
+  "parent": "minecraft:block/thin_block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "sheet": "dawnduskterminal:block/wrought_iron_glass",
+    "strip": "dawnduskterminal:block/wrought_iron_glass_particle",
+    "particle": "#strip"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 13],
+      "to": [16, 16, 16],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 16], "texture": "#sheet" },
+        "south": { "uv": [0, 0, 16, 16], "texture": "#sheet", "cullface": "south" },
+        "up": { "uv": [0, 0, 16, 3], "texture": "#strip", "cullface": "up" },
+        "down": { "uv": [0, 0, 16, 3], "texture": "#strip", "cullface": "down" },
+        "west": { "uv": [0, 0, 3, 16], "texture": "#strip", "cullface": "west" },
+        "east": { "uv": [0, 0, 3, 16], "texture": "#strip", "cullface": "east" }
+      }
+    }
+  ]
+}

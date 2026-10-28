@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "twilightforest:experiment_115"
+    },
+    {
+      "item": "dawnduskterminal:experiment_008"
+    }
+  ],
+  "result": {
+    "id": "dawnduskterminal:sus_bloodorange_cake",
+    "count": 1
+  }
+}

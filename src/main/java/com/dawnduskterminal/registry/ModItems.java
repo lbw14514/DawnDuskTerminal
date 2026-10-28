@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.SusCakeBlock;
 import com.dawnduskterminal.item.CanocanItem;
 import com.dawnduskterminal.item.CarminiteGhastMeatItem;
 import com.dawnduskterminal.item.CarminiteStaffItem;
@@ -8,17 +9,23 @@ import com.dawnduskterminal.item.Experiment114Item;
 import com.dawnduskterminal.item.GhastPaintingItem;
 import com.dawnduskterminal.item.ScarletMolybdArmorItem;
 import com.dawnduskterminal.item.StringSpawnEggItem;
+import com.dawnduskterminal.item.SusCakeItem;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DawnDuskTerminal.MOD_ID);
@@ -48,6 +55,18 @@ public final class ModItems {
         "portal_bucket",
         () -> new BucketItem(ModFluids.PORTAL_FLUID.get(),
             new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
+
+    /**
+     * 稳定药水：通用药水瓶外观（模型直接继承 {@code minecraft:item/potion} 的两层，贴图用原版那张），
+     * 紫色不来自贴图，而是客户端的物品染色按 {@code potion_contents} 算出来的，与传送门流体同色，
+     * 见 {@link com.dawnduskterminal.client.DdtClient} 里的物品取色器
+     *
+     * <p>默认药水内容（8 分钟稳定）由 {@link ModPotions#modifyDefaultComponents} 补，不在这里写：
+     * 物品注册早于药水注册。暂无配方，只能从创造栏或指令拿
+     */
+    public static final DeferredItem<PotionItem> STABILITY_POTION = ITEMS.register(
+        "stability_potion",
+        () -> new PotionItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<Item> ENCASED_DUST = ITEMS.registerSimpleItem(
         "encased_dust",
@@ -183,6 +202,10 @@ public final class ModItems {
     /** 试验物品 051：拆解台那台机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_051} */
     public static final DeferredItem<BlockItem> EXPERIMENT_051 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_051);
 
+    /** 115 再生机：照着 115 补片速度产 115 的那台机器，放下来就是 {@link ModBlocks#E_115_REGENERATOR} */
+    public static final DeferredItem<BlockItem> E_115_REGENERATOR =
+        ITEMS.registerSimpleBlockItem(ModBlocks.E_115_REGENERATOR);
+
     /** 试验物品 052：那颗方雷的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_052} */
     public static final DeferredItem<BlockItem> EXPERIMENT_052 = ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_052);
 
@@ -244,6 +267,35 @@ public final class ModItems {
                 .nutrition(Experiment114Item.NUTRITION)
                 .saturationModifier(Experiment114Item.SATURATION_MODIFIER)
                 .build())));
+
+    /**
+     * 七种可疑蛋糕（{@code sus_<口味>_cake}）：暮色森林试验物品 115 的衍生物，能吃能摆
+     *
+     * <p>一个物品就是一片，一片的食物数值由方块那边的 {@link SusCakeBlock#serving()} 给：默认 6 点饥饿、
+     * 4 点饱和度，血橙与红丝绒是 8 点饥饿、8 点饱和度；115 是一片 4 与 0.3（2.4 点）。摆下来是只剩 1 片的方块，
+     * 一块满的蛋糕就是 8 片
+     *
+     * <p>方块与物品两边都按 {@link ModBlocks#SUS_CAKE_FLAVORS} 生成，ID 一一对应
+     */
+    private static final Map<String, DeferredItem<SusCakeItem>> SUS_CAKES = registerSusCakes();
+
+    /** 七种可疑蛋糕的物品，键是完整注册 ID（{@code sus_<口味>_cake}），顺序同 {@link ModBlocks#SUS_CAKE_FLAVORS} */
+    public static Map<String, DeferredItem<SusCakeItem>> susCakes() {
+        return SUS_CAKES;
+    }
+
+    private static Map<String, DeferredItem<SusCakeItem>> registerSusCakes() {
+        Map<String, DeferredItem<SusCakeItem>> map = new LinkedHashMap<>();
+        ModBlocks.susCakes().forEach((id, block) -> map.put(id, ITEMS.register(id, () -> {
+            SusCakeBlock cake = block.get();
+            SusCakeBlock.Serving serving = cake.serving();
+            return new SusCakeItem(cake, new Item.Properties().food(new FoodProperties.Builder()
+                .nutrition(serving.nutrition())
+                .saturationModifier(serving.saturationModifier())
+                .build()));
+        })));
+        return Collections.unmodifiableMap(map);
+    }
 
     private static DeferredItem<ScarletMolybdArmorItem> armor(String name, ArmorItem.Type type) {
         return ITEMS.register(name, () -> new ScarletMolybdArmorItem(

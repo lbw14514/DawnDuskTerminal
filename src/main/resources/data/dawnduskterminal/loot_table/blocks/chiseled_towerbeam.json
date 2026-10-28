@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dawnduskterminal:chiseled_towerbeam"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "dawnduskterminal:blocks/chiseled_towerbeam"
+}

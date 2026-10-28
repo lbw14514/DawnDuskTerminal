@@ -2,6 +2,7 @@ package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.block.CarminiteFireBlock;
+import com.dawnduskterminal.block.E115RegeneratorBlock;
 import com.dawnduskterminal.block.Experiment004Block;
 import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
@@ -10,6 +11,7 @@ import com.dawnduskterminal.block.Experiment065Block;
 import com.dawnduskterminal.block.Experiment069Block;
 import com.dawnduskterminal.block.Experiment076Block;
 import com.dawnduskterminal.block.Experiment114Block;
+import com.dawnduskterminal.block.SusCakeBlock;
 import com.dawnduskterminal.portal.PortalBlock;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
@@ -24,6 +26,11 @@ import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(DawnDuskTerminal.MOD_ID);
@@ -135,6 +142,71 @@ public final class ModBlocks {
             .pushReaction(PushReaction.DESTROY)
             .sound(SoundType.WOOL)
             .strength(0.5F));
+
+    /**
+     * 七种可疑蛋糕（{@code sus_<口味>_cake}）：暮色森林试验物品 115 的衍生物
+     *
+     * <p>口味表就是注册 ID 中间那一段，方块与物品两边都照它生成。方块属性照搬 115
+     * （{@code noLootTable}、{@code pushReaction(DESTROY)}、{@code strength(0.5)}、{@code WOOL}），
+     * 外加 {@code randomTicks()}：这一版不需要先撒红石粉，吃到一半靠随机刻自己补片，见 {@link SusCakeBlock}
+     */
+    public static final List<String> SUS_CAKE_FLAVORS =
+        List.of("bloodorange", "cheese", "cherrycheese", "lamington", "pavlova", "pineapple", "redvelvet");
+
+    /**
+     * 各口味一片的数值，没列出的走 {@link SusCakeBlock#DEFAULT_SERVING}
+     *
+     * <p>七种里血橙与红丝绒是 8 点饥饿、8 点饱和度（系数 0.5），其余五种是一片 6 点饥饿、4 点饱和度（系数 1/3）；
+     * 血橙那条数值是配方指定的，红丝绒是单独给定的（暂无配方）。必须写在 {@link #SUS_CAKES} 前面：
+     * 那张表在静态初始化里就要读这份数值
+     */
+    private static final Map<String, SusCakeBlock.Serving> SUS_CAKE_SERVINGS = Map.of(
+        "bloodorange", SusCakeBlock.EIGHT_SERVING,
+        "redvelvet", SusCakeBlock.EIGHT_SERVING);
+
+    /** 六种可疑蛋糕的方块，键是完整注册 ID（{@code sus_<口味>_cake}），顺序同 {@link #SUS_CAKE_FLAVORS} */
+    private static final Map<String, DeferredBlock<SusCakeBlock>> SUS_CAKES = registerSusCakes();
+
+    /** 六种可疑蛋糕的方块，按 {@link #SUS_CAKE_FLAVORS} 的顺序 */
+    public static Map<String, DeferredBlock<SusCakeBlock>> susCakes() {
+        return SUS_CAKES;
+    }
+
+    private static Map<String, DeferredBlock<SusCakeBlock>> registerSusCakes() {
+        Map<String, DeferredBlock<SusCakeBlock>> map = new LinkedHashMap<>();
+        for (String flavor : SUS_CAKE_FLAVORS) {
+            String id = "sus_" + flavor + "_cake";
+            SusCakeBlock.Serving serving = SUS_CAKE_SERVINGS.getOrDefault(flavor, SusCakeBlock.DEFAULT_SERVING);
+            map.put(id, BLOCKS.registerBlock(id, properties -> new SusCakeBlock(properties, serving),
+                BlockBehaviour.Properties.of()
+                    .noLootTable()
+                    .pushReaction(PushReaction.DESTROY)
+                    .randomTicks()
+                    .sound(SoundType.WOOL)
+                    .strength(0.5F)));
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * 试验物品 115 再生机：顶上摆一块撒过红石粉的完整 115、侧面来红石信号时，照着 115 补片的速度产 115 物品
+     *
+     * <p>方块属性没有源 mod 可以照抄，按「塔木机器」那一档给：3.5 硬度、石头音效、红这一档地图色，
+     * 挖它要镐子（进 {@code #minecraft:mineable/pickaxe}）。方块本身没有状态，产出判定与进度都在
+     * 方块实体里，见 {@link E115RegeneratorBlock} 与
+     * {@code block/entity/E115RegeneratorBlockEntity}
+     *
+     * <p>掉自身走 {@code data/dawnduskterminal/loot_table/blocks/e_115_regenerator.json}；
+     * 格子里攒下的 115 由方块自己的 {@code onRemove} 撒出来
+     */
+    public static final DeferredBlock<E115RegeneratorBlock> E_115_REGENERATOR = BLOCKS.registerBlock(
+        "e_115_regenerator",
+        E115RegeneratorBlock::new,
+        BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_RED)
+            .requiresCorrectToolForDrops()
+            .strength(3.5F)
+            .sound(SoundType.STONE));
 
     /**
      * 试验物品 051：拆解台那台机器

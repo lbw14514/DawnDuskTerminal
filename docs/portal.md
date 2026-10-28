@@ -112,6 +112,8 @@
 
 不过门且受到伤害时累计，每 40 tick 造成 2 点 `stability` 伤害并播 `portal_hurt`
 
+药水 `dawnduskterminal:stability` 给 8 分钟（9600 tick），物品 `dawnduskterminal:stability_potion` 走通用药水瓶外观（模型继承 `minecraft:item/potion`），紫色不是贴图上画的，客户端按 `potion_contents` 取色，取出来就是效果色 `0x7F159E`，与传送门流体的雾色同值；暂无配方
+
 ## 两种流体
 
 `dawnduskterminal:portal_fluid` 是传送门水体与维度的默认流体

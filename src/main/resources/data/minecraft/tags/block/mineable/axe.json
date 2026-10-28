@@ -3,6 +3,10 @@
   "values": [
     "dawnduskterminal:mounted_towerwood",
     "dawnduskterminal:encased_towerbeam",
+    "dawnduskterminal:chiseled_towerbeam",
+    "dawnduskterminal:warning_towerwood",
+    "dawnduskterminal:dark_log_countertop",
+    "dawnduskterminal:stripped_dark_log_countertop",
     "dawnduskterminal:experiment_001",
     "dawnduskterminal:experiment_051"
   ]

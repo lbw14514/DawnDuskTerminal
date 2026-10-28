@@ -1,5 +1,6 @@
 package com.dawnduskterminal.client.model;
 
+import com.dawnduskterminal.DawnDuskTerminal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +9,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.Block;
@@ -58,13 +60,31 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
 
     private static final ModelProperty<int[]> CT_INDICES = new ModelProperty<>();
 
+    /** 九宫图那张图本身。只有用这张图的面才裁格，薄边那几张单面图原样保留 */
+    private static final ResourceLocation SHEET = DawnDuskTerminal.id("block/wrought_iron_glass");
+
     // DefaultVertexFormat.BLOCK：每个顶点 8 个 int（3 位置 + 1 颜色 + 2 UV + 1 光照 + 1 法线）
     private static final int VERTEX_STRIDE = 8;
     private static final int U_OFFSET = 4;
     private static final int V_OFFSET = 5;
 
+    /** 上下两面单独用「顶/底」那一格 */
+    private final boolean dedicatedTopBottom;
+
+    /** 锻铁玻璃方块与它的物品图标：上下两面用 {@link #TILE_TOP_BOTTOM} */
     public WroughtIronGlassModel(BakedModel original) {
+        this(original, true);
+    }
+
+    /**
+     * @param dedicatedTopBottom 上下两面是否单独用「顶/底」那一格
+     *
+     * <p>锻铁玻璃方块、它的物品图标、锻铁玻璃活板门（关着时两块大面正是顶底面）都是 {@code true}；
+     * 留一个 {@code false} 的口子给「只有侧面连接、没有顶底之分」的模型用
+     */
+    public WroughtIronGlassModel(BakedModel original, boolean dedicatedTopBottom) {
         super(original);
+        this.dedicatedTopBottom = dedicatedTopBottom;
     }
 
     private static int tile(int col, int row) {
@@ -86,20 +106,22 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
 
         int[] indices = new int[6];
         Arrays.fill(indices, side);
-        indices[Direction.UP.ordinal()] = TILE_TOP_BOTTOM;
-        indices[Direction.DOWN.ordinal()] = TILE_TOP_BOTTOM;
+        if (this.dedicatedTopBottom) {
+            indices[Direction.UP.ordinal()] = TILE_TOP_BOTTOM;
+            indices[Direction.DOWN.ordinal()] = TILE_TOP_BOTTOM;
+        }
         return ModelData.of(CT_INDICES, indices);
     }
 
     /**
-     * 物品那一档走的是这个已废弃的三参数 {@code getQuads}，不是下面那个带 {@code ModelData} 的
+     * 没有 {@code ModelData} 的那条路兜底
      *
-     * <p>{@code ItemRenderer} 画物品时调的就是三参数这版——物品栏图标与第一/第三人称手持都从
-     * {@code getQuads(null, direction, rand)} 取面（见 {@code ItemRenderer#renderModelLists}）。
-     * 而 {@link BakedModelWrapper} 的三参数方法直接把调用转给原模型，**不经过**子类覆写的五参数版本，
-     * 所以只覆写五参数那版的结果是：世界里的方块纹理正常，手里和物品栏里却把整张 48x48 糊在立方体每个面上
+     * <p>{@code BakedModelWrapper} 的三参数 {@code getQuads} 直接把调用转给原模型，**不经过**子类覆写的
+     * 五参数版本，所以只覆写五参数的话，任何不带方块上下文的调用（手里、世界里某些预览、别模组借用这个模型）
+     * 都会把整张 48x48 糊在立方体每个面上。这里转回五参数并给空的 {@link ModelData}，落到「单个方块」的兜底格
      *
-     * <p>这里转回五参数并给空的 {@link ModelData}，于是物品那一档落到下面「单个方块」的兜底格
+     * <p>物品栏图标也走这条：物品模型 {@code parent} 方块模型、并且被 {@code DdtClient} 一起包上，
+     * 于是图标同样是「上下顶/底那一格 + 四面单块侧面那一格」，不会把整张九宫格糊上去
      */
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
@@ -109,10 +131,12 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
     /**
      * 按面重映射 UV
      *
-     * <p>{@code indices} 拿不到时说明这不是世界里画方块的那一次调用：方块带方块上下文时走
-     * {@link #getModelData}，物品栏与手持渲染拿不到方块上下文，{@code ModelData} 是空的。那一档按
-     * 「单个方块」贴，四个侧面用 {@link #TILE_SINGLE}、上下两面用 {@link #TILE_TOP_BOTTOM}，
-     * 图标才是一块规规矩矩的玻璃，而不是把整张 48x48 糊在立方体每个面上
+     * <p>只用九宫图 {@link #SHEET} 的那些面才裁格：活板门的两块 16x16 大面是，四条薄边贴的是单面图
+     * （{@code block/wrought_iron_glass_particle}），原样保留
+     *
+     * <p>{@code indices} 拿不到时说明这不是世界里画方块的那一次调用（物品栏、手里、别模组借用）：
+     * 那一档按 {@link #defaultTile} 兜底——方块与活板门的「该是哪个面就是哪个面」在这里退化成
+     * 「上下顶/底那一格 + 四面单块侧面那一格」
      */
     @Override
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand,
@@ -125,14 +149,24 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
         int[] indices = data.get(CT_INDICES);
         List<BakedQuad> out = new ArrayList<>(quads.size());
         for (BakedQuad quad : quads) {
+            if (!usesSheet(quad)) {
+                out.add(quad);
+                continue;
+            }
             Direction face = quad.getDirection();
-            out.add(remap(quad, indices == null ? defaultTile(face) : indices[face.ordinal()]));
+            out.add(remap(quad, indices == null || face == null ? defaultTile(face) : indices[face.ordinal()]));
         }
         return out;
     }
 
-    private static int defaultTile(Direction face) {
-        return face == Direction.UP || face == Direction.DOWN ? TILE_TOP_BOTTOM : TILE_SINGLE;
+    private static boolean usesSheet(BakedQuad quad) {
+        return quad.getSprite().contents().name().equals(SHEET);
+    }
+
+    private int defaultTile(@Nullable Direction face) {
+        return this.dedicatedTopBottom && (face == Direction.UP || face == Direction.DOWN)
+            ? TILE_TOP_BOTTOM
+            : TILE_SINGLE;
     }
 
     private static BakedQuad remap(BakedQuad quad, int index) {

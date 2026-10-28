@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "dawnduskterminal:block/encased_towerbeam_connected",
+    "bottom": "dawnduskterminal:block/dark_log_countertop_bottom",
+    "side": "dawnduskterminal:block/dark_log_countertop"
+  }
+}

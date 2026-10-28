@@ -22,6 +22,7 @@ import com.dawnduskterminal.command.DdtCommands;
 import com.dawnduskterminal.registry.ModIngredients;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModParticles;
+import com.dawnduskterminal.registry.ModPotions;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModSounds;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
@@ -63,6 +64,7 @@ public final class DawnDuskTerminal {
         ModParticles.register(modBus);
         ModIngredients.register(modBus);
         ModEffects.register(modBus);
+        ModPotions.register(modBus);
         ModEntities.register(modBus);
         ModAttachments.register(modBus);
         ModSounds.register(modBus);
@@ -73,6 +75,8 @@ public final class DawnDuskTerminal {
         ModCreativeTabs.register(modBus);
 
         modBus.addListener(ModNetwork::registerPayloads);
+        // 药水物品的默认药水内容只能等药水注册完再写，见 ModPotions#modifyDefaultComponents
+        modBus.addListener(ModPotions::modifyDefaultComponents);
         // 两件都要挂：Loading 是启动时配置刚生效那一刻，Reloading 是玩家改完配置重载
         modBus.addListener((ModConfigEvent.Loading event) -> DdtConfig.refreshCache());
         modBus.addListener((ModConfigEvent.Reloading event) -> DdtConfig.refreshCache());

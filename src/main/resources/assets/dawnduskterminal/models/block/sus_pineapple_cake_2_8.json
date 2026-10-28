@@ -1,0 +1,32 @@
+{
+    "parent": "block/block",
+    "render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "#bottom",
+        "bottom": "dawnduskterminal:block/sus_pineapple_cake_bottom",
+        "inside": "dawnduskterminal:block/sus_pineapple_cake_inner",
+        "top": "dawnduskterminal:block/sus_pineapple_cake_top",
+        "top_2": "twilightforest:block/blank",
+        "side": "dawnduskterminal:block/sus_pineapple_cake_side"
+    },
+    "elements": [
+        {
+            "from": [ 1, 0, 1 ],
+            "to": [ 8, 8, 8 ],
+            "faces": {
+                "down":  { "texture": "#bottom", "cullface": "down" },
+                "up":    { "texture": "#top" },
+                "north": { "texture": "#side" },
+                "south": { "texture": "#inside" },
+                "west":  { "texture": "#side" },
+                "east": { "texture": "#inside" }
+            }
+        }, {
+            "from": [ 1, 8, 1 ],
+            "to": [ 8, 8, 8 ],
+            "faces": {
+                "up":    { "texture": "#top_2", "neoforge_data": { "block_light": 15, "sky_light": 15 } }
+            }
+        }
+    ]
+}
