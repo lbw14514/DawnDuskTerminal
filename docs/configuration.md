@@ -1,85 +1,47 @@
 # 配置项
 
-定义在 `config/DdtConfig`
+配置项定义在 `config/DdtConfig` 中，类型为 NeoForge 的 COMMON。
 
-类型是 NeoForge 的 COMMON
+配置文件为游戏目录下的 `config/dawnduskterminal-common.toml`。修改配置后需要重启游戏方可生效。
 
-文件是游戏目录下 `config/dawnduskterminal-common.toml`
-
-改动后需要重启
-
-每个 getter 都有兜底值，配置未加载时返回兜底而不是抛错
+每个取值方法均设有回退默认值：配置尚未加载时返回该默认值，而不抛出异常。
 
 ## lighting
 
-`sun_angle_max` 默认 20.0，范围 0 到 90
+- `sun_angle_max`：太阳最大高度角，单位为度，默认值 20.0，取值范围为 0 至 90；其取值方法在配置缺失时回退为 20.0。该配置项同时影响服务端的 `ChronoLine` 与客户端天空。客户端天空按 `0.25 - param * sun_angle_max / 360` 换算为原版的 `timeOfDay`，参见 `mixin/ClientLevelTimeOfDayMixin`。
+- `sky_light_by_distance`：默认值为 true。取值为 true 时，天光依据坐标沿晨昏线两侧衰减；取值为 false 时，该维度内的天光恒为 15。
+- `sky_light_day`：昼侧最远处的天光，默认值 15，取值范围为 0 至 15。
+- `sky_light_center`：晨昏线上的天光，默认值 14，取值范围为 0 至 15。
+- `sky_light_night`：夜侧最远处的天光，默认值 12，取值范围为 0 至 15。
 
-太阳最大高度角，单位度
-
-getter 兜底值是 20.0
-
-同时影响服务端的 `ChronoLine` 与客户端天空
-
-客户端天空按 `0.25 - param * sun_angle_max / 360` 换算成原版的 `timeOfDay`，见 `mixin/ClientLevelTimeOfDayMixin`
-
-`sky_light_by_distance` 默认 true
-
-true 时天光按坐标在晨昏线两侧衰减
-
-false 时维度内天光恒为 15
-
-`sky_light_day` 默认 15，范围 0 到 15，昼侧最远处天光
-
-`sky_light_center` 默认 14，范围 0 到 15，晨昏线上天光
-
-`sky_light_night` 默认 12，范围 0 到 15，夜侧最远处天光
-
-注释里提醒 8 及以下会让怪物生成
+配置注释中已注明：取值在 8 及以下时会导致怪物生成。
 
 ## chrono_line
 
-`max_distance` 默认 5000.0，范围 16 到 1000000
-
-`ChronoLine.param` 的除数，也决定转换到最大太阳角的距离
-
-`normal_override` 默认空字符串
-
-填 `x,z` 可固定晨昏线法向，非法输入回退到随机
-
-空字符串表示每个世界创建时随机，基准朝东，抖动正负 30 度，再随机决定是否翻转朝西
+- `max_distance`：即 `ChronoLine.param` 的除数，同时决定坐标折算至最大太阳角所需的距离。默认值 5000.0，取值范围为 16 至 1000000。
+- `normal_override`：默认值为空字符串。填写 `x,z` 可固定晨昏线法向，非法输入将回退为随机取值。取空字符串表示每个世界在创建时随机确定法向：以朝东为基准，抖动幅度为正负 30 度，随后再随机决定是否翻转至朝西。
 
 ## portal
 
-`cooldown_ticks` 默认 100，范围 0 到 72000
+- `cooldown_ticks`：默认值 100，取值范围为 0 至 72000。
+- `entity_debuff`：默认值 true。
 
-`entity_debuff` 默认 true
-
-说明：传送改即时后这两个键已无读取方，属于遗留
+说明：传送改为即时执行之后，上述两个配置项已无读取方，属于遗留配置，保留仅为兼容既有配置文件。
 
 ## compat
 
-`tolerate_feature_cycles` 默认 true
+- `tolerate_feature_cycles`：默认值 true。取值为 true 时，以可容忍特征环的排序实现替换原版的 `FeatureSorter`。
 
-用可容忍环的特征排序替换原版 `FeatureSorter`
-
-同一维度混用原版与模组群系时需要开启
-
-调色板维度正属于这种情况
+在同一维度内混用原版群系与模组群系时必须开启该配置项，调色板维度正属于这种情况。
 
 ## render
 
-`native_mesh` 默认 true
+- `native_mesh`：默认值 true，用于指定高塔恶魂的渲染是否使用 jar 内自带的 native 网格内核。取值为 false 时改用 GeckoLib 的 Java 顶点变换，画面效果一致，代价是每帧多出约两万个临时对象。
 
-高塔恶魂渲染是否使用 jar 里自带的 native 网格内核
+若怀疑崩溃由 native 引起，应先关闭该配置项并重启游戏。
 
-false 时改用 GeckoLib 的 Java 顶点变换，画面一致，只是每帧多出约两万个临时对象
+对应的系统属性为 `-Ddawnduskterminal.disableNative=true`，环境变量为 `DAWNDUSKTERMINAL_DISABLE_NATIVE=true`。
 
-怀疑 native 崩溃时先关这一项，再重启
+native 在加载成功时会于 `config/dawnduskterminal-native.crash-marker` 写入标记，进程正常退出时自动删除该标记。若上一次进程发生硬崩溃，标记将被保留，下一次启动时据此自动禁用 native；确认运行稳定后删除该文件即可恢复启用。
 
-对应的系统属性是 `-Ddawnduskterminal.disableNative=true`，环境变量是 `DAWNDUSKTERMINAL_DISABLE_NATIVE=true`
-
-native 在加载成功时会在 `config/dawnduskterminal-native.crash-marker` 写标记，正常退出自动删除
-
-如果上次进程硬崩溃，标记会留下，下次启动自动禁用 native；确认稳定后删除该文件即可恢复
-
-`-Ddawnduskterminal.forceNative=true` 可单次忽略标记
+`-Ddawnduskterminal.forceNative=true` 可在单次启动中忽略该标记。

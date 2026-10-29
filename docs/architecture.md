@@ -1,382 +1,382 @@
 # 架构总览
 
-一个 NeoForge 模组，新增「晨昏线」维度
+本模组是一个 NeoForge 模组，新增「晨昏线」维度。
 
-维度里没有昼夜更替，太阳高度由玩家坐标在晨昏线法向上的投影决定
+该维度内没有昼夜更替，太阳高度由玩家坐标在晨昏线法向上的投影决定。
 
-地形与群系来自原版主世界世界生成的移植版本，方块换成模组自己的调色板
+维度的地形与群系来自原版主世界世界生成的移植版本，其中的方块被替换为本模组自己的调色板。
 
 ## 模块职责
 
-`advancement/` 自定义进度触发器与判定
+`advancement/` 目录包含自定义进度触发器与判定逻辑。
 
-`block/` 单独的自定义方块
+`block/` 目录包含单独的自定义方块。
 
-`client/` 客户端渲染 天空 染色 屏幕效果 光影检测
+`client/` 目录包含客户端渲染、天空、染色、屏幕效果与光影检测。
 
-`command/` `/ddt` 指令
+`command/` 目录包含 `/ddt` 指令。
 
-`compat/` 特征排序兼容
+`compat/` 目录包含特征排序兼容处理。
 
-`entity/` 自定义生物
+`entity/` 目录包含自定义生物。
 
-`config/` 配置定义
+`config/` 目录包含配置定义。
 
-`crafting/` 自定义 Ingredient
+`crafting/` 目录包含自定义 Ingredient。
 
-`fluid/` 自定义流体
+`fluid/` 目录包含自定义流体。
 
-`gametest/` 游戏内测试
+`gametest/` 目录包含游戏内测试。
 
-`item/` 自定义物品
+`item/` 目录包含自定义物品。
 
-`mixin/` 针对原版的补丁
+`mixin/` 目录包含针对原版的补丁。
 
-`network/` 网络包
+`network/` 目录包含网络包。
 
-`portal/` 传送门建造 触发 传送 状态
+`portal/` 目录包含传送门的建造、触发、传送与状态管理。
 
-`progression/` Boss 进度追踪
+`progression/` 目录包含 Boss 进度追踪。
 
-`registry/` 全部 `DeferredRegister`
+`registry/` 目录包含全部 `DeferredRegister`。
 
-`server/` 服务端事件
+`server/` 目录包含服务端事件处理。
 
-`structure/` 结构白名单与摆放表
+`structure/` 目录包含结构白名单与摆放表。
 
-`world/` 群系源 晨昏线 密度包装 自定义 Feature 与方块 流体反应 状态
+`world/` 目录包含群系源、晨昏线、密度包装、自定义 Feature 与方块、流体反应以及状态管理。
 
 ## 入口
 
-主类 `com.dawnduskterminal.DawnDuskTerminal`
+主类为 `com.dawnduskterminal.DawnDuskTerminal`。
 
-构造函数里按顺序注册各类 `DeferredRegister`
+该类的构造函数按顺序注册各类 `DeferredRegister`。
 
-注册网络负载 `ModNetwork::registerPayloads`
+注册内容包括网络负载 `ModNetwork::registerPayloads`。
 
-在 `FMLCommonSetupEvent` 上注册流体反应 `FluidReactions::register`
+流体反应在 `FMLCommonSetupEvent` 上通过 `FluidReactions::register` 注册。
 
-挂服务端事件，见下方「事件」
+服务端事件挂载于同一处，详见下方「事件」一节。
 
-客户端环境下调用 `DdtClient.init`
+在客户端环境下，构造函数调用 `DdtClient.init`。
 
-注册 COMMON 配置 `DdtConfig.SPEC`
+此外还注册 COMMON 配置 `DdtConfig.SPEC`。
 
-静态方法 `id(path)` 生成 `dawnduskterminal:` 命名空间的 `ResourceLocation`
+静态方法 `id(path)` 生成 `dawnduskterminal:` 命名空间的 `ResourceLocation`。
 
 ## 生物
 
-`registry/ModEntities` 注册 `tower_ghast`（高塔恶魂）与 `string`（弦），属性走 `EntityAttributeCreationEvent`
+`registry/ModEntities` 注册 `tower_ghast`（高塔恶魂）与 `string`（弦），两者的属性通过 `EntityAttributeCreationEvent` 注册。
 
-两种生物的刷怪蛋在 `ModItems`（`tower_ghast_spawn_egg`、`string_spawn_egg`），用的是 NeoForge 的 `DeferredSpawnEggItem`：原版 `SpawnEggItem` 的构造器要一个现成的 `EntityType`，而物品注册跑在实体类型之前，这个子类收的是 `Supplier`，同时在 `FMLCommonSetupEvent` 里补发射器行为、在 `RegisterColorHandlersEvent` 里登记两层染色，客户端只剩一个 `minecraft:item/template_spawn_egg` 模型（贴图与原版刷怪蛋共用，颜色由染色层给）。`gametest/SpawnEggTests` 从 `SpawnEggItem#byId` 反查一遍，钉住这张表确实填上了
+两种生物的刷怪蛋注册在 `ModItems` 中，即 `tower_ghast_spawn_egg` 与 `string_spawn_egg`，使用 NeoForge 提供的 `DeferredSpawnEggItem`。原版 `SpawnEggItem` 的构造器要求传入一个现成的 `EntityType`，而物品注册先于实体类型注册执行；该子类接收的是 `Supplier`，同时在 `FMLCommonSetupEvent` 中补充发射器行为，并在 `RegisterColorHandlersEvent` 中登记两层染色。客户端因此只需要一个 `minecraft:item/template_spawn_egg` 模型，该模型的贴图与原版刷怪蛋共用，颜色由染色层提供。`gametest/SpawnEggTests` 通过 `SpawnEggItem#byId` 进行反向查询，以断言这张表确实已被填充。
 
-`entity/StringEntity`（弦）的默认形态（滑行型）只在不稳定流体的液面上活动：每 tick 把脚底钉回液面，位置一旦离开流体就弹回上一个合法点，所以它不会飞出去也不会沉下去。水平移动由 `StringMoveControl` 驱动，不经过地面寻路：行为层每 8 到 17 tick 给一个落在液面上的目标点，控制器**每 tick 都朝它推一次**，目标点进入 0.35 格才回到 `WAIT`。不能照抄原版 `MoveControl` —— 它一进 `MOVE_TO` 就把自己改回 `WAIT`，假设行为层每 tick 重给目标点（`PathNavigation` 正是这么做的），照抄的结果是「推一 tick 滑一程」，实测 20 tick 只走 0.2 格。空中每 tick 的推进量由 `getFlyingSpeed` 从移动速度属性折算成 `速度 × 0.045`：原版这一格对非玩家操控的生物返回恒定 0.02，速度属性完全不参与，大小变种与「追击比巡航快」那一档都会失效。折算后小型巡航约 9.2 格每秒、追击 12.4 格每秒（行走的玩家是 4.3，冲刺 5.6）。移速随体型走：大型的基准是小型的 1.35 倍（巡航 12.4、追击 16.7 格每秒），0.85~1.15 的随机体型偏移也一起乘，巡航与追击的倍率两档共用。它全身自发光：渲染层自己配了一个材质——自发光着色器（`RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER`）、不挂光图、保留半透明（流体贴图 alpha 230）、写掩码保持 `COLOR_DEPTH_WRITE`，贴图动画由 GeckoLib 的 `AnimatableTexture` 逐帧上传，与选哪个 RenderType 无关。**不能直接用原版 `RenderType.entityTranslucentEmissive`**：它的写掩码是 `COLOR_WRITE`，不写深度；1.21 的绘制顺序是「实体 → 半透明区块层（流体在这一层）→ 云」，后两者在实体之后按深度测试混合，实体不进深度缓冲就会被这两层整片盖住，看起来像被流体和云挡在后面。渲染层的实现在 `client/StringRenderer` 的 `glowRenderType`
+`entity/StringEntity`（弦）的默认形态（滑行型）只在不稳定流体的液面上活动：它每 tick 把脚底固定回液面，位置一旦离开流体就弹回上一个合法点，因此既不会飞出去，也不会沉下去。水平移动由 `StringMoveControl` 驱动，不经过地面寻路：行为层每 8 到 17 tick 给出一个落在液面上的目标点，控制器**每 tick 都朝它推一次**，目标点进入 0.35 格时才回到 `WAIT`。此处不能沿用原版 `MoveControl` 的做法，因为它一进入 `MOVE_TO` 就把自身改回 `WAIT`，并假设行为层每 tick 重新给出目标点（`PathNavigation` 正是这样做的）；沿用的结果是「推一 tick 滑一程」，实测 20 tick 只移动 0.2 格。空中每 tick 的推进量由 `getFlyingSpeed` 从移动速度属性折算成 `速度 × 0.045`：原版在这一点上对非玩家操控的生物返回恒定值 0.02，速度属性完全不参与，导致大小变种与「追击比巡航快」那一档都会失效。折算后小型个体的巡航速度约为 9.2 格每秒，追击速度约为 12.4 格每秒（行走的玩家为 4.3，冲刺为 5.6）。移速随体型变化：大型个体的基准是小型的 1.35 倍（巡航 12.4 格每秒、追击 16.7 格每秒），0.85~1.15 的随机体型偏移也一并相乘，巡航与追击的倍率两档共用同一套系数。该生物全身自发光：渲染层自行配置了一个材质，使用自发光着色器（`RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER`），不挂载光图，保留半透明（流体贴图 alpha 230），写掩码保持 `COLOR_DEPTH_WRITE`；贴图动画由 GeckoLib 的 `AnimatableTexture` 逐帧上传，与选用哪个 RenderType 无关。**不能直接使用原版 `RenderType.entityTranslucentEmissive`**：它的写掩码是 `COLOR_WRITE`，不写入深度；1.21 的绘制顺序为「实体 → 半透明区块层（流体位于这一层）→ 云」，后两者在实体之后按深度测试混合，因此实体若不写入深度缓冲，就会被这两层整片覆盖，看起来像被流体与云遮挡在后面。渲染层的实现位于 `client/StringRenderer` 的 `glowRenderType`。
 
-「弦」的待机音要一直响，所以不用原版那条「每隔一段随机间隔掷一次」的路：`getAmbientSound` 返回 null，由 `tickAmbientSound` 按音效长度排期。`string_ambient` 的三个变体取自同一段素材、长度一致（413192 采样 / 44100 Hz = 9.37 秒 = 187 tick），当前这条还剩 8 tick 时起下一条，两条叠在一起听不出断点；音高固定 1.0，变调会改变实际时长、排期就对不上。`gametest/StringEntityTests` 手动跑「控制器写速度 → 原版 air 分支」两个动作，钉住每 tick 都推、到位即停、推进量跟速度属性走三件事
+「弦」的待机音需要持续播放，因此不采用原版那条「每隔一段随机间隔掷一次」的路径：`getAmbientSound` 返回 null，由 `tickAmbientSound` 按音效长度排期。`string_ambient` 的三个变体取自同一段素材且长度一致（413192 采样 / 44100 Hz = 9.37 秒 = 187 tick），当前这一条还剩 8 tick 时开始下一条，两条叠加在一起听不出断点；音高固定为 1.0，因为变调会改变实际时长，排期便无法对上。`gametest/StringEntityTests` 手动执行「控制器写速度 → 原版 air 分支」两个动作，以断言每 tick 都推进、到位即停、推进量随速度属性变化这三件事。
 
-「弦」有三个行为变种（`StringEntity.Kind`，序号进同步数据 `DATA_KIND` 与存档 `Kind`），三种共用模型、贴图与属性，区别只在运动系统与索敌范围。运动系统由 `applyKind` 按变种整套装配，能借原版的直接借：
+「弦」有三个行为变种（`StringEntity.Kind`，序号写入同步数据 `DATA_KIND` 与存档 `Kind`），三种变种共用模型、贴图与属性，区别只在于运动系统与索敌范围。运动系统由 `applyKind` 按变种整套装配，能够沿用原版实现的即直接沿用：
 
-**滑行型**贴液面，`StringMoveControl` 只给水平推进（每 tick 推一次、到 0.35 格算到达），垂直位置由 `keepOnFluidSurface` 钉住；只打脚边一格有流体的玩家
+**滑行型**贴附液面，`StringMoveControl` 只提供水平推进（每 tick 推一次，到达 0.35 格即视为到达），垂直位置由 `keepOnFluidSurface` 固定；该变种只攻击脚边一格存在流体的玩家。
 
-**低空飞行型**整套是蜜蜂那套：`moveControl = new FlyingMoveControl(this, 20, true)`（原版类，蜂用的就是它）、`FlyingPathNavigation`、追人用原版 `MeleeAttackGoal`（寻路自己算三维路径，空中与岸上的玩家都追得到，索敌不看流体）。没有目标时 `FlyerWanderGoal` 照 `Bee.BeeWanderGoal` 的写法——`navigation.isDone() && nextInt(10)==0` 就挑一个液面上方两格的盘旋点、`navigation.moveTo(navigation.createPath(...), 1.0)` 飞过去；目标没了（被打死或跑掉）由 `ReturnToFluidGoal` 带回液体上空：远处寻路飞回去，近了照蜜蜂在巢口悬停那样每 tick 用 0.35 的速度给一次目标点。它的 `travel` 照 `FlyingMob#travel`（恶魂与幻翼的父类）**整段不扣重力**，`checkFallDamage` 照 `FlyingMob` 写成空实现——**光靠 `setNoGravity(true)` 飘着是不够的**：重力标记一旦被读档或别的代码改掉就会自由落体，而且俯冲追击时 `fallDistance` 会照常累计、落地结算摔伤；传送门流体不是 `#minecraft:water`，进水也不会像原版水那样清零 `fallDistance`
+**低空飞行型**整套沿用蜜蜂的实现：`moveControl = new FlyingMoveControl(this, 20, true)`（原版类，蜜蜂使用的正是它）、`FlyingPathNavigation`，追击玩家时使用原版 `MeleeAttackGoal`（该类自行计算三维寻路路径，因此空中与岸上的玩家都能被追到，索敌不判定流体）。没有目标时，`FlyerWanderGoal` 按 `Bee.BeeWanderGoal` 的写法执行：当 `navigation.isDone() && nextInt(10)==0` 时选取一个液面上方两格的盘旋点，并调用 `navigation.moveTo(navigation.createPath(...), 1.0)` 飞过去。目标消失（被击杀或逃离）后由 `ReturnToFluidGoal` 带回液体上空：距离较远时寻路飞回，距离较近时按蜜蜂在巢口悬停的方式每 tick 以 0.35 的速度给一次目标点。它的 `travel` 沿用 `FlyingMob#travel`（恶魂与幻翼的父类）的写法，**整段不扣除重力**；`checkFallDamage` 沿用 `FlyingMob` 写为空实现。**仅依靠 `setNoGravity(true)` 保持漂浮是不够的**：重力标记一旦被读档或其他代码改写，该生物就会自由落体，而且俯冲追击时 `fallDistance` 会照常累计，落地时结算摔伤；传送门流体不属于 `#minecraft:water`，因此进入传送门流体也不会像原版水那样将 `fallDistance` 清零。
 
-**游动型**是鱼那一套：`moveControl = FluidMoveControl` 照抄 `AbstractFish.FishMoveControl`——眼睛泡在流体里每 tick 补 0.005 浮力、速度按 0.125 的比重渐变、按目标点补垂直推力、只改朝向；`travel` 照抄 `AbstractFish#travel` 的水下分支（`moveRelative(0.01)` 推、`move` 走、整体乘 0.9、没目标时缓慢下沉）。原版判定里的 `isInWater()`（`#minecraft:water` 标签）换成本模组的传送门流体判定，这是唯一改动；`keepSubmerged` 再把脚夹在「池底往上 0.2」到「液面往下 0.9」之间兜住范围。只打泡在流体里的玩家
+**游动型**沿用鱼类的实现：`moveControl = FluidMoveControl` 参照 `AbstractFish.FishMoveControl` 编写，即在眼睛浸入流体时每 tick 补充 0.005 浮力、速度按 0.125 的比重渐变、按目标点补充垂直推力，并且只改变朝向；`travel` 参照 `AbstractFish#travel` 的水下分支编写（以 `moveRelative(0.01)` 提供推力，`move` 执行移动，整体乘以 0.9，没有目标时缓慢下沉）。原版判定中的 `isInWater()`（`#minecraft:water` 标签）被替换为本模组的传送门流体判定，这是唯一的改动；`keepSubmerged` 再把脚的位置限制在「池底往上 0.2」与「液面往下 0.9」之间，以限定活动范围。该变种只攻击浸在流体中的玩家。
 
-三种变种**只主动索敌玩家**（`NearestAttackableTargetGoal<Player>` + `isValidPrey` 里再判一次类型）。自然生成只出滑行型（`world/StringSpawner`，每 5 秒扫列，玩家周围 48 格内 5 只封顶）；低空飞行型与游动型只由滑行型分裂产生。滑行型每次受到**高于 2 点**的伤害有 **10%** 概率裂成一对——低空飞行型（抬高 1.5 格悬空）加游动型，自己 `discard` 掉（不是 `die`：不掉战利品、不算击杀、不播倒地动画），伴随末影人传送音与 60 颗传送粒子。两种新变种不会二次分裂
+三种变种**只主动索敌玩家**（`NearestAttackableTargetGoal<Player>`，并在 `isValidPrey` 中再判定一次类型）。自然生成只产生滑行型（`world/StringSpawner` 每 5 秒扫描列，玩家周围 48 格内以 5 只为上限）；低空飞行型与游动型只由滑行型分裂产生。滑行型每次受到**高于 2 点**的伤害时有 **10%** 概率裂成一对，即一只低空飞行型（抬高 1.5 格悬空）与一只游动型，同时自身执行 `discard`（而不是 `die`：不掉落战利品、不计入击杀、不播放倒地动画），并伴随末影人传送音与 60 颗传送粒子。两种新变种不会二次分裂。
 
-「弦」的刷怪蛋（`item/StringSpawnEggItem`）只肯放在传送门流体边上：`useOn`（点方块）、`use`（点流体源格）、`createDispenseBehavior`（发射器；默认行为在 `DeferredSpawnEggItem` 里是私有的，照着重写了一份）三条发放路径都先过 `StringEntity.canSpawnAt`——落点那一格是流体，或它正下方是流体，才准放，否则蛋不消耗
+「弦」的刷怪蛋（`item/StringSpawnEggItem`）只能放置在传送门流体旁边：`useOn`（对方块使用）、`use`（对流体源格使用）与 `createDispenseBehavior`（发射器；默认行为在 `DeferredSpawnEggItem` 中是私有的，因此参照重写了一份）这三条发放路径都先经过 `StringEntity.canSpawnAt` 判定，即落点所在的那一格是流体，或其正下方是流体，才允许放置，否则刷怪蛋不被消耗。
 
-`entity/TowerGhastEntity` 由 GeckoLib 驱动，模型 动画 贴图从 Yes Steve Model 的 Bedrock 文件转换而来，转换与校验在 `tools/ysm/`
+`entity/TowerGhastEntity` 由 GeckoLib 驱动，其模型、动画与贴图从 Yes Steve Model 的 Bedrock 文件转换而来，转换与校验位于 `tools/ysm/`。
 
-`client/TowerGhastRenderer` 把三条资源路径直接写出，不走 GeckoLib 的命名约定
+`client/TowerGhastRenderer` 直接写出三条资源路径，不遵循 GeckoLib 的命名约定。
 
 ## 装备与武器
 
-`registry/ModArmorMaterials` 注册护甲材质：绯色钼、苍穹、砷铅铁是钻石级，天门松是铁级；另有一份 `experiment_armor` 给试验物品 047~050 那套——护甲值与铁同级（2 / 6 / 5 / 2，合计 15）、每件 2 点韧性、附魔值 9、耐久倍率 15，维修材料是砷铅铁锭 / 绯红钼锭 / 䤧锭里的任意一样（`Ingredient.of` 收候选清单，命中一个就成立）
+`registry/ModArmorMaterials` 注册护甲材质：绯色钼、苍穹与砷铅铁为钻石级，天门松为铁级；另有一份 `experiment_armor` 供试验物品 047~050 那一套使用，其护甲值与铁同级（2 / 6 / 5 / 2，合计 15），每件提供 2 点韧性，附魔值为 9，耐久倍率为 15，维修材料为砷铅铁锭、绯红钼锭与䤧锭中的任意一样（`Ingredient.of` 接收候选清单，命中其中一个即成立）。
 
-`registry/ModTiers` 注册工具分级，同样四份（绯色钼只有护甲，没有工具）
+`registry/ModTiers` 注册工具分级，同样为四份（绯色钼只有护甲，没有工具）。
 
-`registry/ModEquipment` 按套注册工具与护甲，六套共 54 件，按套存在 `Map<String, Set>` 里而不是逐件写字段。绯色钼的护甲带套装效果、物品在 `ModItems` 里，那一套只把已有 holder 拼进来
+`registry/ModEquipment` 按套装注册工具与护甲，六套共 54 件，按套装存放在 `Map<String, Set>` 中，而非逐件声明字段。绯色钼的护甲带有套装效果，其物品位于 `ModItems` 中，该套装只把已有的 holder 拼接进来。
 
-`item/ScarletMolybdArmorItem` 只有绯色钼一套用，四件穿齐时每件自己在 `inventoryTick` 里续生命恢复
+`item/ScarletMolybdArmorItem` 只为绯色钼这一套使用，四件全部穿戴时，每件在 `inventoryTick` 中自行续期生命恢复效果。
 
-绯色钼护甲的穿戴外观不用原版通用护甲层，用的是源 mod（twilightextra）的四件专用模型：`client/model/ScarletMolybdenumArmorModel` 把 `Modelcarmhelmett1`、`Modelcarmchestplatet1`、`Modelcarmleggingst1`、`Modelcarmbootst1` 四份 `LayerDefinition` 逐颗方块照搬，注册成四个 `ModelLayerLocation`，再按槽位拼进 `HumanoidModel`——对应部位换成专用部件（头 / 身 双臂 / 身 双腿 / 双腿），其余部位塞空 `ModelPart`，经 `RegisterClientExtensionsEvent` 的 `IClientItemExtensions#getHumanoidArmorModel` 交给原版 `HumanoidArmorLayer`。护甲层每帧先把玩家模型的姿势 `copyFrom` 到那个 `HumanoidModel` 的同名部位上，所以专用部件的基准位置必须与原版对齐（头、身 0,0,0；臂 ±5,2,0；腿 ±1.9,12,0），源模型的数值本来就是按这套基准写的。贴图是 `textures/entities/carmarmort1.png`（64×64，一件套一张，不分内外层），由 `ScarletMolybdArmorItem#getArmorTexture` 返回，顶掉 `ArmorMaterial.Layer` 拼出来的 `textures/models/armor/...`；原来那两张通用层贴图已经删除——它们的 UV 布局与这套几何对不上，正是之前通用模型看起来错位的原因。这一套也不接受护甲纹饰：锻造台那条靠标签挡（本套不在 `#minecraft:trimmable_armor` 里，纹饰配方的 base 匹配不上），已带 `TRIM` 组件的栈（命令、别的模组、老存档）由 `ScarletMolybdArmorItem#verifyComponentsAfterLoad` 在加载、网络同步与穿戴时摘掉——纹饰层是按原版块贴图排的，叠在 64×64 UV 的专用几何上只会错位。规格在 `gametest/EquipmentTests`：四件在内外两种层上都返回那张专用图、图本身在 jar 里；模板 + 红石 + 本套部件问不出任何锻造配方，带纹饰的栈从 NBT 走一趟回来组件消失
+绯色钼护甲的穿戴外观不使用原版通用护甲层，而使用源模组（twilightextra）的四件专用模型：`client/model/ScarletMolybdenumArmorModel` 把 `Modelcarmhelmett1`、`Modelcarmchestplatet1`、`Modelcarmleggingst1`、`Modelcarmbootst1` 四份 `LayerDefinition` 逐颗方块照搬，注册为四个 `ModelLayerLocation`，再按槽位拼进 `HumanoidModel`——对应部位替换为专用部件（头 / 身 双臂 / 身 双腿 / 双腿），其余部位填入空的 `ModelPart`，并经 `RegisterClientExtensionsEvent` 的 `IClientItemExtensions#getHumanoidArmorModel` 交给原版 `HumanoidArmorLayer`。护甲层每帧先通过 `copyFrom` 把玩家模型的姿势复制到那个 `HumanoidModel` 的同名部位上，因此专用部件的基准位置必须与原版对齐（头、身 0,0,0；臂 ±5,2,0；腿 ±1.9,12,0），源模型的数值本来就是按这套基准编写的。贴图为 `textures/entities/carmarmort1.png`（64×64，一件套一张，不分内外层），由 `ScarletMolybdArmorItem#getArmorTexture` 返回，从而取代由 `ArmorMaterial.Layer` 拼出的 `textures/models/armor/...`；原来那两张通用层贴图已经删除，因为它们的 UV 布局与这套几何不匹配，而此前通用模型看起来错位正是由此造成。这一套也不接受护甲纹饰：锻造台这条路径通过标签拦截（本套不在 `#minecraft:trimmable_armor` 中，纹饰配方的 base 无法匹配），已带有 `TRIM` 组件的物品栈（来自命令、其他模组或旧存档）由 `ScarletMolybdArmorItem#verifyComponentsAfterLoad` 在加载、网络同步与穿戴时移除，因为纹饰层按原版方块贴图排列，叠加在 64×64 UV 的专用几何上只会错位。规格见 `gametest/EquipmentTests`：四件在内外两种层上都返回那张专用图，且该图本身位于 jar 中；以模板、红石与本套部件查询不出任何锻造配方，带纹饰的物品栈经 NBT 往返一次后组件消失。
 
-`item/CarminiteStaffItem` 近战按单手武器算，右键消耗一颗砷铅铁球发射一颗 `entity/CarminiteBallEntity`。六种附魔加成照搬源 mod 的换算（力量 火矢 冲击 多重 穿透 快速装填），物品挂在 `data/minecraft/tags/item/enchantable/` 的 `bow` 与 `crossbow` 两个原版标签上，否则附不上去
+`item/CarminiteStaffItem` 的近战行为按单手武器计算，右键使用消耗一颗砷铅铁球并发射一颗 `entity/CarminiteBallEntity`。六种附魔加成沿用源模组的换算（力量、火矢、冲击、多重、穿透、快速装填），该物品挂在 `data/minecraft/tags/item/enchantable/` 的 `bow` 与 `crossbow` 两个原版标签上，否则无法附魔。
 
-`entity/CarminiteBallEntity` 继承 `AbstractArrow`，命中后在上方一格留下 `entity/CarminiteFieldEntity`
+`entity/CarminiteBallEntity` 继承 `AbstractArrow`，命中后在其上方一格留下 `entity/CarminiteFieldEntity`。
 
-`entity/CarminiteFieldEntity` 是普通的 `Entity`（不是生物），存活 75 tick，每 20 tick 对半径 4、高 ±1.5 的圆柱内生物结算一次伤害，每 tick 在边缘画一圈 12 个粒子。源 mod 把它做成了一只无 AI 的飞行生物，范围只能用方盒子，这里都不需要
+`entity/CarminiteFieldEntity` 是普通的 `Entity`（不是生物），存活 75 tick，每 20 tick 对半径 4、高 ±1.5 的圆柱范围内的生物结算一次伤害，并每 tick 在边缘绘制一圈 12 个粒子。源模组将其实现为一只无 AI 的飞行生物，作用范围只能使用方盒，这里均不需要。
 
-`registry/ModParticles` 注册三种粒子（`particle_carminite_ball` `_trace` `_effect`），客户端 provider 在 `client/CarminiteParticle`
+`registry/ModParticles` 注册三种粒子（`particle_carminite_ball`、`_trace`、`_effect`），客户端 provider 位于 `client/CarminiteParticle`。
 
-`registry/ModDamageTypes` 的 `carminite_field` 是反应场伤害，条目在 `data/dawnduskterminal/damage_type/`
+`registry/ModDamageTypes` 的 `carminite_field` 是反应场伤害，其条目位于 `data/dawnduskterminal/damage_type/`。
 
-这些内容从 `twilightextra`（MCreator 生成）迁移而来，原代码里的过程式实现已换成上面这些
+这些内容从 `twilightextra`（由 MCreator 生成）迁移而来，原代码中的过程式实现已替换为上述实现。
 
-装备贴图目前是原版铁、钻石贴图加色阶的占位图，真美术进来后换掉 `textures/item/` 与 `textures/models/armor/` 里对应前缀的文件即可
+装备贴图目前是原版铁、钻石贴图叠加色阶得到的占位图；待正式美术资源到位后，替换 `textures/item/` 与 `textures/models/armor/` 中对应前缀的文件即可。
 
 ## 试验物品
 
-序号表在 `registry/ModExperimentItems`：`TAKEN` 里列掉已经占号的（001 是能当合成台用的方块，在 `ModBlocks`；007 与 017 是两件近战伤害 4、攻速 5 的裸武器，共用 `meleeAttributes` 属性表、只挂属性不挂 tool tier（修饰符 ID 按物品 ID 分开，同一属性上两个同 ID 修饰符会互相顶掉，玩家底数是攻击力 1、攻速 4，所以面板 4/5 对应 +3/+1）；008 是 5 点饥饿、5 点饱和度的食物（系数 0.5，`FoodProperties` 存的是饱和度系数，点数 = 系数 × 饥饿 × 2）；020 是 20 点饥饿、20 点饱和度的食物，效果表是吃完那一刻现摇的（`item/Experiment020Item#rollEffects`：0~3 个、互不相同、各 10~300 秒、等级 I，池子里剔掉瞬发那三个、以及非原版里没有药水瓶的技术性效果（判据是扫 `BuiltInRegistries.POTION`：药水瓶显示的效果就取自这张表，原版不套这条，`bad_omen` 这类照旧留着），随机源当参数传进来好测，`FoodProperties#effects` 放不了随机表也不能放）；019 是一丛植物（`block/Experiment019Block` 继承 `BushBlock`，只站在 `#minecraft:dirt` 与耕地上、底下的土没了自己消失；方块模型 `block/experiment_019` 用 `minecraft:block/cross` 加 `"render_type": "minecraft:cutout"`（漏了这行透明像素会被涂成黑底，整丛变成一块黑方块；原版花的 `ItemBlockRenderTypes.setRenderLayer` 1.19 起废弃，模组方块一律写模型的 `render_type`），贴图直接引 `item/experiment_019` 那张，物品图标仍走 `item/generated`，与原版花一致；掉自身走 `loot_table/blocks/experiment_019.json`）；033/034 是两支突刺长矛，行为在 `item/ThrustSpearItem`；037~042 是钻石五件套与一件普通物品；043 是那台喷火器（`item/Experiment043Item`）；066 是那本恶魂陷阱书（`item/Experiment066Item`）；045 是那面盾（`item/Experiment045Item`，盾面在 `client/Experiment045ShieldRenderer`）；046 是砷铅铁钼反应权杖；047~050 是那套护甲（`item/ExperimentArmorItem`，见下面的「试验物品 047~050」）；051 是拆解台那台机器，方块在 `ModBlocks`、物品在 `ModItems`；104 是食物，在 `ModItems`；114 是能吃能摆的那一块，方块在 `ModBlocks`、物品在 `ModItems`；115 是暮色森林自带的，本模组不注册），剩下的空号按 `experiment_%03d` 补成占位简单物品，贴图统一借 `experiment_temp.png`。创造栏按序号升序排，115 从暮色森林的注册表里取，没装暮色森林就跳过；试验物品栏用 `withTabsBefore(dawnduskterminal:main)` 钉在主栏目后面——NeoForge 的 `CreativeModeTabRegistry` 对没声明 before/after 的 mod 栏目按注册名字母序排，注册先后不进排序，别的模组的栏目会插进本模组两个栏目中间
+序号表位于 `registry/ModExperimentItems`，其中 `TAKEN` 列出了已经占用序号的条目：001 是可以当作合成台使用的方块，位于 `ModBlocks`；007 与 017 是两件近战伤害 4、攻速 5 的裸武器，共用 `meleeAttributes` 属性表，只挂载属性而不挂载 tool tier（修饰符 ID 按物品 ID 区分，同一属性上两个同 ID 修饰符会相互覆盖；玩家底数为攻击力 1、攻速 4，因此面板 4/5 对应 +3/+1）；008 是提供 5 点饥饿与 5 点饱和度的食物（系数 0.5，`FoodProperties` 存储的是饱和度系数，点数 = 系数 × 饥饿 × 2）；020 是提供 20 点饥饿与 20 点饱和度的食物，其效果表在使用的那一刻随机生成（`item/Experiment020Item#rollEffects`：0~3 个、互不相同、各持续 10~300 秒、等级 I，候选池中剔除瞬发的三个，以及非原版中不存在药水瓶的技术性效果，判据是扫描 `BuiltInRegistries.POTION`，因为药水瓶显示的效果就取自这张表，原版不套用这条判据，`bad_omen` 这类效果照旧保留；随机源作为参数传入以便测试，`FoodProperties#effects` 无法承载随机表，也不能放置随机表）；019 是一丛植物（`block/Experiment019Block` 继承 `BushBlock`，只可立于 `#minecraft:dirt` 与耕地上，下方的土消失后自身随之消失；其方块模型 `block/experiment_019` 使用 `minecraft:block/cross` 并加 `"render_type": "minecraft:cutout"`，若遗漏该行，透明像素会被涂成黑底，整丛会变成一块黑方块；原版花所用的 `ItemBlockRenderTypes.setRenderLayer` 自 1.19 起废弃，模组方块一律在模型中写 `render_type`；贴图直接引用 `item/experiment_019` 那张贴图，物品图标仍使用 `item/generated`，与原版花一致；掉落自身由 `loot_table/blocks/experiment_019.json` 定义）；032/033 是两支突刺长矛，行为位于 `item/ThrustSpearItem`；037~042 是钻石五件套与一件普通物品；043 是那台喷火器（`item/Experiment043Item`）；066 是那本恶魂陷阱书（`item/Experiment066Item`）；045 是那面盾（`item/Experiment045Item`，盾面位于 `client/Experiment045ShieldRenderer`）；046 是砷铅铁钼反应权杖；047~050 是那套护甲（`item/ExperimentArmorItem`，见下面的「试验物品 047~050」）；051 是拆解台那台机器，方块在 `ModBlocks`、物品在 `ModItems`；104 是食物，位于 `ModItems`；114 是既能食用又能摆放的那一块，方块在 `ModBlocks`、物品在 `ModItems`；115 由暮色森林自带，本模组不注册。剩余的空号按 `experiment_%03d` 补成占位的简单物品，贴图统一借用 `experiment_temp.png`。创造栏按序号升序排列，其中 115 从暮色森林的注册表中获取，未安装暮色森林时跳过；试验物品栏通过 `withTabsBefore(dawnduskterminal:main)` 固定在主栏目之后——NeoForge 的 `CreativeModeTabRegistry` 对未声明 before/after 的模组栏目按注册名字母序排序，注册的先后顺序不参与排序，否则其他模组的栏目会插入本模组两个栏目之间。
 
-试验物品 032/033 是同一份 `item/ThrustSpearItem` 的两个注册。`getUseAnimation` 返回 `UseAnim.BOW`：第一人称的拉满过程与第三人称的双臂拉弓都由原版摆，物品模型必须配同一套变换——两张贴图是按弓的朝向画的，所以 `models/item/experiment_032.json`、`experiment_033.json` 照原版 `item/bow` 给了一份 `display`（thirdperson 的 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstperson 沿用 generated 那一套），挂 `item/generated` 不给变换会变成一张平片，挂 `item/handheld` 则会把矛按工具那样拿反。视野不缩：原版压 FOV 的条件在 `AbstractClientPlayer#getFieldOfViewModifier` 里，是 `getUseItem().is(Items.BOW)`，认物品本体，与非弓物品无关。`getUseDuration` 是 72000，按住右键不会自己结束；`onUseTick` 每 10 tick 取一次目标：`entity_interaction_range` 属性范围内、视线两侧各 30 度锥体里、有视线连通、离视线垂距最小的活生物，`hurt` 掉 1 点并放 `entity.player.hurt_sweet_berry_bush`。伤害类型直接用原版的 `minecraft:sweet_berry_bush`：普通伤害（护甲照减），它本来就在 `minecraft:no_knockback` 标签里，所以只有伤害没有击退；死亡信息与原版一致，本模组不另外写条目，物品也不带描述行。无敌帧不做任何手脚，两次伤害之间隔 10 tick，原版那套逻辑自己会算
+试验物品 032/033 是同一份 `item/ThrustSpearItem` 的两个注册。`getUseAnimation` 返回 `UseAnim.BOW`：第一人称的拉满过程与第三人称的双臂拉弓动作都交由原版播放，因此物品模型必须配置同一套变换——两张贴图是按弓的朝向绘制的，所以 `models/item/experiment_032.json`、`experiment_033.json` 参照原版 `item/bow` 给出了一份 `display`（thirdperson 的 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstperson 沿用 generated 那一套）；若挂 `item/generated` 而不提供变换，模型会变成一张平片，若挂 `item/handheld`，则会把矛按工具的方式拿反。视野不缩放：原版压低 FOV 的条件位于 `AbstractClientPlayer#getFieldOfViewModifier` 中，即 `getUseItem().is(Items.BOW)`，它识别的是物品本体，与非弓物品无关。`getUseDuration` 为 72000，按住右键不会自行结束；`onUseTick` 每 10 tick 选取一次目标：`entity_interaction_range` 属性范围内、视线两侧各 30 度锥体中、有视线连通、且与视线的垂直距离最小的活体生物，对其调用 `hurt` 造成 1 点伤害并播放 `entity.player.hurt_sweet_berry_bush`。伤害类型直接使用原版的 `minecraft:sweet_berry_bush`：属于普通伤害（护甲照常减伤），它本身就在 `minecraft:no_knockback` 标签中，因此只有伤害而没有击退；死亡信息与原版一致，本模组不另外编写条目，物品也不带描述行。无敌帧未做任何改动，两次伤害之间相隔 10 tick，由原版既有逻辑自行计算。
 
-试验物品 104 是 `ModItems` 里的一件普通 `Item`，只挂了 `Item.Properties().stacksTo(1).food(...)`：一个能吃两口，第一口的 `usingConvertsTo` 把剩下那半换成 `experiment_104_half`（走原版蜂蜜瓶换玻璃瓶那条路，`Player#eat` 里换栈），第二口把半块吃掉。每口 10 营养、0.6 饱和度系数（饱食度 10 × 0.6 × 2 = 12.0，等于两块烤马铃薯），两口合计 20 与 24.0。半块也是 `stacksTo(1)` 的食物，没有 `usingConvertsTo`；它不进试验物品栏（那栏只排 001~115 的序号），只能靠吃出来。半块的注册必须写在 104 前面——104 的 `usingConvertsTo` 在注册回调里就要取半块的物品栈，`DeferredRegister` 按插入顺序注册
+试验物品 104 是 `ModItems` 中的一件普通 `Item`，只挂载了 `Item.Properties().stacksTo(1).food(...)`：该物品可以食用两次，第一次使用时 `usingConvertsTo` 把剩余的那一半转换为 `experiment_104_half`（沿用原版蜂蜜瓶转换为玻璃瓶的路径，即在 `Player#eat` 中替换物品栈），第二次使用时消耗那半块。每次提供 10 点营养与 0.6 的饱和度系数（饱食度 10 × 0.6 × 2 = 12.0，相当于两块烤马铃薯），两次合计为 20 与 24.0。半块同样是 `stacksTo(1)` 的食物，没有 `usingConvertsTo`；它不进入试验物品栏（该栏只排列 001~115 的序号），只能通过食用产生。半块的注册必须写在 104 之前，因为 104 的 `usingConvertsTo` 在注册回调中就需要获取半块的物品栈，而 `DeferredRegister` 按插入顺序注册。
 
-试验物品 114 的方块就是暮色森林的试验物品 115 方块（`twilightforest:experiment_115`）的照抄：同一套状态 `omnomnom` 0~7 与 `regenerate`（名字都不改），同样的碰撞形状、比较器与红石输出公式，模型与侧、底、切口三张贴图直接用 115 的（`twilightforest:block/experiment115/*` 与 `twilightforest:block/blank`），顶面换成本模组自己的 `dawnduskterminal:block/experiment114_top`。不同之处：摆下来就是满的 8 片（115 的默认态是 `omnomnom=7`，只剩 1 片）、拿 114 点缺口一次补满（115 一次只补一片）、潜行收走只对全满的方块生效（115 吃到一半也能收）、吃掉一片额外随机放一声恶魂受伤、撒过红石粉那版不补片而改成收到一次红石信号随机放恶魂受伤
+试验物品 114 的方块是暮色森林试验物品 115 方块（`twilightforest:experiment_115`）的完整复制：两者具有同一套状态 `omnomnom` 0~7 与 `regenerate`（名称均未改动），同样的碰撞形状、比较器与红石输出公式，模型以及侧、底、切口三张贴图直接使用 115 的（`twilightforest:block/experiment115/*` 与 `twilightforest:block/blank`），顶面则替换为本模组自己的 `dawnduskterminal:block/experiment114_top`。不同之处在于：摆放后即为满的 8 片（115 的默认态是 `omnomnom=7`，只剩 1 片）；使用 114 点缺口一次补满（115 一次只补一片）；潜行收走只对全满的方块生效（115 在食用到一半时也能收走）；每消耗一片会额外随机播放一声恶魂受伤音效；撒过红石粉的那一版不补片，而改为在收到一次红石信号时随机播放恶魂受伤音效。
 
-`item/Experiment114Item` 是 `BlockItem`，一份食物 32 营养、0.3 饱和度系数，就是 8 份 115（一份 4 与 0.3）。`useOn` 照 115：点在自己那一块上把交互让给方块，不是潜行就摆，摆不下才转成吃；吃完那一下在服务端随机音高音量放 `entity.ghast.hurt`
+`item/Experiment114Item` 是 `BlockItem`，作为食物提供 32 点营养与 0.3 的饱和度系数，相当于 8 份 115（每份 4 与 0.3）。`useOn` 参照 115：对自身那一块使用时把交互让给方块；非潜行状态下执行摆放，摆不下时才转为食用；食用完成时在服务端以随机音高与音量播放 `entity.ghast.hurt`。
 
-红石去重不靠额外的 `powered` 状态，而是一次方块刻：一次信号会引来多轮邻居更新，`neighborChanged` 里发现这一格已经排了方块刻就不再响，这样状态集与 115 完全一致。同理方块没有 `randomTicks()`——115 的随机刻只用于给 `regenerate` 那版补片，我们那版改成响声，随机刻无事可做
+红石去重不依赖额外的 `powered` 状态，而依赖一次方块刻：一次信号会引发多轮邻居更新，`neighborChanged` 在发现这一格已经排入方块刻时便不再发声，这样状态集与 115 完全一致。同理，该方块没有 `randomTicks()`：115 的随机刻只用于给 `regenerate` 那一版补片，而本模组那一版改为播放音效，随机刻没有可执行的操作。
 
-资源是 `blockstates/experiment_114.json` 的 16 个变体（`omnomnom` × `regenerate`）加 16 个 `models/block/experiment_114_<剩几片>_8[_regenerating].json`，模型内容从 115 的模型原样复制，只改两处：`_regenerating` 那八个的 `parent` 指到本命名空间，八个基础模型的 `top` 指到 `dawnduskterminal:block/experiment114_top`（`_regenerating` 只覆盖 `top_2`，顶面从父模型继承）
+资源为 `blockstates/experiment_114.json` 的 16 个变体（`omnomnom` × `regenerate`），外加 16 个 `models/block/experiment_114_<剩几片>_8[_regenerating].json`；模型内容从 115 的模型原样复制，只改动两处：`_regenerating` 那八个的 `parent` 指向本命名空间，八个基础模型的 `top` 指向 `dawnduskterminal:block/experiment114_top`（`_regenerating` 只覆盖 `top_2`，顶面从父模型继承）。
 
-七种可疑蛋糕（`sus_<口味>_cake`，口味 `bloodorange`、`cheese`、`cherrycheese`、`lamington`、`pavlova`、`pineapple`、`redvelvet`）是 115 方块那一套的第二个衍生物：方块在 `block/SusCakeBlock`、物品在 `item/SusCakeItem`，两边都按 `ModBlocks#SUS_CAKE_FLAVORS` 生成、ID 一一对应。**一个物品就是一片**，摆下来是 `omnomnom=7`（只剩 1 片，与 115 同一个默认态），一块满的蛋糕是 8 片。照抄的是 `omnomnom` 0~7 那套切口状态、四段碰撞形状、比较器公式 `8 - omnomnom`、`noLootTable`/`pushReaction(DESTROY)`/`WOOL`/`strength(0.5)` 那组方块属性，以及 115 那三条交互：拿同一块蛋糕点缺口一次补一片（满片时回 `FAIL`）、潜行点一下从缺口一次取回一片（`omnomnom=7` 时整块取走、掉一声 `item.pickup` 并给回一件物品）、空手点吃一片（走 `useWithoutItem`）。与 115 不同两条：一片给的量写成 `SusCakeBlock.Serving`（点数 = 系数 × 饥饿 × 2），默认 `DEFAULT_SERVING` 是 6 点饥饿、4 点饱和度（系数 1/3），血橙与红丝绒那一档是 `EIGHT_SERVING` 的 8 点饥饿、8 点饱和度（系数 0.5），表在 `ModBlocks#SUS_CAKE_SERVINGS`，115 是一片 4 与 0.3；以及**没有 `regenerate` 这个状态、也不需要撒红石粉**——方块带 `randomTicks()`，`randomTick` 里只要 `omnomnom` 不是 0 就把片数减一，被随机刻抽中一次补一片、不掷第二次骰子（与 115 撒粉那版同速，默认 `randomTickSpeed=3` 下平均约 68 秒一片），所以本方块没有 `isSignalSource`/`getSignal`，比较器公式里也没有 114 那个 `+7`。资源是每种口味 `blockstates/sus_<口味>_cake.json` 八个变体加八个 `models/block/sus_<口味>_cake_<剩几片>_8.json`：模型从 115 的那八个原样复制，只把顶、侧、底、切口四张贴图换成 `dawnduskterminal:block/sus_<口味>_cake_{top,side,bottom,inner}`（`top_2` 仍指暮色森林的 `blank`，与 114 一致），物品模型走 `item/generated`（红丝绒那五张贴图是临时占位：由血橙那套按红色调生成，正式贴图到了直接换文件即可）。七种都进主栏目的食物那一档，没有战利品表；配方是 `data/dawnduskterminal/recipe/sus_<口味>_cake.json` 六条无序配方（红丝绒暂无配方），原料里都有 `twilightforest:experiment_115`（血橙配试验物品 008，奶酪配牛奶，樱桃奶酪配牛奶与甜浆果，林明顿配可可豆与骨粉，帕夫洛娃配鸡蛋，反转菠萝配仙人掌）。规格在 `gametest/SusCakeTests`：七种一片默认 6 与 4（血橙与红丝绒 8 与 8）、摆下来是最后一片、拿物品一次补一片而满片拒绝、潜行一次取回一片且最后一片整块取走、吃一片加 6 点饥饿 4 点饱和度、随机刻补一片而满片不动、比较器读 `8 - omnomnom` 且不发红石信号、六条无序配方都能在 `RecipeManager` 里按 ID 取到且原料与产出对得上
+七种可疑蛋糕（`sus_<口味>_cake`，口味为 `bloodorange`、`cheese`、`cherrycheese`、`lamington`、`pavlova`、`pineapple`、`redvelvet`）是 115 方块那一套的第二个衍生物：方块位于 `block/SusCakeBlock`，物品位于 `item/SusCakeItem`，两者都按 `ModBlocks#SUS_CAKE_FLAVORS` 生成，ID 一一对应。**一个物品就是一片**，摆放下来是 `omnomnom=7`（只剩 1 片，与 115 的默认态相同），一块满的蛋糕为 8 片。此处沿用 `omnomnom` 0~7 那套切口状态、四段碰撞形状、比较器公式 `8 - omnomnom`、`noLootTable`/`pushReaction(DESTROY)`/`WOOL`/`strength(0.5)` 那组方块属性，以及 115 的三条交互：拿同一块蛋糕点缺口一次补一片（满片时返回 `FAIL`），潜行点击一次从缺口取回一片（`omnomnom=7` 时整块取走，播放一声 `item.pickup` 并返还一件物品），空手点击食用一片（经由 `useWithoutItem`）。与 115 不同的有两条：第一，一片提供的量写作 `SusCakeBlock.Serving`（点数 = 系数 × 饥饿 × 2），默认的 `DEFAULT_SERVING` 为 6 点饥饿与 4 点饱和度（系数 1/3），血橙与红丝绒那一档为 `EIGHT_SERVING` 的 8 点饥饿与 8 点饱和度（系数 0.5），该表位于 `ModBlocks#SUS_CAKE_SERVINGS`，而 115 是一片 4 与 0.3；第二，**没有 `regenerate` 这个状态，也不需要撒红石粉**——方块带有 `randomTicks()`，`randomTick` 中只要 `omnomnom` 不为 0 就把片数减一，被随机刻抽中一次即补一片，不再进行第二次判定（与 115 撒粉那一版速度相同，默认 `randomTickSpeed=3` 下平均约 68 秒一片），因此该方块没有 `isSignalSource`/`getSignal`，比较器公式中也没有 114 那个 `+7`。资源为每种口味的 `blockstates/sus_<口味>_cake.json` 八个变体，外加八个 `models/block/sus_<口味>_cake_<剩几片>_8.json`：模型从 115 的那八个原样复制，只把顶、侧、底、切口四张贴图替换为 `dawnduskterminal:block/sus_<口味>_cake_{top,side,bottom,inner}`（`top_2` 仍指向暮色森林的 `blank`，与 114 一致），物品模型走 `item/generated`（红丝绒那五张贴图是临时占位图，由血橙那套按红色调生成，正式贴图到位后直接替换文件即可）。七种蛋糕都进入主栏目的食物那一档，没有战利品表；配方为 `data/dawnduskterminal/recipe/sus_<口味>_cake.json` 六条无序配方（红丝绒暂无配方），原料中都包含 `twilightforest:experiment_115`（血橙配试验物品 008，奶酪配牛奶，樱桃奶酪配牛奶与甜浆果，林明顿配可可豆与骨粉，帕夫洛娃配鸡蛋，反转菠萝配仙人掌）。规格见 `gametest/SusCakeTests`：七种一片默认提供 6 点饥饿与 4 点饱和度（血橙与红丝绒为 8 与 8），摆放下来是最后一片，拿物品一次补一片而满片时拒绝，潜行一次取回一片且最后一片时整块取走，食用一片增加 6 点饥饿与 4 点饱和度，随机刻补一片而满片时不变，比较器读取 `8 - omnomnom` 且不发出红石信号，六条无序配方都能在 `RecipeManager` 中按 ID 取到且原料与产出相符。
 
-115 再生机（`dawnduskterminal:e_115_regenerator`）是照 115 自己的补片速度产 115 的机器，方块在 `block/E115RegeneratorBlock`、方块实体在 `block/entity/E115RegeneratorBlockEntity`。两个条件同时成立才掷骰子：**侧面有红石信号**、**顶上是一块完整且撒过红石粉的 115**（`omnomnom=0` 且 `regenerate=true`）；产物格满了就停。顶面刻意不算进「侧面」：满片撒粉的 115 自己是信号源，`getSignal` 恒给 `15 - omnomnom × 2`、四个方向都发，所以它压在机器上时 `Level#hasNeighborSignal` 永远为真，判定只能逐面问四个水平方向的 `Level#getSignal(邻居, 朝我)`（红石粉、红石块、对着它的中继器与比较器、贴在侧面的拉杆都算，顶面与底面的读数一概不看）。顶上那块不消耗、也不需要它处在「吃到一半、正在补片」的状态：满片 + 撒粉就是引子，掷中的那一下产**新的** 115 物品。状态名按字符串找（`omnomnom`、`regenerate`）而不是 import 暮色森林的类，与 114 那套「只用字符串 ID 引用暮色森林」的约定一致。速度照随机刻算而不是拍脑袋定一个数：原版随机刻对每个 16³ 区块段每 tick 抽 `randomTickSpeed`（默认 3）个方块位置，任意一格每 tick 有 3/4096 的机会被抽中，而 115 在 `regenerate=true` 且没满片时**被抽中一次就补一片、不再掷第二次骰子**；所以方块实体就是每 tick `random.nextInt(4096) < 3` 掷一次、掷中就产一份，随机、不可预期，期望间隔 4096/3 ≈ 1365.3 tick（20 tps 下约 68.3 秒），与 115 自己补片完全同一件事。没有进度条也没有进度可存，格子里有没有东西就是全部状态。每次产出放一声顶上那块 115 的放置音效（115 是羊毛音效，就是 `block.wool.place`，与暮色森林给 115 补片时那一声同源）；干活的时候 `animateTick` 在顶上那一格里随机位置撒一颗 `particle_carminite_ember`——每次 `animateTick` 一颗、不叠概率，因为客户端的 `animateTick` 本来就不是每 tick 都轮到某个方块，单个方块平均一秒才被点到两三次。玩家拿着 115 点过来时方块不吞交互（`useItemOn` 回 `SKIP_DEFAULT_BLOCK_INTERACTION`）：原版顺序本就是「物品的 `useOn` 先跑、摆成功就结束」，所以顶面照常摆到方块上面，走到方块那一层只剩「摆不下」的情形，那时也不顺势把界面开出来；空手点才开界面。容器只有一格产物格，漏斗**只从底面抽**（`getSlotsForFace` 其余五个面返回空表）、任何面都塞不进来（`canPlaceItem` 恒 `false`），比较器按填充度输出。界面是 `inventory/E115RegeneratorMenu` 加 `client/E115RegeneratorScreen`：面板是本模组那张 `textures/gui/e_115_regenerator.png`（256x256 画布、176x166 的面板画在左上角），不注册 sprite、不在屏幕里另画东西；格子坐标全部照原版 `DispenserMenu`——机器那格取原版 3x3 的正中 (80, 35)，背包 (8, 84) 起、快捷栏 (8, 142)，面板上的凹槽就按这几个数画；开界面走 `IMenuProviderExtension#writeClientSideData` 传坐标与 `IMenuTypeExtension.create` 建类型，与 051 同一套。资源是 `blockstates/e_115_regenerator.json` 一个变体（方块没有状态）加 `models/block/e_115_regenerator.json`（`cube_bottom_top`，顶/侧/底三张贴图）、`loot_table/blocks/e_115_regenerator.json`，物品模型指向方块模型，方块进 `#minecraft:mineable/pickaxe`、创造栏排在主栏目。规格在 `gametest/E115RegeneratorTests`：摆好机器后直接调 `serverTick`，钉住骰子分母与每 tick 抽数是随机刻那一档、条件满足时跑够长必产且产的是 115 物品、顶面 115 自己发的信号不算侧面信号（跑够长也不产）、顶上少一条都不行（吃到一半 / 没撒粉 / 空着）、产物格满了不再塞、漏斗只从底面抽且任何面都不进、拿 115 点时留下 `SKIP_DEFAULT_BLOCK_INTERACTION` 而别的物品走默认、产出音效就是羊毛放置音
+115 再生机（`dawnduskterminal:e_115_regenerator`）是一台按 115 自身的补片速度生产 115 的机器，方块位于 `block/E115RegeneratorBlock`，方块实体位于 `block/entity/E115RegeneratorBlockEntity`。只有两个条件同时成立时才进行随机判定：**侧面存在红石信号**，且**顶上是一块完整并撒过红石粉的 115**（`omnomnom=0` 且 `regenerate=true`）；产物格已满时停止工作。顶面被刻意排除在「侧面」之外：满片且撒过粉的 115 自身就是信号源，`getSignal` 恒返回 `15 - omnomnom × 2`，并向四个方向发出信号，因此当它压在机器上时 `Level#hasNeighborSignal` 永远为真，判定只能逐面查询四个水平方向的 `Level#getSignal(邻居, 朝我)`（红石粉、红石块、正对着它的中继器与比较器、贴在侧面的拉杆都计算在内，顶面与底面的读数一概不看）。顶上那一块不会被消耗，也不需要它处于「食用到一半、正在补片」的状态：满片加撒粉即为触发条件，随机判定命中的那一次产出的是**新的** 115 物品。状态名按字符串查找（`omnomnom`、`regenerate`），而不是 import 暮色森林的类，这与 114 那套「只使用字符串 ID 引用暮色森林」的约定一致。速度按随机刻的机制推算，而不凭主观估计确定数值：原版随机刻对每个 16³ 区块段每 tick 抽取 `randomTickSpeed`（默认 3）个方块位置，任意一格每 tick 有 3/4096 的概率被抽中，而 115 在 `regenerate=true` 且未满片时**被抽中一次即补一片，不再进行第二次判定**；因此方块实体每 tick 执行一次 `random.nextInt(4096) < 3` 的判定，命中即产出一份，结果随机且不可预期，期望间隔为 4096/3 ≈ 1365.3 tick（20 tps 下约 68.3 秒），与 115 自身补片完全等价。该机器没有进度条，也没有可保存的进度，格子里是否存在物品就是全部状态。每次产出播放一声顶上那块 115 的放置音效（115 使用羊毛音效，即 `block.wool.place`，与暮色森林给 115 补片时那一声同源）；工作时 `animateTick` 会在顶上那一格中随机位置生成一颗 `particle_carminite_ember`，每次 `animateTick` 生成一颗且不叠加概率，因为客户端的 `animateTick` 本来就不是每 tick 都轮到某个方块，单个方块平均一秒只被选中两三次。玩家手持 115 点击过来时，方块不抢占交互（`useItemOn` 返回 `SKIP_DEFAULT_BLOCK_INTERACTION`）：原版的执行顺序本就是「物品的 `useOn` 先执行，摆放成功即结束」，因此顶面照常摆放物品到方块上方，走到方块这一层只剩下「摆放不下」的情形，此时也不会同时打开界面；只有空手点击才打开界面。容器只有一格产物格，漏斗**只从底面抽取**（`getSlotsForFace` 对其余五个面返回空表），任何面都无法放入物品（`canPlaceItem` 恒为 `false`），比较器按填充度输出。界面为 `inventory/E115RegeneratorMenu` 与 `client/E115RegeneratorScreen`：面板使用本模组那张 `textures/gui/e_115_regenerator.png`（256x256 画布，176x166 的面板绘制在左上角），不注册 sprite，也不在屏幕中另行绘制其他内容；格子坐标全部参照原版 `DispenserMenu`——机器那一格取原版 3x3 的正中 (80, 35)，背包从 (8, 84) 起，快捷栏从 (8, 142) 起，面板上的凹槽即按这几个数值绘制；打开界面通过 `IMenuProviderExtension#writeClientSideData` 传入坐标，并通过 `IMenuTypeExtension.create` 创建类型，与 051 使用同一套做法。资源为 `blockstates/e_115_regenerator.json` 一个变体（该方块没有状态），外加 `models/block/e_115_regenerator.json`（`cube_bottom_top`，含顶、侧、底三张贴图）与 `loot_table/blocks/e_115_regenerator.json`，物品模型指向方块模型，方块进入 `#minecraft:mineable/pickaxe`，并在创造栏中排在主栏目。规格见 `gametest/E115RegeneratorTests`：摆好机器后直接调用 `serverTick`，断言随机判定的分母与每 tick 抽取次数均与随机刻那一档一致、条件满足时运行足够长的时间必然产出且产出的是 115 物品、顶面 115 自身发出的信号不计作侧面信号（运行足够长也不产出）、顶上的条件缺少任意一条都不成立（食用到一半 / 未撒粉 / 空着）、产物格已满时不再放入、漏斗只从底面抽取且任何面都无法放入、手持 115 时返回 `SKIP_DEFAULT_BLOCK_INTERACTION` 而其他物品走默认流程、产出音效即羊毛放置音效。
 
-试验物品 051 是拆解台那台机器，方块属性照抄暮色森林 `twilightforest:uncrafting_table` 的注册参数（`ignitedByLava`、`mapColor(FIRE)`、`sound(WOOD)`、`strength(2.5)`，也一起进 `#minecraft:mineable/axe`），状态只有一个 `active`：有燃料在烧时换成 `_active` 那套贴图，`Properties.lightLevel` 按它给 13 级光（数字同原版熔炉的 `litBlockEmission(13)`；原版那个辅助方法写死了 `BlockStateProperties.LIT`，只能自己写一行），`animateTick` 照 `FurnaceBlock` 的音效段以 10% 概率放 `block.furnace.fire_crackle`——烟与火粒子没抄，因为原版是从 `FACING` 那一面喷的，本方块四面对称、没有朝向状态。与拆解台的功能差别（面板只有拆解、不收经验、不换配方、烧燃料、直接出货）写在 `block/entity/Experiment051BlockEntity` 的类注释里，机器刻骨架照原版熔炉的 `AbstractFurnaceBlockEntity#serverTick`，只是把「有没有活干」从一格结果换成 3x3 出料格（`canStore`），任何一格放不下就停工、进度清零
+试验物品 051 是拆解台那台机器，其方块属性参照暮色森林 `twilightforest:uncrafting_table` 的注册参数（`ignitedByLava`、`mapColor(FIRE)`、`sound(WOOD)`、`strength(2.5)`，同时也一并进入 `#minecraft:mineable/axe`）；状态只有一个 `active`：有燃料燃烧时切换为 `_active` 那套贴图，`Properties.lightLevel` 据此提供 13 级光照（数值与原版熔炉的 `litBlockEmission(13)` 相同；原版那个辅助方法写死了 `BlockStateProperties.LIT`，因此只能自行编写一行）；`animateTick` 参照 `FurnaceBlock` 的音效部分以 10% 概率播放 `block.furnace.fire_crackle`——烟与火粒子未被沿用，因为原版是从 `FACING` 那一面喷出的，而本方块四面对称且没有朝向状态。与拆解台的功能差别（面板只有拆解、不收取经验、不更换配方、燃烧燃料、直接产出）写在 `block/entity/Experiment051BlockEntity` 的类注释中；机器刻的骨架参照原版熔炉的 `AbstractFurnaceBlockEntity#serverTick`，只是把「是否有活可干」从一格结果改为 3x3 出料格（`canStore`），任何一格放不下即停工，并将进度清零。
 
-产物与拆解台同源靠三样东西：`crafting/UncraftingResolver` 按 `UncraftingMenu#getRecipesFor(ItemStack, Level)` 的顺序取第 0 条（先反查合成配方，再拆解配方，最后才是本方块自己加的熔炼回退），布局照拆解台按宽高铺到 3x3，`compat/TwilightUncrafting` 用注册表加反射读暮色森林的配方类型、`isItemStackAnIngredient`、`getCount` 与那一组白黑名单配置——源码里一个 `twilightforest.*` 的 import 都没有，缺 jar 也能编译。配方扫描比熔炉的 `CachedCheck` 贵，所以只在原料换了、数量变多了、不够当前配方吃了、`RecipeManager` 实例换了（数据包重载）时才重扫
+产物与拆解台保持同源依靠三样东西：`crafting/UncraftingResolver` 按 `UncraftingMenu#getRecipesFor(ItemStack, Level)` 的顺序取第 0 条（先反查合成配方，再查拆解配方，最后才是本方块自行添加的熔炼回退），并按拆解台的宽高将布局铺到 3x3；`compat/TwilightUncrafting` 通过注册表加反射读取暮色森林的配方类型、`isItemStackAnIngredient`、`getCount` 与那一组白名单及黑名单配置——源码中没有任何 `twilightforest.*` 的 import，因此缺少该 jar 仍可编译。配方扫描的开销高于熔炉的 `CachedCheck`，因此只在原料更换、数量增加、不足以满足当前配方、或 `RecipeManager` 实例更换（数据包重载）时重新扫描。
 
-只有拆解配方没有合成配方的物品（例如试验物品 017：四个钢叶加一片黑树树叶，`data/dawnduskterminal/recipe/experiment_017_uncrafting.json`）照暮色森林的 `twilightforest:uncrafting` 格式写：`input` 是能进机器的那件，`input_count` 是吃几个（省了就是 1），`key`/`pattern` 就是 3x3 产物网格，空格子不产东西；`cost` 是暮色森林自己那张拆解台收的经验等级，本方块不扣等级所以写 0 就行。这类配方要读暮色森林的类型，没装暮色森林时会在配方加载阶段报一条解析错误——暮色森林是硬依赖，可接受
+只有拆解配方而没有合成配方的物品（例如试验物品 017：四个钢叶加一片黑树树叶，见 `data/dawnduskterminal/recipe/experiment_017_uncrafting.json`）按暮色森林的 `twilightforest:uncrafting` 格式编写：`input` 是可以进入机器的那件物品，`input_count` 是消耗的数量（省略时为 1），`key`/`pattern` 就是 3x3 产物网格，空格子不产出物品；`cost` 是暮色森林那张拆解台自身收取的经验等级，本方块不扣除等级，因此写 0 即可。这类配方需要读取暮色森林的类型，未安装暮色森林时会在配方加载阶段报告一条解析错误——暮色森林是硬依赖，因此这一行为可以接受。
 
-界面是 `inventory/Experiment051Menu` 加 `client/Experiment051Screen`，面板 186x166（`textures/gui/experiment_051.png`，比原版熔炉宽一圈才放得下 3x3），火焰与箭头不自己画，直接 `blitSprite` 原版熔炉的 `container/furnace/lit_progress` 与 `container/furnace/burn_progress`，所以面板贴图里那两个空框的位置必须与菜单的 `FLAME_`/`ARROW_` 常量对齐。坐标走 `IMenuProviderExtension#writeClientSideData`（原版的开包不带坐标），菜单类型用 `IMenuTypeExtension.create`。漏斗顶面进原料、侧面进燃料、底面抽产物，合法性统一走方块实体的 `canPlaceItem`，界面与漏斗不会走岔
+界面为 `inventory/Experiment051Menu` 与 `client/Experiment051Screen`，面板为 186x166（`textures/gui/experiment_051.png`，比原版熔炉宽一圈才足以容纳 3x3）；火焰与箭头不自行绘制，而是直接 `blitSprite` 原版熔炉的 `container/furnace/lit_progress` 与 `container/furnace/burn_progress`，因此面板贴图中那两个空框的位置必须与菜单的 `FLAME_`/`ARROW_` 常量对齐。坐标通过 `IMenuProviderExtension#writeClientSideData` 传递（原版的开包不携带坐标），菜单类型使用 `IMenuTypeExtension.create`。漏斗的顶面输入原料，侧面输入燃料，底面抽取产物，合法性判定统一由方块实体的 `canPlaceItem` 处理，因此界面与漏斗的行为不会出现分歧。
 
-资源是 `blockstates/experiment_051.json` 两个变体加 `models/block/experiment_051[_active].json`（`cube_bottom_top`，顶/侧/底三张贴图各有 `_active` 版）、`loot_table/blocks/experiment_051.json`，物品模型指向方块模型。规格在 `gametest/Experiment051Tests`，机器刻是直接调 `serverTick` 跑完的，不靠 GameTest 等方块实体自然刻
+资源为 `blockstates/experiment_051.json` 两个变体，外加 `models/block/experiment_051[_active].json`（`cube_bottom_top`，顶、侧、底三张贴图各有 `_active` 版本）与 `loot_table/blocks/experiment_051.json`，物品模型指向方块模型。规格见 `gametest/Experiment051Tests`：机器刻通过直接调用 `serverTick` 运行完毕，不依赖 GameTest 等待方块实体自然刻。
 
-试验物品 052 是照砷铅铁反应堆做的那颗方雷，方块在 `block/Experiment052Block`，状态只有一个 `active`：收到**任意一个**红石信号（`Level#hasNeighborSignal`，红石粉/红石块/贴面拉杆/中继器都算）就换成 `active`，模型换 `experiment_052_glow`、`Properties.lightLevel` 给 15 级光、放一声 `experiment_052_ignite`，再 `scheduleTick` 排 `FUSE_TICKS` = 60 tick（3 秒）的引信；`tick` 到点就炸，点着以后断电也停不下来（没有取消分支）。触发只认「从没点着变成点着」这一次，`onPlace` 也问一遍，所以摆在一片已经通着电的位置上会立刻点火。爆炸本体在 `world/CarminiteBlast#large`：走 `ServerLevel#explode` 那个带粒子与音效参数的十二参重载，粒子参数两档都填 `particle_carminite_blast`、音效填 `experiment_052_explode`——这个重载把两者塞进 `ClientboundExplodePacket` 一起发给客户端，服务端不再生成任何原版 `explosion`/`explosion_emitter` 粒子；随后本模组自己放两层粒子：先是一圈 48 颗的逆时针旋臂（`CarminiteBlast#ring`：按角度铺开、越外圈转过的角度越多，水平分量取 `(cos θ, -sin θ)`，速度 0.45→1.35，带竖向抖动），再撒一遍 `particle_carminite_blast`——与反应场那种 `particle_carminite_effect` **同一批八帧贴图**、只换一份更慢的帧序（`CarminiteParticle#blastProvider`，帧间隔 3 tick、寿命 20 tick，反应场那种保持原样），分布照原版爆炸的性子来：**落在球形范围里，半径 = 威力本身**（不乘系数，威力 6 → 6 格、威力 2 → 2 格），颗数随威力涨（威力 × 18，夹在 24~160 之间），每颗沿半径向外带一点**小**速度（0.05~0.20）；位置与初速都得一颗一颗算，所以走 `sendParticles` 的 `count == 0` 那条路。再补一颗烟花白闪 `minecraft:flash`、附近地面按威力补火（与原版一样跟威力走：威力 × 3 团，最少 3 团；撒开半径 = 威力、往下找 威力/3 格，威力 6 → 18 团），甩出 0~15 个碎片。爆炸范围内的同类方块会连锁，但一次最多五个：`CarminiteBlast#protectArmedBlocks` 挂在 `ExplosionEvent.Detonate` 上，主爆炸进行中先把 `getAffectedBlocks()`（就是 `Explosion#getToBlow()`）里**所有** `experiment_052` 摘掉——这种方块的爆炸不拆同类方块，范围内没被连锁到的那些就原样立着；再从摘下来的位置里挑离爆心最近的五个，把状态直接点亮并排一个 **1~10 tick 的随机**计划刻——跳过点火（不放音效、不等 3 秒引信），到点自己炸。每个被引爆的方块再走一遍同样的流程，于是连锁最多五路、每跳随机 1~10 tick，多出来的同类方块会被后续的连锁卷进去。另外每次爆炸（主爆炸与碎片的小爆炸都算）都会把附近刷成 `dawnduskterminal:old_growth_birch_forest`：走原版 `/fillbiome` 的那条实现 `FillBiomeCommand#fill`（按 4×4×4 单元改数据、会给附近玩家发包同步），半径 = 威力 × 2 格（最少 4 格），调用前先把半径覆盖的区块载进来，改失败就跳过、不抛异常。资源是 `blockstates/experiment_052.json` 两个变体加 `models/block/experiment_052[_glow].json`（`cube_all`）、`loot_table/blocks/experiment_052.json`，物品模型指向方块模型
+试验物品 052 是参照砷铅铁反应堆制作的那颗方雷，方块位于 `block/Experiment052Block`，状态只有一个 `active`：收到**任意一个**红石信号（`Level#hasNeighborSignal`，红石粉、红石块、贴面拉杆、中继器都计算在内）即切换为 `active`，模型更换为 `experiment_052_glow`，`Properties.lightLevel` 提供 15 级光照，播放一声 `experiment_052_ignite`，再通过 `scheduleTick` 排入 `FUSE_TICKS` = 60 tick（3 秒）的引信；`tick` 到达该时刻即爆炸，点燃之后即使断电也无法停止（没有取消分支）。触发只承认「从未点燃变为点燃」这一次状态变化，`onPlace` 也会执行一次同样的判断，因此摆放在已经通电的位置上会立即点火。爆炸本体位于 `world/CarminiteBlast#large`：它调用 `ServerLevel#explode` 那个携带粒子与音效参数的十二参重载，粒子参数两档都填入 `particle_carminite_blast`，音效填入 `experiment_052_explode`——该重载把两者写入 `ClientboundExplodePacket` 一并发送给客户端，服务端不再生成任何原版 `explosion`/`explosion_emitter` 粒子；随后本模组自行生成两层粒子：先是一圈 48 颗的逆时针旋臂（`CarminiteBlast#ring`：按角度铺开，越靠外圈转过的角度越大，水平分量取 `(cos θ, -sin θ)`，速度由 0.45 增至 1.35，并带竖向抖动），再生成一遍 `particle_carminite_blast`——它与反应场那种 `particle_carminite_effect` 使用**同一批八帧贴图**，只换用一份帧序更慢的配置（`CarminiteParticle#blastProvider`，帧间隔 3 tick、寿命 20 tick，反应场那种保持原样），分布按原版爆炸的规律确定：**落在球形范围内，半径等于威力本身**（不乘系数，威力 6 对应 6 格、威力 2 对应 2 格），颗数随威力增加（威力 × 18，限定在 24~160 之间），每颗沿半径向外带有**较小**的初速（0.05~0.20）；由于位置与初速都必须逐颗计算，因此采用 `sendParticles` 的 `count == 0` 那条路径。之后补充一颗烟花白色闪光粒子 `minecraft:flash`，并按威力在附近地面补火（与原版一致，随威力变化：威力 × 3 团，最少 3 团；撒开半径等于威力，向下查找 威力/3 格，威力 6 时为 18 团），同时甩出 0~15 个碎片。爆炸范围内的同类方块会发生连锁，但一次最多五个：`CarminiteBlast#protectArmedBlocks` 挂在 `ExplosionEvent.Detonate` 上，主爆炸进行中先把它从 `getAffectedBlocks()`（即 `Explosion#getToBlow()`）中**所有** `experiment_052` 移除——这种方块的爆炸不破坏同类方块，范围内未被连锁到的那些便保持原样；再从移除的位置中挑选距离爆心最近的五个，直接点亮其状态并排入一个 **1~10 tick 的随机**计划刻——跳过点火（不播放音效，也不等待 3 秒引信），到点后自行爆炸。每个被引爆的方块都会重复同样的流程，因此连锁最多五路，每跳随机 1~10 tick，多出来的同类方块会被后续的连锁卷入。此外，每次爆炸（主爆炸与碎片的小爆炸都计入）都会把附近区域刷成 `dawnduskterminal:old_growth_birch_forest`：它调用原版 `/fillbiome` 的那条实现 `FillBiomeCommand#fill`（按 4×4×4 单元修改数据，并向附近玩家发包同步），半径等于威力 × 2 格（最少 4 格），调用前先把半径覆盖的区块载入，修改失败则跳过，不抛出异常。资源为 `blockstates/experiment_052.json` 两个变体，外加 `models/block/experiment_052[_glow].json`（`cube_all`）与 `loot_table/blocks/experiment_052.json`，物品模型指向方块模型。
 
-砷铅铁火焰是 `block/CarminiteFireBlock` 继承原版 `BaseFireBlock` 而不是 `FireBlock`：蔓延、烧方块、按火烧掉可燃物全在 `FireBlock#tick` 里，`BaseFireBlock` 只留「火这个方块」该有的东西，`canBurn` 再钉死成 `false`。`entityInside` 整个换掉（原版那段会给 8 秒着火），只留接触掉 2 点，频率交给生物的受伤无敌时间，于是站在原地是每 0.5 秒 2 点；伤害类型是本模组的 `carminite_fire`，**只进 `#minecraft:no_knockback`、不进 `#minecraft:is_fire`**——进了 `is_fire` 会被 `Entity#isInvulnerableTo` 里的火焰免疫挡下来，而砷铅铁火焰要能烧穿烈焰人那类；`effects: burning` 只换受击音，不会点火。熄灭**照抄原版火焰**（`FireBlock#tick` 去掉蔓延）：每 30~39 tick 一个计划刻，淋雨按 `0.2 + age × 0.03` 的概率灭，`AGE` 每次长 0~1，没落在火源上又压不出可燃邻居时 `age > 3` 就灭——也就是压在石头上的原版火焰的寿命；支撑没了立刻掉，`onPlace` 不调 `super`（那会在主世界/下界顺手点出下界门）。模型是**原版火焰那一套**：状态有 `north`/`east`/`south`/`west`/`up` 五个朝向位加 `age`，方块状态是 `minecraft:fire` 同构的六个 multipart 段，十张模型 `carminite_fire_{floor,side,side_alt,up,up_alt}[01]` 各继承对应的 `template_fire_*`、只换 `fire` 那个贴图变量、`render_type` 写 `minecraft:cutout`；某面要不要画板子由邻居的实心面决定（`isFaceSturdy`），所以贴着墙、顶着天花板会铺满整格。环境音与烟都不抄原版，改成 `animateTick` 每次撒三颗砷铅铁余烬 `particle_carminite_ember`（客户端的 `animateTick` 一秒才轮到单个方块两三次，再叠概率就看不见了，原版火焰也是靠每次三颗烟撑起来的）。余烬是另开的一种粒子：贴图就是原版红石粒子那组 `minecraft:generic_0..7`，尺寸是原版红石粒子的 1.5 倍（全程不变，没有随年龄涨大那套）、恒满亮、八张贴图按年龄播成序列帧、负重力往上抬 + 横向阻尼（`client/CarminiteEmberParticle`）；初速自己写，不走 `Particle` 那个会塞 ±0.4 随机速度的构造。碎片拖的红线也用同一种。方块属性照原版火焰（`replaceable`、`noCollission`、`instabreak`、`WOOL`、`DESTROY`），光 10 级、`noLootTable`、没有物品形态，只能由 052 的爆炸与碎片生成
+砷铅铁火焰是 `block/CarminiteFireBlock`，它继承原版的 `BaseFireBlock` 而不是 `FireBlock`：蔓延、烧毁方块以及按火消耗可燃物等行为全部位于 `FireBlock#tick` 中，而 `BaseFireBlock` 只保留「火这个方块」应有的内容，`canBurn` 再被固定为 `false`。`entityInside` 被整体替换（原版那一段会给予 8 秒着火状态），只保留接触时造成 2 点伤害，触发频率交由生物的受伤无敌时间控制，因此原地站立时为每 0.5 秒 2 点；伤害类型是本模组的 `carminite_fire`，它**只进入 `#minecraft:no_knockback`，不进入 `#minecraft:is_fire`**——若进入 `is_fire`，就会被 `Entity#isInvulnerableTo` 中的火焰免疫拦下，而砷铅铁火焰需要能够烧穿烈焰人这类生物；`effects: burning` 只替换受击音效，不会点燃目标。熄灭行为**沿用原版火焰**（即 `FireBlock#tick` 去掉蔓延）：每 30~39 tick 排入一个计划刻，淋雨时按 `0.2 + age × 0.03` 的概率熄灭，`AGE` 每次增长 0~1，未落在火源上且无法引燃相邻可燃方块时，`age > 3` 即熄灭——也就是压在石头上的原版火焰的寿命；支撑方块消失后立即掉落，`onPlace` 不调用 `super`（否则会在主世界与下界顺带点出下界门）。模型采用**原版火焰那一套**：状态包含 `north`/`east`/`south`/`west`/`up` 五个朝向位以及 `age`，方块状态为与 `minecraft:fire` 同构的六个 multipart 段，十张模型 `carminite_fire_{floor,side,side_alt,up,up_alt}[01]` 各自继承对应的 `template_fire_*`，只替换 `fire` 那个贴图变量，`render_type` 写作 `minecraft:cutout`；某一面是否需要绘制板子由邻居的实心面决定（`isFaceSturdy`），因此贴着墙面或顶着天花板时会铺满整格。环境音与烟均未沿用原版，改为在 `animateTick` 中每次生成三颗砷铅铁余烬 `particle_carminite_ember`（客户端的 `animateTick` 一秒才轮到单个方块两三次，若再叠加概率便无法看见；原版火焰的可见效果同样依靠每次三颗烟粒子维持）。余烬是另行增加的粒子类型：贴图使用原版红石粒子那组 `minecraft:generic_0..7`，尺寸为原版红石粒子的 1.5 倍（全程不变，没有随年龄增大的机制），始终满亮，八张贴图按年龄播放为序列帧，并具有负重力向上抬升与横向阻尼（`client/CarminiteEmberParticle`）；其初速由自身编写，不经过 `Particle` 那个会附加 ±0.4 随机速度的构造器。碎片拖出的红线也使用同一种粒子。方块属性参照原版火焰（`replaceable`、`noCollission`、`instabreak`、`WOOL`、`DESTROY`），光照 10 级，带 `noLootTable`，没有物品形态，只能由 052 的爆炸与碎片生成。
 
-碎片是 `entity/CarminiteShrapnelEntity` 继承 `ThrowableProjectile`：重力（0.03）与空气阻力（每 tick ×0.99）由父类给，本类只剩两支回调。客户端注册的是 `NoopRenderer`，外观只有每 tick 一颗 `particle_carminite_ember`；打中生物是 1~10 点随机、`damageSources().explosion(this, 发射者)`（原版爆炸伤害），弹体不消失、同一只生物只吃一次；打中生物与打中方块都会在命中点放一次小型爆炸（`CarminiteBlast#small`：威力 2、`ExplosionInteraction.NONE` 不破坏方块、一个把 `shouldDamageEntity` 与击退都关掉的 `ExplosionDamageCalculator`、音效是原版那声 `entity.generic.explode`、粒子同一套、白闪一颗）并补几团 `carminite_fire`；打中方块之后弹体消失，100 tick 还没撞到任何东西也自己消失。规格在 `gametest/Experiment052Tests`：占位号让出、物品是那个方块的 `BlockItem`、15 级光、一个信号就点、引信跑满 3 秒后方块没了、火焰掉 2 点且不点火、火焰按原版年龄机制自己烧完、碎片打的是爆炸伤害、碎片落地补火、方块状态与十张模型是原版火焰那套
+碎片是 `entity/CarminiteShrapnelEntity`，它继承 `ThrowableProjectile`：重力（0.03）与空气阻力（每 tick ×0.99）由父类提供，本类只剩两支回调。客户端注册的是 `NoopRenderer`，外观仅表现为每 tick 一颗 `particle_carminite_ember`；命中生物时造成 1~10 点随机伤害，使用 `damageSources().explosion(this, 发射者)`（原版爆炸伤害），弹体不消失，同一只生物只承受一次；命中生物与命中方块都会在命中点引发一次小型爆炸（`CarminiteBlast#small`：威力 2，`ExplosionInteraction.NONE` 不破坏方块，使用一个将 `shouldDamageEntity` 与击退都关闭的 `ExplosionDamageCalculator`，音效为原版那声 `entity.generic.explode`，粒子同一套，另加一颗白色闪光粒子），并补充几团 `carminite_fire`；命中方块之后弹体消失，若 100 tick 内尚未撞到任何对象也会自行消失。规格见 `gametest/Experiment052Tests`：占位号已让出、物品是那个方块的 `BlockItem`、15 级光照、一个信号即点燃、引信运行满 3 秒后方块消失、火焰造成 2 点伤害且不点燃、火焰按原版年龄机制自行烧尽、碎片造成的是爆炸伤害、碎片落地补火、方块状态与十张模型与原版火焰一致。
 
-试验物品 065 是反建器那一档里更高级的一台（这一件同样是本模组自己的设计），方块在 `block/Experiment065Block`：没有状态、没有 ticker，物品是它的 `BlockItem`，方块属性照 052 那一档的塔木机器（3.5 硬度、石头音效、`COLOR_ORANGE`、进 `#minecraft:mineable/pickaxe`），`Properties.lightLevel` 常亮 15 级。它压的场是 17×17×17（`world/Experiment065Field` 的 `RADIUS` 8），判定只有一句：**伤害由谁打出**——取 `DamageSource#getDirectEntity()`（没有才退到 `getEntity()`），那个实体在场里就把这一下取消掉。近战里「直接实体」是攻击者本人，射弹里是那颗箭 / 火球，爆炸里是 tnt 那颗实体，所以场里射出去的箭飞出场以后照常伤人、场外射进来的箭飞到人身上时已经在场里反而打不动，这一条是「攻击源自范围内」的直接后果，规格里专门钉了一条；环境伤害（摔落、火焰、虚空、仙人掌、饥饿）来源上没有实体，场不做任何判定。取消挂在 `LivingIncomingDamageEvent` 上：它在 `LivingEntity#hurt` 里排在无敌帧判定之后、一切减伤之前，取消掉等于这一下从来没发生过——没有伤害、没有击退、没有受击音、不消耗护盾耐久、也不进无敌帧；客户端那份 `hurt` 也会发这个事件，所以先挡掉非服务端。场心不靠每 tick 扫 17³ = 4913 格：`world/Experiment065Field` 按维度存一张 `Set<BlockPos>`，方块实体的 `onLoad` / `setRemoved` 管区块载入与卸载，方块的 `onPlace` / `onRemove` 管摆下与挖掉（所以摆下那一 tick 就生效，不必等下一 tick 的方块实体装载），伤害事件只扫现存的场心；每次判定还会回头核一遍那一格还是不是本方块，方块实体那边撤登记真漏了也不会留下一个打不掉伤害的幽灵场，查之前先问 `ChunkSource#hasChunk`（`LevelReader` 那几个 `hasChunkAt` 在 1.21.1 已废弃），不会为了这个把区块读进来。方块实体没有 `ticker`：场是按位置查的，没有每 tick 要做的事。贴图只有 `experiment_065` 一张：方块自己发 15 级光，贴图直接读满亮，不再叠发光层（原先那套外胀 0.02 的双层 cutout 模型已经拆掉，`experiment_065_glow.png` 现在没有任何引用）。场的范围由 `world/CubeFieldMarker` 画出来，整段照暮色森林反建器（`twilightforest:antibuilder` 的 `AntibuilderBlockEntity#tick` / `makeOutline` / `drawParticleLine`，对照 4.8.3345 源码）写：红石粉（`DustParticleOptions.REDSTONE`）画框线，每 tick 在方块自己那一格里飘一颗粉尘，每 10 次挑一次连画三组框线；每组是两段——一条斜线（中心到某个角，或起始角到中心，随机二选一）加那个角所在的那条棱，十二条棱分顶面四条、底面四条、竖直四条；框的端点在 `pos ± RADIUS` 与 `pos + RADIUS + 1`，也就是方块中心往外各 8.5 格（`CubeFieldMarker#halfExtent`），正好压在场最外层那几格的外侧面上。与那边的三处差别只有：半径（那边 4，这里 8）、每条线的粒子数（那边一段固定 16 颗、棱长 5 格；这里按长度每格 3 颗，密度一致）、以及场里到底发生什么。粒子只在客户端画、且只在 16 格内有活着的玩家时画（那边同样是 `hasNearbyAlivePlayer(..., 16)`）：两个方块都把 `EntityBlock#getTicker` 覆成「客户端给 `CubeFieldMarker::tick`、服务端返回 `null`」，服务端一颗都不发、也不走 `sendParticles`资源是 `blockstates/experiment_065.json` 一个变体（没有状态）加 `models/block/experiment_065.json`（就是 `cube_all`）、`loot_table/blocks/experiment_065.json`，物品模型指向方块模型（占位物品原来那张 `minecraft:item/generated` 加 `experiment_temp` 的图标一并换掉）。规格在 `gametest/Experiment065Tests`：占位号已让出、物品是那个方块的 `BlockItem`、方块没有状态且常亮 15 级光、进了 `#minecraft:mineable/pickaxe`、场是 17 格（三条轴各在 8 格处打不动、9 格处打得动）、场里打场里与打场外都打不动、场外打进来照常、环境伤害不拦、射弹按弹体位置算、摆下当场生效而挖掉就停、模型是单层 `cube_all` 只有一张贴图、服务端没有 ticker
+试验物品 065 是反建器那一档中更高级的一台（这一件同样是本模组自己的设计），方块位于 `block/Experiment065Block`：它没有状态，也没有 ticker，物品是它的 `BlockItem`，方块属性参照 052 那一档的塔木机器（3.5 硬度、石头音效、`COLOR_ORANGE`、进入 `#minecraft:mineable/pickaxe`），`Properties.lightLevel` 常亮 15 级。它压制的作用场为 17×17×17（`world/Experiment065Field` 的 `RADIUS` 8），判定只有一条：**伤害由谁打出**——取 `DamageSource#getDirectEntity()`（不存在时才退回到 `getEntity()`），若该实体位于场内，则取消这一次伤害。近战中的「直接实体」是攻击者本人，射弹中是那颗箭或火球，爆炸中是 tnt 那颗实体，因此从场内射出的箭飞出场后照常造成伤害，而场外射入的箭在飞到目标身上时已位于场内，反而无法造成伤害；这一条是「攻击源自范围内」的直接后果，规格中专门为此设置了一条断言。环境伤害（摔落、火焰、虚空、仙人掌、饥饿）的来源不存在实体，场不做任何判定。取消挂在 `LivingIncomingDamageEvent` 上：它在 `LivingEntity#hurt` 中位于无敌帧判定之后、一切减伤之前，取消的效果等同于这一次伤害从未发生——没有伤害、没有击退、没有受击音、不消耗护盾耐久，也不进入无敌帧；客户端那份 `hurt` 也会发出该事件，因此先拦截非服务端的情况。场的中心不依靠每 tick 扫描 17³ = 4913 格：`world/Experiment065Field` 按维度存储一张 `Set<BlockPos>`，方块实体的 `onLoad` / `setRemoved` 负责区块载入与卸载，方块的 `onPlace` / `onRemove` 负责摆放与挖掘（因此摆放的那一 tick 即生效，不必等待下一 tick 的方块实体装载），伤害事件只扫描现存的场中心；每次判定还会回头核对那一格是否仍是本方块，即使方块实体那边的撤登记确有遗漏，也不会留下一个无法造成伤害的幽灵场；查询之前先调用 `ChunkSource#hasChunk`（`LevelReader` 那几个 `hasChunkAt` 在 1.21.1 中已废弃），不会因此将区块读入。方块实体没有 `ticker`，因为场按位置查询，没有每 tick 必须执行的操作。贴图只有 `experiment_065` 一张：方块自身发出 15 级光照，贴图直接读取为满亮，不再叠加发光层（原先那套向外膨胀 0.02 的双层 cutout 模型已经拆除，`experiment_065_glow.png` 目前没有任何引用）。场的范围由 `world/CubeFieldMarker` 绘制，整段参照暮色森林反建器（`twilightforest:antibuilder` 的 `AntibuilderBlockEntity#tick` / `makeOutline` / `drawParticleLine`，对照 4.8.3345 源码）编写：使用红石粉（`DustParticleOptions.REDSTONE`）绘制框线，每 tick 在方块自身那一格中飘浮一颗粉尘，每 10 次选取一次并连续绘制三组框线；每组由两段构成——一条斜线（中心到某个角，或起始角到中心，随机二选一）加上该角所在的那条棱，十二条棱分为顶面四条、底面四条与竖直四条；框的端点为 `pos ± RADIUS` 与 `pos + RADIUS + 1`，即方块中心往外各 8.5 格（`CubeFieldMarker#halfExtent`），恰好压在场最外层那几格的外侧面上。与该实现的差别只有三处：半径（那边为 4，这里为 8）、每条线的粒子数（那边一段固定 16 颗、棱长 5 格；这里按长度每格 3 颗，密度一致），以及场内究竟发生什么。粒子只在客户端绘制，并且只在 16 格内存在存活玩家时绘制（那边同样使用 `hasNearbyAlivePlayer(..., 16)`）：两个方块都把 `EntityBlock#getTicker` 覆写为「客户端取得 `CubeFieldMarker::tick`，服务端返回 `null`」，服务端不发送任何粒子，也不使用 `sendParticles`。资源为 `blockstates/experiment_065.json` 一个变体（没有状态），外加 `models/block/experiment_065.json`（即 `cube_all`）与 `loot_table/blocks/experiment_065.json`，物品模型指向方块模型（占位物品原来那张 `minecraft:item/generated` 加 `experiment_temp` 的图标也一并替换）。规格见 `gametest/Experiment065Tests`：占位号已让出、物品是那个方块的 `BlockItem`、方块没有状态且常亮 15 级光照、进入 `#minecraft:mineable/pickaxe`、场为 17 格（三条轴各在 8 格处无法造成伤害、9 格处可以造成伤害）、场内攻击场内与攻击场外都无法造成伤害、场外攻击进来照常生效、环境伤害不受拦截、射弹按弹体位置计算、摆放当 tick 生效而挖掘后即停止、模型为单层 `cube_all` 且只有一张贴图、服务端没有 ticker。
 
-试验物品 069 是反建器那一档里更高级的第二台，与 065 共用 `world/CubeField` 那张 17×17×17 的场心表（按维度存 `Set<BlockPos>`、方块实体 `onLoad`/`setRemoved` 管区块载入卸载、方块 `onPlace`/`onRemove` 管摆下与挖掉、判定时回头核一遍那一格还是不是本方块），只是场里发生的事换了：**落在场里的方块更新不处理**。概念取自原版更新抑制器——更新链把 `CollectingNeighborUpdater` 的计数顶到上限之后，后来排进队列的更新整批丢掉；这台机器把「一段时间」改成「一个固定范围」。判定只有一句 `Experiment069Field#suppressed(level, pos)`，**看被更新那一格**：更新总是「某一格收到了一个更新」，收到更新的那一格在场里才丢掉，所以场里的变化照常会把更新送给场外的邻居。四个入口由三个 mixin 送进来：`mixin/BlockStateUpdateSuppressMixin` 挡 `BlockStateBase#handleNeighborChanged`（邻居更新唯一的投递口，`NeighborUpdater.executeUpdate` 由 `CollectingNeighborUpdater` 的三种 `NeighborUpdates` 调的就是它）、`#tick`（方块计划刻，`ServerLevel#tickBlock` 到点调它）与 `#randomTick`（随机刻，`ServerLevel#tickChunk` 选中就调它）；`mixin/LevelShapeUpdateSuppressMixin` 挡 `Level#neighborShapeChanged`（形状更新的排队口，`BlockStateBase#updateNeighbourShapes` 按六个方向逐个调它，挡在这里而不是挡 `BlockStateBase#updateShape`，后者还被结构模板落地与区块升级数据直接调，挡它会把那两条路线一起挡歪）；`mixin/FluidStateUpdateSuppressMixin` 挡 `FluidState#tick` 与 `#randomTick`（水与岩浆的流动走 `ServerLevel#tickFluid` 那条流体队列，与方块刻不是一条路）。挡在**执行口**而不是排队口，就是更新抑制器本来的面貌：更新照样排进队列，排到场上时被丢掉。没有场的地方每条只花一次 `HashMap` 查表——邻居更新与随机刻都是每秒上千次的热路径，这里不能有更贵的东西。方块属性与 065 同档，地图色用 `TERRACOTTA_ORANGE` 与 065 的 `COLOR_ORANGE` 分开；资源是 `blockstates/experiment_069.json` 一个变体加 `models/block/experiment_069.json`（与 065 一样就是 `cube_all`，单层一张贴图）、`loot_table/blocks/experiment_069.json`，物品模型指向方块模型；场有多大同样由 `world/CubeFieldMarker` 那套红石粉框线画出来（与 065 同一份，客户端画、16 格内有玩家才画、服务端不挂 ticker）。规格在 `gametest/Experiment069Tests`：占位号已让出、物品是那个方块的 `BlockItem`、方块没有状态且常亮 15 级光、进了 `#minecraft:mineable/pickaxe`、场是 17 格，邻居更新（红石灯通着电不亮）、形状更新（栅栏不连）、计划刻（沙不落）、随机刻（冰不化）、流体刻（水不流）各钉一条且各带场外对照，摆下当场生效而挖掉就停，模型是单层 `cube_all`、立方框的八个角在中心外各 8.5 格、服务端没有 ticker；这些测试**一条一个 batch**——场是 17 格、测试结构只有 16 格，一台机器压的场必然伸到自己的结构外面，而同一个 batch 里的测试是并行的（阵位只隔 5 格），挤在一起会互相压更新，之前 052 的连锁测试正是这样被压红的
+试验物品 069 是反建器那一档中更高级的第二台，与 065 共用 `world/CubeField` 那张 17×17×17 的场中心表（按维度存储 `Set<BlockPos>`，方块实体 `onLoad`/`setRemoved` 负责区块载入与卸载，方块 `onPlace`/`onRemove` 负责摆放与挖掘，判定时回头核对那一格是否仍是本方块），只是场内发生的事有所不同：**落在场内的方块更新不被处理**。其概念取自原版更新抑制器——更新链把 `CollectingNeighborUpdater` 的计数顶到上限之后，之后排入队列的更新会被整批丢弃；这台机器把「一段时间」替换为「一个固定范围」。判定只有一条 `Experiment069Field#suppressed(level, pos)`，且**考察被更新的那一格**：更新总是「某一格收到了一个更新」，只有收到更新的那一格位于场内时才被丢弃，因此场内的变化照常会把更新发送给场外的邻居。四个入口由三个 mixin 引入：`mixin/BlockStateUpdateSuppressMixin` 拦截 `BlockStateBase#handleNeighborChanged`（邻居更新唯一的投递口，`NeighborUpdater.executeUpdate` 由 `CollectingNeighborUpdater` 的三种 `NeighborUpdates` 调用的正是它）、`#tick`（方块计划刻，`ServerLevel#tickBlock` 到点调用它）与 `#randomTick`（随机刻，`ServerLevel#tickChunk` 选中后调用它）；`mixin/LevelShapeUpdateSuppressMixin` 拦截 `Level#neighborShapeChanged`（形状更新的排队口，`BlockStateBase#updateNeighbourShapes` 按六个方向逐个调用它；此处拦截而不拦截 `BlockStateBase#updateShape`，因为后者还会被结构模板落地与区块升级数据直接调用，若拦截它，那两条路径也会一并受到影响）；`mixin/FluidStateUpdateSuppressMixin` 拦截 `FluidState#tick` 与 `#randomTick`（水与岩浆的流动经由 `ServerLevel#tickFluid` 那条流体队列处理，与方块刻不是同一条路径）。在**执行口**而非排队口拦截，正是更新抑制器本来的设计：更新照常排入队列，排到场内时被丢弃。没有场的地方每条只消耗一次 `HashMap` 查表——邻居更新与随机刻都是每秒上千次的热路径，此处不能引入开销更高的操作。方块属性与 065 同档，地图色使用 `TERRACOTTA_ORANGE`，与 065 的 `COLOR_ORANGE` 区分；资源为 `blockstates/experiment_069.json` 一个变体，外加 `models/block/experiment_069.json`（与 065 一样即 `cube_all`，单层一张贴图）与 `loot_table/blocks/experiment_069.json`，物品模型指向方块模型；场的大小同样由 `world/CubeFieldMarker` 那套红石粉框线绘制（与 065 同一份实现，在客户端绘制，16 格内存在玩家时才绘制，服务端不挂载 ticker）。规格见 `gametest/Experiment069Tests`：占位号已让出、物品是那个方块的 `BlockItem`、方块没有状态且常亮 15 级光照、进入 `#minecraft:mineable/pickaxe`、场为 17 格，邻居更新（红石灯通电后不亮）、形状更新（栅栏不连接）、计划刻（沙子不坠落）、随机刻（冰不融化）、流体刻（水不流动）各设置一条断言，且各带场外对照，摆放当 tick 生效而挖掘后即停止，模型为单层 `cube_all`、立方框的八个角位于中心外各 8.5 格、服务端没有 ticker；这些测试**一条一个 batch**——场为 17 格，而测试结构只有 16 格，一台机器压制的场必然伸到自身结构之外，而同一个 batch 内的测试是并行执行的（阵位只相隔 5 格），挤在一起会互相压制更新，此前 052 的连锁测试正是因此被压制为失败。
 
-试验物品 004 是照熔炉工作的那台机器，方块继承原版 `AbstractFurnaceBlock`，状态就是熔炉那对 `facing` 与 `lit`，摆放朝向、旋转镜像、比较器、开界面都走原版抽象层；方块实体没有继承 `AbstractFurnaceBlockEntity`：它的 `serverTick` 是静态方法、每锅的时间由私有方法按配方现算，两处都没有留给子类的口子，而「烧食物快一倍」恰恰要改这两处，所以抄了一份三格容器骨架（`DataComponents.FOOD` 的产物按配方时间的一半算，200 → 100），四个数据槽的索引与熔炉完全一致，界面因此能直接复用原版那套。界面是 `inventory/Experiment004Menu` 继承 `AbstractFurnaceMenu` 加 `client/Experiment004Screen` 继承 `AbstractFurnaceScreen`，面板贴图与火苗、箭头两个 sprite 都用原版熔炉的，配方书跟着原版走。菜单类型单独注册 `experiment_004`：原版 `FurnaceMenu` 把 `MenuType.FURNACE` 写死在构造参数里，继承它的话客户端会按熔炉界面开，本模组的类型与屏幕就白注册了；方块坐标不往客户端传，原版熔炉界面本来就拿空容器、内容靠槽位同步。产物格换成自己的 `ResultSlot`：原版 `FurnaceResultSlot` 只在容器是 `AbstractFurnaceBlockEntity` 时才结算经验，这里改成按 `recipesUsed` 结算，取产物与敲方块时撒经验，行为与熔炉一致。不产生粒子：熔炉的烟与火写在 `FurnaceBlock#animateTick` 里，本方块不是那一支，只在 `Experiment004Block#animateTick` 补了一成概率的火响。资源是 `blockstates/experiment_004.json` 八个变体（`facing` × `lit`）加 `models/block/experiment_004[_active].json`（`minecraft:block/orientable`，正面 `experiment_004_forward[_active]`，其余五面同一张 `experiment_004`）、`loot_table/blocks/experiment_004.json`，物品模型指向方块模型；规格在 `gametest/Experiment004Tests`
+试验物品 004 是参照熔炉工作的那台机器，方块继承原版 `AbstractFurnaceBlock`，状态就是熔炉那对 `facing` 与 `lit`，摆放朝向、旋转镜像、比较器与打开界面都走原版抽象层；方块实体没有继承 `AbstractFurnaceBlockEntity`：它的 `serverTick` 是静态方法，每一锅的时间由私有方法按配方即时计算，这两处都没有留给子类的扩展点，而「烧食物快一倍」恰恰需要改动这两处，因此复制了一份三格容器骨架（`DataComponents.FOOD` 的产物按配方时间的一半计算，200 → 100），四个数据槽的索引与熔炉完全一致，界面因此可以直接复用原版那一套。界面为 `inventory/Experiment004Menu` 继承 `AbstractFurnaceMenu`，加上 `client/Experiment004Screen` 继承 `AbstractFurnaceScreen`，面板贴图以及火苗、箭头两个 sprite 都使用原版熔炉的，配方书跟随原版。菜单类型单独注册 `experiment_004`：原版 `FurnaceMenu` 把 `MenuType.FURNACE` 写死在构造参数中，若继承它，客户端会按熔炉界面打开，本模组注册的类型与屏幕则不会生效；方块坐标不向客户端传递，因为原版熔炉界面本来就获取空容器，内容依靠槽位同步。产物格替换为自己的 `ResultSlot`：原版 `FurnaceResultSlot` 只在容器是 `AbstractFurnaceBlockEntity` 时才结算经验，这里改为按 `recipesUsed` 结算，在取出产物与敲碎方块时释放经验，行为与熔炉一致。该方块不产生粒子：熔炉的烟与火写在 `FurnaceBlock#animateTick` 中，本方块不属于那一支，只在 `Experiment004Block#animateTick` 中补充了一成概率的火响。资源为 `blockstates/experiment_004.json` 八个变体（`facing` × `lit`），外加 `models/block/experiment_004[_active].json`（`minecraft:block/orientable`，正面为 `experiment_004_forward[_active]`，其余五面同一张 `experiment_004`）与 `loot_table/blocks/experiment_004.json`，物品模型指向方块模型；规格见 `gametest/Experiment004Tests`。
 
-试验物品 027 是那支画红石点的笔：`item/Experiment027Item` 按住右键不松（`getUseDuration` 72000，`use` 里两侧都 `startUsingItem`），`onUseTick` 每 tick 在服务端发一个粒子。落点由 `Player#pick(blockInteractionRange, 1.0F, false)` 取：射线走方块轮廓，打中方块就用 `BlockHitResult#getLocation()`，再沿命中面法线让出 0.02 格，免得粒子半边陷进方块里；看空或超出 `block_interaction_range` 属性（默认 4.5 格）时 `pick` 是 MISS，什么都不发。粒子类型是 `ModParticles#EXPERIMENT_027`（`SimpleParticleType`），客户端 provider 在 `client/Experiment027Particle`：继承 `TextureSheetParticle`、贴图表 `particles/particle_experiment_027.json` 直接借原版红石粒子那组 `minecraft:generic_4`，颜色按原版 `DustParticle` 的算法乘成红色，`quadSize` 在原版红石的 0.75 基准上再乘 0.5，初速 0、重力 0、`hasPhysics` 关掉，`lifetime` 写死 1200 tick（60 秒）——不用原版 `ParticleTypes.DUST` 就是因为它的寿命与随年龄收缩的尺寸都写死在 `DustParticleBase` 里。规格在 `gametest/Experiment027Tests`：占位号已让出、粒子类型注册过、正对石头时落点落在那个面上、看空与超距都是 null
+试验物品 027 是那支绘制红石点的笔：`item/Experiment027Item` 在按住右键不放时工作（`getUseDuration` 为 72000，`use` 中两侧都调用 `startUsingItem`），`onUseTick` 每 tick 在服务端生成一个粒子。落点由 `Player#pick(blockInteractionRange, 1.0F, false)` 获取：射线沿方块轮廓进行，命中方块时使用 `BlockHitResult#getLocation()`，再沿命中面法线让出 0.02 格，以免粒子有一半陷入方块内部；若看向空处或超出 `block_interaction_range` 属性（默认 4.5 格），`pick` 返回 MISS，则不生成任何粒子。粒子类型为 `ModParticles#EXPERIMENT_027`（`SimpleParticleType`），客户端 provider 位于 `client/Experiment027Particle`：它继承 `TextureSheetParticle`，贴图表 `particles/particle_experiment_027.json` 直接借用原版红石粒子那组 `minecraft:generic_4`，颜色按原版 `DustParticle` 的算法相乘为红色，`quadSize` 在原版红石 0.75 的基准上再乘 0.5，初速为 0，重力为 0，关闭 `hasPhysics`，`lifetime` 固定为 1200 tick（60 秒）——不使用原版 `ParticleTypes.DUST` 的原因在于它的寿命与随年龄收缩的尺寸都写死在 `DustParticleBase` 中。规格见 `gametest/Experiment027Tests`：占位号已让出、粒子类型已注册、正对石头时落点位于那个面上、看向空处与超出距离时均为 null。
 
-试验物品 043 是那台手持喷火器：单击右键，把暮色森林封装的喷火器（`twilightforest:encased_fire_jet`）从接过红石信号到冷却下来的整套过程沿视线放出去，逐拍对齐写在 `item/FireJetProcess` 里。方块那套在 `EncasedFireJetBlock#neighborChanged` 里从 IDLE 切到 POPPING 并放 jet_start（`block.comparator.click`，音量 0.3、音高 0.6），`FireJetBlockEntity#tickPopping` 在计数 20/40/60 各放 8 颗 `LAVA` 加一声 `block.lava.pop`，到 80 切 FLAME；`tickFlame` 跑 61 拍（计数 1..61，第 61 拍溢出归零后还处理一拍）：第 1 拍再放 jet_start，每 2 tick 一颗大烟加五路大火焰（中心一路、上下左右各偏 1 格，初速沿轴 0.75、两侧各带 0.05 向心），每 4 tick 一声 jet_active（`entity.ghast.shoot`），每 5 tick 对伤害立方体里的活物造成 2 点并点燃 300 tick，最后切 TIMEOUT。这里整段照抄，只把「方块朝上」换成「玩家的视线」：枪口是眼睛往前 1 格，右/上轴由视线算出来，四路火苗按这对轴摆，伤害立方体也一起转（沿轴 14 格、半径 2 格）；**枪口与朝向每 tick 重新绑到玩家身上**（`refresh`），走开、转身火跟着走、跟着转，玩家下线/死亡/换维度就断掉；施放期间把点火那只手换成别的东西，剩下的火改成从玩家**脚下**朝正上方喷、连玩家自己一起烧（那一档不再把射手排除在伤害判定外），换回 043 就恢复按视线喷。伤害抬到 4 点（方块是 2 点），点燃仍 300 tick，火焰免疫跳过、不看遮挡（同方块），射出者是玩家；伤害类型进了 `#minecraft:bypasses_cooldown`，所以每拍都真打进去，不会被受击后的无敌时间挡住。过程挂在 `ServerTickEvent.Post`（`DdtServerEvents`）上推进，所以单击一次就够，松手、换物品都不打断；不用 `startUsingItem`。大火焰粒子是 `particle/JetFlameParticleOptions` + `JetFlameParticleType` + 客户端 `client/JetFlameParticle`：尺寸是原版火焰粒子的五倍、随寿命收缩到一半、寿命 12~44 tick、速度逐 tick 衰减 0.96——原版粒子包只能给客户端现摇随机速度，所以初速塞进粒子选项里一起发。物品 64 点耐久、喷一次扣 1 点；冷却在启动那一刻挂 `TOTAL_TICKS + 60` = 201 tick（等价于「跑完再冷却 3 秒」）。伤害类型 `dawnduskterminal:experiment_043`（`data/dawnduskterminal/damage_type/experiment_043.json`，`effects: burning`）与暮色森林的 `fire_jet` 一样进了 `#minecraft:no_knockback`、`#minecraft:is_fire` 与 `#minecraft:ignites_armor_stands`，另加 `#minecraft:bypasses_cooldown`，死亡信息是 `death.attack.experiment_043`。规格在 `gametest/Experiment043Tests`：预热恰好三次、火焰 61 拍与 13 拍伤害、141 tick 后自己停、猪（无甲）每拍掉 4 点并点燃 300 tick、第二拍照样打得进无敌帧、14 格内挨/14 格外不挨、中途挪位置转身火跟着走、施放期间换走物品就切到脚下往上喷并烧到自己、背后/侧面/烈焰人都挨不着、单击扣 1 点耐久并挂冷却
+试验物品 043 是那台手持喷火器：单击右键即可把暮色森林封装的喷火器（`twilightforest:encased_fire_jet`）从接收红石信号到冷却结束的整套过程沿视线释放，逐拍对齐的实现写在 `item/FireJetProcess` 中。方块的实现位于 `EncasedFireJetBlock#neighborChanged`：它从 IDLE 切换到 POPPING 并播放 jet_start（`block.comparator.click`，音量 0.3、音高 0.6），`FireJetBlockEntity#tickPopping` 在计数 20/40/60 时各生成 8 颗 `LAVA` 并播放一声 `block.lava.pop`，到 80 时切换为 FLAME；`tickFlame` 运行 61 拍（计数 1..61，第 61 拍溢出归零后仍处理一拍）：第 1 拍再次播放 jet_start，每 2 tick 生成一颗大烟加五路大火焰（中心一路，上下左右各偏移 1 格，初速沿轴 0.75，两侧各带 0.05 的向心分量），每 4 tick 播放一声 jet_active（`entity.ghast.shoot`），每 5 tick 对伤害立方体内的活体生物造成 2 点伤害并点燃 300 tick，最后切换到 TIMEOUT。此处整段沿用该实现，只把「方块朝上」替换为「玩家的视线」：枪口为眼睛前方 1 格，右轴与上轴由视线计算得出，四路火苗按这对轴摆放，伤害立方体也随之旋转（沿轴 14 格、半径 2 格）；**枪口与朝向每 tick 重新绑到玩家身上**（`refresh`），因此走开与转身时火焰随之移动与旋转，玩家下线、死亡或更换维度时则中断；施放期间若把用于点火的那只手换成其他物品，剩下的火焰改为从玩家**脚下**朝正上方喷射，并连同玩家自身一起烧灼（那一档不再把射手排除在伤害判定之外），换回 043 后即恢复按视线喷射。伤害提升至 4 点（方块为 2 点），点燃仍为 300 tick，火焰免疫会被跳过，也不判断遮挡（与方块相同），射出者是玩家；伤害类型进入 `#minecraft:bypasses_cooldown`，因此每一拍都能实际打出，不会被受击后的无敌时间阻挡。过程挂在 `ServerTickEvent.Post`（`DdtServerEvents`）上推进，因此单击一次即可，松手与更换物品都不会中断，也不使用 `startUsingItem`。大火焰粒子由 `particle/JetFlameParticleOptions`、`JetFlameParticleType` 与客户端 `client/JetFlameParticle` 组成：尺寸为原版火焰粒子的五倍，随寿命收缩到一半，寿命为 12~44 tick，速度逐 tick 衰减 0.96——原版粒子包只能由客户端即时随机生成速度，因此初速被放入粒子选项一并发送。物品耐久为 64 点，每次喷射扣除 1 点；冷却在启动那一刻挂载 `TOTAL_TICKS + 60` = 201 tick（等价于「运行结束后再冷却 3 秒」）。伤害类型 `dawnduskterminal:experiment_043`（`data/dawnduskterminal/damage_type/experiment_043.json`，`effects: burning`）与暮色森林的 `fire_jet` 一样进入 `#minecraft:no_knockback`、`#minecraft:is_fire` 与 `#minecraft:ignites_armor_stands`，并另外加入 `#minecraft:bypasses_cooldown`，死亡信息为 `death.attack.experiment_043`。规格见 `gametest/Experiment043Tests`：预热恰好三次、火焰 61 拍与 13 拍伤害、141 tick 后自行停止、猪（无护甲）每拍损失 4 点并点燃 300 tick、第二拍仍然可以穿透无敌帧造成伤害、14 格内受到伤害而 14 格外不受伤害、中途移动位置并转身时火焰随之移动、施放期间换走物品即切换到脚下向上喷射并烧灼自身、背后、侧面与烈焰人都无法命中、单击扣除 1 点耐久并挂载冷却。
 
-试验物品 066 是那本恶魂陷阱书：单击右键把暮色森林恶魂陷阱方块（`twilightforest:ghast_trap`）压场那一段沿视线放出去，实现在 `item/GhastTrapProcess`。方块那套在 `GhastTrapBlockEntity#tickActive` 里：场是以方块为中心横 6 格、纵 16 格的立方，场里的生物**每 tick** 被 `setDeltaMovement` 朝场心拽（`(场心 - 生物) * 0.1`），随机十分之一概率挨一下（10 点），跑 120 tick 自己关掉，充能靠 `tickInactive` 数场边死掉的砷铅铁恶魂幼体。这里去掉充能，场换成「从眼睛往前 16 格长、轴线外 4 格粗的走廊」：判定把活物包围盒中心投到「视线轴 × 右 × 上」三条轴上（与 043 同一套写法），沿轴落在 0~16、两条横轴都在 4 格加包围盒半径以内就算在场里；牵引照抄 0.1 那一条、不封顶，方向朝着场心。伤害是**每 tick 调一次 `hurt`**，不排节拍：原版 `LivingEntity#hurt` 那套无敌帧（打出一下后 `invulnerableTime` 从 20 往下减，掉到 10 之前再打不算）会把连续施压自动压成每 0.5 秒一下，120 tick 正好 12 下，所以伤害类型**不进** `#minecraft:bypasses_cooldown`——绕过去就把节奏弄没了（043 的喷火器反过来要绕，因为它是逐拍的独立攻击）。对象是 `LivingEntity` 全体（怪物、动物、玩家都会挨拽挨打，这本书要能装到敌怪身上去打玩家）加 `ItemEntity`（掉落物只挨拽不掉血），只排除施放者自己与观察者；施放者类型就是 `LivingEntity`，怪物拿着调用 `GhastTrapProcess#start` 就能用。伤害类型 `experiment_066` 只进 `#minecraft:no_knockback`，不然伤害自带的击退会和牵引互相抵消。**暮色恶魂的免伤不是标签能解的**：`UrGhast#hurt` 里 `if (isInTantrum()) amount /= 10`，退出 tantrum 要累计实扣 18 点，书每下 7 点打两下就攒满、之后每下只剩 0.7（探针实测 40 tick 只扣 15.4）；`isInvulnerableTo` 只认 `IN_WALL` / `IS_FIRE` / `invulnerable` 旗标，我们这条类型本来就不沾。所以命中前用 `item/UrGhastPhaseSuppressor` 反射调它的 `setInTantrum(false)` + `resetDamageUntilNextPhase()`（恶魂陷阱方块 `tickActive` 同款，只是它每 tick 还调 `setInTrap()`），把它压在相位外，每下都满额；反射按类名 `twilightforest.entity.boss.UrGhast` 找，缺 jar 或方法改名就静默降级成普通伤害，守住「不 import 暮色森林、缺 jar 仍可编译」这条。粒子与音效不是自己挑的，整份照抄那块方块的客户端分支：一拍五颗 `twilightforest:ghast_trap`（`vx = cos(counter/10) * 2.5`、`vy = 20`、`vz = sin(counter/10) * 2.5`，五颗分别是 `(vx,vy,vz)`、`(-vx,vy,-vz)`、`(-vx,vy/2,vz)`、`(vx/2,vy/4,vz/2)`、`(-vx/2,vy/4,-vz/2)`，；方块那三个偏移里 `vy = 20` 是「吸口向」、朝世界 Y（所以方块是从二十格高空往下收），本书的吸口朝视线，这一份喂给 `direction`、另外两份喂给右轴与上轴，臂因此从视线远处收进吸口；速度即出生偏移，粒子从「场心 + 偏移」收进场心），`counter > 100` 之后每 4 tick 补一颗 `twilightforest:huge_smoke`（偏移 `cos*0.05, 0.25, sin*0.05`）；这些粒子从服务端发，包里的 `count` 必须是 0——客户端那条分支走 `addParticle(type, x, y, z, maxSpeed * xDist, maxSpeed * yDist, maxSpeed * zDist)`，速度按原值落地不掺随机，正好对上方块客户端那六个参数。场心不是方块，是**施放者身上那个点**：眼睛往前 1 格（`TRAP_OFFSET`），每 tick 跟着视线转，与 043 的枪口同一个做法——所以走廊里的东西是朝**施放者**被吸过去的，五颗一轮的粒子与三支音效也都从这一个场心出。音效三支 `block.twilightforest.ghast_trap.warmup` / `.on` / `.spindown`，与方块一样逐拍放：0~29 tick 预热、30~79 通电、80 以后收场，音量 1、音高 4，`SoundSource.BLOCKS`；两个资源都只按资源 ID 从 `BuiltInRegistries` 取，不 import 暮色森林。场每 tick 重新绑到施放者的眼睛与视线（转身就跟着转，人死、换维度就断），过程挂在 `ServerTickEvent.Post`（`DdtServerEvents`）上推进，冷却 180 tick（整段 120 再加 3 秒），一次扣 1 点耐久、共 64 点。规格在 `gametest/Experiment066Tests`：占位号已让出、64 点耐久且不可堆叠、冷却第 179 tick 还锁着而第 180 tick 解开、走廊里的目标 120 tick 落下 12 下（100 → 16）、背后 / 侧面 / 16 格以外不挨、玩家在走廊里照样掉血而施放者自己不掉、`twilightforest:ghast_trap` / `huge_smoke` 与三支音效都取得到、模型与三条语言键、伤害类型只在 no_knockback 而不在 bypasses_cooldown
+试验物品 066 是那本恶魂陷阱书：单击右键即可把暮色森林恶魂陷阱方块（`twilightforest:ghast_trap`）的压场那一段沿视线释放，实现位于 `item/GhastTrapProcess`。方块那一套位于 `GhastTrapBlockEntity#tickActive` 中：场是以方块为中心、横向 6 格、纵向 16 格的立方体，场内的生物**每 tick** 通过 `setDeltaMovement` 被拽向场心（`(场心 - 生物) * 0.1`），并有十分之一的随机概率受到一次伤害（10 点），运行 120 tick 后自行关闭，充能依靠 `tickInactive` 统计场边死去的砷铅铁恶魂幼体。此处去掉了充能，场替换为「从眼睛往前 16 格长、轴线外 4 格粗的走廊」：判定时把活体生物包围盒中心投影到「视线轴 × 右 × 上」三条轴上（与 043 同一套写法），沿轴坐标落在 0~16、两条横轴均在 4 格加包围盒半径以内即判定为在场内；牵引沿用 0.1 那一条且不设上限，方向朝向场心。伤害是**每 tick 调一次 `hurt`**，不额外安排节拍：原版 `LivingEntity#hurt` 的无敌帧机制（打出一击后 `invulnerableTime` 从 20 向下递减，在降至 10 之前再次攻击不计入）会把连续施压自动压缩为每 0.5 秒一次，120 tick 恰好 12 次，因此伤害类型**不进入** `#minecraft:bypasses_cooldown`——若绕过该机制，节奏便会消失（043 的喷火器相反需要绕过，因为它是逐拍的独立攻击）。作用对象是 `LivingEntity` 全体（怪物、动物与玩家都会受到牵引与伤害，因为这本书需要能够装到敌对生物身上用于攻击玩家）外加 `ItemEntity`（掉落物只受牵引而不损失生命值），仅排除施放者自身与观察者；施放者类型就是 `LivingEntity`，怪物持有并调用 `GhastTrapProcess#start` 即可使用。伤害类型 `experiment_066` 只进入 `#minecraft:no_knockback`，否则伤害自带的击退会与牵引相互抵消。**暮色恶魂的免伤机制无法通过标签解除**：`UrGhast#hurt` 中存在 `if (isInTantrum()) amount /= 10`，退出 tantrum 需要累计实际扣除 18 点，而书每下 7 点，打两下即攒满，之后每下只剩 0.7（探针实测 40 tick 只扣除 15.4）；`isInvulnerableTo` 只识别 `IN_WALL` / `IS_FIRE` / `invulnerable` 旗标，本模组的类型本来就不涉及这些。因此在命中之前使用 `item/UrGhastPhaseSuppressor` 反射调用它的 `setInTantrum(false)` 与 `resetDamageUntilNextPhase()`（与恶魂陷阱方块的 `tickActive` 同款，只是后者每 tick 还会调用 `setInTrap()`），将其压制在相位之外，使每下都造成满额伤害；反射按类名 `twilightforest.entity.boss.UrGhast` 查找，缺少 jar 或方法改名时静默降级为普通伤害，以维持「不 import 暮色森林、缺少 jar 仍可编译」这一约定。粒子与音效并非自行选定，而是整份沿用那块方块的客户端分支：一拍五颗 `twilightforest:ghast_trap`（`vx = cos(counter/10) * 2.5`、`vy = 20`、`vz = sin(counter/10) * 2.5`，五颗依次为 `(vx,vy,vz)`、`(-vx,vy,-vz)`、`(-vx,vy/2,vz)`、`(vx/2,vy/4,vz/2)`、`(-vx/2,vy/4,-vz/2)`；方块那三个偏移中 `vy = 20` 是「吸口向」，朝向世界 Y（因此方块是从二十格高空向下收拢），而本书的吸口朝向视线，这一份传给 `direction`，另外两份分别传给右轴与上轴，臂因此从视线远处收进吸口；速度即出生偏移，粒子从「场心 + 偏移」处收向场心），`counter > 100` 之后每 4 tick 补一颗 `twilightforest:huge_smoke`（偏移 `cos*0.05, 0.25, sin*0.05`）；这些粒子从服务端发出，包中的 `count` 必须为 0——客户端那条分支调用 `addParticle(type, x, y, z, maxSpeed * xDist, maxSpeed * yDist, maxSpeed * zDist)`，速度按原值落地而不掺入随机，恰好对应方块客户端那六个参数。场心并不位于方块上，而是**施放者身上那个点**：眼睛往前 1 格（`TRAP_OFFSET`），每 tick 随视线转动，与 043 的枪口采用同一做法——因此走廊中的目标是被吸向**施放者**的，五颗一轮的粒子与三支音效也都从这一个场心发出。音效为三支 `block.twilightforest.ghast_trap.warmup` / `.on` / `.spindown`，与方块一样逐拍播放：0~29 tick 预热、30~79 通电、80 以后收场，音量 1、音高 4，`SoundSource.BLOCKS`；两个资源都只按资源 ID 从 `BuiltInRegistries` 获取，不 import 暮色森林。场每 tick 重新绑定到施放者的眼睛与视线（转身即随之转动，死亡与更换维度则中断），过程挂在 `ServerTickEvent.Post`（`DdtServerEvents`）上推进，冷却为 180 tick（整段 120 再加 3 秒），每次消耗 1 点耐久，共 64 点。规格见 `gametest/Experiment066Tests`：占位号已让出、64 点耐久且不可堆叠、冷却在第 179 tick 仍锁定而在第 180 tick 解锁、走廊中的目标在 120 tick 内落下 12 次伤害（100 → 16）、背后、侧面与 16 格以外不受到伤害、玩家在走廊中照常损失生命值而施放者自身不受影响、`twilightforest:ghast_trap` / `huge_smoke` 与三支音效均可取到、模型与三条语言键、伤害类型只在 no_knockback 而不在 bypasses_cooldown。
 
-试验物品 045 是一面盾：`item/Experiment045Item` 直接继承原版 `ShieldItem`，格挡、每挡一次掉 1 点耐久、可用木板修、只进副手、72000 tick 的 `UseAnim.BLOCK` 都是原版那一套；336 点耐久与 `Items.SHIELD` 相同，`BANNER_PATTERNS` 也照原版给了默认空表。物品模型 `item/experiment_045` 挂 `minecraft:builtin/entity`（`gui_light: front` 加原版盾那套 `display`），并按原版盾的 `blocking` 谓词切到 `item/experiment_045_blocking`——这条谓词原版只注册给 `Items.SHIELD`，客户端 setup 里给 045 补了一条，举盾时的第一/第三人称变换才换得过去。几何体直接用原版 `ShieldModel`，真正画盾面的是 `client/Experiment045ShieldRenderer`（`BlockEntityWithoutLevelRenderer`，经 `RegisterClientExtensionsEvent` 挂到物品上）：没有旗面图案时用 `item/experiment_045_nopattern` 整面木盾，有图案或底色时换成 `item/experiment_045_base`（正面留白）并交给 `BannerRenderer#renderPatterns` 一层层叠；发光层 `item/experiment_045_glow` 画在同一块正脸上，走 `RenderType#entityTranslucentEmissive`，并单独注册成固定渲染缓冲（`RegisterRenderBuffersEvent`）——固定缓冲按登记顺序冲刷，它排在原版那几条之后，所以发光层一定叠在本体与旗面图案之上，不会被自己盖住。三张贴图都在 `textures/item/` 下，被原版 blocks 图集的目录源收进去，`Material` 直接指方块图集。规格在 `gametest/Experiment045Tests`：占位号已让出、是 `ShieldItem` 子类、336 点耐久且不可堆叠、`SHIELD_BLOCK` 能力放行且只进副手、木板可修、模型是 `builtin/entity` 且带 `blocking` 覆盖、三张贴图都在 jar 里
+试验物品 045 是一面盾：`item/Experiment045Item` 直接继承原版 `ShieldItem`，格挡、每次格挡损失 1 点耐久、可用木板修复、只能进入副手、72000 tick 的 `UseAnim.BLOCK` 全部沿用原版机制；耐久为 336 点，与 `Items.SHIELD` 相同，`BANNER_PATTERNS` 也参照原版提供了默认空表。物品模型 `item/experiment_045` 挂载 `minecraft:builtin/entity`（`gui_light: front` 与原版盾那套 `display`），并按原版盾的 `blocking` 谓词切换到 `item/experiment_045_blocking`——该谓词在原版中只注册给 `Items.SHIELD`，客户端 setup 中为 045 补充了一条，举盾时的第一与第三人称变换才能正确切换。几何体直接使用原版 `ShieldModel`，真正绘制盾面的是 `client/Experiment045ShieldRenderer`（`BlockEntityWithoutLevelRenderer`，经 `RegisterClientExtensionsEvent` 挂载到物品上）：没有旗面图案时使用 `item/experiment_045_nopattern` 整面木盾，存在图案或底色时替换为 `item/experiment_045_base`（正面留白）并交给 `BannerRenderer#renderPatterns` 逐层叠加；发光层 `item/experiment_045_glow` 绘制在同一块正面上，采用 `RenderType#entityTranslucentEmissive` 渲染，并单独注册为固定渲染缓冲（`RegisterRenderBuffersEvent`）——固定缓冲按登记顺序冲刷，它排在原版那几条之后，因此发光层一定叠加在本体与旗面图案之上，不会被自身覆盖。三张贴图都位于 `textures/item/` 下，被原版 blocks 图集的目录源收录，`Material` 直接指向方块图集。规格见 `gametest/Experiment045Tests`：占位号已让出、是 `ShieldItem` 子类、336 点耐久且不可堆叠、`SHIELD_BLOCK` 能力放行且只能进入副手、木板可修复、模型为 `builtin/entity` 且带 `blocking` 覆盖、三张贴图都位于 jar 中。
 
-试验物品 047~050 是一套护甲（047 头盔、048 胸甲、049 护腿、050 靴子），物品是 `item/ExperimentArmorItem`，只为重写两处方法而存在：`getArmorTexture` 把护甲层的贴图指到 `textures/entities/experiment_armor.png`，`verifyComponentsAfterLoad` 摘掉 `TRIM` 组件（理由同绯色钼那套：纹饰层按原版 64×32 排，叠在这套 UV 上只会错位；锻造台那条本来也进不来，本套不在 `#minecraft:trimmable_armor` 里）。数值在 `ModArmorMaterials#EXPERIMENT_ARMOR`：护甲值与铁同级、每件 2 点韧性、附魔值 9、耐久倍率 15。维修材料是三样锭里的**任意一样**——`Ingredient.of` 收的是候选清单，`Ingredient#test` 命中其中一个就成立，砷铅铁锭、绯红钼锭、䤧锭随便哪一样都能修，不需要凑齐三样
+试验物品 047~050 是一套护甲（047 头盔、048 胸甲、049 护腿、050 靴子），物品为 `item/ExperimentArmorItem`，它只为重写两处方法而存在：`getArmorTexture` 把护甲层的贴图指向 `textures/entities/experiment_armor.png`，`verifyComponentsAfterLoad` 移除 `TRIM` 组件（理由与绯色钼那套相同：纹饰层按原版 64×32 排列，叠加在这套 UV 上只会错位；锻造台那条路径本来也无法进入，因为本套不在 `#minecraft:trimmable_armor` 中）。数值位于 `ModArmorMaterials#EXPERIMENT_ARMOR`：护甲值与铁同级，每件提供 2 点韧性，附魔值为 9，耐久倍率为 15。维修材料是三样锭中的**任意一样**——`Ingredient.of` 接收的是候选清单，`Ingredient#test` 命中其中任意一个即成立，砷铅铁锭、绯红钼锭与䤧锭中任意一样都能维修，不需要三样齐备。
 
-穿戴外观来自源文件那一份基岩版几何（`minecraft:geometry` 1.12.0，64×64 的 UV，头 胸 双臂 双腿 双脚八根骨骼），四件共用，`client/model/ExperimentArmorModel` 按槽位拆成四份 `LayerDefinition`：头盔取头、胸甲取躯干与双臂（含两根倾角 22.5° 的上臂筒与肩外侧甲片）、护腿取双腿、靴子取双脚（含一块转 90° 的脚背斜护片）。基岩版几何搬进 `PartDefinition` 的换算三条：基岩原点在脚底 y 朝上、java 模型 y 朝下且头部枢轴在 y=0 对应基岩 y=24（骨骼位姿 `(px, 24-py, pz)`，方块最小角 `(bx-px, py-by-sy, bz-pz)`）；带 `rotation` 的方块拆成骨骼下的子 `ModelPart`；**旋转角度照搬基岩版的符号，不取负**——肩甲那对 22.5° 与脚背护片那对 ±90° 都是右正左负（左件带 `mirror`），取负会让它们朝里歪。算出来与原版玩家模型的基准位置完全对得上（头身 0,0,0、臂 ±5,2,0、腿 ±1.9,12,0，臂腿的方块也是原版那几组数），因为那份几何本来就照原版人体比例写。姿势与可见性不用自己算：`IClientItemExtensions#getGenericArmorModel` 会把护甲层刚算好的那套 `copyModelProperties` 拷到缓存的模型上
+穿戴外观来自源文件中的那一份基岩版几何（`minecraft:geometry` 1.12.0，64×64 的 UV，头、胸、双臂、双腿、双脚共八根骨骼），四件共用，`client/model/ExperimentArmorModel` 按槽位拆成四份 `LayerDefinition`：头盔取头，胸甲取躯干与双臂（含两根倾角 22.5° 的上臂筒与肩外侧甲片），护腿取双腿，靴子取双脚（含一块旋转 90° 的脚背斜护片）。把基岩版几何搬进 `PartDefinition` 的换算有三条：基岩版原点位于脚底且 y 轴朝上，Java 模型的 y 轴朝下且头部枢轴位于 y=0 对应基岩版的 y=24（骨骼位姿为 `(px, 24-py, pz)`，方块最小角为 `(bx-px, py-by-sy, bz-pz)`）；带 `rotation` 的方块拆分为骨骼下的子 `ModelPart`；**旋转角度照搬基岩版的符号，不取负值**——肩甲那对 22.5° 与脚背护片那对 ±90° 都是右正左负（左件带 `mirror`），取负会使它们朝内倾斜。计算结果与原版玩家模型的基准位置完全一致（头身 0,0,0、臂 ±5,2,0、腿 ±1.9,12,0，臂与腿的方块也是原版那几组数值），因为那份几何本来就按原版人体比例编写。姿势与可见性不需要自行计算：`IClientItemExtensions#getGenericArmorModel` 会把护甲层刚计算好的那套 `copyModelProperties` 复制到缓存的模型上。
 
-发光层走 `mixin/ExperimentArmorGlowMixin`：原版护甲层一件物品只画一遍，`renderArmorPiece` 里那个循环绕 `ArmorMaterial#layers()` 走、每层都交给 `renderModel`，所以在 `renderArmorPiece` 的 TAIL 再补一遍，同一份几何换 `textures/entities/experiment_armor_glow.png`。渲染类型必须**还是** `armorCutoutNoCull`：它带 `VIEW_OFFSET_Z_LAYERING`，冲刷时把模型视图朝相机缩 0.99975586，本体因此在深度上比真实位置更近约万分之二点四；换成没有这个偏移的 `entityTranslucentEmissive`，同一份几何摆在同一处会永远落后于本体，整层被盔甲盖住，只有把相机钻进模型里才在轮廓边缘漏出一丝（这就是之前那一版的毛病）。两个批次用同一个 RenderType 状态，深度才相等、`LEQUAL` 才过，而发光层是后冲刷的那一批，于是稳稳压在本体之上。「发光」不靠 emissive 着色器而靠顶点光：`rendertype_armor_cutout_no_cull` 的 vsh 里 `texelFetch(Sampler2, UV2 / 16, 0)` 直接采样顶点光照图，传 `LightTexture.FULL_BRIGHT` 进去整层就恒为满亮；它 fsh 里 `color.a < 0.1` 直接 discard，发光图透明的地方不会糊黑。注在单个槽位那一层而不是 `render` 上，穿一件还是四件都不用另写分支。规格在 `gametest/Experiment047Tests`：占位号已让出、四件各占对槽位、护甲值 2/6/5/2 与总计 15、韧性 2、附魔值 9、耐久照铁、三样锭逐样单独都能修而铁锭钻石不行、四件的内外层都返回那张专用图、本体图与发光图都在 jar 里、四个物品模型各指自己那张图标
+发光层由 `mixin/ExperimentArmorGlowMixin` 实现：原版护甲层对一件物品只绘制一遍，`renderArmorPiece` 中的循环遍历 `ArmorMaterial#layers()`，每一层都交给 `renderModel`，因此在 `renderArmorPiece` 的 TAIL 再补绘一遍，以同一份几何换用 `textures/entities/experiment_armor_glow.png`。渲染类型必须**仍然**是 `armorCutoutNoCull`：它带有 `VIEW_OFFSET_Z_LAYERING`，冲刷时把模型视图朝相机方向收缩 0.99975586，本体因此在深度上比真实位置更近约万分之二点四；若换成不具备该偏移的 `entityTranslucentEmissive`，同一份几何摆在同一位置会始终落后于本体，整层被盔甲覆盖，只有把相机深入模型内部才会在轮廓边缘露出一丝（此前的版本正是这一问题）。两个批次使用同一个 RenderType 状态，深度才相等，`LEQUAL` 才能通过，而发光层是后冲刷的那一批，因此稳定地压在本体之上。「发光」不依赖 emissive 着色器，而依赖顶点光照：`rendertype_armor_cutout_no_cull` 的 vsh 中 `texelFetch(Sampler2, UV2 / 16, 0)` 直接采样顶点光照图，传入 `LightTexture.FULL_BRIGHT` 后整层恒为满亮；其 fsh 中 `color.a < 0.1` 时直接 discard，发光图中透明的位置不会被涂黑。注解加在单个槽位那一层而不是 `render` 上，因此穿一件还是四件都不需要另写分支。规格见 `gametest/Experiment047Tests`：占位号已让出、四件各自占用正确槽位、护甲值为 2/6/5/2 且总计 15、韧性为 2、附魔值为 9、耐久照铁、三样锭逐一单独都能维修而铁锭与钻石不能、四件的内外层都返回那张专用图、本体图与发光图都位于 jar 中、四个物品模型各指向自己的图标。
 
 
 ## 装饰画
 
-变体是数据包注册表，条目在 `data/dawnduskterminal/painting_variant/painting_ghast_1.json`，3 格宽 2 格高；`registry/ModPaintingVariants` 只放指向它的 `ResourceKey`，尺寸不在 Java 侧重复
+变体属于数据包注册表，条目位于 `data/dawnduskterminal/painting_variant/painting_ghast_1.json`，尺寸为 3 格宽、2 格高；`registry/ModPaintingVariants` 只放置指向它的 `ResourceKey`，尺寸不在 Java 侧重复声明。
 
-贴图放 `assets/dawnduskterminal/textures/painting/painting_ghast_1.png`。原版 `atlases/paintings.json` 只声明了「扫 `textures/painting` 目录」，那个目录源跨命名空间收图，所以放进这个位置就会被 `minecraft:paintings` 图集收进去，渲染走原版 `PaintingRenderer`，不用自己写
+贴图放置在 `assets/dawnduskterminal/textures/painting/painting_ghast_1.png`。原版 `atlases/paintings.json` 只声明了「扫描 `textures/painting` 目录」，该目录源跨命名空间收图，因此放入这个位置就会被 `minecraft:paintings` 图集收录，渲染走原版 `PaintingRenderer`，不需要自行编写。
 
-物品图标的贴图必须另放一份到 `textures/item/`：1.21.1 的物品模型贴图是从 `minecraft:paintings` 之外的 `blocks` 图集取的，而那个图集只声明了 `block/` 与 `item/` 两个目录源，`textures/entity/` 下的图不会被收，模型就会渲染成紫黑格子（`Missing textures in model ...`）
+物品图标的贴图必须另外放置一份到 `textures/item/`：1.21.1 的物品模型贴图从 `minecraft:paintings` 之外的 `blocks` 图集获取，而该图集只声明了 `block/` 与 `item/` 两个目录源，`textures/entity/` 下的图不会被收录，模型因此会渲染成紫黑格子（`Missing textures in model ...`）。
 
-`entity/GhastPaintingEntity` 是独立的实体类型，不共用 `minecraft:painting`：原版画物品只从 `#minecraft:painting_variant/placeable` 挑变体，我们的变体不进那个标签，于是原版物品放不出它；这个实体又把 `setVariant` 固定成自己的变体，敲碎掉的是 `painting_ghast_1` 物品，中键也是它
+`entity/GhastPaintingEntity` 是独立的实体类型，不共用 `minecraft:painting`：原版画物品只从 `#minecraft:painting_variant/placeable` 中挑选变体，而本模组的变体不进入该标签，因此原版物品无法放置它；该实体又把 `setVariant` 固定为自己的变体，敲碎后掉落的是 `painting_ghast_1` 物品，中键选取得到的也是它。
 
-`mixin/PaintingVariantGuardMixin` 堵的是手改那条侧门：原版画实体上的 `setVariant` 遇到这个变体直接吞掉，`/summon` 指定变体与旧存档里的 NBT 都改不出我们的画
+`mixin/PaintingVariantGuardMixin` 拦截的是手工修改这条旁路：原版画实体上的 `setVariant` 遇到该变体时直接忽略，因此无论通过 `/summon` 指定变体，还是修改旧存档中的 NBT，都无法得到本模组的画。
 
-`item/GhastPaintingItem` 的摆放流程照抄 `HangingEntityItem`，只能放这一幅，没有配方
+`item/GhastPaintingItem` 的摆放流程参照 `HangingEntityItem` 编写，只能放置这一幅画，且没有配方。
 
 ## 维度与晨昏线
 
-`registry/ModDimensions.CHRONO` 是维度的 `ResourceKey`
+`registry/ModDimensions.CHRONO` 是维度的 `ResourceKey`。
 
-`world/ChronoLine` 是 record，存原点与单位法向
+`world/ChronoLine` 是一个 record，存储原点与单位法向。
 
-`ChronoLine.distance(x,z)` 是点到线的有符号距离
+`ChronoLine.distance(x,z)` 计算点到该线的有符号距离。
 
-`ChronoLine.param(x,z)` 是距离除以最大距离后钳到 -1 到 1
+`ChronoLine.param(x,z)` 计算距离除以最大距离的结果，并钳制到 -1 到 1。
 
-`ChronoLine.create(random)` 每个世界随机一次法向，基准朝东，抖动正负 30 度，再随机决定是否转 180 度朝西
+`ChronoLine.create(random)` 为每个世界随机生成一次法向，基准朝东，抖动范围为正负 30 度，再随机决定是否旋转 180 度朝西。
 
-配置 `normal_override` 可固定法向
+配置项 `normal_override` 可以固定法向。
 
-`world/ChronoLineState` 继承 `SavedData`，存在主世界，键 `dawnduskterminal_chrono_line`
+`world/ChronoLineState` 继承 `SavedData`，存储在主世界，键为 `dawnduskterminal_chrono_line`。
 
-服务端与客户端各有一份静态缓存 `serverLine` 与 `clientLine`
+服务端与客户端各有一份静态缓存 `serverLine` 与 `clientLine`。
 
-`network/ChronoLinePayload` 在玩家登录时把线下发到客户端
+`network/ChronoLinePayload` 在玩家登录时把线下发到客户端。
 
-法向只按维度算一次，多个玩家共用同一条线
+法向每个维度只计算一次，多个玩家共用同一条线。
 
 ## 群系源
 
-`world/PaletteBiomeSource` 是自写 `BiomeSource`，注册为 `dawnduskterminal:palette`
+`world/PaletteBiomeSource` 是自行编写的 `BiomeSource`，注册为 `dawnduskterminal:palette`。
 
-它要求一个 `delegate` 与一个 `palette` 群系标签
+它要求提供一个 `delegate` 与一个 `palette` 群系标签。
 
-`preset` 是原版主世界参数表，`extra` 是追加在表尾的自建气候点（极昼极夜），选格用原版那套 `ParameterList.findValue`
+`preset` 是原版主世界参数表，`extra` 是追加在表尾的自建气候点（极昼与极夜），选格使用原版那套 `ParameterList.findValue`。
 
-`getNoiseBiome` 先跑 delegate，再把 `minecraft:*` 群系换成同名副本
+`getNoiseBiome` 先执行 delegate，再把 `minecraft:*` 群系替换为同名副本。
 
-副本名与命名空间对应关系按路径匹配，例如 `minecraft:plains` 换成 `dawnduskterminal:plains`
+副本名与命名空间的对应关系按路径匹配，例如 `minecraft:plains` 替换为 `dawnduskterminal:plains`。
 
-`extra` 的条目按温度出界来写：原版参数表只覆盖 `[-1, 1]`，出界的跨度一写就赢。温度由 `ChronoTemperature` 在极带推到 `±2`
+`extra` 的条目按温度出界来编写：原版参数表只覆盖 `[-1, 1]`，出界的跨度一经写出即生效。温度由 `ChronoTemperature` 在极带推到 `±2`。
 
-一格在替换表里再改指：`minecraft:desert` 换白地（昼区）。这只是决定那一格装哪个副本，选格仍然是气候表算的
+某一格可以在替换表中再次改指：`minecraft:desert` 替换为白地（昼区）。这只决定那一格装载哪个副本，选格仍然由气候表计算。
 
-`floatrees` 群系走另一条路，采样深度低于阈值时直接返回
+`floatrees` 群系走另一条路径，采样深度低于阈值时直接返回。
 
-群系源里没有任何按 `param` 判群系的特例，极带暂时与相邻带同群系
+群系源中没有任何按 `param` 判定群系的特例，极带暂时与相邻带使用同一群系。
 
-替换表延迟构建，因为 biome source 在数据包解析期创建，那时标签里的 holder 还没有 key
+替换表延迟构建，因为 biome source 在数据包解析期创建，此时标签中的 holder 还没有 key。
 
-细节见 `worldgen.md`
+细节见 `worldgen.md`。
 
 ## 世界生成补丁
 
-数据包改不到的原版硬编码由 `mixin/` 接管
+数据包无法覆盖的原版硬编码部分由 `mixin/` 接管。
 
-`LavaBandPaletteMixin` 把 `createFluidPicker` 的 y 以下岩浆带换成热情的暮光
+`LavaBandPaletteMixin` 把 `createFluidPicker` 中 y 以下的岩浆带替换为热情的暮光。
 
-`LavaAquiferPaletteMixin` 把深部岩浆含水层换成热情的暮光
+`LavaAquiferPaletteMixin` 把深部岩浆含水层替换为热情的暮光。
 
-`PillarsFluidBlockMixin` 让石柱洞穴保持干燥
+`PillarsFluidBlockMixin` 使石柱洞穴保持干燥。
 
-`NoiseChunkVeinPaletteMixin` 用 `world/ChronoVeinPalette` 把大矿脉的花岗岩与凝灰岩换成赭石与暮光石
+`NoiseChunkVeinPaletteMixin` 使用 `world/ChronoVeinPalette` 把大矿脉中的花岗岩与凝灰岩替换为赭石与暮光石。
 
-温度的晨昏线偏移不在这里，走 `world/PaletteBiomeSource` 与 `world/ChronoTemperature`，见「世界生成补丁」
+温度的晨昏线偏移不在此处实现，而是由 `world/PaletteBiomeSource` 与 `world/ChronoTemperature` 负责，见「世界生成补丁」。
 
-`MineshaftHeightMixin` 把废弃矿井压到 y -64 到 -10
+`MineshaftHeightMixin` 把废弃矿井的高度范围限制在 y -64 到 -10。
 
-`MineshaftChestLootMixin` 把矿井箱车战利品换成 `dawnduskterminal:chests/chrono_mineshaft`
+`MineshaftChestLootMixin` 把矿井箱车战利品替换为 `dawnduskterminal:chests/chrono_mineshaft`。
 
-识别维度统一靠噪声设置的 `default_fluid` 是不是 `portal_fluid`
+识别维度统一依靠噪声设置的 `default_fluid` 是否为 `portal_fluid`。
 
 ## 传送门
 
-`portal/PortalShape` 做水池识别与判定
+`portal/PortalShape` 负责水池识别与判定。
 
-`portal/PortalBuilder` 把水池方块替换成传送门流体
+`portal/PortalBuilder` 把水池方块替换为传送门流体。
 
-`portal/PortalTrigger` 判定实体是否处在可用传送门里
+`portal/PortalTrigger` 判定实体是否处在可用的传送门中。
 
-`portal/PortalBlock` 是传送门流体的方块，处理方块内实体与自愈
+`portal/PortalBlock` 是传送门流体的方块，负责处理方块内的实体与自愈。
 
-`portal/PortalTeleporter` 负责即时传送 落点搜索 到达门
+`portal/PortalTeleporter` 负责即时传送、落点搜索与到达门。
 
-`portal/PortalState` 是玩家附件，存回程维度与坐标
+`portal/PortalState` 是玩家附件，存储回程维度与坐标。
 
-细节见 `portal.md`
+细节见 `portal.md`。
 
 ## 流体
 
-`registry/ModFluids` 注册 `portal_fluid`，流动参数照抄水
+`registry/ModFluids` 注册 `portal_fluid`，流动参数参照水。
 
-`registry/ModScorchingTwilight` 注册 `enthu_fluid`（热情的暮光）的类型 流体 方块 桶
+`registry/ModScorchingTwilight` 注册 `enthu_fluid`（热情的暮光）的类型、流体、方块与桶。
 
-`world/FluidReactions` 在 `FMLCommonSetupEvent` 上把接触反应注册进 NeoForge `FluidInteractionRegistry`
+`world/FluidReactions` 在 `FMLCommonSetupEvent` 上把接触反应注册进 NeoForge 的 `FluidInteractionRegistry`。
 
-`block/ScorchingTwilightBlock` 继承岩浆的方块属性，但不点火不清植物，接触造成 6 点 `enthu_fluid` 伤害
+`block/ScorchingTwilightBlock` 继承岩浆的方块属性，但不会引燃，也不会清除植物，接触时造成 6 点 `enthu_fluid` 伤害。
 
-`item/CanocanItem` 是唯一能舀这两种流体的容器，原版桶会被毁灭
+`item/CanocanItem` 是唯一能够舀取这两种流体的容器，原版桶会被销毁。
 
 ## 进度与效果
 
-`progression/BossKind` 枚举三个暮色森林 Boss 与对应战利品
+`progression/BossKind` 枚举三个暮色森林 Boss 与对应的战利品。
 
-`progression/BossProgress` 是 record，存三个击败标记
+`progression/BossProgress` 是 record，存储三个击败标记。
 
-`progression/BossProgressTracker` 在击杀事件里写入附件
+`progression/BossProgressTracker` 在击杀事件中写入附件。
 
-附件定义在 `registry/ModAttachments`，`boss_progress` 序列化并 `copyOnDeath`
+附件定义在 `registry/ModAttachments` 中，`boss_progress` 会被序列化并设置 `copyOnDeath`。
 
-`registry/ModEffects` 注册 `stability` 与 `portal_sickness`
+`registry/ModEffects` 注册 `stability` 与 `portal_sickness`。
 
-`world/StabilityEffect` 是纯标记效果，方向由 `PortalBlock` 决定
+`world/StabilityEffect` 是纯标记效果，方向由 `PortalBlock` 决定。
 
-`advancement/LineParamTrigger` 是自定义判定，按晨昏线投影参数给进度
+`advancement/LineParamTrigger` 是自定义判定，按晨昏线投影参数给予进度。
 
 ## 客户端
 
-`client/DdtClient` 是客户端入口，注册模型 颜色 渲染层 事件
+`client/DdtClient` 是客户端入口，负责注册模型、颜色、渲染层与事件。
 
-`client/ChronoFoliageColors` 复刻暮色森林的树叶染色算法
+`client/ChronoFoliageColors` 复刻暮色森林的树叶染色算法。
 
-`client/model/MountedTowerWoodModel` 做镶边塔木 封装塔木梁 錾制塔木梁 警示塔木的连接模型，「47 格」索引公式在 `client/model/ConnectedTexture47`
+`client/model/MountedTowerWoodModel` 实现镶边塔木、封装塔木梁、錾制塔木梁与警示塔木的连接模型，「47 格」索引公式位于 `client/model/ConnectedTexture47`。
 
-`client/model/CountertopModel` 用同一张 8x8 图集画黑木台面的顶面，只裁顶面那一格，连接判定是「邻居是任意一种台面」
+`client/model/CountertopModel` 使用同一张 8x8 图集绘制黑木台面的顶面，只裁剪顶面那一格，连接判定为「邻居是任意一种台面」。
 
-`client/PortalFluidExtensions` 与 `ScorchingTwilightFluidExtensions` 是流体的客户端扩展
+`client/PortalFluidExtensions` 与 `ScorchingTwilightFluidExtensions` 是流体的客户端扩展。
 
-`DdtClient` 注册方块与物品颜色，草与树叶随群系染色
+`DdtClient` 注册方块与物品颜色，草与树叶随群系染色。
 
-天空全部交给原版渲染器，维度特效直接复用 `minecraft:overworld`，见「天空」
+天空全部交给原版渲染器，维度特效直接复用 `minecraft:overworld`，见「天空」。
 
 ## Mixin
 
-配置 `dawnduskterminal.mixins.json`，分公共与客户端两份
+配置为 `dawnduskterminal.mixins.json`，分为公共与客户端两份。
 
-`FluidStatusAccessor` 暴露 `Aquifer.FluidStatus` 的流体类型给其他 mixin
+`FluidStatusAccessor` 向其他 mixin 暴露 `Aquifer.FluidStatus` 的流体类型。
 
-`LavaBandPaletteMixin` `LavaAquiferPaletteMixin` `PillarsFluidBlockMixin` 见「世界生成补丁」
+`LavaBandPaletteMixin`、`LavaAquiferPaletteMixin` 与 `PillarsFluidBlockMixin` 见「世界生成补丁」。
 
-`NoiseChunkVeinPaletteMixin` 见「世界生成补丁」
+`NoiseChunkVeinPaletteMixin` 见「世界生成补丁」。
 
-`MineshaftHeightMixin` `MineshaftChestLootMixin` 见「世界生成补丁」
+`MineshaftHeightMixin` 与 `MineshaftChestLootMixin` 见「世界生成补丁」。
 
-`FeatureSorterMixin` 替换原版特征排序为可容忍环的实现，受配置 `tolerate_feature_cycles` 控制
+`FeatureSorterMixin` 把原版特征排序替换为可容忍环的实现，受配置项 `tolerate_feature_cycles` 控制。
 
-`LightEngineSkyLightMixin` 在晨昏线维度把天光上限压到 `ChronoSkyLight.maxSkyLight`
+`LightEngineSkyLightMixin` 在晨昏线维度把天光上限压低到 `ChronoSkyLight.maxSkyLight`。
 
-`StructureExclusionMixin` 在晨昏线维度只放行结构白名单里的结构
+`StructureExclusionMixin` 在晨昏线维度只放行结构白名单中的结构。
 
-`BiomeColorsFoliageMixin` 是客户端 mixin，把树叶染色接进 `ChronoFoliageColors`
+`BiomeColorsFoliageMixin` 是客户端 mixin，把树叶染色接入 `ChronoFoliageColors`。
 
-`ClientLevelTimeOfDayMixin` 与 `LevelRendererSkyAlignMixin` 是客户端 mixin，见「天空」
+`ClientLevelTimeOfDayMixin` 与 `LevelRendererSkyAlignMixin` 是客户端 mixin，见「天空」。
 
-`ClientLevelSkyColorMixin` 是客户端 mixin，见「天空」
+`ClientLevelSkyColorMixin` 是客户端 mixin，见「天空」。
 
 ## 天空
 
-自绘天空已移除，天空全部走原版 `LevelRenderer.renderSky`
+自绘天空已经移除，天空全部由原版 `LevelRenderer.renderSky` 处理。
 
-维度特效直接复用 `minecraft:overworld`，雾色 日月 星空 日落光晕 云都是原版的，`dimension_type/chrono.json` 的 `effects` 就不再是模组自己的键
+维度特效直接复用 `minecraft:overworld`，雾色、日月、星空、日落光晕与云都是原版的，`dimension_type/chrono.json` 的 `effects` 因此不再是模组自己的键。
 
-`ClientLevelTimeOfDayMixin` 在晨昏线维度把 `getTimeOfDay` 换成 `0.25 - param * sun_angle_max / 360`，原版那一整套渲染因此跟着玩家到晨昏线的距离走，太阳仰角仍是 `param * sun_angle_max`
+`ClientLevelTimeOfDayMixin` 在晨昏线维度把 `getTimeOfDay` 替换为 `0.25 - param * sun_angle_max / 360`，原版那一整套渲染因此随玩家到晨昏线的距离变化，太阳仰角仍为 `param * sun_angle_max`。
 
-原版日月轨道永远落在 X 轴上，`LevelRendererSkyAlignMixin` 在 `renderSky` 的两处 `pushPose` 之后垫一层绕世界 Y 轴的旋转，把轨道与日落光晕转到晨昏线法向上
+原版日月轨道始终落在 X 轴上，`LevelRendererSkyAlignMixin` 在 `renderSky` 的两处 `pushPose` 之后追加一层绕世界 Y 轴的旋转，把轨道与日落光晕旋转到晨昏线法向上。
 
-`fixed_time` 仍留在维度类型里，它只影响服务端的 `getTimeOfDay`，客户端渲染不再读它
+`fixed_time` 仍保留在维度类型中，它只影响服务端的 `getTimeOfDay`，客户端渲染不再读取它。
 
-`ClientLevelSkyColorMixin` 把晨昏线维度的 `getSkyColor` 乘 0.75。原版日月是加色混合，而极昼侧自定义群系的 `sky_color` 是近白色（`white_land` 为 `FFF9F0`），加到纯白上还是纯白，太阳就和天空糊成一片。天穹色同时决定雾色，所以这一下也把过曝的雾降了下来。常数在 mixin 里，调小更暗
+`ClientLevelSkyColorMixin` 把晨昏线维度的 `getSkyColor` 乘以 0.75。原版日月采用加色混合，而极昼侧自定义群系的 `sky_color` 接近白色（`white_land` 为 `FFF9F0`），加到纯白上仍然是纯白，太阳因此与天空混为一体、无法区分。天穹色同时决定雾色，所以这一处理也降低了过曝的雾。常数位于 mixin 中，调小则画面更暗。
 
 ## 事件
 
-`server/DdtServerEvents` 挂到 `NeoForge.EVENT_BUS`
+`server/DdtServerEvents` 挂载到 `NeoForge.EVENT_BUS`。
 
-`onServerStarted` 读取并记录晨昏线，校验结构与摆放表
+`onServerStarted` 读取并记录晨昏线，同时校验结构与摆放表。
 
-`onPlayerLoggedIn` 下发晨昏线包
+`onPlayerLoggedIn` 下发晨昏线包。
 
-`onPlayerTick` 每 10 tick 扫玩家附近的投料物，进维度后触发进度判定
+`onPlayerTick` 每 10 tick 扫描玩家附近的投料物，并在玩家进入维度后触发进度判定。
 
-`onLivingDeath` 记录 Boss 击杀
+`onLivingDeath` 记录 Boss 击杀。
 
-`onRightClickItem` 拦截原版桶，禁止舀两种模组流体
+`onRightClickItem` 拦截原版桶，禁止舀取两种模组流体。
 
 ## 结构
 
-`structure/StructureExclusions` 是唯一白名单，`StructureExclusionMixin` 排除不在其中的结构
+`structure/StructureExclusions` 是唯一白名单，`StructureExclusionMixin` 排除不在其中的结构。
 
-`structure/StructureExclusions` 里的 `UNMAPPED` 与 `LANDMARKS` 记录未放行项与地标，只服务日志
+`structure/StructureExclusions` 中的 `UNMAPPED` 与 `LANDMARKS` 记录未放行项与地标，仅用于日志。
 
-服务端启动时校验这几张表，缺失只记日志
+服务端启动时校验这几张表，缺失时只记录日志。
 
 ## 已知遗留
 
-`registry/ModEffects` 仍注册 `portal_sickness`，但已无人施加，方向改由 `stability` 决定
+`registry/ModEffects` 仍注册 `portal_sickness`，但已经没有任何调用方施加该效果，方向改由 `stability` 决定。
 
-`config/DdtConfig` 的 `portal.cooldown_ticks` 与 `portal.entity_debuff` 已无读取方
+`config/DdtConfig` 的 `portal.cooldown_ticks` 与 `portal.entity_debuff` 已经没有读取方。
 
-语言文件里 `death.attack.dawnduskterminal.portal` 与 `message.dawnduskterminal.searching` 已不再使用
+语言文件中 `death.attack.dawnduskterminal.portal` 与 `message.dawnduskterminal.searching` 已不再使用。
