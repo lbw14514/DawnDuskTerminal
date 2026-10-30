@@ -2,8 +2,14 @@ package com.dawnduskterminal.gametest;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.block.SusCakeBlock;
+import com.dawnduskterminal.item.SusCakeItem;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModItems;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +30,14 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -43,7 +51,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * 潜行点缺口一次取回一片（最后一片整块取回）、空手点吃一片、状态 {@code omnomnom} 0~7、
  * 比较器公式 8 - 片数；无序配方的原料里都有试验物品 115。与 115 的差别：一片默认 6 点饥饿 4 点饱和度
  * （血橙与红丝绒是 8 与 8，115 是 4 与 2.4）；方块不用撒红石粉，吃到一半的随机刻会自己补一片
- * （115 要先撒粉成 {@code regenerate} 那版才补）。红丝绒暂无配方，所以配方那条只覆盖其余六种
+ * （115 要先撒粉成 {@code regenerate} 那版才补）。红丝绒暂无配方，所以配方那条只覆盖其余六种。
+ * 另有整块的那一件：试验物品 107（摆下来即满的 8 片，一个物品当 8 片吃），方块仍是 {@code sus_redvelvet_cake}
  */
 @GameTestHolder("dawnduskterminal")
 @PrefixGameTestTemplate(false)
@@ -319,6 +328,83 @@ public final class SusCakeTests {
         helper.succeed();
     }
 
+    /**
+     * 试验物品 107：整块的可疑的红丝绒蛋糕
+     *
+     * <p>方块与那件一片的 {@code sus_redvelvet_cake} 是同一块，差别只有两处：摆下来就是满的 8 片
+     * （{@code omnomnom=0}），且**不带食物组件**——方块物品只负责摆放。名字是「试验物品107」，
+     * 不走方块那一条键：{@code BlockItem} 的默认名字取自方块，不换描述 ID 就会和那件一片的重名
+     */
+    @GameTest(template = "ddt_empty")
+    public static void experiment107IsAWholeRedVelvetCake(GameTestHelper helper) {
+        Item item = ModItems.EXPERIMENT_107.get();
+        Block redVelvet = ModBlocks.susCakes().get(REDVELVET).get();
+        helper.assertTrue(item instanceof SusCakeItem,
+            "dawnduskterminal:experiment_107 must be a " + SusCakeItem.class.getSimpleName() + ", got "
+                + item.getClass().getSimpleName());
+        helper.assertTrue(((BlockItem) item).getBlock() == redVelvet,
+            "dawnduskterminal:experiment_107 must place " + REDVELVET + ", got "
+                + ((BlockItem) item).getBlock());
+
+        ItemStack stack = new ItemStack(item);
+        helper.assertTrue(stack.getMaxStackSize() == 64,
+            "dawnduskterminal:experiment_107 must stack to 64, got " + stack.getMaxStackSize());
+        helper.assertTrue(stack.get(DataComponents.FOOD) == null,
+            "a block item must not be edible in hand, got " + stack.get(DataComponents.FOOD));
+        helper.assertTrue(item.getDescriptionId().equals("item.dawnduskterminal.experiment_107"),
+            "the whole cake must be named through its own key, got " + item.getDescriptionId());
+        helper.assertFalse(item.getDescriptionId().equals(redVelvet.getDescriptionId()),
+            "the whole cake must not share the slice item's name, both resolve to " + redVelvet.getDescriptionId());
+        // 一块方块两件物品：方块对外的物品必须仍是那件一片的，否则补片与取片都会换成整块那件
+        helper.assertTrue(redVelvet.asItem() == ModItems.susCakes().get(REDVELVET).get(),
+            "the block's own item must stay the slice item, got " + redVelvet.asItem().getDescriptionId()
+                + " (Item.BY_BLOCK is a put, a second BlockItem for the same block would win it)");
+
+        for (String lang : new String[] {"en_us", "zh_cn"}) {
+            JsonObject words = readJson(helper, "/assets/dawnduskterminal/lang/" + lang + ".json");
+            helper.assertTrue(words.has("item.dawnduskterminal.experiment_107"),
+                lang + " must name the whole cake, otherwise the tab shows a raw key");
+        }
+        helper.succeed();
+    }
+
+    /** 摆下来就是满的 8 片：不是一片那件的 {@code omnomnom=7} */
+    @GameTest(template = "ddt_empty")
+    public static void experiment107PlacesAFullCake(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos ground = helper.absolutePos(new BlockPos(1, 1, 1));
+        BlockPos target = ground.above();
+        level.setBlockAndUpdate(ground, Blocks.STONE.defaultBlockState());
+        level.setBlockAndUpdate(target, Blocks.AIR.defaultBlockState());
+
+        Block redVelvet = ModBlocks.susCakes().get(REDVELVET).get();
+        BlockState full = redVelvet.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0);
+        helper.assertTrue(level.getBlockState(ground).is(Blocks.STONE),
+            "sanity: the ground " + ground + " must be stone, got " + level.getBlockState(ground));
+        helper.assertTrue(level.getBlockState(target).canBeReplaced(),
+            "sanity: " + target + " must be replaceable, got " + level.getBlockState(target));
+        helper.assertTrue(full.canSurvive(level, target),
+            "sanity: a full cake must be able to sit above " + level.getBlockState(ground) + ", not above "
+                + level.getBlockState(target.below()));
+
+        Player placer = mockPlayerAt(helper, target);
+        ItemStack stack = new ItemStack(ModItems.EXPERIMENT_107.get());
+        placer.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockPlaceContext context = new BlockPlaceContext(placer, InteractionHand.MAIN_HAND, stack,
+            new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false));
+        InteractionResult placed = ModItems.EXPERIMENT_107.get().place(context);
+
+        helper.assertTrue(placed.consumesAction(), "placing the whole cake must succeed, got " + placed
+            + " (clicked " + ground + " = " + level.getBlockState(ground)
+            + ", target " + target + " = " + level.getBlockState(target) + ")");
+        helper.assertTrue(level.getBlockState(target).is(redVelvet),
+            "the whole cake must place " + REDVELVET + ", got " + level.getBlockState(target));
+        helper.assertTrue(level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN) == 0,
+            "the whole cake must land as the full 8 slices, omnomnom should be 0, got "
+                + level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.succeed();
+    }
+
     private static Player mockPlayerAt(GameTestHelper helper, BlockPos pos) {
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         player.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
@@ -333,6 +419,17 @@ public final class SusCakeTests {
 
     private static BlockHitResult hitOn(BlockPos pos) {
         return new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false);
+    }
+
+    /** 从 mod 资源里读一份 JSON：路径以 {@code /} 开头，相对于 jar 根 */
+    private static JsonObject readJson(GameTestHelper helper, String resource) {
+        try (InputStream stream = SusCakeTests.class.getResourceAsStream(resource)) {
+            helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
+            return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        } catch (IOException problem) {
+            throw new AssertionError("reading " + resource + " failed", problem);
+        }
     }
 
     private SusCakeTests() {}

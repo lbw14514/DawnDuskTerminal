@@ -19,6 +19,7 @@ import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModMenus;
 import com.dawnduskterminal.advancement.ModCriteria;
 import com.dawnduskterminal.command.DdtCommands;
+import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.registry.ModIngredients;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModParticles;
@@ -95,6 +96,8 @@ public final class DawnDuskTerminal {
         // 试验物品 052 的连锁：主爆炸进行中把范围内的同类方块从破坏名单里摘出来、排到下一 tick 引爆
         NeoForge.EVENT_BUS.addListener(CarminiteBlast::protectArmedBlocks);
         NeoForge.EVENT_BUS.addListener(DdtCommands::register);
+        // 恶果接火球：撞击被取消之后火球还活着，改向由实体自己算，见 GhastFruityEntity#onProjectileImpact
+        NeoForge.EVENT_BUS.addListener(GhastFruityEntity::onProjectileImpact);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             DdtClient.init(modBus);

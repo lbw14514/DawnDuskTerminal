@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "dawnduskterminal:item/experiment_temp"
+    "layer0": "dawnduskterminal:item/experiment_105"
   }
 }

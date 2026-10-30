@@ -24,9 +24,12 @@ import net.minecraft.world.phys.Vec3;
  * 大火焰（中心一路、上下左右各偏 1 格，初速沿轴 0.75），每 4 tick 一声 {@code entity.ghast.shoot}，
  * 每 5 tick 对伤害立方体里的活物造成伤害并点燃，最后自己结束
  *
- * <p>与方块的区别只有朝向：枪口是玩家的眼睛往前 1 格，整个伤害立方体与四路火苗跟着视线转，
- * 每 tick 重新绑到玩家身上（{@code refresh}），玩家下线/死亡/换维度就断掉；施放期间把点火那只手换成
- * 别的东西，剩下的火改成从脚下朝正上方喷、连玩家自己一起烧
+ * <p>与方块的区别只有朝向：枪口是施放者的眼睛往前 1 格，整个伤害立方体与四路火苗跟着视线转，
+ * 每 tick 重新绑到施放者身上（{@code refresh}），施放者下线/死亡/换维度就断掉
+ *
+ * <p>施放者有两种：玩家（043 物品，{@code itemDriven}，施放期间把点火那只手换成别的东西，剩下的火
+ * 改成从脚下朝正上方喷、连玩家自己一起烧），以及生物（持封装射焰方块的恶果变体，
+ * 没有手可以换，永远瞄着视线）
  *
  * <p>过程挂在 {@code ServerTickEvent.Post} 上推进（{@code tickAll} / {@code clear}），
  * 不依赖玩家拿着物品，所以单击一次就够，松手与换物品都不打断
@@ -50,8 +53,10 @@ public final class FireJetProcess {
     private static final double FLAME_INWARD = 0.05;
     private static final List<FireJetProcess> ACTIVE = new ArrayList<>();
     private final ServerLevel level;
-    private final Player owner;
+    private final LivingEntity owner;
     private final InteractionHand hand;
+    /** 玩家那一路：施放者手里必须还拿着 043，换了就改成从脚下喷；生物那一路永远瞄着视线 */
+    private final boolean itemDriven;
     private Vec3 muzzle;
     private Vec3 direction;
     private Vec3 right;
@@ -65,16 +70,24 @@ public final class FireJetProcess {
     private int hurtLanded;
     private boolean done;
 
-    private FireJetProcess(ServerLevel level, Player owner, InteractionHand hand) {
+    private FireJetProcess(ServerLevel level, LivingEntity owner, InteractionHand hand, boolean itemDriven) {
         this.level = level;
         this.owner = owner;
         this.hand = hand;
-        this.aimed = this.holdsTheItem();
+        this.itemDriven = itemDriven;
+        this.aimed = !itemDriven || this.holdsTheItem();
         this.updateAim();
     }
 
     public static void start(ServerLevel level, Player owner, InteractionHand hand) {
-        FireJetProcess process = new FireJetProcess(level, owner, hand);
+        FireJetProcess process = new FireJetProcess(level, owner, hand, true);
+        ACTIVE.add(process);
+        process.playStartSound();
+    }
+
+    /** 生物那一路：枪口永远跟着它的视线 */
+    public static void start(ServerLevel level, LivingEntity owner) {
+        FireJetProcess process = new FireJetProcess(level, owner, InteractionHand.MAIN_HAND, false);
         ACTIVE.add(process);
         process.playStartSound();
     }
@@ -84,7 +97,12 @@ public final class FireJetProcess {
     }
 
     public static FireJetProcess detached(ServerLevel level, Player owner, InteractionHand hand) {
-        return new FireJetProcess(level, owner, hand);
+        return new FireJetProcess(level, owner, hand, true);
+    }
+
+    /** 生物那一路的测试入口：不进 ACTIVE，自己 hold 着 tick */
+    public static FireJetProcess detached(ServerLevel level, LivingEntity owner) {
+        return new FireJetProcess(level, owner, InteractionHand.MAIN_HAND, false);
     }
 
     public static void tickAll() {
@@ -145,7 +163,7 @@ public final class FireJetProcess {
 
     private boolean refresh() {
         if (!this.owner.isRemoved() && this.owner.isAlive() && this.owner.level() == this.level) {
-            this.aimed = this.holdsTheItem();
+            this.aimed = !this.itemDriven || this.holdsTheItem();
             this.updateAim();
             return true;
         } else {
@@ -154,7 +172,9 @@ public final class FireJetProcess {
     }
 
     private boolean holdsTheItem() {
-        return this.owner.getItemInHand(this.hand).getItem() instanceof Experiment043Item;
+        return this.itemDriven
+            && this.owner instanceof Player player
+            && player.getItemInHand(this.hand).getItem() instanceof Experiment043Item;
     }
 
     private void updateAim() {

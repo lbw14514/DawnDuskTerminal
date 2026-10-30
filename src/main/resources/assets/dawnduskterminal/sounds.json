@@ -90,5 +90,51 @@
       "dawnduskterminal:string_hit_2",
       "dawnduskterminal:string_hit_3"
     ]
+  },
+  "ghast_universal_ambient": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_ambient",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/moan1",
+      "dawnduskterminal:ghast_universal/moan2",
+      "dawnduskterminal:ghast_universal/moan3",
+      "dawnduskterminal:ghast_universal/moan4",
+      "dawnduskterminal:ghast_universal/moan5",
+      "dawnduskterminal:ghast_universal/moan6",
+      "dawnduskterminal:ghast_universal/moan7"
+    ]
+  },
+  "ghast_universal_hurt": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_hurt",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/scream1",
+      "dawnduskterminal:ghast_universal/scream2",
+      "dawnduskterminal:ghast_universal/scream3",
+      "dawnduskterminal:ghast_universal/scream4",
+      "dawnduskterminal:ghast_universal/scream5"
+    ]
+  },
+  "ghast_universal_death": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_death",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/death"
+    ]
+  },
+  "ghast_universal_charge": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_charge",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/charge"
+    ]
+  },
+  "ghast_universal_shoot": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_shoot",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/fireball4"
+    ]
+  },
+  "ghast_universal_deflect": {
+    "subtitle": "subtitles.dawnduskterminal.ghast_universal_deflect",
+    "sounds": [
+      "dawnduskterminal:ghast_universal/affectionate_scream"
+    ]
   }
 }

@@ -1,8 +1,14 @@
 package com.dawnduskterminal.gametest;
 
 import com.dawnduskterminal.item.Experiment020Item;
+import com.dawnduskterminal.item.UnknownMeatItem;
 import com.dawnduskterminal.registry.ModExperimentItems;
 import com.dawnduskterminal.registry.ModItems;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,7 +57,8 @@ import net.neoforged.neoforge.registries.DeferredItem;
 
 /**
  * 试验物品 007、008、017、036~038 与 040~042、104 的规格：007/017 是近战伤害 4 攻速 5 的裸武器，
- * 008 是 5 饥饿 5 饱和度的食物，五件工具是钻石级，042 是普通物品，104 是两口吃完的食物
+ * 008 是 5 饥饿 5 饱和度的食物，五件工具是钻石级，042 是普通物品，104 是两口吃完的食物；
+ * 061/070/074 那三块不明肉块照原版生肉那一档做（2 饥饿、三成概率饥饿 30 秒、三成概率中毒 5 秒）
  *
  * <p>「钻石级」断言成 {@code getTier() == Tiers.DIAMOND} 而不是逐个比数值：耐久 1561、速度 8、
  * 攻击加成 3、附魔值 10、挖不动的方块 {@code INCORRECT_FOR_DIAMOND_TOOL} 全挂在那个 tier 实例上，
@@ -66,6 +73,12 @@ public final class ExperimentItemTests {
         ModExperimentItems.EXPERIMENT_038.get(),
         ModExperimentItems.EXPERIMENT_040.get(),
         ModExperimentItems.EXPERIMENT_041.get());
+
+    /** 三块不明肉块：061、070、074，同一份规格，只差贴图 */
+    private static final List<Item> MEAT_CHUNKS = List.of(
+        ModExperimentItems.EXPERIMENT_061.get(),
+        ModExperimentItems.EXPERIMENT_070.get(),
+        ModExperimentItems.EXPERIMENT_074.get());
 
     @GameTest(template = "ddt_empty")
     public static void toolsUseDiamondTier(GameTestHelper helper) {
@@ -152,6 +165,128 @@ public final class ExperimentItemTests {
         helper.assertFalse(food.canAlwaysEat(), "experiment_008 must not be edible on a full stomach");
         helper.assertTrue(stack.getMaxStackSize() == 64,
             "experiment_008 must stack to 64, got " + stack.getMaxStackSize());
+        helper.succeed();
+    }
+
+    /**
+     * 三块不明肉块（061、070、074）的规格：2 点饥饿、1.2 点饱和度，吃下三成概率饥饿 30 秒、三成概率中毒 5 秒
+     *
+     * <p>两条效果都写在 {@code FoodProperties#effects()} 里，由原版 {@code LivingEntity#addEatEffect}
+     * 在服务端逐个按 {@code random.nextFloat() < probability} 判定，所以这里查的就是那张表：概率、效果、
+     * 时长与等级。饱和度断言的是算好的点数 1.2（系数 0.3 × 饥饿 2 × 2），不是系数
+     */
+    @GameTest(template = "ddt_empty")
+    public static void unknownMeatChunksAreRawMeatFood(GameTestHelper helper) {
+        for (Item item : MEAT_CHUNKS) {
+            String name = item.getDescriptionId();
+            helper.assertTrue(item instanceof UnknownMeatItem,
+                name + " must be an " + UnknownMeatItem.class.getSimpleName() + ", got "
+                    + item.getClass().getSimpleName());
+            ItemStack stack = new ItemStack(item);
+            FoodProperties food = stack.get(DataComponents.FOOD);
+            helper.assertTrue(food != null, name + " must be edible, but it carries no food component");
+            helper.assertTrue(food.nutrition() == UnknownMeatItem.NUTRITION,
+                name + " must be " + UnknownMeatItem.NUTRITION + " hunger like a raw chicken, got "
+                    + food.nutrition());
+            helper.assertTrue(Math.abs(food.saturation() - 1.2F) < 1.0E-6F,
+                name + " must be 1.2 saturation like a raw chicken (modifier 0.3), got " + food.saturation());
+            helper.assertFalse(food.canAlwaysEat(), name + " must not be edible on a full stomach");
+            helper.assertTrue(stack.getMaxStackSize() == 64,
+                name + " must stack to 64, got " + stack.getMaxStackSize());
+            helper.assertTrue(food.effects().size() == 2,
+                name + " must carry exactly two possible effects, got " + food.effects());
+            assertPossibleEffect(helper, name, food, MobEffects.HUNGER,
+                UnknownMeatItem.HUNGER_TICKS, UnknownMeatItem.HUNGER_CHANCE);
+            assertPossibleEffect(helper, name, food, MobEffects.POISON,
+                UnknownMeatItem.POISON_TICKS, UnknownMeatItem.POISON_CHANCE);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 三块肉的资源：模型各读自己那张贴图、贴图在 jar 里、两种语言都有名字与描述行
+     *
+     * <p>三块肉原先都是占位空壳，模型统一借 {@code experiment_temp}；改成本体之后贴图各有一张，
+     * 缺一张客户端那边就是一个紫黑格，缺一条描述行则 tooltip 里直接显示原始键
+     */
+    @GameTest(template = "ddt_empty")
+    public static void unknownMeatResourcesArePinned(GameTestHelper helper) {
+        for (int number : new int[] {61, 70, 74}) {
+            String id = "experiment_%03d".formatted(number);
+            JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/item/" + id + ".json");
+            helper.assertTrue(model.get("parent").getAsString().equals("minecraft:item/generated"),
+                "item/" + id + " must stay on minecraft:item/generated, got " + model.get("parent"));
+            helper.assertTrue(
+                model.getAsJsonObject("textures").get("layer0").getAsString()
+                    .equals("dawnduskterminal:item/" + id),
+                "item/" + id + " must read its own texture, got " + model.getAsJsonObject("textures"));
+            helper.assertTrue(ExperimentItemTests.class.getResource(
+                    "/assets/dawnduskterminal/textures/item/" + id + ".png") != null,
+                "textures/item/" + id + ".png must ship inside the mod resources");
+            for (String lang : new String[] {"en_us", "zh_cn"}) {
+                JsonObject words = readJson(helper, "/assets/dawnduskterminal/lang/" + lang + ".json");
+                helper.assertTrue(words.has("item.dawnduskterminal." + id),
+                    lang + " must name " + id + ", otherwise the tab shows a raw key");
+                helper.assertTrue(words.has("item.dawnduskterminal." + id + ".desc"),
+                    lang + " must carry the tooltip line of " + id);
+            }
+        }
+        helper.succeed();
+    }
+
+    /** 效果表里 {@code expected} 那一条：概率、时长、等级都照规格 */
+    private static void assertPossibleEffect(GameTestHelper helper, String itemName, FoodProperties food,
+                                             Holder<MobEffect> expected, int duration, float probability) {
+        for (FoodProperties.PossibleEffect possible : food.effects()) {
+            MobEffectInstance effect = possible.effect();
+            if (effect.getEffect().value() != expected.value()) {
+                continue;
+            }
+            helper.assertTrue(Math.abs(possible.probability() - probability) < 1.0E-6F,
+                itemName + " must roll " + expected + " with probability " + probability + ", got "
+                    + possible.probability());
+            helper.assertTrue(effect.getDuration() == duration,
+                itemName + " must roll " + expected + " for " + duration + " ticks, got " + effect.getDuration());
+            helper.assertTrue(effect.getAmplifier() == 0,
+                itemName + " must roll " + expected + " at level I, got amplifier " + effect.getAmplifier());
+            return;
+        }
+        helper.fail(itemName + " must roll " + expected + ", but its effect table is " + food.effects());
+    }
+
+    /**
+     * 吃下去真的会掷：三成上下的饥饿与中毒
+     *
+     * <p>随机源钉在实体自己那个 {@code RandomSource} 上（{@code Entity#random} 是 {@code protected final}，
+     * 改不了引用，但可以 {@code setSeed}），固定种子连吃 400 口再统计。掷骰本身位于
+     * {@code LivingEntity#addEatEffect}，这条断言验的是「表里那两条真的被原版用上了」：概率写错、效果写到
+     * 别的字段上，都会在这里露出来
+     */
+    @GameTest(template = "ddt_empty")
+    public static void unknownMeatRollsHungerAndPoisonOnTheServer(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.getRandom().setSeed(20260707L);
+        int bites = 400;
+        int hunger = 0;
+        int poison = 0;
+        for (int i = 0; i < bites; i++) {
+            player.removeAllEffects();
+            player.getFoodData().setFoodLevel(0);
+            ItemStack stack = new ItemStack(ModExperimentItems.EXPERIMENT_061.get());
+            ItemStack leftover = stack.getItem().finishUsingItem(stack, helper.getLevel(), player);
+            helper.assertTrue(leftover.isEmpty(), "one bite must consume the whole chunk, got " + leftover);
+            if (player.hasEffect(MobEffects.HUNGER)) {
+                hunger++;
+            }
+            if (player.hasEffect(MobEffects.POISON)) {
+                poison++;
+            }
+        }
+        // 三成留出一圈余量：400 口里 20%~40% 都算正常（种子固定，这条不会时红时绿）
+        helper.assertTrue(hunger > bites * 0.2 && hunger < bites * 0.4,
+            bites + " bites must roll hunger about 30% of the time, got " + hunger);
+        helper.assertTrue(poison > bites * 0.2 && poison < bites * 0.4,
+            bites + " bites must roll poison about 30% of the time, got " + poison);
         helper.succeed();
     }
 
@@ -371,15 +506,16 @@ public final class ExperimentItemTests {
         SortedMap<Integer, DeferredItem<Item>> placeholders = ModExperimentItems.placeholders();
         // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、007/017 两把 4/5 裸武器、008 与 020 两件食物、027 那支画点的笔、
         // 019 那丛植物、032/033 两支长矛、036~038 与 040~042 六件（039 号空着）、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
-        // 051 拆解台、052 那颗方雷、065 与 069 两台反建器、066 那本恶魂陷阱书、076 那个每刻换贴图的异常方块、104 那个食物、114 那块蛋糕、115 暮色森林那件
-        helper.assertTrue(placeholders.size() == 83,
-            "placeholders must cover the 83 free numbers of 1..115, got " + placeholders.size());
+        // 051 拆解台、052 那颗方雷、061/070/074 三块不明肉块、065 与 069 两台反建器、066 那本恶魂陷阱书、076 那个每刻换贴图的异常方块、
+        // 104 那个食物、107 整块的红丝绒蛋糕、114 那块蛋糕、115 暮色森林那件
+        helper.assertTrue(placeholders.size() == 79,
+            "placeholders must cover the 79 free numbers of 1..115, got " + placeholders.size());
         for (int number : new int[] {2, 6, 9, 16, 18, 34, 39, 44, 113}) {
             helper.assertTrue(placeholders.containsKey(number),
                 "number " + number + " must have a placeholder item");
         }
         for (int number : new int[] {1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46,
-            47, 48, 49, 50, 51, 52, 65, 66, 69, 76, 104, 114, 115}) {
+            47, 48, 49, 50, 51, 52, 61, 65, 66, 69, 70, 74, 76, 104, 107, 114, 115}) {
             helper.assertFalse(placeholders.containsKey(number),
                 "number " + number + " is taken and must not get a placeholder item");
         }
@@ -446,6 +582,17 @@ public final class ExperimentItemTests {
         helper.assertTrue(new ItemStack(item).is(tag),
             item.getDescriptionId() + " must be in #minecraft:" + tagName
                 + ", otherwise the enchanting table offers it nothing");
+    }
+
+    /** 从 mod 资源里读一份 JSON：路径以 {@code /} 开头，相对于 jar 根 */
+    private static JsonObject readJson(GameTestHelper helper, String resource) {
+        try (InputStream stream = ExperimentItemTests.class.getResourceAsStream(resource)) {
+            helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
+            return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        } catch (IOException problem) {
+            throw new AssertionError("reading " + resource + " failed", problem);
+        }
     }
 
     private ExperimentItemTests() {}

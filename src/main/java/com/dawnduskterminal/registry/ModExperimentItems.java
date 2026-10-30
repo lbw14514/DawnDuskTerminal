@@ -8,6 +8,7 @@ import com.dawnduskterminal.item.Experiment045Item;
 import com.dawnduskterminal.item.Experiment066Item;
 import com.dawnduskterminal.item.ExperimentArmorItem;
 import com.dawnduskterminal.item.ThrustSpearItem;
+import com.dawnduskterminal.item.UnknownMeatItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -41,7 +42,7 @@ import java.util.TreeMap;
  * 试验物品栏里那批实验品：一台照熔炉工作的机器（试验物品 004）、两把近战武器（试验物品 007、017）、
  * 一件食物（试验物品 008）、一支画红石点的笔（试验物品 027）、两支长矛（试验物品 032、033）、
  * 高塔五件套（试验物品 036~038 与 040、041，039 号留空）与一件简单物品（试验物品 042）、
- * 一本恶魂陷阱书（试验物品 066）
+ * 一本恶魂陷阱书（试验物品 066）、三块不明肉块（试验物品 061、070、074）
  *
  * <p>整批试验物品的注册 ID 与显示名都用三位数序列，含已经就是三位的 {@code experiment_001}，
  * 所以这里从 {@code experiment_032} 起步，不是 {@code experiment_32}
@@ -188,6 +189,16 @@ public final class ModExperimentItems {
         "experiment_042", new Item.Properties());
 
     /**
+     * 试验物品 061、070、074：三块不明肉块，同一份规格
+     *
+     * <p>2 点饥饿、0.3 的饱和度系数，吃下时三成概率饥饿 30 秒、三成概率中毒 5 秒；数值与概率的来源、以及
+     * 为什么不另写物品类去摇效果，都在 {@link UnknownMeatItem}。三块肉只差贴图，描述行都是「不明肉块」
+     */
+    public static final DeferredItem<UnknownMeatItem> EXPERIMENT_061 = unknownMeat("experiment_061");
+    public static final DeferredItem<UnknownMeatItem> EXPERIMENT_070 = unknownMeat("experiment_070");
+    public static final DeferredItem<UnknownMeatItem> EXPERIMENT_074 = unknownMeat("experiment_074");
+
+    /**
      * 试验物品 043：单击右键沿视线喷一次火，整套过程在 {@link Experiment043Item} 与
      * {@link com.dawnduskterminal.item.FireJetProcess} 里
      *
@@ -273,16 +284,18 @@ public final class ModExperimentItems {
      * 物品在 {@link ModItems#EXPERIMENT_076}），
      * 036~038 与 040~042 是上面那批工具与简单物品（039 号留空），043 是上面那台喷火器，045 是上面那面盾，
      * 066 是那本恶魂陷阱书，
+     * 061/070/074 是上面那三块不明肉块（同一份规格，见 {@link UnknownMeatItem}），
      * 047~050 是上面那套护甲，
      * 046 是砷铅铁钼反应权杖（注册 ID 仍是 {@code carminite_molybdenum_reactor_staff}），
      * 104 是那个能吃的东西（在 {@link ModItems#EXPERIMENT_104}），114 是能吃能摆的那一块（在
-     * {@link ModItems#EXPERIMENT_114}），115 是暮色森林自带的试验物品
+     * {@link ModItems#EXPERIMENT_114}），107 是整块的红丝绒蛋糕（在 {@link ModItems#EXPERIMENT_107}，
+     * 方块仍是七种可疑蛋糕里的 {@code sus_redvelvet_cake}），115 是暮色森林自带的试验物品
      *
      * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
      */
     private static final Set<Integer> TAKEN =
         Set.of(1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50,
-            51, 52, 65, 66, 69, 76, 104, 114, 115);
+            51, 52, 61, 65, 66, 69, 70, 74, 76, 104, 107, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 
@@ -336,6 +349,11 @@ public final class ModExperimentItems {
         return ITEMS.register(name, () -> new ExperimentArmorItem(
             ModArmorMaterials.EXPERIMENT_ARMOR, type,
             new Item.Properties().durability(type.getDurability(IRON_DURABILITY_FACTOR))));
+    }
+
+    /** 不明肉块：三块共用 {@link UnknownMeatItem#FOOD}，只有注册名不同 */
+    private static DeferredItem<UnknownMeatItem> unknownMeat(String name) {
+        return ITEMS.register(name, () -> new UnknownMeatItem(new Item.Properties().food(UnknownMeatItem.FOOD)));
     }
 
     private ModExperimentItems() {}

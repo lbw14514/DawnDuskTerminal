@@ -5,6 +5,7 @@ import com.dawnduskterminal.block.SusCakeBlock;
 import com.dawnduskterminal.item.CanocanItem;
 import com.dawnduskterminal.item.CarminiteGhastMeatItem;
 import com.dawnduskterminal.item.CarminiteStaffItem;
+import com.dawnduskterminal.item.Experiment107Item;
 import com.dawnduskterminal.item.Experiment114Item;
 import com.dawnduskterminal.item.GhastPaintingItem;
 import com.dawnduskterminal.item.ScarletMolybdArmorItem;
@@ -173,6 +174,16 @@ public final class ModItems {
         () -> new StringSpawnEggItem(ModEntities.STRING, 0x7F159E, 0xE6D5F5,
             new Item.Properties()));
 
+    /**
+     * 「恶果」的刷怪蛋
+     *
+     * <p>两层染色取它那张 64x64 贴图上的暗红果肉（{@code 0x5B1420}）与米白果皮（{@code 0xF0DCD2}）
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> GHASTFRUITY_SPAWN_EGG = ITEMS.register(
+        "ghastfruity_spawn_egg",
+        () -> new DeferredSpawnEggItem(ModEntities.GHASTFRUITY, 0x5B1420, 0xF0DCD2,
+            new Item.Properties()));
+
     public static final DeferredItem<CarminiteStaffItem> CARMINITE_MOLYBDENUM_REACTOR_STAFF = ITEMS.register(
         "carminite_molybdenum_reactor_staff",
         () -> new CarminiteStaffItem(new Item.Properties()
@@ -296,6 +307,19 @@ public final class ModItems {
         })));
         return Collections.unmodifiableMap(map);
     }
+
+    /** 红丝绒那一块在 {@link ModBlocks#susCakes()} 里的键，试验物品 107 用它 */
+    private static final String RED_VELVET_CAKE = "sus_redvelvet_cake";
+
+    /**
+     * 试验物品 107：整块的可疑的红丝绒蛋糕
+     *
+     * <p>一件方块物品，不带食物组件：右键摆下来的就是满的 8 片（{@code omnomnom=0}，一片那件摆下来只剩 1 片），
+     * 要吃就照方块那一套一片一片吃。行为在 {@link Experiment107Item}，方块仍是 {@code sus_redvelvet_cake}
+     */
+    public static final DeferredItem<Experiment107Item> EXPERIMENT_107 = ITEMS.register(
+        "experiment_107",
+        () -> new Experiment107Item(ModBlocks.susCakes().get(RED_VELVET_CAKE).get(), new Item.Properties()));
 
     private static DeferredItem<ScarletMolybdArmorItem> armor(String name, ArmorItem.Type type) {
         return ITEMS.register(name, () -> new ScarletMolybdArmorItem(

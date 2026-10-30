@@ -4,6 +4,7 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
+import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.entity.GhastPaintingEntity;
 import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.entity.TowerGhastEntity;
@@ -11,9 +12,12 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.SpawnPlacementTypes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -31,6 +35,22 @@ public final class ModEntities {
             .clientTrackingRange(10)
             .updateInterval(3)
             .build("tower_ghast"));
+
+    /**
+     * 「恶果」。碰撞箱照几何里的 {@code Root_spin_M}：那个立方体是 24 单位见方，即 1.5x1.5x1.5 格，
+     * 眼高取这个立方体的中心（模型 y=12 单位 = 0.75 格）
+     *
+     * <p>模型按 1:1 绘制，不做任何缩放（见 {@code GhastFruityRenderer}）；{@code fireImmune()}
+     * 照抄原版恶魂 —— 这只生物自己就在喷火球，会烧伤反而奇怪
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastFruityEntity>> GHASTFRUITY =
+        ENTITIES.register("ghastfruity", () -> EntityType.Builder
+            .of(GhastFruityEntity::new, MobCategory.MONSTER)
+            .sized(1.5F, 1.5F)
+            .eyeHeight(0.75F)
+            .fireImmune()
+            .clientTrackingRange(10)
+            .build("ghastfruity"));
 
     /** 权杖的弹体。updateInterval 1，跟踪范围小：它是一个很快就消失的飞行物 */
     public static final DeferredHolder<EntityType<?>, EntityType<CarminiteBallEntity>> CARMINITE_BALL =
@@ -99,10 +119,29 @@ public final class ModEntities {
         // 属性也注册在 mod 总线上，但走的是专门的事件而不是注册表：
         // EntityAttributeCreationEvent 触发时 EntityType 已经挂好，正好是它需要的时机
         bus.addListener(ModEntities::onEntityAttributeCreation);
+        bus.addListener(ModEntities::onRegisterSpawnPlacements);
     }
 
     private static void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(TOWER_GHAST.get(), TowerGhastEntity.createAttributes().build());
         event.put(STRING.get(), StringEntity.createAttributes().build());
+        event.put(GHASTFRUITY.get(), GhastFruityEntity.createAttributes().build());
+    }
+
+    /**
+     * 自然生成的位置与判定
+     *
+     * <p>和原版恶魂一样落在「地表」上（{@code ON_GROUND} + 不含树叶的高度图），
+     * 于是它出生在树冠间的空地或地面上，再自己飘起来；判定见
+     * {@link GhastFruityEntity#checkGhastFruitySpawnRules}
+     *
+     * <p>{@code REPLACE} 只是给新注册的实体类型填表用的：这张表里原本没有 ghastfruity，
+     * 事件实现会直接把这条判定放进去，不涉及别的模组
+     */
+    private static void onRegisterSpawnPlacements(RegisterSpawnPlacementsEvent event) {
+        event.register(GHASTFRUITY.get(), SpawnPlacementTypes.ON_GROUND,
+            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+            GhastFruityEntity::checkGhastFruitySpawnRules,
+            RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
 }

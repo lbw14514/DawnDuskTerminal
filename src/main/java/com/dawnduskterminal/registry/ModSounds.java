@@ -54,6 +54,40 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> STRING_HIT =
         register("string_hit");
 
+    /**
+     * 恶魂通用语音：模型包 {@code sounds/} 下那一套 7 条 moan、5 条 scream，加上
+     * death / charge / fireball4 / affectionate_scream
+     *
+     * <p>命名不带具体生物：这套素材与 {@code ghast_universal.animation.json} 一样是共享的，
+     * 以后其它恶魂变体直接复用同一组事件，不再各存一份；变体由 {@code sounds.json} 里
+     * 同一事件的多个文件交由原版随机挑选
+     */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_AMBIENT =
+        register("ghast_universal_ambient");
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_HURT =
+        register("ghast_universal_hurt");
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_DEATH =
+        register("ghast_universal_death");
+
+    /**
+     * 蓄力与喷吐
+     *
+     * <p>原版恶魂这两声走的是 {@code levelEvent(1015 / 1016)}，客户端 {@code LevelRenderer}
+     * 直接播原版音效，模组没有钩子可拦；所以这两声由实体自己的射击目标播放，见
+     * {@code GhastFruityEntity.GhastShootFireballGoal}
+     */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_CHARGE =
+        register("ghast_universal_charge");
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_SHOOT =
+        register("ghast_universal_shoot");
+
+    /** 把砸在自己身上的火球拨开时的那一声 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_DEFLECT =
+        register("ghast_universal_deflect");
+
     /** 试验物品 052 收到红石信号、点火那一下 */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_IGNITE =
         register("experiment_052_ignite");

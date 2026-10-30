@@ -1,0 +1,71 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"parallel0": {
+			"loop": true,
+			"animation_length": 12,
+			"bones": {
+				"ribbon_1": {
+					"rotation": ["12.5-math.sin(220 * query.life_time + 155) * 5", 0, "math.sin(110 * query.life_time + -155) * 10"]
+				},
+				"ribbon_2": {
+					"rotation": ["12.5-math.sin(220 * query.life_time + 155) * 10", 0, 0]
+				},
+				"ribbon_4": {
+					"rotation": ["10-math.sin(220 * query.life_time + 155) * 10", 0, 0]
+				},
+				"ribbon_9": {
+					"rotation": ["5-math.sin(220 * query.life_time + 145) * 10", 0, "math.sin(110 * query.life_time + 145) * 10"]
+				},
+				"ribbon_10": {
+					"rotation": ["8.5-math.sin(220 * query.life_time + 145) * 10", 0, 0]
+				},
+				"ribbon_12": {
+					"rotation": ["5-math.sin(220 * query.life_time + 145) * 10", 0, 0]
+				},
+				"ribbon_13": {
+					"rotation": ["5-math.sin(220*query.life_time)*10", 0, "math.sin(110*query.life_time)*10"]
+				},
+				"ribbon_14": {
+					"rotation": ["5-math.sin(220*query.life_time)*10", 0, 0]
+				},
+				"ribbon_16": {
+					"rotation": ["25-math.sin(220*query.life_time)*10", 0, 0]
+				},
+				"ribbon_17": {
+					"rotation": ["17.5-math.sin(220 * query.life_time + 265) * 10", 0, "math.sin(110 * query.life_time + 265) * 10"]
+				},
+				"ribbon_18": {
+					"rotation": ["17.5-math.sin(220 * query.life_time + 265) * 10", 0, 0]
+				},
+				"ribbon_20": {
+					"rotation": ["12.5-math.sin(220 * query.life_time + 265) * 10", 0, 0]
+				},
+				"ribbon_5": {
+					"rotation": ["5-math.sin(220 * query.life_time + 25) * 5", 0, "math.sin(110 * query.life_time + -25) * 5"]
+				},
+				"ribbon_6": {
+					"rotation": ["12.5-math.sin(220 * query.life_time + 25) * 10", 0, 0]
+				},
+				"ribbon_8": {
+					"rotation": ["17.5-math.sin(220 * query.life_time + 25) * 10", 0, 0]
+				},
+				"ribbon_21": {
+					"rotation": ["17.5-math.sin(220 * query.life_time + 245) * 10", 0, "math.sin(110 * query.life_time + -245) * 10"]
+				},
+				"ribbon_22": {
+					"rotation": ["17.5-math.sin(220 * query.life_time + 245) * 10", 0, 0]
+				},
+				"ribbon_24": {
+					"rotation": ["12.5-math.sin(220 * query.life_time + 245) * 10", 0, 0]
+				},
+				"Root_spin_M": {
+					"rotation": ["-math.sin(120 * query.life_time + 65) * 2", 0, "math.sin(120 * query.life_time + 15) * 2"]
+				},
+				"Root_move_M": {
+					"position": [0, "math.sin(60 * query.life_time + 15) * 2", 0]
+				}
+			}
+		}
+	}
+}
