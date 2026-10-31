@@ -203,6 +203,22 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
         return ModSounds.GHAST_UNIVERSAL_DEATH.get();
     }
 
+    /**
+     * 交战中不自然消失
+     *
+     * <p>原版 {@code Mob#checkDespawn} 有两条：离最近玩家超过 128 格直接删；离玩家超过 32 格、
+     * 且 {@code noActionTime > 600}（30 秒）时每 tick 有 1/800 概率删。{@code noActionTime} 只在
+     * 「贴近到 32 格以内」时清零，而这只从不靠近目标（飘着随机飞、只在远处喷火），
+     * 于是战斗时永远停在第二条上，半分钟后大概率凭空消失。
+     *
+     * <p>有索敌期间一律按持久处理；脱战之后索敌会在 100 格外被 {@code TargetGoal} 放掉，
+     * 那时恢复原版规则，不会永久占着 {@link GhastElitePopulation} 的那一个名额
+     */
+    @Override
+    public boolean requiresCustomPersistence() {
+        return super.requiresCustomPersistence() || this.getTarget() != null;
+    }
+
     /** 一次只生成一只；「加载范围内最多 1 只」归 {@link GhastElitePopulation} 管 */
     @Override
     public int getMaxSpawnClusterSize() {

@@ -16,6 +16,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import twilightforest.init.TFEntities;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.Item;
@@ -290,6 +291,18 @@ public final class GhastFruityTests {
         FireJetProcess.tickAll();
         helper.assertTrue(FireJetProcess.activeCount(caster) == 0,
             "a jet must end as soon as its caster is gone");
+
+        // 交战中不自然消失：有索敌时按持久处理，脱战后回到原版的消失规则
+        elite.setTarget(null);
+        helper.assertFalse(elite.requiresCustomPersistence(),
+            "an idle elite must keep the vanilla despawn rules");
+        elite.setTarget(below);
+        helper.assertTrue(elite.requiresCustomPersistence(),
+            "an engaged elite must not despawn mid fight, even 32 blocks away from the player");
+
+        // 剑能打回去：原版那一支只认 #minecraft:redirectable_projectile 里的弹体
+        helper.assertTrue(ModEntities.GHAST_ELITE_FIREBALL.get().builtInRegistryHolder().is(EntityTypeTags.REDIRECTABLE_PROJECTILE),
+            "the elite fireball must be in #minecraft:redirectable_projectile, or a sword hit cannot send it back");
 
         // 吃碰撞才吃火球：noPhysics 的实体不被任何弹体命中，拨弹会整条失效
         helper.assertFalse(elite.noPhysics,
