@@ -13,7 +13,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
@@ -41,7 +40,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import org.jetbrains.annotations.Nullable;
@@ -88,9 +86,6 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
      * 形成无限反弹
      */
     private static final double DEFLECT_ORIGIN = 2.0D;
-
-    /** 拨出去的火球至少要有这个速度，免得一发已经快停住的火球被拨成原地不动 */
-    private static final double MIN_DEFLECT_SPEED = 0.1D;
 
     /**
      * 火球出膛的位置：脸前多远
@@ -280,7 +275,9 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         this.goalSelector.addGoal(5, new RandomFloatAroundGoal(this));
         this.goalSelector.addGoal(5, new VariantWanderGoal(this));
         this.goalSelector.addGoal(7, new GhastLookGoal(this));
-        this.goalSelector.addGoal(7, new GhastShootFireballGoal(this));
+        // 普通恶果用共用骨架（一发）；持块变体走 VariantCombatGoal，所以由 ready 挡掉
+        this.goalSelector.addGoal(7, new GhastShootGoal<GhastFruityEntity>(this,
+            ghast -> !ghast.isBlockVariant(), GhastFruityEntity::mouthPosition, this::fireAtTarget));
         // 正常的实体索敌：24 格内找玩家，不再叠原版恶魂那条 |Δy| <= 4 的过滤
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
@@ -465,58 +462,16 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
      * <p>有索敌就朝着索敌对象（眼睛高度）打回去；没有索敌就沿来路原样弹回，速度不去动它。
      * 两种做法都把火球的所有者改成恶果自己，于是这一发往后打中谁，都算恶果的攻击
      *
-     * <p>位置必须挪到碰撞箱外，见 {@link #DEFLECT_ORIGIN}；{@code hasImpulse} 决定服务端这一 tick
-     * 是否补发速度包（火球的 updateInterval 是 10 tick，不补要等半秒客户端才会拐弯）
+     * <p>改向本身在 {@link GhastDeflect}，这里只交出本体的 {@link #DEFLECT_ORIGIN} 并补一声
      */
     public void deflectFireball(LargeFireball fireball) {
-        Vec3 incoming = fireball.getDeltaMovement();
-        Vec3 direction = incoming.lengthSqr() > 1.0E-6D ? incoming.normalize() : this.getLookAngle();
-        LivingEntity target = this.getTarget();
-        if (target != null && target.isAlive() && !target.isRemoved()) {
-            Vec3 aim = target.getEyePosition().subtract(this.getEyePosition());
-            if (aim.lengthSqr() > 1.0E-6D) {
-                direction = aim.normalize();
-            }
-        } else {
-            direction = direction.reverse();
-        }
-
-        fireball.setOwner(this);
-        Vec3 origin = this.position().add(0.0D, this.getBbHeight() * 0.5D, 0.0D)
-            .add(direction.scale(DEFLECT_ORIGIN));
-        fireball.setPos(origin.x, origin.y, origin.z);
-        fireball.setDeltaMovement(direction.scale(Math.max(incoming.length(), MIN_DEFLECT_SPEED)));
-        fireball.hasImpulse = true;
+        GhastDeflect.deflect(this, fireball, DEFLECT_ORIGIN);
         this.playVoice(ModSounds.GHAST_UNIVERSAL_DEFLECT.get());
     }
 
-    /**
-     * 在撞击发生之前把火球接住
-     *
-     * <p>{@code ProjectileImpactEvent} 是取消点里最早的一处：取消之后
-     * {@code AbstractHurtingProjectile.tick} 会跳过 {@code hitTargetOrDeflectSelf}，
-     * 于是 {@code LargeFireball.onHitEntity}（6 点伤害）与随后的爆炸都不会发生，火球本身还活着，
-     * 正好可以在同一 tick 里被改向 —— 事件在 {@code getDeltaMovement} 与 {@code setPos} 之前触发，
-     * 写进去的位置与速度会被这一 tick 的步伐直接采用
-     *
-     * <p>两边都要取消：客户端自己也跑 {@code tick} 与撞击判定，只取消服务端的话，
-     * 客户端那边火球已经炸没了，服务端再发速度包也画不出来。改向只在服务端做 ——
-     * 索敌对象只存在于服务端
-     */
+    /** 撞击落在恶果身上时把火球接住，见 {@link GhastDeflect#handleImpact} */
     public static void onProjectileImpact(ProjectileImpactEvent event) {
-        if (!(event.getProjectile() instanceof LargeFireball fireball)) {
-            return;
-        }
-        if (!(event.getRayTraceResult() instanceof EntityHitResult hit)) {
-            return;
-        }
-        if (!(hit.getEntity() instanceof GhastFruityEntity ghast)) {
-            return;
-        }
-        event.setCanceled(true);
-        if (!ghast.level().isClientSide()) {
-            ghast.deflectFireball(fireball);
-        }
+        GhastDeflect.handleImpact(event, GhastFruityEntity.class, GhastFruityEntity::deflectFireball);
     }
 
     /**
@@ -533,13 +488,8 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
             ghast.getZ() + view.z * MOUTH_FORWARD);
     }
 
-    /** 与 {@code levelEvent(1015/1016)} 等价的一次定向广播；音量取恶魂的 {@code getSoundVolume()}（5） */
     private void playVoice(SoundEvent sound) {
-        if (this.isSilent()) {
-            return;
-        }
-        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-            sound, SoundSource.HOSTILE, this.getSoundVolume(), 1.0F);
+        GhastVoice.playVoice(this, sound);
     }
 
     /** 原版 {@code Ghast.RandomFloatAroundGoal}：每 16 格内的一个随机点为下一段路的终点 */
@@ -925,73 +875,19 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     }
 
     /**
-     * 原版 {@code Ghast.GhastShootFireballGoal}，只把两声 {@code levelEvent} 换成模型包的音效，
-     * 并把出膛点从「体中心前 4 格」换成 {@link #mouthPosition}（脸的正面）
+     * 一轮一发：瞄准目标身体中段，从出膛点放出，爆炸威力沿用 {@code Ghast} 的那一份
      *
-     * <p>蓄力 20 tick、最后 10 tick 才算「正在喷火」（{@code isCharging}，模型据此换第三张脸）、
-     * 打完后冷却 40 tick、视线被挡时退蓄力、瞄准目标身体中段 —— 全部逐行照抄；
-     * 瞄准向量改为从出膛点算起，否则球从脸前出现却朝另一个方向飞
-     *
-     * <p>持块变体没有这一套（它们用 {@link VariantCombatGoal}），所以 {@code canUse} 先把变体挡掉
+     * <p>瞄准向量从出膛点算起，否则球会从脸前出现却朝另一个方向飞
      */
-    private static final class GhastShootFireballGoal extends Goal {
-        private final GhastFruityEntity ghast;
-        private int chargeTime;
-
-        private GhastShootFireballGoal(GhastFruityEntity ghast) {
-            this.ghast = ghast;
-        }
-
-        @Override
-        public boolean canUse() {
-            return !this.ghast.isBlockVariant() && this.ghast.getTarget() != null;
-        }
-
-        @Override
-        public void start() {
-            this.chargeTime = 0;
-        }
-
-        @Override
-        public void stop() {
-            this.ghast.setCharging(false);
-        }
-
-        @Override
-        public boolean requiresUpdateEveryTick() {
-            return true;
-        }
-
-        @Override
-        public void tick() {
-            LivingEntity target = this.ghast.getTarget();
-            if (target == null) {
-                return;
-            }
-            if (target.distanceToSqr(this.ghast) < 4096.0D && this.ghast.hasLineOfSight(target)) {
-                Level level = this.ghast.level();
-                this.chargeTime++;
-                if (this.chargeTime == 10) {
-                    this.ghast.playVoice(ModSounds.GHAST_UNIVERSAL_CHARGE.get());
-                }
-                if (this.chargeTime == 20) {
-                    // 出膛点与瞄准点必须用同一个基准，否则球会从脸前出现、却朝别处飞
-                    Vec3 muzzle = mouthPosition(this.ghast);
-                    Vec3 aim = new Vec3(
-                        target.getX() - muzzle.x,
-                        target.getY(0.5D) - muzzle.y,
-                        target.getZ() - muzzle.z);
-                    this.ghast.playVoice(ModSounds.GHAST_UNIVERSAL_SHOOT.get());
-                    LargeFireball fireball =
-                        new LargeFireball(level, this.ghast, aim.normalize(), this.ghast.getExplosionPower());
-                    fireball.setPos(muzzle.x, muzzle.y, muzzle.z);
-                    level.addFreshEntity(fireball);
-                    this.chargeTime = -40;
-                }
-            } else if (this.chargeTime > 0) {
-                this.chargeTime--;
-            }
-            this.ghast.setCharging(this.chargeTime > 10);
-        }
+    private void fireAtTarget(LivingEntity target, Vec3 muzzle) {
+        Level level = this.level();
+        Vec3 aim = new Vec3(
+            target.getX() - muzzle.x,
+            target.getY(0.5D) - muzzle.y,
+            target.getZ() - muzzle.z);
+        LargeFireball fireball =
+            new LargeFireball(level, this, aim.normalize(), this.getExplosionPower());
+        fireball.setPos(muzzle.x, muzzle.y, muzzle.z);
+        level.addFreshEntity(fireball);
     }
 }

@@ -14,7 +14,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
@@ -37,7 +36,6 @@ import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import org.jetbrains.annotations.Nullable;
@@ -90,8 +88,6 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
 
     /** 拨出去的火球出现在身外多远：8 格箱子的半对角线约 6.93 格，取 7.5 保证任何方向都在箱外 */
     private static final double DEFLECT_ORIGIN = 7.5D;
-
-    private static final double MIN_DEFLECT_SPEED = 0.1D;
 
     /** 泪滴每 10 tick 落一次（暮色恶魂的 tantrum 也是这个节奏） */
     private static final int TEAR_INTERVAL = 10;
@@ -165,7 +161,8 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     protected void registerGoals() {
         this.goalSelector.addGoal(5, new RandomFloatAroundGoal(this));
         this.goalSelector.addGoal(7, new EliteLookGoal(this));
-        this.goalSelector.addGoal(7, new EliteShootFireballGoal(this));
+        this.goalSelector.addGoal(7, new GhastShootGoal<GhastEliteEntity>(this,
+            GhastEliteEntity::mouthPosition, this::fireVolley));
         // 普通索敌：100 格内找玩家（跟索敌范围来自 FOLLOW_RANGE），没有原版恶魂那条 |Δy| <= 4 的过滤
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
@@ -183,11 +180,6 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     @Override
     protected SoundEvent getDeathSound() {
         return ModSounds.GHAST_UNIVERSAL_DEATH.get();
-    }
-
-    @Override
-    protected float getSoundVolume() {
-        return 5.0F;
     }
 
     /** 一次只生成一只；「加载范围内最多 1 只」归 {@link GhastElitePopulation} 管 */
@@ -301,54 +293,20 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     /**
      * 把撞上来的火球改向
      *
-     * <p>与「恶果」逐行相同：有索敌就朝索敌对象的眼睛，没有就原路弹回；火球挪到体中心外
-     * {@link #DEFLECT_ORIGIN} 格，免得下一 tick 又撞回自己
+     * <p>改向本身在 {@link GhastDeflect}，这里只交出本体的 {@link #DEFLECT_ORIGIN} 并补一声
      */
     public void deflectFireball(LargeFireball fireball) {
-        Vec3 incoming = fireball.getDeltaMovement();
-        Vec3 direction = incoming.lengthSqr() > 1.0E-6D ? incoming.normalize() : this.getLookAngle();
-        LivingEntity target = this.getTarget();
-        if (target != null && target.isAlive() && !target.isRemoved()) {
-            Vec3 aim = target.getEyePosition().subtract(this.getEyePosition());
-            if (aim.lengthSqr() > 1.0E-6D) {
-                direction = aim.normalize();
-            }
-        } else {
-            direction = direction.reverse();
-        }
-
-        fireball.setOwner(this);
-        Vec3 origin = this.position().add(0.0D, this.getBbHeight() * 0.5D, 0.0D)
-            .add(direction.scale(DEFLECT_ORIGIN));
-        fireball.setPos(origin.x, origin.y, origin.z);
-        fireball.setDeltaMovement(direction.scale(Math.max(incoming.length(), MIN_DEFLECT_SPEED)));
-        fireball.hasImpulse = true;
+        GhastDeflect.deflect(this, fireball, DEFLECT_ORIGIN);
         this.playVoice(ModSounds.GHAST_UNIVERSAL_DEFLECT.get());
     }
 
-    /** 在撞击发生之前把火球接住；两边都取消，改向只在服务端做 */
+    /** 撞击落在大恶魂身上时把火球接住，见 {@link GhastDeflect#handleImpact} */
     public static void onProjectileImpact(ProjectileImpactEvent event) {
-        if (!(event.getProjectile() instanceof LargeFireball fireball)) {
-            return;
-        }
-        if (!(event.getRayTraceResult() instanceof EntityHitResult hit)) {
-            return;
-        }
-        if (!(hit.getEntity() instanceof GhastEliteEntity elite)) {
-            return;
-        }
-        event.setCanceled(true);
-        if (!elite.level().isClientSide()) {
-            elite.deflectFireball(fireball);
-        }
+        GhastDeflect.handleImpact(event, GhastEliteEntity.class, GhastEliteEntity::deflectFireball);
     }
 
     private void playVoice(SoundEvent sound) {
-        if (this.isSilent()) {
-            return;
-        }
-        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-            sound, SoundSource.HOSTILE, this.getSoundVolume(), 1.0F);
+        GhastVoice.playVoice(this, sound);
     }
 
     /**
@@ -561,87 +519,36 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     }
 
     /**
-     * 原版 {@code Ghast.GhastShootFireballGoal} 的节奏（蓄力 20 tick、打完冷却 40 tick），
-     * 只是每一轮吐三发，左右各偏 {@value #FIREBALL_SPREAD_DEGREES} 度
+     * 一轮三发，左右各偏 {@value #FIREBALL_SPREAD_DEGREES} 度
+     *
+     * <p>节奏、蓄力与视线判定都在共用的 {@link GhastShootGoal} 里；这里只管把三发摆开
      */
-    private static final class EliteShootFireballGoal extends Goal {
-        private final GhastEliteEntity ghast;
-        private int chargeTime;
-
-        private EliteShootFireballGoal(GhastEliteEntity ghast) {
-            this.ghast = ghast;
+    private void fireVolley(LivingEntity target, Vec3 muzzle) {
+        Level level = this.level();
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
         }
-
-        @Override
-        public boolean canUse() {
-            return this.ghast.getTarget() != null;
+        Vec3 aim = target.getEyePosition().subtract(muzzle);
+        if (aim.lengthSqr() < 1.0E-6D) {
+            return;
         }
-
-        @Override
-        public void start() {
-            this.chargeTime = 0;
+        aim = aim.normalize();
+        Vec3 right = new Vec3(-aim.z, 0.0D, aim.x);
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D);
         }
-
-        @Override
-        public void stop() {
-            this.ghast.setCharging(false);
-        }
-
-        @Override
-        public boolean requiresUpdateEveryTick() {
-            return true;
-        }
-
-        @Override
-        public void tick() {
-            LivingEntity target = this.ghast.getTarget();
-            if (target == null) {
-                return;
-            }
-            if (target.distanceToSqr(this.ghast) < 4096.0D && this.ghast.hasLineOfSight(target)) {
-                this.chargeTime++;
-                if (this.chargeTime == 10) {
-                    this.ghast.playVoice(ModSounds.GHAST_UNIVERSAL_CHARGE.get());
-                }
-                if (this.chargeTime == 20) {
-                    this.fireVolley(target);
-                    this.chargeTime = -40;
-                }
-            } else if (this.chargeTime > 0) {
-                this.chargeTime--;
-            }
-            this.ghast.setCharging(this.chargeTime > 10);
-        }
-
-        private void fireVolley(LivingEntity target) {
-            Level level = this.ghast.level();
-            if (!(level instanceof ServerLevel serverLevel)) {
-                return;
-            }
-            Vec3 muzzle = mouthPosition(this.ghast);
-            Vec3 aim = target.getEyePosition().subtract(muzzle);
-            if (aim.lengthSqr() < 1.0E-6D) {
-                return;
-            }
-            aim = aim.normalize();
-            Vec3 right = new Vec3(-aim.z, 0.0D, aim.x);
-            if (right.lengthSqr() < 1.0E-6D) {
-                right = new Vec3(1.0D, 0.0D, 0.0D);
-            }
-            right = right.normalize();
-            this.ghast.playVoice(ModSounds.GHAST_UNIVERSAL_SHOOT.get());
-            for (int i = 0; i < FIREBALL_COUNT; i++) {
-                double spread = Math.toRadians(FIREBALL_SPREAD_DEGREES * (i - 1));
-                Vec3 direction = aim.yRot((float) spread);
-                // 三发沿射线拉开 2 格、左右再错开 1.2 格：出膛时彼此至少隔 1 格，
-                // 加上 canHitEntity 不认弹体，不会再出现「三发互相引爆」
-                Vec3 spawn = muzzle
-                    .add(aim.scale(i * 2.0D))
-                    .add(right.scale((i - 1) * 1.2D));
-                GhastEliteFireball fireball = new GhastEliteFireball(level, this.ghast, direction);
-                fireball.setPos(spawn.x, spawn.y, spawn.z);
-                serverLevel.addFreshEntity(fireball);
-            }
+        right = right.normalize();
+        for (int i = 0; i < FIREBALL_COUNT; i++) {
+            double spread = Math.toRadians(FIREBALL_SPREAD_DEGREES * (i - 1));
+            Vec3 direction = aim.yRot((float) spread);
+            // 三发沿射线拉开 2 格、左右再错开 1.2 格：出膛时彼此至少隔 1 格，
+            // 加上 canHitEntity 不认弹体，不会再出现「三发互相引爆」
+            Vec3 spawn = muzzle
+                .add(aim.scale(i * 2.0D))
+                .add(right.scale((i - 1) * 1.2D));
+            GhastEliteFireball fireball = new GhastEliteFireball(level, this, direction);
+            fireball.setPos(spawn.x, spawn.y, spawn.z);
+            serverLevel.addFreshEntity(fireball);
         }
     }
 
