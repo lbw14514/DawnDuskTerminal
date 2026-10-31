@@ -70,7 +70,7 @@
 
 两种生物的刷怪蛋注册在 `ModItems` 中，即 `tower_ghast_spawn_egg` 与 `string_spawn_egg`，使用 NeoForge 提供的 `DeferredSpawnEggItem`。原版 `SpawnEggItem` 的构造器要求传入一个现成的 `EntityType`，而物品注册先于实体类型注册执行；该子类接收的是 `Supplier`，同时在 `FMLCommonSetupEvent` 中补充发射器行为，并在 `RegisterColorHandlersEvent` 中登记两层染色。客户端因此只需要一个 `minecraft:item/template_spawn_egg` 模型，该模型的贴图与原版刷怪蛋共用，颜色由染色层提供。`gametest/SpawnEggTests` 通过 `SpawnEggItem#byId` 进行反向查询，以断言这张表确实已被填充。
 
-`entity/StringEntity`（弦）的默认形态（滑行型）只在不稳定流体的液面上活动：它每 tick 把脚底固定回液面，位置一旦离开流体就弹回上一个合法点，因此既不会飞出去，也不会沉下去。水平移动由 `StringMoveControl` 驱动，不经过地面寻路：行为层每 8 到 17 tick 给出一个落在液面上的目标点，控制器**每 tick 都朝它推一次**，目标点进入 0.35 格时才回到 `WAIT`。此处不能沿用原版 `MoveControl` 的做法，因为它一进入 `MOVE_TO` 就把自身改回 `WAIT`，并假设行为层每 tick 重新给出目标点（`PathNavigation` 正是这样做的）；沿用的结果是「推一 tick 滑一程」，实测 20 tick 只移动 0.2 格。空中每 tick 的推进量由 `getFlyingSpeed` 从移动速度属性折算成 `速度 × 0.045`：原版在这一点上对非玩家操控的生物返回恒定值 0.02，速度属性完全不参与，导致大小变种与「追击比巡航快」那一档都会失效。折算后小型个体的巡航速度约为 9.2 格每秒，追击速度约为 12.4 格每秒（行走的玩家为 4.3，冲刺为 5.6）。移速随体型变化：大型个体的基准是小型的 1.35 倍（巡航 12.4 格每秒、追击 16.7 格每秒），0.85~1.15 的随机体型偏移也一并相乘，巡航与追击的倍率两档共用同一套系数。该生物全身自发光：渲染层自行配置了一个材质，使用自发光着色器（`RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER`），不挂载光图，保留半透明（流体贴图 alpha 230），写掩码保持 `COLOR_DEPTH_WRITE`；贴图动画由 GeckoLib 的 `AnimatableTexture` 逐帧上传，与选用哪个 RenderType 无关。**不能直接使用原版 `RenderType.entityTranslucentEmissive`**：它的写掩码是 `COLOR_WRITE`，不写入深度；1.21 的绘制顺序为「实体 → 半透明区块层（流体位于这一层）→ 云」，后两者在实体之后按深度测试混合，因此实体若不写入深度缓冲，就会被这两层整片覆盖，看起来像被流体与云遮挡在后面。渲染层的实现位于 `client/StringRenderer` 的 `glowRenderType`。
+`entity/StringEntity`（弦）的默认形态（滑行型）只在不稳定流体的液面上活动：它每 tick 把脚底固定回液面，位置一旦离开流体就弹回上一个合法点，因此既不会飞出去，也不会沉下去。水平移动由 `StringMoveControl` 驱动，不经过地面寻路：行为层每 8 到 17 tick 给出一个落在液面上的目标点，控制器**每 tick 都朝它推一次**，目标点进入 0.35 格时才回到 `WAIT`。此处不能沿用原版 `MoveControl` 的做法，因为它一进入 `MOVE_TO` 就把自身改回 `WAIT`，并假设行为层每 tick 重新给出目标点（`PathNavigation` 正是这样做的）；沿用的结果是「推一 tick 滑一程」，实测 20 tick 只移动 0.2 格。空中每 tick 的推进量由 `getFlyingSpeed` 从移动速度属性折算成 `速度 × 0.045`：原版在这一点上对非玩家操控的生物返回恒定值 0.02，速度属性完全不参与，导致大小变种与「追击比巡航快」那一档都会失效。折算后小型个体的巡航速度约为 9.2 格每秒，追击速度约为 12.4 格每秒（行走的玩家为 4.3，冲刺为 5.6）。移速随体型变化：大型个体的基准是小型的 1.35 倍（巡航 12.4 格每秒、追击 16.7 格每秒），0.85~1.15 的随机体型偏移也一并相乘，巡航与追击的倍率两档共用同一套系数。该生物全身自发光：渲染层自行配置了一个材质，使用自发光着色器（`RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER`），不挂载光图，保留半透明（流体贴图 alpha 230），写掩码保持 `COLOR_DEPTH_WRITE`；贴图是动画条，运行时内核不带贴图动画，因此目前只按第一帧绘制（见 `docs/ysm.md` 的已知差距）。**不能直接使用原版 `RenderType.entityTranslucentEmissive`**：它的写掩码是 `COLOR_WRITE`，不写入深度；1.21 的绘制顺序为「实体 → 半透明区块层（流体位于这一层）→ 云」，后两者在实体之后按深度测试混合，因此实体若不写入深度缓冲，就会被这两层整片覆盖，看起来像被流体与云遮挡在后面。渲染层的实现位于 `client/StringRenderer` 的 `glowRenderType`。
 
 「弦」的待机音需要持续播放，因此不采用原版那条「每隔一段随机间隔掷一次」的路径：`getAmbientSound` 返回 null，由 `tickAmbientSound` 按音效长度排期。`string_ambient` 的三个变体取自同一段素材且长度一致（413192 采样 / 44100 Hz = 9.37 秒 = 187 tick），当前这一条还剩 8 tick 时开始下一条，两条叠加在一起听不出断点；音高固定为 1.0，因为变调会改变实际时长，排期便无法对上。`gametest/StringEntityTests` 手动执行「控制器写速度 → 原版 air 分支」两个动作，以断言每 tick 都推进、到位即停、推进量随速度属性变化这三件事。
 
@@ -86,9 +86,9 @@
 
 「弦」的刷怪蛋（`item/StringSpawnEggItem`）只能放置在传送门流体旁边：`useOn`（对方块使用）、`use`（对流体源格使用）与 `createDispenseBehavior`（发射器；默认行为在 `DeferredSpawnEggItem` 中是私有的，因此参照重写了一份）这三条发放路径都先经过 `StringEntity.canSpawnAt` 判定，即落点所在的那一格是流体，或其正下方是流体，才允许放置，否则刷怪蛋不被消耗。
 
-`entity/TowerGhastEntity` 由 GeckoLib 驱动，其模型、动画与贴图从 Yes Steve Model 的 Bedrock 文件转换而来，转换与校验位于 `tools/ysm/`。
+`entity/TowerGhastEntity` 的模型、动画与贴图是 Yes Steve Model 的 Bedrock 文件，按模型包的原样布局放在 `assets/dawnduskterminal/ysm/tower_ghast/` 下，运行时解析，不做离线转换。运行时是仓库自带的 Molang 版 GeckoLib 分支（`geckolib3/` 与 `molang/`，来源 TouhouLittleMaid，MIT），`ysm.*` / `fn.*` 两张表在 `client/animation/YsmBinding` 与 `FnBinding`。
 
-`client/TowerGhastRenderer` 直接写出三条资源路径，不遵循 GeckoLib 的命名约定。
+主动画的选择留在实体里（`TowerGhastEntity.mainAnimation`，死亡压过受击、受击压过移动），分层由 `client/animation/YsmAnimatable` 按 YSM 的顺序注册：`pre_parallel0..7` 最先、主动画居中、`parallel0..7` 最后，最后一批是<strong>叠加</strong>在主动画之上的加法混合。缩放取自包内 `ysm.json` 的 `properties.height_scale`。
 
 `entity/GhastEliteEntity`（大恶魂）是暮色恶魂的精英形态：`Ghast` 的子类，碰撞箱取几何里的主立方体 `thehead`（128 单位见方，即 8×8×8 格，眼高 4 格），生命 250、索敌 100 格（普通 `NearestAttackableTargetGoal<Player>`，没有原版恶魂那条 |Δy| ≤ 4 的过滤；挨打之后立刻记仇，来源是谁就盯谁），经验 317——与暮色森林 `UrGhast` 同一个数。自然生成时问 `GhastElitePopulation`，后者按维度存一张每 tick 刷新的快照，加载范围内已经有 1 只就拒绝，因此一个玩家身边最多一只；群系表里只挂在 `old_growth_birch_forest` 的 monster 表上（权重 1、单批 1 只），刷怪蛋与刷怪笼不受这条容量限制。掉落表为砷铅铁 2~4、恶魂之泪 1~3、高塔恶魂皮 2~4、生恶魂肉 2~4，均带抢夺加成。**有索敌期间按持久处理**（`requiresCustomPersistence`）：它从不靠近目标，`noActionTime` 因此永远得不到清零，原版那条「离玩家超过 32 格且 30 秒没动作就掷骰删除」会让它在战斗中半分钟后凭空消失；脱战后索敌在 100 格外被 `TargetGoal` 放掉，回到原版的消失规则，不会永久占着容量名额。**它必须吃碰撞**：`AbstractHurtingProjectile#canHitEntity` 要求目标不是 `noPhysics`，否则火球根本不命中它，拨火球整条失效，而且不吃碰撞就会穿到地面以下；移动一侧改用 `EliteMoveControl`，照暮色森林 `NoClipMoveControl` 每 2~6 tick 沿目标方向推 0.1 的加速度，只去掉整条直线的碰撞预检（8 格见方的箱子在树林里找不到一条无障碍的直线），撞上树干交给实体自己的移动去滑。
 
@@ -98,7 +98,13 @@
 
 小鬼打不打人由暮色森林自己的 `CarminiteGhastling#shouldAttack` 决定：玩家头顶戴着雕刻南瓜时不打；3.5 格以内只要看得见就打；更远时必须**玩家的准星对着它**（`dot(玩家视线, 指向它的方向) > 1 − 0.025/距离`）且有视线。照原样，侧身路过的玩家不会被追打，看起来就像「待在天上不动」。因此召唤出来时会打上 `persistentData` 标记 `dawnduskterminal:elite_minion`，`mixin/GhastlingShouldAttackMixin` 对带标记的只在 `shouldAttack` 开头放行（仍然要求有视线，免得隔着树开火）；野生的砷铅铁恶魂守卫没有这个标记，仍按原规则挑人。`@Mixin` 直接写暮色森林的类字面量，目标改名时编译期就会报错。
 
-客户端三条资源路径写在 `client/GhastEliteRenderer`；`parallel0` 里的 perlin 通道由 `client/GhastEliteBonePose` 逐帧补回（两条触手与五条腿的常数与源表达式一一对应，链上各段按 0.6 / 0.35 递减），`parallel1` 不播放——它是 YSM 宿主每帧算出的布条变量，GeckoLib 既不会赋值也不跨帧。这段写入必须挂在 `GeoModel.setCustomAnimations` 上，与高塔恶魂的 `client/TowerGhastBonePose` 同一个位置。角度一律经 `client/GeoBoneRotation`（度、X 与 Y 取反、加初始姿势），与 GeckoLib 读关键帧时的处理一致；手写弧度会让触手的偏航与腿的俯仰整体朝反侧摆。补回的通道不靠人工记：`client/YsmRuntimeContract` 读 `assets/dawnduskterminal/ysm_runtime/ghast_elite.json`（由 `tools/ysm/runtime_contract.py` 从源动画与转换后动画的差异生成），首次渲染后核对清单里每条通道是否都有代码写回，漏一条就打一条警告。
+「大恶魂」的模型包按同样的原样布局放在 `assets/dawnduskterminal/ysm/ghast_elite/` 下。这个包只有两条片段：`parallel0` 是七根触手与四肢的柏林噪声摆动，`parallel1` 是一段每帧执行的 `timeline` 程序（布条与触手的链式物理），两条都由并行动画控制器逐帧求值，没有主动画。
+
+`parallel1` 里的布条物理是这套模型里唯一「必须执行代码才能得到」的部分，也是这套运行时存在的理由：`ysm.first_order` / `second_order` 是按名字记忆状态的递归滤波器、`ysm.bone_rot` 读上一帧的骨骼变换、`ysm.bone_pivot_abs` 要按当前旋转重算链条的绝对 pivot，三者都跨帧，没有无状态的等价物。物理按**渲染帧**推进（步长取帧间隔，与 YSM 的 `PhysicsManager.update` 一致），不是按 tick：源程序里的 `first_order(…, 0.02)` 与 `0.94·上次目标` 都是按帧积分的，按 1/20 秒推进会自激、幅度翻倍。
+
+三条与 YSM 对齐的语义：`math.sin/cos` 的入参是**度**；欧拉角按 ZYX 序（`getEulerAnglesXYZ` 会让 40 度以上的角度在轴间错位）；`ysm.bone_pivot_abs` 返回的是 Bedrock 坐标（x 不取负），源表达式自己写了 `-ysm.bone_pivot_abs(...).x`，这里再取负会让辅助骨骼的基矩阵变成反射，触手翻到 90~150 度。
+
+`fn.*` 五个四元数函数用 JOML 按标准语义重建——包里没有 `functions/` 目录，定义无从取得；名字按小写登记，因为词法层会把标识符转成小写。
 
 ## 装备与武器
 

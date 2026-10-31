@@ -1,80 +1,60 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.client.animation.YsmAnimatable;
+import com.dawnduskterminal.client.animation.YsmEntityRenderer;
+import com.dawnduskterminal.client.animation.YsmPack;
+import com.dawnduskterminal.client.animation.YsmPacks;
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.registry.ModEntities;
+import com.dawnduskterminal.geckolib3.core.event.predicate.AnimationEvent;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import software.bernie.geckolib.animation.AnimationState;
-import software.bernie.geckolib.model.GeoModel;
-import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 /**
- * 「大恶魂」的客户端接线：GeckoLib 渲染器与三条资源路径
+ * 「大恶魂」的客户端接线
  *
- * <p>三条资源路径直接写出来，不依赖 GeckoLib 的命名约定，理由与 {@link TowerGhastRenderer} 相同
- *
- * <p>两张脸与触手、腿的逐帧写入不在这一层，见 {@link GhastEliteBonePose}：它们必须挂在
- * {@code GeoModel.setCustomAnimations} 上，而不是渲染层
+ * <p>模型包按 YSM 的原样布局放在 {@code assets/dawnduskterminal/ysm/ghast_elite/} 下。这个包只有两条片段：
+ * {@code parallel0} 是七根触手与四肢的柏林噪声摆动，{@code parallel1} 是一段每帧执行的 {@code timeline}
+ * 程序（布条与触手的链式物理）。两者都由并行动画控制器逐帧求值，没有第三段主动画。
  */
 public final class GhastEliteRenderer {
-    private GhastEliteRenderer() {}
+    private GhastEliteRenderer() {
+    }
+
+    static final ResourceLocation PACK = DawnDuskTerminal.id("ghast_elite");
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.GHAST_ELITE.get(), GhastEliteEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_ELITE.get(), Renderer::new);
         // 火球的渲染器漏了会让 EntityRenderDispatcher 拿到 null，客户端直接 NPE 崩掉
         event.registerEntityRenderer(ModEntities.GHAST_ELITE_FIREBALL.get(),
             context -> new ThrownItemRenderer<>(context, 3.0F, true));
     }
 
-    private static final class GhastEliteEntityRenderer extends GeoEntityRenderer<GhastEliteEntity> {
-        private GhastEliteEntityRenderer(EntityRendererProvider.Context context) {
-            super(context, new GhastEliteModel());
+    private static final class Renderer extends YsmEntityRenderer<GhastEliteEntity, Animatable> {
+        private Renderer(EntityRendererProvider.Context context) {
+            super(context, Animatable::new);
             // 碰撞箱 8 格见方，影子半径取一半
             this.shadowRadius = 4.0F;
         }
 
-        /** 模型包没有死亡片段，GeckoLib 默认的「绕 Z 扳倒 90 度」就是唯一的死亡演出，保留 */
         @Override
-        protected float getDeathMaxRotation(GhastEliteEntity animatable) {
-            return 90.0F;
+        protected float scaleOf(GhastEliteEntity entity) {
+            return YsmPacks.get(PACK).heightScale();
         }
     }
 
-    private static final class GhastEliteModel extends GeoModel<GhastEliteEntity> {
-        /** 两张脸与触手、腿的逐帧写入，见 {@link GhastEliteBonePose} */
-        private final GhastEliteBonePose bonePose = new GhastEliteBonePose();
-
-        @Override
-        public void setCustomAnimations(GhastEliteEntity entity, long instanceId,
-                                        AnimationState<GhastEliteEntity> animationState) {
-            this.bonePose.apply(entity, this, animationState.getPartialTick());
+    private static final class Animatable extends YsmAnimatable<GhastEliteEntity> {
+        private Animatable(GhastEliteEntity entity) {
+            super(entity, YsmPacks.get(PACK).model(), YsmPacks.get(PACK).animation(), YsmPacks.get(PACK).texture());
         }
 
-        private static final ResourceLocation MODEL =
-            DawnDuskTerminal.id("geo/ghast_elite.geo.json");
-        private static final ResourceLocation TEXTURE =
-            DawnDuskTerminal.id("textures/entity/ghast_elite.png");
-        private static final ResourceLocation ANIMATIONS =
-            DawnDuskTerminal.id("animations/ghast_elite.animation.json");
-
-        @SuppressWarnings("deprecation")
+        /** 模型包没有主动画：所有通道都由并行动画层写 */
         @Override
-        public ResourceLocation getModelResource(GhastEliteEntity animatable) {
-            return MODEL;
-        }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public ResourceLocation getTextureResource(GhastEliteEntity animatable) {
-            return TEXTURE;
-        }
-
-        @Override
-        public ResourceLocation getAnimationResource(GhastEliteEntity animatable) {
-            return ANIMATIONS;
+        protected String mainClip(AnimationEvent<YsmAnimatable<GhastEliteEntity>> event) {
+            return null;
         }
     }
 }

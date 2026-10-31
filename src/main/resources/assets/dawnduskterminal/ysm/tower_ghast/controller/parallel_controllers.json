@@ -1,0 +1,75 @@
+{
+	"format_version": "1.19.0",
+	"animation_controllers": {
+		"player.parallel_7": {
+			"states": {
+				"mute": {
+					"transitions": [
+						{"default": "v.roaming.mute==0"}
+					]
+				},
+				"default": {
+					"transitions": [
+						{"idle1": "v.idrd==1"},
+						{"idle2": "v.idrd==2"},
+						{"idle3": "v.idrd==3"},
+						{"idle4": "v.idrd==4"},
+						{"idle5": "v.idrd==5"},
+						{"idle6": "v.idrd==6"},
+						{"idle7": "v.idrd==7"},
+						{"mute": "v.roaming.mute==1"}
+					]
+				},
+				"idle1": {
+					"animations": ["id1"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle2": {
+					"animations": ["id2"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle3": {
+					"animations": ["id3"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle4": {
+					"animations": ["id4"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle5": {
+					"animations": ["id5"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle6": {
+					"animations": ["id6"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				},
+				"idle7": {
+					"animations": ["id7"],
+					"on_exit": ["v.idrd=0;"],
+					"transitions": [
+						{"default": "query.any_animation_finished"}
+					]
+				}
+			}
+		}
+	}
+}

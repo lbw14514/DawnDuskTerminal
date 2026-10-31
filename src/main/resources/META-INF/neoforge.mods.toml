@@ -30,13 +30,6 @@ versionRange = "[1.21.1,)"
 ordering = "AFTER"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
-modId = "geckolib"
-type = "required"
-versionRange = "[4.9.3,)"
-ordering = "AFTER"
-side = "BOTH"
-
 # c2me 以 JarJar 嵌套随本模组加载；这条 optional 依赖给外部安装留出版本协商依据
 [[dependencies.${mod_id}]]
 modId = "c2me"

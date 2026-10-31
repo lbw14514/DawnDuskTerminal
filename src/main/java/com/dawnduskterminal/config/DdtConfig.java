@@ -23,6 +23,7 @@ public final class DdtConfig {
     private static final boolean ENTITY_DEBUFF_DEFAULT = true;
     private static final boolean TOLERATE_FEATURE_CYCLES_DEFAULT = true;
     private static final boolean NATIVE_MESH_DEFAULT = true;
+    private static final double RIBBON_SPEED_DEFAULT = 1.0D;
 
     private static final ModConfigSpec.DoubleValue SUN_ANGLE_MAX;
     private static final ModConfigSpec.BooleanValue SKY_LIGHT_BY_DISTANCE;
@@ -35,6 +36,7 @@ public final class DdtConfig {
     private static final ModConfigSpec.BooleanValue ENTITY_DEBUFF;
     private static final ModConfigSpec.BooleanValue TOLERATE_FEATURE_CYCLES;
     private static final ModConfigSpec.BooleanValue NATIVE_MESH;
+    private static final ModConfigSpec.DoubleValue RIBBON_SPEED;
 
     /**
      * 热路径用的缓存
@@ -93,6 +95,9 @@ public final class DdtConfig {
         b.push("render");
         NATIVE_MESH = b.comment("use the bundled native mesh kernel, disable it to force the GeckoLib Java renderer if a native crash is suspected")
             .define("native_mesh", NATIVE_MESH_DEFAULT);
+        RIBBON_SPEED = b.comment("time scale of the ysm.first_order / ysm.second_order bone physics (cloth, hair, tentacles)",
+                "1.0 matches Yes Steve Model; lower values make the cloth swing slower and softer")
+            .defineInRange("ribbon_speed", RIBBON_SPEED_DEFAULT, 0.2D, 3.0D);
         b.pop();
 
         SPEC = b.build();
@@ -170,5 +175,10 @@ public final class DdtConfig {
 
     public static boolean nativeMeshEnabled() {
         return safe(NATIVE_MESH, NATIVE_MESH_DEFAULT);
+    }
+
+    /** 骨骼物理（布条、头发、触手）的时间倍率，1.0 与 Yes Steve Model 一致 */
+    public static double ribbonSpeed() {
+        return safe(RIBBON_SPEED, RIBBON_SPEED_DEFAULT);
     }
 }

@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
-import software.bernie.geckolib.cache.object.GeoCube;
+import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -16,8 +16,8 @@ import java.util.Arrays;
  * native 网格批处理
  *
  * <p>用法 在一个渲染批次开始前 {@link #begin(NativeGeoMesh)}
- * 每个 cube 自己把 pivot 与旋转应用到 {@link PoseStack} 之后调用
- * {@link #add(GeoCube, PoseStack, VertexConsumer, int, int, int)}
+ * 骨骼姿势已经应用到 {@link PoseStack} 之后 逐个立方体调用
+ * {@link #add(GeoMesh, int, PoseStack, VertexConsumer, int, int, int)}
  * 批次结束时调用 {@link #flush(VertexConsumer)} 一次 JNI 把整批顶点算完
  *
  * <p>实体渲染器和方块实体渲染器都能用同一套流程 只要它们的 {@code renderCube}
@@ -75,14 +75,16 @@ public final class NativeMeshBatch {
     }
 
     /**
+     * @param mesh  该骨骼的几何表
+     * @param cube  立方体在几何表里的下标
      * @return 这个 cube 不在 native 网格里 例如没有任何可见顶点 时返回 false
      */
-    public boolean add(GeoCube cube, PoseStack poseStack, VertexConsumer buffer,
+    public boolean add(GeoMesh mesh, int cube, PoseStack poseStack, VertexConsumer buffer,
                        int packedLight, int packedOverlay, int colour) {
         if (!this.active) {
             throw new IllegalStateException("native 网格批处理没有开始");
         }
-        int pieceId = this.mesh.id(cube);
+        int pieceId = this.mesh.id(mesh, cube);
         if (pieceId < 0) {
             return false;
         }

@@ -1,0 +1,14 @@
+{
+  "spec": 2,
+  "metadata": {
+    "name": "大恶魂",
+    "license": {
+      "type": "CC BY-NC-SA 4.0"
+    }
+  },
+  "properties": {
+    "height_scale": 1.0,
+    "width_scale": 1.0,
+    "default_texture": "ghast"
+  }
+}

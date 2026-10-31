@@ -2,14 +2,14 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.StringEntity;
-import com.dawnduskterminal.entity.TowerGhastPhysics;
+import com.dawnduskterminal.client.animation.YsmNoise;
 import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import software.bernie.geckolib.animation.state.BoneSnapshot;
-import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.model.GeoModel;
+import com.dawnduskterminal.geckolib3.core.processor.IBone;
+import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
+import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoModel;
+import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -72,7 +72,7 @@ public final class StringPose {
     private final Quaternionf spokeRotation = new Quaternionf();
     private final Vector3f locator = new Vector3f();
 
-    public void apply(StringEntity entity, GeoModel<StringEntity> model, float partialTick) {
+    public void apply(StringEntity entity, AnimatedGeoModel model, float partialTick) {
         Layout layout = layout(model);
         if (layout == null || layout.count == 0) {
             return;
@@ -87,23 +87,23 @@ public final class StringPose {
         double life = (entity.tickCount + partialTick) / 20.0D;
 
         // root：两轴柏林噪声 + 绕 Z 的匀速自转，源式子是 60*life_time 度
-        double rootXDeg = -30.0D * TowerGhastPhysics.perlinNoise(ROOT_SEED, 1.0D, life, 2.0D);
-        double rootYDeg = -30.0D * TowerGhastPhysics.perlinNoise(ROOT_SEED, life, 1.0D, 2.0D);
+        double rootXDeg = -30.0D * YsmNoise.perlin(ROOT_SEED, 1.0D, life, 2.0D);
+        double rootYDeg = -30.0D * YsmNoise.perlin(ROOT_SEED, life, 1.0D, 2.0D);
         double rootZDeg = 60.0D * life;
         GeoBoneRotation.set(layout.root, rootXDeg, rootYDeg, rootZDeg);
-        this.rootRotation.rotationZYX(layout.root.getRotZ(), layout.root.getRotY(), layout.root.getRotX());
+        this.rootRotation.rotationZYX(layout.root.getRotationZ(), layout.root.getRotationY(), layout.root.getRotationX());
 
         for (int i = 0; i < layout.count; i++) {
-            GeoBone spoke = layout.spokes[i];
+            IBone spoke = layout.spokes[i];
             int offset = i * PoseState.STRIDE;
             double randX = Mth.lerp(partialTick, state.prev[offset], state.curr[offset]);
             double randZ = Mth.lerp(partialTick, state.prev[offset + 1], state.curr[offset + 1]);
             double randScale = Mth.lerp(partialTick, state.prev[offset + 2], state.curr[offset + 2]);
 
             int seed = SPOKE_SEEDS[i];
-            double pX = TowerGhastPhysics.perlinNoise(seed, 1.0D, life, 2.0D);
-            double pZ = TowerGhastPhysics.perlinNoise(seed, 1.0D, 2.0D, life);
-            double pScale = TowerGhastPhysics.perlinNoise(seed, life, 1.0D, 2.0D);
+            double pX = YsmNoise.perlin(seed, 1.0D, life, 2.0D);
+            double pZ = YsmNoise.perlin(seed, 1.0D, 2.0D, life);
+            double pScale = YsmNoise.perlin(seed, life, 1.0D, 2.0D);
 
             double spokeXDeg = -40.0D * pX - randX;
             double spokeZDeg = layout.zAmplitude * pZ + randZ;
@@ -114,7 +114,7 @@ public final class StringPose {
             spoke.setScaleY((float) scale);
             spoke.setScaleZ((float) scale);
 
-            this.spokeRotation.rotationZYX(spoke.getRotZ(), spoke.getRotY(), spoke.getRotX());
+            this.spokeRotation.rotationZYX(spoke.getRotationZ(), spoke.getRotationY(), spoke.getRotationX());
             this.locator.set(0.0F, layout.locatorPivotY, 0.0F)
                 .mul((float) scale)
                 .rotate(this.spokeRotation)
@@ -131,10 +131,10 @@ public final class StringPose {
             double dz = layout.locatorZ[next] - layout.locatorZ[i];
             double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-            GeoBone segment = layout.segments[i];
-            segment.setPosX(-layout.locatorX[i]);
-            segment.setPosY(layout.locatorY[i]);
-            segment.setPosZ(layout.locatorZ[i]);
+            IBone segment = layout.segments[i];
+            segment.setPositionX(-layout.locatorX[i]);
+            segment.setPositionY(layout.locatorY[i]);
+            segment.setPositionZ(layout.locatorZ[i]);
 
             if (length < 1.0E-6D) {
                 setRotation(segment, 0.0F, 0.0F, 0.0F);
@@ -144,7 +144,7 @@ public final class StringPose {
                 setRotation(segment, x, 0.0F, z);
             }
 
-            GeoBone body = layout.bodies[i];
+            IBone body = layout.bodies[i];
             float yScale = (float) (length / layout.nominalLength);
             body.setScaleX(1.0F);
             body.setScaleY(yScale);
@@ -152,7 +152,7 @@ public final class StringPose {
         }
     }
 
-    private Layout layout(GeoModel<StringEntity> model) {
+    private Layout layout(AnimatedGeoModel model) {
         Layout layout = this.cachedLayout;
         if (layout != null && layout.isCurrent(model)) {
             return layout;
@@ -166,11 +166,11 @@ public final class StringPose {
      * 只接已经算好的弧度：弦段的朝向由 {@code asin} / {@code atan2} 直接给出、没有对应的角度表达，
      * 取反已在调用处完成。角度那条路径走 {@link GeoBoneRotation}
      */
-    private static void setRotation(GeoBone bone, float x, float y, float z) {
-        BoneSnapshot initial = bone.getInitialSnapshot();
-        bone.setRotX(initial.getRotX() + x);
-        bone.setRotY(initial.getRotY() + y);
-        bone.setRotZ(initial.getRotZ() + z);
+    private static void setRotation(IBone bone, float x, float y, float z) {
+        var initial = bone.getInitialSnapshot();
+        bone.setRotationX(initial.rotationValueX + x);
+        bone.setRotationY(initial.rotationValueY + y);
+        bone.setRotationZ(initial.rotationValueZ + z);
     }
 
     /** 逐 tick 的随机项，两个 tick 之间插值，避免 20 Hz 的跳变 */
@@ -202,11 +202,11 @@ public final class StringPose {
 
     /** 模型里能查到的骨骼引用与常量，第一次换模型时建一次 */
     private static final class Layout {
-        private final GeoBone sentinel;
-        private final GeoBone root;
-        private final GeoBone[] spokes;
-        private final GeoBone[] segments;
-        private final GeoBone[] bodies;
+        private final IBone sentinel;
+        private final IBone root;
+        private final IBone[] spokes;
+        private final IBone[] segments;
+        private final IBone[] bodies;
         private final int count;
         private final boolean large;
         private final float locatorPivotY;
@@ -216,8 +216,8 @@ public final class StringPose {
         private final float[] locatorY;
         private final float[] locatorZ;
 
-        private Layout(GeoBone sentinel, GeoBone root, GeoBone[] spokes, GeoBone[] segments,
-                       GeoBone[] bodies, int count, boolean large, float locatorPivotY,
+        private Layout(IBone sentinel, IBone root, IBone[] spokes, IBone[] segments,
+                       IBone[] bodies, int count, boolean large, float locatorPivotY,
                        float nominalLength, double zAmplitude) {
             this.sentinel = sentinel;
             this.root = root;
@@ -234,42 +234,42 @@ public final class StringPose {
             this.locatorZ = new float[Math.max(count, 1)];
         }
 
-        private boolean isCurrent(GeoModel<StringEntity> model) {
-            return model.getAnimationProcessor().getBone("root") == this.sentinel;
+        private boolean isCurrent(AnimatedGeoModel model) {
+            return model.bones().get("root") == this.sentinel;
         }
 
-        private static Layout build(GeoModel<StringEntity> model) {
-            var processor = model.getAnimationProcessor();
-            GeoBone sentinel = processor.getBone("root");
-            boolean large = processor.getBone("spoke12") != null;
+        private static Layout build(AnimatedGeoModel model) {
+            var processor = model.bones();
+            IBone sentinel = processor.get("root");
+            boolean large = processor.get("spoke12") != null;
             int count = large ? 12 : 8;
 
-            GeoBone root = processor.getBone("root");
-            GeoBone[] spokes = new GeoBone[count];
-            GeoBone[] segments = new GeoBone[count];
-            GeoBone[] bodies = new GeoBone[count];
+            IBone root = processor.get("root");
+            IBone[] spokes = new IBone[count];
+            IBone[] segments = new IBone[count];
+            IBone[] bodies = new IBone[count];
             boolean complete = root != null;
             for (int i = 0; i < count; i++) {
-                spokes[i] = processor.getBone("spoke" + (i + 1));
-                segments[i] = processor.getBone("segiment_" + (i + 1));
-                bodies[i] = processor.getBone("segiment_Y_" + (i + 1));
+                spokes[i] = processor.get("spoke" + (i + 1));
+                segments[i] = processor.get("segiment_" + (i + 1));
+                bodies[i] = processor.get("segiment_Y_" + (i + 1));
                 complete &= spokes[i] != null && segments[i] != null && bodies[i] != null;
             }
             if (!complete) {
                 DawnDuskTerminal.LOGGER.warn(
                     "DawnDuskTerminal 弦的模型缺少 root/spoke/segiment 骨骼，姿态层不会生效");
-                return new Layout(sentinel, root, new GeoBone[0], new GeoBone[0], new GeoBone[0], 0,
+                return new Layout(sentinel, root, new IBone[0], new IBone[0], new IBone[0], 0,
                     false, 16.0F, SMALL_SEGMENT_LENGTH, 15.0D);
             }
 
-            GeoBone locator = processor.getBone("segimentlocator1");
-            float pivotY = locator != null ? locator.getPivotY() : (large ? 40.0F : 16.0F);
+            IBone locator = processor.get("segimentlocator1");
+            float pivotY = locator instanceof AnimatedGeoBone animated ? animated.geoBone().pivot().y : (large ? 40.0F : 16.0F);
             float nominalLength = large ? LARGE_SEGMENT_LENGTH : SMALL_SEGMENT_LENGTH;
-            GeoBone firstBody = bodies[0];
-            if (!firstBody.getCubes().isEmpty()) {
-                Vec3 size = firstBody.getCubes().getFirst().size();
-                if (size.y() > 0.0D) {
-                    nominalLength = (float) size.y();
+            IBone firstBody = bodies[0];
+            if (firstBody instanceof AnimatedGeoBone animatedBody) {
+                GeoMesh mesh = animatedBody.geoBone().cubes();
+                if (mesh != null && mesh.getCubeCount() > 0 && mesh.dy(0).length() > 0.0F) {
+                    nominalLength = mesh.dy(0).length();
                 }
             }
             // 大型的 Z 轴摆动幅度是 10 度，小型是 15 度，见源文件两个 parallel1

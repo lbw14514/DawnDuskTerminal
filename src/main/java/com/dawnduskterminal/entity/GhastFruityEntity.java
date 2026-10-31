@@ -47,12 +47,6 @@ import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import twilightforest.init.TFBlocks;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.EnumSet;
 
@@ -78,10 +72,7 @@ import java.util.EnumSet;
  * 取消 {@code ProjectileImpactEvent}，然后把火球挪到恶果身外、按当前索敌重新给方向。
  * 若此时没有索敌，就沿来路原样弹回去
  */
-public class GhastFruityEntity extends Ghast implements GeoEntity {
-    /** 模型包只有一条循环动画，布条与根节点一直在晃 */
-    private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("parallel0");
-
+public class GhastFruityEntity extends Ghast {
     /**
      * 拨出去的火球出现在恶果身外多远
      *
@@ -223,7 +214,6 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     private static final EntityDataAccessor<Byte> DATA_HELD_BLOCK = SynchedEntityData.defineId(
         GhastFruityEntity.class, EntityDataSerializers.BYTE);
 
-    private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     /** 052 变体剩下的引信 tick；{@code -1} 表示没点着。只在服务端有意义 */
     private int fuse = -1;
@@ -376,11 +366,6 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         this.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, VANISH_INVISIBLE_TICKS, 0, false, false, false));
     }
 
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "ghastfruity_idle", 0,
-            state -> state.setAndContinue(IDLE)));
-    }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -535,10 +520,6 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         return this.getTarget() != null ? Face.ANNOYED : Face.CALM;
     }
 
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.animatableCache;
-    }
 
     @Override
     protected SoundEvent getAmbientSound() {

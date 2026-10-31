@@ -1,6 +1,7 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.client.animation.YsmEntityReload;
 import com.dawnduskterminal.client.model.CountertopModel;
 import com.dawnduskterminal.client.model.ExperimentArmorModel;
 import com.dawnduskterminal.client.model.MountedTowerWoodModel;
@@ -81,6 +82,7 @@ public final class DdtClient {
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
         modBus.addListener(DdtClient::onRegisterParticleProviders);
         modBus.addListener(DdtClient::registerMenuScreens);
+        modBus.addListener(YsmEntityReload::register);
     }
 
     /**

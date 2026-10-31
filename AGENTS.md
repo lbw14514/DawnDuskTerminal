@@ -34,7 +34,7 @@ Java 版本为 Java 21。
 
 `src/main/resources/data/dawnduskterminal/` 存放维度、群系、地形、战利品、配方与进度。
 
-`tools/` 存放移植、校验与动画转换所用的 Python 脚本。
+`tools/` 存放世界生成移植与校验所用的 Python 脚本。
 
 `docs/` 存放开发文档。
 
@@ -72,9 +72,9 @@ Java 版本为 Java 21。
 3. `./gradlew build` 的 `processResources` 任务把 `build/native` 下的全部目录打进 jar。
 4. `release.yml` 校验 5 个 `ddt_native` 均存在，缺少任意一个即直接失败。
 
-`ddt_native` 是通用的网格变换内核，它只接收顶点区间、矩阵与法线取反标志，不认识实体与方块。`NativeGeoMesh` 负责 GeckoLib 模型的摊平，`NativeMeshBatch` 负责在一帧内收集并一次完成 JNI 提交，实体渲染器与方块渲染器共用该内核。
+`ddt_native` 是通用的网格变换内核，它只接收顶点区间、矩阵与法线取反标志，不认识实体与方块。`NativeGeoMesh` 负责 Bedrock 模型的摊平，`NativeMeshBatch` 负责在一帧内收集并一次完成 JNI 提交，实体渲染器与方块渲染器共用该内核。
 
-`-Pddt_zig_version` 用于更换 Zig 版本。构建期若任一目标编译失败，`build` 即直接失败；运行期若加载失败或 ABI 不匹配，则禁用 native 并回退到 GeckoLib 的 Java 渲染路径；若出现运行时错误，则熔断禁用；若发生硬崩溃，则由崩溃标记在下次启动时作为回退保障。相关内容见 `NativeMesh` 与 `docs/development.md`。
+`-Pddt_zig_version` 用于更换 Zig 版本。构建期若任一目标编译失败，`build` 即直接失败；运行期若加载失败或 ABI 不匹配，则禁用 native 并回退到 Java 渲染路径；若出现运行时错误，则熔断禁用；若发生硬崩溃，则由崩溃标记在下次启动时作为回退保障。相关内容见 `NativeMesh` 与 `docs/development.md`。
 
 `jni_md.h` 由仓库自带：`src/main/native/win32` 供 Windows 使用，`src/main/native/posix` 供 Linux 与 macOS 使用。
 
@@ -104,17 +104,27 @@ c2me 本体采用 MIT 许可证，`c2me-opts-accel-opencl` 为 All Rights Reserv
 
 只有编译期没有常量的数据 ID 仍写成字符串：`data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id（这些由数据包定义，类型化不了）。
 
-## GeckoLib
+## Bedrock 动画运行时
 
-运行时必须安装 GeckoLib 4.9.3 以上版本，对应 1.21.1，并在 `neoforge.mods.toml` 中声明为 `required`。
+本模组不再依赖 GeckoLib。动画运行时是仓库自带的一份 Molang 版 GeckoLib 分支，位于
+`src/main/java/com/dawnduskterminal/geckolib3/` 与 `com/dawnduskterminal/molang/`，来源是
+TouhouLittleMaid（MIT），说明与「和上游的差异」见 `docs/ysm.md`。它是一个普通库：不需要玩家安装任何前置，
+也不在 `neoforge.mods.toml` 里声明依赖。
 
-构建期无需放置该 jar，依赖从 GeckoLib 官方 maven 以 `compileOnly` 方式拉取，版本写在 `gradle.properties` 的 `geckolib_version` 中。
+实体用的模型包按 Yes Steve Model 的原样布局放在 `assets/dawnduskterminal/ysm/<模型包>/` 下，
+一个文件都不改写：`ysm.json`、`models/*.json`、`animations/*.json`、`textures/*.png`、`controller/*.json`。
+运行时解析几何与动画，Molang 表达式逐帧求值，因此 `ysm.first_order` / `second_order`、`ysm.bone_rot`、
+`ym.bone_pivot_abs`、`ysm.perlin_noise` 与 `timeline` 语句程序都按 YSM 的语义真正执行；
+不存在离线转换步骤，也不存在会被静默丢掉的片段。
 
-高塔恶魂（`tower_ghast`）的模型与动画由 GeckoLib 驱动，三条资源路径在 `client/TowerGhastRenderer` 中直接写出，不遵循 GeckoLib 的命名约定。
+给实体接模型包只需要两样东西：一个 `client/animation/YsmAnimatable` 子类（决定模型、贴图、主动画选哪个片段），
+以及一个 `client/animation/YsmEntityRenderer` 子类（决定缩放与渲染类型）。参考 `client/TowerGhastRenderer`。
 
-动画源文件是 Yes Steve Model 的 Bedrock 文件，必须先经过 `tools/ysm/` 的转换与校验，详见 `tools/ysm/README.md`。
+`YsmBinding` 与 `FnBinding` 是 `ysm.*` / `fn.*` 两张表。模型包用到表里没有的名字时，解析会静默跳过那一整条表达式
+（表现为某个通道不动），因此新增模型包时应先跑一遍 `docs/ysm.md` 里记的离线校验。
 
-GeckoLib 将 `geckoanimfix` 声明为不兼容依赖，因此两者不得同时安装。
+已知差距：贴图动画条（`.mcmeta`）不再逐帧上传，`entity/StringEntity` 的流体贴图因此只有第一帧；
+`ysm.play_sound` / `ysm.particle` 是空实现，不产生音效与粒子。
 
 ## 代码约定
 
@@ -193,6 +203,8 @@ feature 引用与 `neoforge:remove_features` 中的 ID 必须真实存在，否�
 `docs/crafting.md` 为合成配方与标签。
 
 `docs/development.md` 为开发与构建。
+
+`docs/ysm.md` 为 Bedrock / YSM 动画运行时。
 
 `docs/configuration.md` 为配置项。
 

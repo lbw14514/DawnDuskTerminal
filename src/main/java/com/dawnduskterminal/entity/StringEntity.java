@@ -48,10 +48,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.EnumSet;
 
@@ -98,7 +94,7 @@ import java.util.EnumSet;
  * 全身贴图不受光照压暗（emissive），做法在客户端 {@code client/StringRenderer} 的渲染层上，
  * 服务端没有对应状态。
  */
-public class StringEntity extends PathfinderMob implements GeoEntity, Enemy {
+public class StringEntity extends PathfinderMob implements Enemy {
     /** 大型出现的概率 */
     private static final float LARGE_CHANCE = 0.25F;
     /** 随机体型偏移的范围 */
@@ -178,7 +174,6 @@ public class StringEntity extends PathfinderMob implements GeoEntity, Enemy {
     private static final EntityDataAccessor<Byte> DATA_KIND =
         SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.BYTE);
 
-    private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     private boolean largeVariant;
     private float sizeScale = 1.0F;
@@ -284,16 +279,7 @@ public class StringEntity extends PathfinderMob implements GeoEntity, Enemy {
         }
     }
 
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        // 两个源动画片段全是 YSM 的 bone_pivot_abs 与 perlin_noise，转换后只剩 0/0 这类退化的表达式，
-        // 姿态改由 client/StringPose 在 setCustomAnimations 里整套算出来，所以这里不注册控制器
-    }
 
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.animatableCache;
-    }
 
     // ---------------------------------------------------------------- 大小变种
 

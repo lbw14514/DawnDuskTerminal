@@ -20,25 +20,19 @@ NeoForge 与 ModDevGradle 的版本分别记录在 `gradle.properties` 与 `sett
 
 暮色森林是必装依赖，Java 代码直接引用其类型（`TFEntities`、`TFBlocks`、`TFSounds`、`TFConfig` 等常量与相应实体类），因此升级暮色森林时签名变化会在编译期暴露。构建期需要联网从 CurseMaven 拉包；只有编译期没有常量的数据 ID 仍是字符串：`data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id。
 
-## GeckoLib 依赖
+## Bedrock 动画运行时
 
-运行环境必须安装 GeckoLib 4.9.3 以上版本，该版本对应 1.21.1。
+本模组自带动画与 Molang 运行时，不依赖 GeckoLib，也不要求玩家安装任何前置。
 
-构建期从 GeckoLib 官方 maven 拉取 `compileOnly` 与 `runtimeOnly` 两种依赖，版本写在 `gradle.properties` 的 `geckolib_version` 中。
+运行时分两块：`geckolib3/` 是几何、关键帧、控制器与渲染，`molang/` 是词法、语法与求值。两者都来自
+TouhouLittleMaid（MIT），与上游的差异、以及为什么这样选，见 `docs/ysm.md`。
 
-其中 `compileOnly` 供编译使用，`runtimeOnly` 使开发运行（例如 `runClient` 等任务）也能加载该模组；若缺少后者，开发运行会报 `requires geckolib 4.9.3 or above`。
-
-该依赖在 `neoforge.mods.toml` 中声明为 `required`，因此它与暮色森林一样属于硬依赖。
-
-高塔恶魂（`entity/tower_ghast`）的模型、动画、贴图与动画引擎均来自 GeckoLib，其中三条资源路径直接写在 `client/TowerGhastRenderer` 中，不遵循 GeckoLib 的命名约定。
-
-动画源文件是 Yes Steve Model 的 Bedrock 文件，须先经过 `tools/ysm/` 的转换与校验，详见 `tools/ysm/README.md`。
-
-GeckoLib 声明 `geckoanimfix` 为不兼容依赖，两者不可同时安装。
+模型包按 Yes Steve Model 的原样布局放在 `assets/dawnduskterminal/ysm/<模型包>/`，运行时解析；
+新增模型包的步骤同样见 `docs/ysm.md`。
 
 ## 开发用的客户端模组
 
-`runClient` 会额外加载 JEI、拼音搜索（Just Enough Characters）、Xaero 小地图与 Xaero 世界地图、Jade、Chunky、Zume、Tweakerge（带前置 MaFgLib）、AppleSkin、BoccHUD 与 OpenYSM。上述模组仅用于开发阶段查看配方、查看地图、查看方块信息、预生成区块、缩放、调整 tweak、查看饱食度与状态条，以及与本模组的塔恶魂原始 Bedrock 动画进行对拍。这些模组不是本模组的依赖，既不参与编译，也不会进入产物。
+`runClient` 会额外加载 JEI、拼音搜索（Just Enough Characters）、Xaero 小地图与 Xaero 世界地图、Jade、Chunky、Zume、Tweakerge（带前置 MaFgLib）、AppleSkin、BoccHUD 与 OpenYSM。上述模组仅用于开发阶段查看配方、查看地图、查看方块信息、预生成区块、缩放、调整 tweak、查看饱食度与状态条，以及把 OpenYSM 渲染的原始 Bedrock 模型与本模组的实现做视觉对拍。这些模组不是本模组的依赖，既不参与编译，也不会进入产物。
 
 JEI 与 Xaero 使用各自的官方 maven；拼音搜索与 OpenYSM 使用 CurseMaven（坐标为 `curse.maven:just-enough-characters-250702:9163765`，对应 4.5.30；以及 `curse.maven:openysm-unofficial-neoforge-port-1587175:8384243`，对应 2.6.6）；Jade、Chunky、Zume、Tweakerge、MaFgLib、AppleSkin 与 BoccHUD 使用 Modrinth maven（坐标形式为 `maven.modrinth:<项目 slug>:<版本号>`）。各模组的版本写在 `gradle.properties` 中。
 
@@ -54,7 +48,7 @@ Voxy 与 MiniHUD、Tweakeroo 在 1.21.1 上均没有 NeoForge 构建（Voxy 官�
 
 OpenYSM 在 1.21.1 NeoForge 上没有官方构建：官方 Modrinth 项目只发布 1.20.1 的 forge 与 fabric 版本，早先的非官方 Modrinth 页面已经下架，仅剩 CurseForge 上的第三方移植 1587175，即此处使用的这条坐标。
 
-OpenYSM 自带的 GeckoLib 属于分叉版本，包名位于 `org.openysm.geckolib3` 与 `com/elfmcys/yesstevemodel/geckolib3` 之下，其 jar 中不存在 `software/bernie` 的引用，因此与本模组所依赖的 GeckoLib 4.9.3 不冲突；它的 mixin 只涉及原版以及 parcool、create、slashblade 这几个可选模组。
+OpenYSM 自带一份分叉的 GeckoLib（包名位于 `org.openysm.geckolib3` 与 `com/elfmcys/yesstevemodel/geckolib3` 之下），本模组也自带一份，两者的包名不冲突，因此可以同时装在开发环境里做对拍。它的 mixin 只涉及原版以及 parcool、create、slashblade 这几个可选模组。
 
 ## 构建与运行
 
@@ -110,9 +104,9 @@ Java 不读取 `HTTP_PROXY` 环境变量，若要经由加速器访问网络，�
 
 内核只完成一件事：将一段顶点按一个 4x4 矩阵与一个 3x3 法线矩阵进行变换，并写入直接缓冲区。它不识别实体、方块、骨骼或立方体。
 
-每一段顶点称为一个 piece，调用方给出顶点区间、矩阵与法线取反标志。该标志的低三位依次对应 X、Y、Z 轴，仅在对应法线为负时取反，用于复现 GeckoLib 对退化平面的修正。
+每一段顶点称为一个 piece，调用方给出顶点区间、矩阵与法线取反标志。该标志的低三位依次对应 X、Y、Z 轴，仅在对应法线为负时取反，用于复现 Bedrock 渲染对退化平面的修正。
 
-`NativeGeoMesh` 负责把任意 GeckoLib 烘焙模型摊平为 piece，`NativeMeshBatch` 负责在一帧内完成收集并一次性提交 JNI。实体渲染器与方块实体渲染器都可以使用同一套流程。
+`NativeGeoMesh` 负责把任意 Bedrock 模型摊平为 piece，`NativeMeshBatch` 负责在一帧内完成收集并一次性提交 JNI。实体渲染器与方块实体渲染器都可以使用同一套流程。
 
 #### 变换内核与 SIMD 分发
 
@@ -177,13 +171,13 @@ jar 中的 `native/<target>/` 一次性带齐全部平台，运行时由 `Native
 
 | 阶段 | 失败情形 | 处理 |
 |---|---|---|
-| 加载 | 平台无产物、资源缺失、`System.load` 失败 | 打印一次 warn，禁用 native，渲染改走 GeckoLib 的 Java 路径 |
+| 加载 | 平台无产物、资源缺失、`System.load` 失败 | 打印一次 warn，禁用 native，渲染改走 Java 路径 |
 | 加载 | ABI 版本或顶点/矩阵/法线布局不匹配 | 打印 error 并带上两边的常量，禁用 native |
 | 加载 | ABI 校验通过后启动探针失败 | 打印 error，禁用 native |
 | 运行 | JNI 抛出异常、返回负错误码、句柄失效 | 打印一次 error，整个进程熔断，自本帧起回退到 Java 路径 |
 | 硬崩溃 | SIGSEGV 之类 | 进程内无法捕获，由下次启动时的崩溃标记作保底处理 |
 
-`NativeMesh` 不实现纯 Java 的顶点变换，其 Java 路径就是 `TowerGhastRenderer.renderCube` 中 GeckoLib 自带的那套实现。
+`NativeMesh` 不实现纯 Java 的顶点变换，其 Java 路径就是 `client/animation/YsmEntityRenderer` 里 `renderCubesOfBone` 沿用的默认实现。
 
 ### ABI 协议
 
@@ -409,14 +403,6 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 `tools/check_worldgen_refs.py` 校验配置特征的引用，报告「模组已有同名副本却仍指向 `minecraft:`」的漏改情况，以及无人引用的副本。
 
 漏改不会报错，只会静默生效：群系副本把土替换成了霞土，而原版那一份不会替换，于是同一片林地中会同时生长两种土。
-
-`tools/ysm/ysm_to_geckolib.py` 将 Yes Steve Model 的 Bedrock 动画转换成 GeckoLib 能够编译的形式，并输出逐子句的审计报告。
-
-`tools/ysm/validate_geckolib.py` 按 GeckoLib 的真实解析规则校验动画文件，列出会被静默跳过的片段；它同时是全仓库唯一的 GeckoLib 语法规则模块。
-
-`tools/ysm/ysm_selftest.py` 是转换表的自测脚本，覆盖每一条转换规则。
-
-`tools/ysm/` 的说明、转换表与实测数据均位于该目录下的 `README.md`。
 
 ## CI
 

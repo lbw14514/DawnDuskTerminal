@@ -35,12 +35,6 @@ import twilightforest.entity.monster.CarminiteGhastling;
 import twilightforest.init.TFDamageTypes;
 import twilightforest.init.TFEntities;
 import org.jetbrains.annotations.Nullable;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 /**
  * 「大恶魂」：暮色恶魂的精英模式
@@ -58,7 +52,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * <p>与「恶果」一样，火球撞到它身上会被拨走：有索敌就砸向索敌对象，没有就原路弹回，
  * 反弹时用 {@code affectionate_scream}
  */
-public class GhastEliteEntity extends Ghast implements GeoEntity {
+public class GhastEliteEntity extends Ghast {
     /** 生命值 250 */
     public static final float MAX_HEALTH = 250.0F;
 
@@ -75,9 +69,6 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
      * 野生的砷铅铁恶魂守卫没有这个标记，行为不变
      */
     public static final String MINION_TAG = "dawnduskterminal:elite_minion";
-
-    /** 模型包只有一条循环动画：触手与腿的摆动（YSM 的 perlin 通道由渲染器逐帧补） */
-    private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("parallel0");
 
     /**
      * 生成时抬高多少格
@@ -158,7 +149,6 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
         ATTACK
     }
 
-    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean minionsSummoned;
 
     public GhastEliteEntity(EntityType<? extends GhastEliteEntity> type, Level level) {
@@ -481,16 +471,7 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
         return eliteCenter.add(direction.scale(MINION_HOLD_DISTANCE)).add(0.0D, 1.0D, 0.0D);
     }
 
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "ghast_elite_idle", 0,
-            state -> state.setAndContinue(IDLE)));
-    }
 
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.cache;
-    }
 
     /**
      * 原版 {@code Ghast.RandomFloatAroundGoal}：每 16 格内的一个随机点为下一段路的终点

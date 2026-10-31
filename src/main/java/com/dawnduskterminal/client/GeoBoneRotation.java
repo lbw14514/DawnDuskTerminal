@@ -1,48 +1,46 @@
 package com.dawnduskterminal.client;
 
-import software.bernie.geckolib.animation.state.BoneSnapshot;
-import software.bernie.geckolib.cache.object.GeoBone;
+import com.dawnduskterminal.geckolib3.core.processor.IBone;
+import com.dawnduskterminal.geckolib3.core.snapshot.BoneSnapshot;
 
 /**
- * 把动画文件里的旋转角度写到 {@link GeoBone} 上：符号与单位只在这里定义一次
+ * 把动画文件里的旋转角度写到骨骼上：符号与单位只在这里定义一次
  *
- * <p>动画文件里写的是「度、相对初始姿势」，而 {@link GeoBone} 的 rotX / rotY 与它镜像。GeckoLib
- * 自己读关键帧时先把常量换成弧度再把 X 与 Y 取反（{@code BakedAnimationsAdapter} 的 205-207 行），
- * 表达式那条路径在 {@code AnimationController.getAnimationPointAtTick} 的 745-758 行做同样处理，
- * 两者都不取反 Z。任何逐帧写回骨骼的代码都必须照抄这条映射，否则该骨骼朝反侧摆——触手的偏航与
- * 腿的俯仰正属于这一类。
+ * <p>动画文件里写的是「度、相对初始姿势」，而骨骼内部的 rotX / rotY 与它镜像。运行时读关键帧时
+ * 先把常量换成弧度再把 X 与 Y 取反（{@code AnimationController}），任何逐帧写回骨骼的代码都必须
+ * 照抄这条映射，否则该骨骼朝反侧摆——触手的偏航与腿的俯仰正属于这一类。
  *
- * <p>{@link #set} 与 {@link #setAxis} 会加上初始姿势，与 {@code AnimationProcessor} 的
- * {@code initialSnapshot.getRotX() + 动画值} 一致。{@link #add} 是叠加式写入，用于 YSM 并行动画
- * 那种加法混合（{@link TowerGhastBonePose} 的次级运动需要它）。
+ * <p>{@link #set} 会加上初始姿势，与 {@code AnimationProcessor} 的
+ * {@code initialSnapshot.rotationValueX + 动画值} 一致；{@link #add} 是叠加式写入。
  */
 public final class GeoBoneRotation {
-    private GeoBoneRotation() {}
+    private GeoBoneRotation() {
+    }
 
     /** 三轴一起写，入参为动画文件里的度数 */
-    public static void set(GeoBone bone, double xDegrees, double yDegrees, double zDegrees) {
+    public static void set(IBone bone, double xDegrees, double yDegrees, double zDegrees) {
         BoneSnapshot initial = bone.getInitialSnapshot();
-        bone.setRotX(initial.getRotX() - radians(xDegrees));
-        bone.setRotY(initial.getRotY() - radians(yDegrees));
-        bone.setRotZ(initial.getRotZ() + radians(zDegrees));
+        bone.setRotationX(initial.rotationValueX - radians(xDegrees));
+        bone.setRotationY(initial.rotationValueY - radians(yDegrees));
+        bone.setRotationZ(initial.rotationValueZ + radians(zDegrees));
     }
 
     /** 只写一根轴，{@code axis} 为 0 / 1 / 2，入参为动画文件里的度数 */
-    public static void setAxis(GeoBone bone, int axis, double degrees) {
+    public static void setAxis(IBone bone, int axis, double degrees) {
         BoneSnapshot initial = bone.getInitialSnapshot();
         switch (axis) {
-            case 0 -> bone.setRotX(initial.getRotX() - radians(degrees));
-            case 1 -> bone.setRotY(initial.getRotY() - radians(degrees));
-            default -> bone.setRotZ(initial.getRotZ() + radians(degrees));
+            case 0 -> bone.setRotationX(initial.rotationValueX - radians(degrees));
+            case 1 -> bone.setRotationY(initial.rotationValueY - radians(degrees));
+            default -> bone.setRotationZ(initial.rotationValueZ + radians(degrees));
         }
     }
 
     /** 在当前姿势上叠加，符号与 {@link #setAxis} 一致 */
-    public static void add(GeoBone bone, int axis, double degrees) {
+    public static void add(IBone bone, int axis, double degrees) {
         switch (axis) {
-            case 0 -> bone.setRotX(bone.getRotX() - radians(degrees));
-            case 1 -> bone.setRotY(bone.getRotY() - radians(degrees));
-            default -> bone.setRotZ(bone.getRotZ() + radians(degrees));
+            case 0 -> bone.setRotationX(bone.getRotationX() - radians(degrees));
+            case 1 -> bone.setRotationY(bone.getRotationY() - radians(degrees));
+            default -> bone.setRotationZ(bone.getRotationZ() + radians(degrees));
         }
     }
 

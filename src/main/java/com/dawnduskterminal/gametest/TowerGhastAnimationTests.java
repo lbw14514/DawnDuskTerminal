@@ -39,6 +39,6 @@ public final class TowerGhastAnimationTests {
     }
 
     private static String clipOf(TowerGhastEntity ghast, boolean moving) {
-        return TowerGhastEntity.mainAnimation(ghast, moving).getAnimationStages().getFirst().animationName();
+        return TowerGhastEntity.mainAnimation(ghast, moving);
     }
 }

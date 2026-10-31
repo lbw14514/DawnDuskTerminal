@@ -1,0 +1,199 @@
+{
+  "spec": 2,
+  "metadata": {
+    "name": "§c高塔恶魂",
+    "tips": "Carminiteghast\n§f|T_T|  §9免费模型  §f|T_T|\n§f!|;|i;|:|l§3暮色森林娘化§f!|;|i;|:|l",
+    "license": {
+      "type": "CC BY-NC-SA 4.0"
+    },
+    "authors": [
+      {
+        "name": "§e雾雨波波沙",
+        "role": "§3☆ ",
+        "avatar": "avatar/kirisamePPSH.png",
+        "contact": {
+          "Afdian": "https://afdian.net/a/kirisamePPSH",
+          "Bilibili": "https://space.bilibili.com/36761228"
+        },
+        "comment": "想了十天十夜"
+      }
+    ],
+    "link": {
+      "home": "https://space.bilibili.com/36761228",
+      "donate": "https://afdian.net/a/kirisamePPSH"
+    }
+  },
+  "properties": {
+    "height_scale": 0.7,
+    "width_scale": 0.7,
+    "extra_animation": {
+      "extra0": "#extra_config",
+      "statue": "pose",
+      "extra1": "",
+      "extra2": "",
+      "extra3": "",
+      "extra4": "",
+      "extra5": "",
+      "extra6": "",
+      "extra7": "",
+      "redstone": "红石粉",
+      "id1": "声音1",
+      "id2": "声音2",
+      "id3": "声音3",
+      "id4": "声音4",
+      "id5": "声音5",
+      "id6": "声音6",
+      "id7": "声音7",
+      "bad1": "受击1",
+      "bad2": "受击2",
+      "bad3": "受击3",
+      "bad4": "受击4",
+      "bad5": "受击5"
+    },
+    "extra_animation_buttons": [
+      {
+        "id": "extra_config",
+        "name": "0",
+        "config_forms": [
+          {
+            "type": "range",
+            "title": "缩放",
+            "description": "",
+            "value": "v.roaming.size2",
+            "step": 0.1,
+            "min": 0,
+            "max": 3
+          },
+          {
+            "type": "range",
+            "title": "形态切换",
+            "description": "",
+            "value": "v.roaming.type",
+            "step": 1,
+            "min": 0,
+            "max": 2
+          },
+          {
+            "type": "checkbox",
+            "title": "帽子",
+            "description": "",
+            "value": "v.roaming.hat"
+          },
+          {
+            "type": "checkbox",
+            "title": "鞋子",
+            "description": "",
+            "value": "v.roaming.shoe"
+          },
+          {
+            "type": "checkbox",
+            "title": "切换发型",
+            "description": "",
+            "value": "v.roaming.hair"
+          },
+          {
+            "type": "radio",
+            "title": "眼睛切换",
+            "description": "",
+            "value": "v.roaming.expe",
+            "labels": {
+                        "默认": "v.roaming.expe=0",
+                        "= =": "v.roaming.expe=1",
+                        "ᗜˬᗜ": "v.roaming.expe=2",
+                        "⊙ ⊙": "v.roaming.expe=3",
+                        "- -": "v.roaming.expe=4",
+                        "I _ I": "v.roaming.expe=5",
+                        "> <": "v.roaming.expe=6"
+                    }
+          },
+          {
+            "type": "range",
+            "title": "嘴部切换",
+            "description": "",
+            "value": "v.roaming.expm",
+            "step": 1,
+            "min": 0,
+            "max": 6
+          },
+          {
+            "type": "range",
+            "title": "胸口图案切换",
+            "description": "",
+            "value": "v.roaming.pat",
+            "step": 1,
+            "min": 0,
+            "max": 7
+          },
+          {
+            "type": "range",
+            "title": "换衣",
+            "description": "",
+            "value": "v.cloth",
+            "step": 1,
+            "min": 0,
+            "max": 2
+          },
+          {
+            "type": "checkbox",
+            "title": "脸红",
+            "description": "",
+            "value": "v.read"
+          },
+          {
+            "type": "checkbox",
+            "title": "小珍珠",
+            "description": "",
+            "value": "v.roaming.tear"
+          },
+          {
+            "type": "checkbox",
+            "title": "开启荧光",
+            "description": "",
+            "value": "v.roaming.shin"
+          },
+          {
+            "type": "checkbox",
+            "title": "静音",
+            "description": "",
+            "value": "v.roaming.mute"
+          }
+        ]
+      }
+    ],
+    "extra_animation_classify": [],
+    "preview_animation": "preview",
+    "disable_preview_rotation": false,
+    "default_texture": "ghast",
+    "render_layers_first": false,
+    "free": true
+  },
+  "files": {
+    "player": {
+      "model": {
+        "main": "models/main.json",
+        "arm": "models/arm.json"
+      },
+      "animation": {
+        "main": "animations/main.animation.json",
+        "arm": "animations/arm.animation.json",
+        "extra": "animations/extra.animation.json",
+        "tac": "animations/tac.animation.json",
+        "carryon": "animations/carryon.animation.json",
+        "parcool": "animations/parcool.animation.json",
+        "swem": "animations/swem.animation.json",
+        "slashblade": "animations/slashblade.animation.json",
+        "tlm": "animations/tlm.animation.json"
+      },
+      "animation_controllers": ["controller/parallel_controllers.json"],
+      "texture": [
+        "textures/ghast.png"
+      ],
+      "sound_path": "sounds"
+    },
+    "arrow": {
+      "model": "models/arrow.json",
+      "animation": "animations/arrow.animation.json",
+      "texture": "textures/arrow.png"
+    }
+  }
+}

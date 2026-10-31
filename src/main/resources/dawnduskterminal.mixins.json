@@ -29,8 +29,7 @@
     "ClientLevelSkyColorMixin",
     "ClientLevelTimeOfDayMixin",
     "ExperimentArmorGlowMixin",
-    "LevelRendererSkyAlignMixin",
-    "GeckoLibAnimationProcessorMixin"
+    "LevelRendererSkyAlignMixin"
   ],
   "injectors": {
     "defaultRequire": 1

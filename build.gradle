@@ -50,17 +50,6 @@ neoForge {
 
 repositories {
     // GeckoLib 的坐标只存在于它自己的 maven，用 exclusiveContent 把这一组从其余源里摘出来：
-    // ModDevGradle 会把 maven.neoforged.net 加进仓库列表，而那个源在部分网络下连不上（连接超时），
-    // 只要 Gradle 去问过它一次，整个 compileClasspath 解析就会失败
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'GeckoLib'
-                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
-            }
-        }
-        filter { includeGroup 'software.bernie.geckolib' }
-    }
     // 暮色森林只有 CurseMaven 一条路：它自己的 modmaven 停更在 2024-07-06（最新 4.5.2428），
     // 1.21.1 现在用的 4.8.3345 在那个源上只有空目录。同样是第三方源，同样用 exclusiveContent 摘出来
     exclusiveContent {
@@ -225,11 +214,6 @@ def c2meJarJarMetadata = tasks.register('generateC2meJarJarMetadata') {
 dependencies {
     // c2me 本体打进 jar，保留官方全部模块；外部安装时由 FML 的 JarJar 协商处理
     c2meCompat "maven.modrinth:c2me-neoforge:${c2me_version}"
-
-    // 4.9.3 是 1.21.1 线上当前的版本，它声明 neoforge >= 21.1.150，本项目满足
-    // GeckoLib 另有一个 geckoanimfix 是 incompatible 依赖，两者不能同时装
-    compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
-    runtimeOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     // 坐标是「项目 id 加 file id」，7797302 对应 CurseForge 上 1.21.1 的 4.8.3345
     compileOnly 'curse.maven:the-twilight-forest-227639:7797302'

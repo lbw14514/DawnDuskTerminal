@@ -33,4 +33,4 @@
 - 仓库根目录的 `AGENTS.md`：面向 AI 与协作者的最短上手路径。
 - 仓库根目录的 `README.md`：面向玩家的使用说明。
 - `tools/`：把原版世界生成与暮色森林群系移植进本模组的脚本。
-- `tools/ysm/`：把 Yes Steve Model 的 Bedrock 动画转换为 GeckoLib 可编译形式的脚本；其说明与实测数据见该目录下的 `README.md`。
+- `docs/ysm.md`：Bedrock / YSM 动画运行时，模型包布局与新增模型的步骤。
