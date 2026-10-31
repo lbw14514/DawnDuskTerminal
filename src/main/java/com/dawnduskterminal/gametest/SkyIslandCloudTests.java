@@ -1,5 +1,6 @@
 package com.dawnduskterminal.gametest;
 
+import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.world.SkyIslandClouds;
 import java.util.Arrays;
 import net.minecraft.core.BlockPos;
@@ -13,140 +14,140 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * 薄岛换云的几何判定
+ * 岛底垫云的几何判定
  *
- * <p>直接喂 {@link SkyIslandClouds#processColumns} 合成地形，不走区块生成
+ * <p>直接喂 {@link SkyIslandClouds#decorate} 合成地形和固定判据，不走区块生成
  */
 @GameTestHolder("dawnduskterminal")
 @PrefixGameTestTemplate(false)
 public final class SkyIslandCloudTests {
     private static final int BASE_Y = 140;
+    private static final long SEED = 0x5C0DE5L;
 
     @GameTest(template = "ddt_empty")
-    public static void thinPlateBecomesCloudWithAShell(GameTestHelper helper) {
+    public static void cloudHangsUnderThePlate(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockState cloud = cloud(helper);
         BlockPos base = base(helper, 0, 0);
+        fill(level, base, 5, 5, 3);
 
+        int placed = run(level, base, 5, 5, 3, cloud, (x, y, z) -> true);
+
+        helper.assertTrue(placed > 0, "a floating plate must get cloud under it");
+        helper.assertTrue(hasCloudBelow(level, base, cloud), "the plate must have cloud hanging under it");
+        helper.assertTrue(is(level, base.offset(2, 1, 2), Blocks.STONE.defaultBlockState()),
+            "the plate top must stay stone");
+        helper.assertTrue(is(level, base.offset(2, 2, 2), Blocks.STONE.defaultBlockState()),
+            "the plate top must stay stone");
+        helper.succeed();
+    }
+
+    @GameTest(template = "ddt_empty")
+    public static void noCloudAboveThePlate(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos base = base(helper, 40, 0);
+        fill(level, base, 5, 5, 3);
+
+        run(level, base, 5, 5, 3, cloud, (x, y, z) -> true);
+
+        for (int x = -4; x <= 8; x++) {
+            for (int z = -4; z <= 8; z++) {
+                for (int y = 1; y <= 8; y++) {
+                    helper.assertTrue(!is(level, base.offset(x, y, z), cloud),
+                        "cloud must never grow at or above the plate top, found at " + x + "," + y + "," + z);
+                }
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "ddt_empty")
+    public static void terrainColumnIsLeftAlone(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos base = base(helper, 80, 0);
+        fill(level, base, 5, 5, 3);
+
+        int placed = run(level, base, 5, 5, 3, cloud, (x, y, z) -> false);
+
+        helper.assertTrue(placed == 0, "a column the density says is terrain must not get cloud, got " + placed);
+        helper.succeed();
+    }
+
+    @GameTest(template = "ddt_empty")
+    public static void thinPlateKeepsEveryBlock(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos base = base(helper, 120, 0);
         fill(level, base, 5, 5, 2);
-        BlockPos occupied = base.offset(6, 0, 6);
-        level.setBlock(occupied, Blocks.DIRT.defaultBlockState(), 2);
 
-        int replaced = run(level, base, 5, 5, 2, cloud);
+        run(level, base, 5, 5, 2, cloud, (x, y, z) -> true);
 
-        helper.assertTrue(replaced == 50, "the whole 5x5x2 plate must be replaced, got " + replaced);
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
                 for (int y = 0; y < 2; y++) {
-                    helper.assertTrue(is(level, base.offset(x, y, z), cloud),
-                        "body at " + x + "," + y + "," + z + " must be cloud");
+                    helper.assertTrue(is(level, base.offset(x, y, z), Blocks.STONE.defaultBlockState()),
+                        "a two thick plate must keep every block, greedy at " + x + "," + y + "," + z);
                 }
             }
         }
-
-        helper.assertTrue(is(level, base.offset(2, 3, 2), cloud), "two blocks above the top must be cloud");
-        helper.assertTrue(is(level, base.offset(2, 4, 2), Blocks.AIR.defaultBlockState()),
-            "three blocks above the top must stay air");
-        helper.assertTrue(is(level, base.offset(-2, 0, -2), cloud),
-            "two blocks out on the diagonals must be cloud");
-        helper.assertTrue(is(level, base.offset(-3, 0, 0), Blocks.AIR.defaultBlockState()),
-            "three blocks out must stay air");
-        helper.assertTrue(is(level, occupied, Blocks.DIRT.defaultBlockState()),
-            "the shell must not overwrite existing blocks");
+        helper.assertTrue(hasCloudBelow(level, base, cloud), "the cloud must still hang under it");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
-    public static void thinIslandVegetationIsReplaced(GameTestHelper helper) {
+    public static void thickPlateKeepsAtLeastTwoLayers(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockState cloud = cloud(helper);
-        BlockPos base = base(helper, 96, 0);
+        BlockPos base = base(helper, 160, 0);
+        fill(level, base, 5, 5, 6);
 
-        fill(level, base, 5, 5, 2);
-        for (int y = 2; y <= 4; y++) {
-            level.setBlock(base.offset(2, y, 2), Blocks.OAK_LOG.defaultBlockState(), 2);
-        }
-        for (int x = 1; x <= 3; x++) {
-            for (int z = 1; z <= 3; z++) {
-                for (int y = 5; y <= 6; y++) {
-                    level.setBlock(base.offset(x, y, z), Blocks.OAK_LEAVES.defaultBlockState(), 2);
-                }
-            }
-        }
+        run(level, base, 5, 5, 6, cloud, (x, y, z) -> true);
 
-        int replaced = run(level, base, 5, 5, 2, cloud);
-
-        helper.assertTrue(replaced >= 71, "plate and vegetation must all be replaced, got " + replaced);
-        helper.assertTrue(is(level, base.offset(2, 2, 2), cloud), "trunk must become cloud");
-        helper.assertTrue(is(level, base.offset(2, 6, 2), cloud), "canopy must become cloud");
-        helper.assertTrue(is(level, base.offset(1, 6, 1), cloud), "canopy edge must become cloud");
-        helper.assertTrue(is(level, base.offset(2, 8, 2), cloud), "shell above the canopy must be cloud");
-        helper.succeed();
-    }
-
-    @GameTest(template = "ddt_empty")
-    public static void thickIslandIsLeftAlone(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockState cloud = cloud(helper);
-        BlockPos base = base(helper, 24, 0);
-
-        fill(level, base, 5, 5, 5);
-        int replaced = run(level, base, 5, 5, 5, cloud);
-
-        helper.assertTrue(replaced == 0, "a five thick island must not be replaced, got " + replaced);
-        helper.assertTrue(is(level, base.offset(2, 2, 2), Blocks.STONE.defaultBlockState()),
-            "the five thick island must stay stone");
-        helper.assertTrue(is(level, base.offset(2, 7, 2), Blocks.AIR.defaultBlockState()),
-            "no shell may be added to a thick island");
-        helper.succeed();
-    }
-
-    @GameTest(template = "ddt_empty")
-    public static void oneThickColumnKeepsTheWholeIsland(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockState cloud = cloud(helper);
-        BlockPos base = base(helper, 48, 0);
-
-        fill(level, base, 2, 1, 2);
-        fill(level, base.offset(1, 0, 0), 1, 1, 5);
-
-        int[] tops = new int[256];
-        Arrays.fill(tops, -1);
-        tops[0] = BASE_Y + 1;
-        tops[1] = BASE_Y + 4;
-        int replaced = SkyIslandClouds.processColumns(level, setter(level), base.getX(), base.getZ(), tops, cloud,
-            SkyIslandClouds.ISLAND_MIN_TOP_Y, SkyIslandClouds.ISLAND_MAX_TOP_Y,
-            SkyIslandClouds.ISLAND_SCAN_FLOOR_Y, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1);
-
-        helper.assertTrue(replaced == 0, "a thick column must keep its thin neighbour stone, got " + replaced);
-        helper.assertTrue(is(level, base, Blocks.STONE.defaultBlockState()), "the thin column must stay stone");
-        helper.succeed();
-    }
-
-    @GameTest(template = "ddt_empty")
-    public static void islandsBelowTheHeightLimitAreIgnored(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockState cloud = cloud(helper);
-        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        BlockPos base = new BlockPos(origin.getX() + 72, 100, origin.getZ());
-
-        fill(level, base, 5, 5, 2);
-        int[] tops = new int[256];
-        Arrays.fill(tops, -1);
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
-                tops[z * 16 + x] = 101;
+                helper.assertTrue(is(level, base.offset(x, 5, z), Blocks.STONE.defaultBlockState()),
+                    "the top layer must never be eroded");
+                helper.assertTrue(is(level, base.offset(x, 4, z), Blocks.STONE.defaultBlockState()),
+                    "the second layer from the top must never be eroded");
             }
         }
-        int replaced = SkyIslandClouds.processColumns(level, setter(level), base.getX(), base.getZ(), tops, cloud,
-            140, 319, 128, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1);
-
-        helper.assertTrue(replaced == 0, "an island below y 140 must not be touched, got " + replaced);
-        helper.assertTrue(is(level, base, Blocks.STONE.defaultBlockState()), "the low plate must stay stone");
         helper.succeed();
     }
 
-    private static int run(ServerLevel level, BlockPos base, int sizeX, int sizeZ, int thickness, BlockState cloud) {
+    @GameTest(template = "ddt_empty")
+    public static void singleColumnIslandStillGetsClouds(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos base = base(helper, 240, 0);
+        fill(level, base, 1, 1, 3);
+
+        int placed = run(level, base, 1, 1, 3, cloud, (x, y, z) -> true);
+
+        helper.assertTrue(placed > 0, "even a one column island must get cloud, got " + placed);
+        helper.succeed();
+    }
+
+    @GameTest(template = "ddt_empty")
+    public static void sameSeedGivesTheSameShape(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockState cloud = cloud(helper);
+        BlockPos first = base(helper, 200, 0);
+        BlockPos second = base(helper, 200, 40);
+        fill(level, first, 5, 5, 3);
+        fill(level, second, 5, 5, 3);
+
+        int firstPlaced = run(level, first, 5, 5, 3, cloud, (x, y, z) -> true);
+        int secondPlaced = run(level, second, 5, 5, 3, cloud, (x, y, z) -> true);
+
+        helper.assertTrue(firstPlaced > 0 && secondPlaced > 0,
+            "both plates must get cloud, got " + firstPlaced + " and " + secondPlaced);
+        helper.succeed();
+    }
+
+    private static int run(ServerLevel level, BlockPos base, int sizeX, int sizeZ, int thickness,
+                           BlockState cloud, SkyIslandClouds.IslandProbe probe) {
         int[] tops = new int[256];
         Arrays.fill(tops, -1);
         for (int x = 0; x < sizeX; x++) {
@@ -154,13 +155,10 @@ public final class SkyIslandCloudTests {
                 tops[z * 16 + x] = base.getY() + thickness - 1;
             }
         }
-        return SkyIslandClouds.processColumns(level, setter(level), base.getX(), base.getZ(), tops, cloud,
-            SkyIslandClouds.ISLAND_MIN_TOP_Y, SkyIslandClouds.ISLAND_MAX_TOP_Y,
+        return SkyIslandClouds.decorate(level, (x, y, z, state) -> level.setBlock(new BlockPos(x, y, z), state, 2),
+            base.getX(), base.getZ(), tops, cloud, probe, SEED,
+            SkyIslandClouds.ISLAND_MIN_TOP_Y, level.getMaxBuildHeight() - 1,
             SkyIslandClouds.ISLAND_SCAN_FLOOR_Y, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1);
-    }
-
-    private static SkyIslandClouds.BlockSetter setter(ServerLevel level) {
-        return (x, y, z, state) -> level.setBlock(new BlockPos(x, y, z), state, 2);
     }
 
     private static void fill(ServerLevel level, BlockPos base, int sizeX, int sizeZ, int height) {
@@ -182,6 +180,20 @@ public final class SkyIslandCloudTests {
         BlockState state = BuiltInRegistries.BLOCK.get(SkyIslandClouds.WISPY_CLOUD).defaultBlockState();
         helper.assertTrue(!state.isAir(), SkyIslandClouds.WISPY_CLOUD + " must be registered");
         return state;
+    }
+
+    private static boolean hasCloudBelow(ServerLevel level, BlockPos base, BlockState cloud) {
+        int reach = SkyIslandClouds.VEIL_SPREAD + 2;
+        for (int x = -reach; x <= 4 + reach; x++) {
+            for (int z = -reach; z <= 4 + reach; z++) {
+                for (int y = -1; y >= -SkyIslandClouds.VEIL_DEPTH - 2; y--) {
+                    if (is(level, base.offset(x, y, z), cloud)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean is(ServerLevel level, BlockPos pos, BlockState expected) {

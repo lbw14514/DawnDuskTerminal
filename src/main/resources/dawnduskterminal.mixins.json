@@ -8,6 +8,7 @@
     "LavaBandPaletteMixin",
     "LavaAquiferPaletteMixin",
     "NoiseChunkVeinPaletteMixin",
+    "SkyIslandDensityMixin",
     "PillarsFluidBlockMixin",
     "FeatureSorterMixin",
     "LightEngineSkyLightMixin",

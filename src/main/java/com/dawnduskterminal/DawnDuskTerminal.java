@@ -10,6 +10,7 @@ import com.dawnduskterminal.registry.ModBlockEntities;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModChronoOres;
 import com.dawnduskterminal.registry.ModCreativeTabs;
+import com.dawnduskterminal.registry.ModDensityFunctions;
 import com.dawnduskterminal.registry.ModEffects;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModEquipment;
@@ -72,6 +73,7 @@ public final class DawnDuskTerminal {
         ModSounds.register(modBus);
         ModCriteria.register(modBus);
         ModBiomeSources.register(modBus);
+        ModDensityFunctions.register(modBus);
         ModFeatures.register(modBus);
         ModTrunkPlacers.register(modBus);
         ModCreativeTabs.register(modBus);

@@ -297,15 +297,19 @@
 
 早期的四带设计（大陆、空置域、空岛与地下岛）在接管地形噪声的那一次改动中被整份替换，`VoidRegionFeature` 一并被删除。
 
-### 薄空岛与云层
+### 空岛判据与云层
 
-`sky_island_density` 的两段 `y_clamped_gradient` 在 140~240 与 260~310 之外不再发生变化；当噪声整体偏高或偏低时，岛体只剩噪声零点附近的一薄片，这种薄片不再作为石头岛处理。
+`sky_island_density` 的两段 `y_clamped_gradient` 在 140~240 与 260~310 之外不再发生变化；当噪声整体偏高或偏低时，岛体只剩噪声零点附近的一薄片。
 
-`SkyIslandClouds` 在 `FEATURES` 的末尾（即 `ChunkGenerator.applyBiomeDecoration` 的 `TAIL`）按列测量厚度：列顶低于 140 的列不作处理；同一块连通的岛如果最大厚度仍然小于 4，就把整块岛替换为 `twilightforest:wispy_cloud`，再按切比雪夫距离向外扩展 2 格；向外扩展只填充空气，不覆盖已有方块。
+判据只有一条：格点的 `sky_island_density` 大于 0 且大于 `overworld/base_3d_noise`，就认为这一点的实心来自空岛。`sloped_cheese` 是两者的 `max`，所以山体在 140~196 与空岛带重叠的那一段靠 `base_3d_noise` 胜出被排除，不需要额外的高度、厚度或邻接扫描。实现见 `world/SkyIslandDensity`。
 
-厚度读取的是 `WORLD_SURFACE_WG` 高度图。这套高度图在 `CARVERS` 之后不再被 `ProtoChunk.setBlockState` 更新，因此停留在纯地形的高度上，树叶与草不会把薄片撑厚；若换成 `WORLD_SURFACE`，则会把树计算在内。
+这两个函数实例从 `RandomState` 已经换过种子的函数树里抓。`RandomState` 会把 `HolderHolder` 换成直接持有者，引用键随之消失，所以按名字在生成期找不到它们；两个 JSON 各套一层值直通的 `dawnduskterminal:sky_island_marker`，按类型认。抓取挂在 `NoiseBasedChunkGenerator.createBiomes` 的 `HEAD`，不能挪到构造函数，那一刻注册表还没绑定。抓不到时判据一律返回 false，整个模组退化成「没有空岛」。
 
-该处理不看群系，只看高度：晨昏线维度中任何群系的高空薄岛都走同一条路径。写入范围是当前区块以及边界外 2 格，处于仍在生成的 3x3 区块区域之内；每个区块只负责自己那一格的向外扩展，邻居不会重复外扩。
+`SkyIslandClouds` 在 `FEATURES` 的末尾（即 `ChunkGenerator.applyBiomeDecoration` 的 `TAIL`）给每个空岛列挂云：从岛底下 1 到 9 格、横向 ±4 格的范围内，逐格算「距离衰减 + 三维噪声」，超过门槛就放 `twilightforest:wispy_cloud`。不看这一列在岛上的位置，边缘、平直与向下鼓出来的一律同一条判据，形状完全由世界坐标上的噪声决定，相邻区块各算各的也不会错位。厚度达到 3 的岛列另有概率把最底一层换成云，保证岛体至少留两格。
+
+列顶读取的是 `WORLD_SURFACE_WG` 高度图。这套高度图在 `CARVERS` 之后不再被 `ProtoChunk.setBlockState` 更新，因此停留在纯地形的高度上，树叶与草不会把列顶撑高；若换成 `WORLD_SURFACE`，则会把树计算在内。
+
+该处理不看群系，只看判据：晨昏线维度中任何群系的空岛都走同一条路径。
 
 ## 已知问题
 
