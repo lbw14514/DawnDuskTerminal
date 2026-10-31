@@ -4,7 +4,9 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastElitePopulation;
 import com.dawnduskterminal.entity.GhastFruityEntity;
+import com.dawnduskterminal.entity.GhastKin;
 import com.dawnduskterminal.entity.GhastFruityPopulation;
+import com.dawnduskterminal.item.FireJetProcess;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -24,6 +26,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import java.util.List;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.MobCategory;
@@ -215,6 +218,112 @@ public final class GhastFruityTests {
             "the elite must summon carminite ghastlings after acquiring a target");
         helper.assertTrue(minions.stream().anyMatch(minion -> minion instanceof Mob mob && mob.getTarget() == below),
             "the summoned minions must share the elite's target");
+
+        // 泪滴柱：照暮色恶魂的公式，水平就是本体自己的 8 格宽，竖直 32 格加本体 8 格
+        helper.assertTrue(Math.abs(elite.tearField().getXsize() - 8.0D) < 1.0E-6D,
+            "the tear column must be as wide as the body, was " + elite.tearField().getXsize());
+        helper.assertTrue(Math.abs(elite.tearField().getYsize() - 40.0D) < 1.0E-6D,
+            "the tear column must reach 32 blocks down plus the 8 tall body, was " + elite.tearField().getYsize());
+
+        // 小鬼的落脚点：水平 6 格，必须落在泪滴柱子（半宽 4 格）之外，否则会被吸掉
+        Vec3 hold = GhastEliteEntity.holdPoint(Vec3.ZERO, new Vec3(40.0D, 0.0D, 0.0D));
+        helper.assertTrue(Math.abs(hold.x - 6.0D) < 1.0E-6D && Math.abs(hold.z) < 1.0E-6D,
+            "a minion 40 blocks out must be held 6 blocks out on the same side, got " + hold);
+        helper.assertTrue(hold.x > 4.0D,
+            "the hold point must be outside the 4 block tear half width, was " + hold.x);
+        helper.assertTrue(GhastEliteEntity.holdPoint(Vec3.ZERO, Vec3.ZERO).horizontalDistance() > 4.0D,
+            "a minion right on top of the elite must still be pushed outside the tear column");
+
+        // 目标点埋在地里时不能永远推着不动：卡住 30 tick 之后把点丢掉、重挑一个
+        double buriedY = elite.getY() - 12.0D;
+        elite.getMoveControl().setWantedPosition(elite.getX() + 6.0D, buriedY, elite.getZ(), 1.0D);
+        Vec3 pinned = elite.position();
+        for (int tick = 0; tick < 45; tick++) {
+            elite.setDeltaMovement(Vec3.ZERO);
+            elite.setPos(pinned.x, pinned.y, pinned.z);
+            elite.tick();
+        }
+        helper.assertTrue(elite.getMoveControl().getWantedY() != buriedY,
+            "a waypoint it cannot reach must be dropped instead of pushed forever, still wanted y="
+                + elite.getMoveControl().getWantedY());
+
+        // 被召唤的小鬼不再挑人：玩家背对着它也该打；没标记的野生守卫仍按暮色森林的规则拒绝
+        Player bystander = helper.makeMockPlayer(GameType.SURVIVAL);
+        bystander.setPos(elite.getX(), elite.getY(), elite.getZ() + 6.0D);
+        bystander.setYRot(0.0F);
+        bystander.setXRot(0.0F);
+        Entity marked = ghastlingType.create(helper.getLevel());
+        helper.assertTrue(marked instanceof Mob, "a carminite ghastling must be a mob");
+        marked.moveTo(elite.getX(), elite.getY(), elite.getZ());
+        marked.getPersistentData().putBoolean(GhastEliteEntity.MINION_TAG, true);
+        helper.getLevel().addFreshEntity(marked);
+        Entity wild = ghastlingType.create(helper.getLevel());
+        helper.assertTrue(wild instanceof Mob, "a carminite ghastling must be a mob");
+        wild.moveTo(elite.getX(), elite.getY(), elite.getZ());
+        helper.getLevel().addFreshEntity(wild);
+        try {
+            java.lang.reflect.Method shouldAttack = Class.forName(
+                    "twilightforest.entity.monster.CarminiteGhastling")
+                .getMethod("shouldAttack", LivingEntity.class);
+            helper.assertTrue((Boolean) shouldAttack.invoke(marked, bystander),
+                "a summoned minion must attack a target it can see, even when the player looks away");
+            helper.assertFalse((Boolean) shouldAttack.invoke(wild, bystander),
+                "a wild carminite ghastling must keep the vanilla guard rule");
+        } catch (ReflectiveOperationException problem) {
+            helper.assertTrue(false, "carminite ghastling hook: " + problem);
+        }
+        marked.discard();
+        wild.discard();
+
+        // 自己人：两种恶魂与小鬼互不算敌人，玩家不算
+        Entity kinGhastling = ghastlingType.create(helper.getLevel());
+        helper.assertTrue(kinGhastling != null, "a carminite ghastling must be creatable");
+        helper.assertTrue(GhastKin.isKin(elite, kinGhastling),
+            "the elite and a carminite ghastling must count as kin");
+        helper.assertFalse(GhastKin.isKin(elite, below),
+            "the elite and a player must not count as kin");
+
+        // 同一个施放者不会叠第二道火焰；施放者没了过程当场收尾
+        Player caster = helper.makeMockPlayer(GameType.SURVIVAL);
+        FireJetProcess.start(helper.getLevel(), caster);
+        FireJetProcess.start(helper.getLevel(), caster);
+        helper.assertTrue(FireJetProcess.activeCount(caster) == 1,
+            "a second jet on the same caster must reuse the running one, got " + FireJetProcess.activeCount(caster));
+        caster.discard();
+        FireJetProcess.tickAll();
+        helper.assertTrue(FireJetProcess.activeCount(caster) == 0,
+            "a jet must end as soon as its caster is gone");
+
+        // 吃碰撞才吃火球：noPhysics 的实体不被任何弹体命中，拨弹会整条失效
+        helper.assertFalse(elite.noPhysics,
+            "the elite must collide, or AbstractHurtingProjectile#canHitEntity rejects it and the deflect never fires");
+
+        // 经验与暮色恶魂的 UrGhast 同值
+        helper.assertTrue(GhastEliteEntity.XP_REWARD == 317,
+            "the elite must drop the UrGhast's 317 experience, was " + GhastEliteEntity.XP_REWARD);
+
+        // 出膛点：斜 45 度时不能落在自己 8 格见方的箱子里
+        elite.setYRot(45.0F);
+        elite.setXRot(0.0F);
+        Vec3 eliteMouth = GhastEliteEntity.mouthPosition(elite);
+        double outward = Math.max(Math.abs(eliteMouth.x - elite.getX()), Math.abs(eliteMouth.z - elite.getZ()));
+        helper.assertTrue(outward >= 4.0D,
+            "a diagonal muzzle must clear the 8-wide hitbox, was " + outward + " blocks out");
+        elite.setYRot(0.0F);
+
+        // 泪滴落到小鬼身上才吸收：泪滴范围内的小鬼消失，本体回 2 点
+        Entity dripping = ghastlingType.create(helper.getLevel());
+        helper.assertTrue(dripping != null, "a carminite ghastling must be creatable");
+        dripping.moveTo(elite.getX(), elite.getY() + 1.0D, elite.getZ());
+        helper.getLevel().addFreshEntity(dripping);
+        elite.setHealth(200.0F);
+        for (int tick = 0; tick < 12; tick++) {
+            elite.tick();
+        }
+        helper.assertTrue(dripping.isRemoved(),
+            "a minion inside the tear field must be absorbed");
+        helper.assertTrue(elite.getHealth() > 200.0F,
+            "absorbing a minion must heal the elite, health was " + elite.getHealth());
 
         // 刷怪蛋路径：生成位置要抬高裙摆的 3 格
         BlockPos eliteEggPos = helper.absolutePos(new BlockPos(10, 5, 12));

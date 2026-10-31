@@ -1,5 +1,6 @@
 package com.dawnduskterminal.item;
 
+import com.dawnduskterminal.entity.GhastKin;
 import com.dawnduskterminal.particle.JetFlameParticleOptions;
 import com.dawnduskterminal.registry.ModDamageTypes;
 import java.util.ArrayList;
@@ -85,11 +86,29 @@ public final class FireJetProcess {
         process.playStartSound();
     }
 
-    /** 生物那一路：枪口永远跟着它的视线 */
+    /**
+     * 生物那一路：枪口永远跟着它的视线
+     *
+     * <p>同一个施放者已经有火焰在跑就直接复用，不叠第二道
+     */
     public static void start(ServerLevel level, LivingEntity owner) {
+        if (activeCount(owner) > 0) {
+            return;
+        }
         FireJetProcess process = new FireJetProcess(level, owner, InteractionHand.MAIN_HAND, false);
         ACTIVE.add(process);
         process.playStartSound();
+    }
+
+    /** 某个施放者手上还有几道火焰：测试里别的用例同时开着别的，全局计数会串台 */
+    public static int activeCount(LivingEntity owner) {
+        int count = 0;
+        for (FireJetProcess process : ACTIVE) {
+            if (process.owner == owner) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public static FireJetProcess detached(ServerLevel level, Player owner) {
@@ -248,7 +267,8 @@ public final class FireJetProcess {
         boolean burnOwner = !this.aimed;
         AABB broad = new AABB(this.muzzle, this.muzzle.add(this.direction.scale(14.0))).inflate(6.0);
         List<LivingEntity> targets = this.level
-            .getEntitiesOfClass(LivingEntity.class, broad, other -> (burnOwner || other != this.owner) && !other.fireImmune() && this.insideJet(other));
+            .getEntitiesOfClass(LivingEntity.class, broad,
+                other -> (burnOwner || !GhastKin.isKin(this.owner, other)) && !other.fireImmune() && this.insideJet(other));
         this.targetsHit = this.targetsHit + targets.size();
 
         for (LivingEntity target : targets) {

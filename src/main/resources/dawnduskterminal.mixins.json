@@ -21,7 +21,8 @@
     "GameTestChunkWaitMixin",
     "BlockStateUpdateSuppressMixin",
     "LevelShapeUpdateSuppressMixin",
-    "FluidStateUpdateSuppressMixin"
+    "FluidStateUpdateSuppressMixin",
+    "GhastlingShouldAttackMixin"
   ],
   "client": [
     "BiomeColorsFoliageMixin",

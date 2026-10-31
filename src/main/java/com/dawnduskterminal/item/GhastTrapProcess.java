@@ -1,5 +1,6 @@
 package com.dawnduskterminal.item;
 
+import com.dawnduskterminal.entity.GhastKin;
 import com.dawnduskterminal.registry.ModDamageTypes;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -104,7 +105,17 @@ public final class GhastTrapProcess {
         this.updateAim();
     }
 
+    /**
+     * 给这个施放者开一个场；已经有在跑的就直接返回那一个，不叠第二个
+     *
+     * <p>043 与 066 的物品冷却自己就挡住了重复施放，这里挡的是别的调用方（命令、别的 AI、调试代码）
+     */
     public static GhastTrapProcess start(ServerLevel level, LivingEntity owner) {
+        for (GhastTrapProcess running : ACTIVE) {
+            if (running.owner == owner) {
+                return running;
+            }
+        }
         GhastTrapProcess process = new GhastTrapProcess(level, owner);
         ACTIVE.add(process);
         return process;
@@ -247,7 +258,8 @@ public final class GhastTrapProcess {
     /** 场里那一批活物：视线走廊里活着的活物，施放者自己与观察模式不算 */
     private List<LivingEntity> targets() {
         List<LivingEntity> found = this.level.getEntitiesOfClass(LivingEntity.class, this.broadBox(),
-            entity -> entity != this.owner && entity.isAlive() && !entity.isSpectator() && this.insideField(entity));
+            entity -> !GhastKin.isKin(this.owner, entity) && entity.isAlive() && !entity.isSpectator()
+                && this.insideField(entity));
         this.targetsCaught = this.targetsCaught + found.size();
         return found;
     }

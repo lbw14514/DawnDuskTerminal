@@ -96,6 +96,10 @@ public final class Experiment066Tests {
             "a second click inside the cooldown must not open a second field");
         helper.assertTrue(GhastTrapProcess.activeCount(player) == 1,
             "the blocked click must not open a second field, got " + GhastTrapProcess.activeCount(player));
+        GhastTrapProcess.start(level, player);
+        helper.assertTrue(GhastTrapProcess.activeCount(player) == 1,
+            "a second field on the same caster must reuse the running one, got "
+                + GhastTrapProcess.activeCount(player));
         helper.assertTrue(Experiment066Item.COOLDOWN_TICKS == GhastTrapProcess.TOTAL_TICKS + 60,
             "the cooldown must be the whole 120 tick field plus 3 seconds, got " + Experiment066Item.COOLDOWN_TICKS);
         for (int i = 0; i < Experiment066Item.COOLDOWN_TICKS - 1; i++) {
