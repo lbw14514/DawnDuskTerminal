@@ -17,6 +17,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
@@ -269,6 +270,9 @@ public final class Experiment052Tests {
      * 只靠自己熄灭：与压在石头上的原版火焰一样，{@code AGE} 超过 3 就没了
      *
      * <p>{@code BlockState#tick} 就是计划刻到了以后原版走的入口，一拍一拍推过去不靠等十来秒
+     *
+     * <p>随机源用固定种子：每拍只有 1/3 的概率长一格 {@code AGE}，拿 {@code level.getRandom()} 推几拍
+     * 就有几个千分之一的概率长不到 4，成了一条会飘的测试。固定种子下这条到底是绿是红是确定的
      */
     @GameTest(template = "ddt_empty")
     public static void fireBurnsOutByItself(GameTestHelper helper) {
@@ -277,13 +281,14 @@ public final class Experiment052Tests {
         level.setBlockAndUpdate(pos.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(pos, ModBlocks.CARMINITE_FIRE.get().defaultBlockState());
 
+        RandomSource random = RandomSource.create(0x5EED5EEDL);
         int ticks = 0;
-        for (; ticks <= 30; ticks++) {
+        for (; ticks <= 60; ticks++) {
             BlockState state = level.getBlockState(pos);
             if (!state.is(ModBlocks.CARMINITE_FIRE.get())) {
                 break;
             }
-            state.tick(level, pos, level.getRandom());
+            state.tick(level, pos, random);
         }
         helper.assertFalse(level.getBlockState(pos).is(ModBlocks.CARMINITE_FIRE.get()),
             "carminite fire must burn out on its own within a handful of ageing ticks, still there after " + ticks);
@@ -337,14 +342,21 @@ public final class Experiment052Tests {
      *
      * <p>竖直朝下打一块石头；补火带随机偏移，所以按一小片范围找，而不是钉死一格。下落的两格先清空，
      * 理由与打猪那条一样：别的测试单元留下的 barrier 围边会挡在中间
+     *
+     * <p>地面要铺满整个补火半径：{@code scatterFires} 在爆心 ±2 格里随机挑列，每列只认「格空且下面
+     * 实心」，只铺一格的话 24 次挑列里只有恰好落在 (0,0) 那一次才长得出火，失败概率约四成
      */
     @GameTest(template = "ddt_empty")
     public static void shrapnelLeavesFireWhereItLands(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos floor = helper.absolutePos(new BlockPos(4, 1, 12));
-        level.removeBlock(floor.above(2), false);
-        level.removeBlock(floor.above(), false);
-        level.setBlockAndUpdate(floor, Blocks.STONE.defaultBlockState());
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                level.removeBlock(floor.offset(dx, 2, dz), false);
+                level.removeBlock(floor.offset(dx, 1, dz), false);
+                level.setBlockAndUpdate(floor.offset(dx, 0, dz), Blocks.STONE.defaultBlockState());
+            }
+        }
 
         CarminiteShrapnelEntity shrapnel = new CarminiteShrapnelEntity(ModEntities.CARMINITE_SHRAPNEL.get(), level);
         shrapnel.setPos(floor.getX() + 0.5D, floor.getY() + 2.5D, floor.getZ() + 0.5D);
