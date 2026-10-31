@@ -2,6 +2,9 @@
   "values": {
     "dawnduskterminal:skygate_pine_log": {
       "stripped_block": "dawnduskterminal:stripped_skygate_pine_log"
+    },
+    "dawnduskterminal:skygate_pine_wood": {
+      "stripped_block": "dawnduskterminal:stripped_skygate_pine_wood"
     }
   }
 }

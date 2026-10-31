@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "dawnduskterminal:skygate_pine_log",
+    "dawnduskterminal:stripped_skygate_pine_log",
+    "dawnduskterminal:skygate_pine_wood",
+    "dawnduskterminal:stripped_skygate_pine_wood"
+  ]
+}

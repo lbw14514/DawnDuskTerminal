@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "dawnduskterminal:skygate_pine_log"
+  },
+  "result": {
+    "count": 1,
+    "id": "dawnduskterminal:hollow_skygate_pine_log"
+  }
+}

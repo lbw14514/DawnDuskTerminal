@@ -61,6 +61,9 @@ public final class ModCreativeTabs {
                 accept(output, ModTerrainBlocks.WROUGHT_IRON_GLASS_TRAPDOOR_ITEM.get());
                 accept(output, ModTerrainBlocks.SKYGATE_PINE_LOG_ITEM.get());
                 accept(output, ModTerrainBlocks.STRIPPED_SKYGATE_PINE_LOG_ITEM.get());
+                accept(output, ModTerrainBlocks.SKYGATE_PINE_WOOD_ITEM.get());
+                accept(output, ModTerrainBlocks.STRIPPED_SKYGATE_PINE_WOOD_ITEM.get());
+                accept(output, ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_ITEM.get());
                 accept(output, ModTerrainBlocks.SKYGATE_PINE_LEAVES_ITEM.get());
                 accept(output, ModTerrainBlocks.SKYGATE_PINE_SAPLING_ITEM.get());
                 accept(output, ModTerrainBlocks.SCARLET_MOLYBDENUM_ORE_ITEM.get());

@@ -1,0 +1,61 @@
+{
+  "variants": {
+    "facing=north,variant=ladder": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 180
+    },
+    "facing=north,variant=ladder_waterlogged": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 180
+    },
+    "facing=north,variant=vine": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_vine",
+      "uvlock": true,
+      "y": 180
+    },
+    "facing=east,variant=ladder": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 90
+    },
+    "facing=east,variant=ladder_waterlogged": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 90
+    },
+    "facing=east,variant=vine": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_vine",
+      "uvlock": true,
+      "y": 90
+    },
+    "facing=south,variant=ladder": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true
+    },
+    "facing=south,variant=ladder_waterlogged": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true
+    },
+    "facing=south,variant=vine": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_vine",
+      "uvlock": true
+    },
+    "facing=west,variant=ladder": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 270
+    },
+    "facing=west,variant=ladder_waterlogged": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_ladder",
+      "uvlock": true,
+      "y": 270
+    },
+    "facing=west,variant=vine": {
+      "model": "dawnduskterminal:block/hollow_skygate_pine_log_climbable_vine",
+      "uvlock": true,
+      "y": 270
+    }
+  }
+}

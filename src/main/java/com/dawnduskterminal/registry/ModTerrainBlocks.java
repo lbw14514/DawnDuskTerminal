@@ -1,9 +1,13 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.ClimbableHollowLogBlock;
 import com.dawnduskterminal.block.CountertopBlock;
+import com.dawnduskterminal.block.HorizontalHollowLogBlock;
+import com.dawnduskterminal.block.VerticalHollowLogBlock;
 import com.dawnduskterminal.block.WroughtIronGlassBlock;
 import com.dawnduskterminal.block.WroughtIronGlassTrapdoorBlock;
+import com.dawnduskterminal.item.HollowLogItem;
 import com.dawnduskterminal.world.CanopyFrostLayerBlock;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.Registries;
@@ -273,6 +277,21 @@ public final class ModTerrainBlocks {
     public static final DeferredBlock<LeavesBlock> SKYGATE_PINE_LEAVES =
         BLOCKS.registerBlock("skygate_pine_leaves", LeavesBlock::new, leaves());
 
+    // 天门松木家族照苍穹木配齐：原木 / 去皮原木 / 木 / 去皮木 / 空心原木（横、竖、攀爬三块共用一个物品）。
+    // 木的六面都用原木侧面贴图（原版 oak_wood 也是这么做的，不单独出一张贴图），
+    // 树枝用木而不是原木，正是因为原木两端的横截面贴图会露在斜枝上。
+    public static final DeferredBlock<RotatedPillarBlock> SKYGATE_PINE_WOOD =
+        BLOCKS.registerBlock("skygate_pine_wood", RotatedPillarBlock::new, log(MapColor.COLOR_GREEN));
+    public static final DeferredBlock<RotatedPillarBlock> STRIPPED_SKYGATE_PINE_WOOD =
+        BLOCKS.registerBlock("stripped_skygate_pine_wood", RotatedPillarBlock::new, log(MapColor.COLOR_GREEN));
+
+    public static final DeferredBlock<HorizontalHollowLogBlock> HOLLOW_SKYGATE_PINE_LOG_HORIZONTAL =
+        BLOCKS.registerBlock("hollow_skygate_pine_log_horizontal", HorizontalHollowLogBlock::new, log(MapColor.COLOR_GREEN));
+    public static final DeferredBlock<VerticalHollowLogBlock> HOLLOW_SKYGATE_PINE_LOG_VERTICAL =
+        BLOCKS.registerBlock("hollow_skygate_pine_log_vertical", VerticalHollowLogBlock::new, log(MapColor.COLOR_GREEN));
+    public static final DeferredBlock<ClimbableHollowLogBlock> HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE =
+        BLOCKS.registerBlock("hollow_skygate_pine_log_climbable", ClimbableHollowLogBlock::new, log(MapColor.COLOR_GREEN));
+
     public static final DeferredBlock<SaplingBlock> SKYGATE_PINE_SAPLING = BLOCKS.registerBlock(
         "skygate_pine_sapling",
         properties -> new SaplingBlock(new TreeGrower(
@@ -287,6 +306,19 @@ public final class ModTerrainBlocks {
         ITEMS.registerSimpleBlockItem(SKYGATE_PINE_LOG);
     public static final DeferredItem<BlockItem> STRIPPED_SKYGATE_PINE_LOG_ITEM =
         ITEMS.registerSimpleBlockItem(STRIPPED_SKYGATE_PINE_LOG);
+    public static final DeferredItem<BlockItem> SKYGATE_PINE_WOOD_ITEM =
+        ITEMS.registerSimpleBlockItem(SKYGATE_PINE_WOOD);
+    public static final DeferredItem<BlockItem> STRIPPED_SKYGATE_PINE_WOOD_ITEM =
+        ITEMS.registerSimpleBlockItem(STRIPPED_SKYGATE_PINE_WOOD);
+
+    // 三块空心原木共用一个物品，放置方向由 {@link HollowLogItem} 按点击面决定
+    public static final DeferredItem<HollowLogItem> HOLLOW_SKYGATE_PINE_LOG_ITEM = ITEMS.register(
+        "hollow_skygate_pine_log",
+        () -> new HollowLogItem(
+            HOLLOW_SKYGATE_PINE_LOG_HORIZONTAL.get(),
+            HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get(),
+            HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE.get(),
+            new Item.Properties()));
     public static final DeferredItem<BlockItem> SKYGATE_PINE_LEAVES_ITEM =
         ITEMS.registerSimpleBlockItem(SKYGATE_PINE_LEAVES);
     public static final DeferredItem<BlockItem> SKYGATE_PINE_SAPLING_ITEM =

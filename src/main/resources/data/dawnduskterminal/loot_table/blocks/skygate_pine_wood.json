@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dawnduskterminal:skygate_pine_wood"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "dawnduskterminal:blocks/skygate_pine_wood"
+}

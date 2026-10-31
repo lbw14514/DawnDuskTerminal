@@ -120,16 +120,23 @@
 
 `configured_feature/tree/skygate_pine.json` 描述的是文竹式分层的树：树干为 20~30 格的直筒，4~8 根枝分布在树干 28% 到 90% 的高度上，每根枝的顶端托着一团压扁的樱花叶团。
 
-树干由模组自有的 `dawnduskterminal:skygate_branching`（`world/SkygateBranchTrunkPlacer`）生成：原版 `cherry_trunk_placer` 最多只生成三根枝，且贴附于顶部；暮色森林的 `branching_trunk_placer` 其分枝则是逐格向上叠加的连排。两者都无法铺满树干的中下部，因此树干高度在代码中计算。枝的方向按方位角逐根随机确定，落点取在圆周上，再沿单格轴向的斜线延伸，因此斜枝（45 度、30 度这类）也会生长。可调项如下：
+树干由模组自有的 `dawnduskterminal:skygate_branching`（`world/SkygateBranchTrunkPlacer`）生成：原版 `cherry_trunk_placer` 最多只生成三根枝，且贴附于顶部；暮色森林的 `branching_trunk_placer` 其分枝则是逐格向上叠加的连排。两者都无法铺满树干的中下部，因此树干高度在代码中计算。枝的方向按方位角逐根随机确定，落点取在圆周上，再沿三维 Bresenham 直线走过去：每步只落一块原木，主轴每步一格、副轴按比例进位，因此 45 度、30 度这类斜枝也会生长，而且一根枝只占一条线宽。这套打法与暮色森林苍穹木的 `twilightforest:branching_trunk_placer` 一致（其 `VoxelBresenhamIterator` 同理）；不应用逐格单轴步进——斜向时每前进一格要落两块原木，枝会显得粗。抬升量只在起枝时掷一次，枝上不再补竖木。可调项如下：
 
 | 字段 | 作用 |
 |---|---|
-| `branch_count` | 分枝根数，`IntProvider` |
-| `branch_length` | 每根枝在圆周上的伸出半径，`IntProvider` |
-| `branch_band` | `{min, max}`，分枝高度带占树干高度的比例 |
-| `branch_rise_chance` | 每走一格同时抬高一格的概率 |
+| `branches.provider` | 枝使用的方块，`BlockStateProvider`。取 `dawnduskterminal:skygate_pine_wood` |
+| `branches.count` | 分枝根数，`IntProvider` |
+| `branches.length` | 每根枝在圆周上的伸出半径，`IntProvider` |
+| `branches.band` | `{min, max}`，分枝高度带占树干高度的比例 |
+| `branches.rise_chance` | 每根枝抬起一段的概率，抬起的高度为 1 到 `steps / 3 + 1` 格，不超过树干顶 |
 | `radius_offsets.branch` | 每根枝的树冠水平尺寸偏移，`IntProvider`，逐枝抖动 |
 | `radius_offsets.crown` | 树干顶上那团的水平尺寸偏移，固定值，比枝顶大一档用来封顶 |
+
+分枝参数收在 `branches` 一个对象里，而不是平铺在 `trunk_placer` 下：1.21.1 的 `RecordCodecBuilder` 最多只能拼到八项，加上 `branches.provider` 之后平铺字段是九项，编不出来。
+
+枝用的不是原木而是天门松木：原木两端的横截面贴图会露在斜枝的侧面上，木用的是原木侧面贴图铺满六面，与苍穹木的做法一致。
+
+树形的断言在 `SkygatePineTests`：树高为 20~30，分枝至少覆盖四个不同的高度，且这些高度同时落在树干的下半部与上三分之一；离干的位置只准出现天门松木、不得出现原木，也不得竖直叠块，用来钉住「侧枝只占一块厚」。
 
 叶团使用 `minecraft:cherry_foliage_placer`：`height` 取到该 placer 允许的下限 4（原版樱花取 5），垂直尺寸至此确定；`radius` 随树浮动，再叠加 `radius_offsets`，因此横向尺寸比原版樱花大一圈，并且每团的尺寸并不相同。需要注意的是，placer 内部的计算为 `i = radius + radiusOffset - 1`，最宽的一层位于自下往上第二层，其半径即 `i`：`radius` 取 3、`branch` 取 -1 时 `i` 只剩 1，叶团会缩成 3x3 的薄片，因此不应继续调低。
 
@@ -138,8 +145,6 @@
 不应使用 `minecraft:trunk_vine`：它挂附于树干，每根原木的每一面都有 2/3 的挂藤概率，二十多格的树干会被挂成藤柱。本模组曾经自行实现过 `sparse_leaf_vine`，它按「条数」随机挑选树叶再向旁边挂藤，结果绝大多数随机数落在叶团内部（其旁边并非空气），实际挂出的条数远少于配置值，该实现已被删除。
 
 `minimum_size` 是 `limit 1` / `lower_size 0` / `upper_size 2`，与原版樱花一致；旧配置的 `limit 20` 加 `upper_size 5` 等于要求树干高处 11x11 的范围全部为空地，树几乎无法生长。
-
-树形由 `SkygatePineTests` 断言：树高为 20~30，分枝至少覆盖四个不同的高度，且这些高度同时落在树干的下半部与上三分之一。
 
 ## 温带分带与温度映射
 

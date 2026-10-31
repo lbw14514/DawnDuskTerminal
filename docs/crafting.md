@@ -65,3 +65,46 @@ NeoForge 自带 191 个原版配方覆盖，其中 13 条与本模组需要修�
 4. 存在使用苍穹石制作出石切机的方法。
 
 断言通过 `RecipeManager` 取得的是**最终生效**的那一版配方，而不检查本模组写了哪些文件。因此，若 NeoForge 以后增加或删除覆盖，或者本模组遗漏某一个改写文件，这些测试都会失败。
+
+## 五 天门松木家族
+
+天门松照苍穹木配齐：原木、去皮原木、木、去皮木、空心原木。木的六面都用 `block/skygate_pine_log` 张贴图，不单独出一张，与 `minecraft:oak_wood` 的做法相同。
+
+| 文件 | 内容 |
+|---|---|
+| `recipe/skygate_pine_wood.json` | 4 原木 → 3 木 |
+| `recipe/stripped_skygate_pine_wood.json` | 4 去皮原木 → 3 去皮木 |
+| `recipe/hollow_skygate_pine_log.json` | 石切机，原木 → 空心原木 |
+
+去皮走 `data/neoforge/data_maps/block/strippables.json`：原木→去皮原木、木→去皮木两条映射都写在那里。
+
+标签分三层，缺一层就会出现「配方不认、斧子不快、僵尸门都拆不动」这类问题。
+
+| 标签 | 内容 |
+|---|---|
+| `minecraft:logs` 与 `minecraft:logs_that_burn`（方块与物品各一份） | 原木、去皮原木、木、去皮木 |
+| `minecraft:stripped_logs`（方块与物品各一份） | 去皮原木、去皮木 |
+| `minecraft:mineable/axe` | 上述四块加三块空心原木 |
+| `minecraft:climbable` | 攀爬版空心原木；缺了它挂上梯子也爬不动 |
+| `dawnduskterminal:skygate_pine_logs`（方块与物品各一份） | 原木家族四块，照暮色森林按树种分标签的习惯 |
+| `dawnduskterminal:hollow_logs` | 三块空心原木 |
+
+## 六 空心原木
+
+照暮色森林移植：一块「木头」实际是三个方块，共用一个物品 `hollow_skygate_pine_log`。
+
+| 方块 | 状态 | 说明 |
+|---|---|---|
+| `hollow_skygate_pine_log_horizontal` | `axis` + `variant`（`empty` `moss` `moss_and_grass` `snow` `waterlogged`） | 躺着的空心原木，能钻进去 |
+| `hollow_skygate_pine_log_vertical` | `waterlogged` | 立着的空心原木，从顶上跳进去 |
+| `hollow_skygate_pine_log_climbable` | `facing` + `variant`（`vine` `ladder` `ladder_waterlogged`） | 挂藤或梯子的那面 |
+
+- 放置：`item/HollowLogItem` 按点击面分派，点顶面或底面放竖向那块，点侧面放横向那块。
+- 挖下来的掉落：`BlockItem#registerBlocks` 把三块都映射回同一件物品，因此不会出现三种掉落物。
+- 横向那块往洞里塞苔藓毯、草、雪球分别切到 `moss`、`moss_and_grass`、`snow`，铁锹铲雪、剪刀收苔藓退回 `empty`。
+- 竖向那块往洞里塞藤或梯子会整块换成攀爬版，剪掉再换回来。
+- 苔藓与积雪直接取暮色森林的贴图：`twilightforest:block/mosspatch`、`moss_overhang`、`snow_overhang`。塞苔藓用的是暮色森林的 `moss_patch` 物品，剪刀回收的也是它，因此不需要另画贴图。
+- 与暮色森林的差别只剩水的表示：这边直接用 `variant` 或 `waterlogged` 这一档，那边另有一层接口在三种方块之间搬水。
+- 攀爬版必须进 `minecraft:climbable` 标签。梯子只是模型里的一层薄板，方块本身没有爬行逻辑，标签缺了这一项就只看得到梯子、爬不上去。
+
+`SkygateWoodTests` 断言放置分派与掉落映射，`SkygatePineTests` 断言树上的枝用的是木。

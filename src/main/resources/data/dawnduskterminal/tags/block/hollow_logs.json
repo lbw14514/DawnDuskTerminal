@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "dawnduskterminal:hollow_skygate_pine_log_horizontal",
+    "dawnduskterminal:hollow_skygate_pine_log_vertical",
+    "dawnduskterminal:hollow_skygate_pine_log_climbable"
+  ]
+}

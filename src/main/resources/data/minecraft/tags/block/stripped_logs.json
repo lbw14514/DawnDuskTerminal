@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "dawnduskterminal:stripped_skygate_pine_log"
+    "dawnduskterminal:stripped_skygate_pine_log",
+    "dawnduskterminal:stripped_skygate_pine_wood"
   ]
 }

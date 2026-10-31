@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "dawnduskterminal:block/skygate_pine_wood"
+    },
+    "axis=z": {
+      "model": "dawnduskterminal:block/skygate_pine_wood",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "dawnduskterminal:block/skygate_pine_wood",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

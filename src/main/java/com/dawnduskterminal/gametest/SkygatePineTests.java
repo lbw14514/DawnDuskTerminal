@@ -78,7 +78,11 @@ public final class SkygatePineTests {
         helper.assertTrue(height >= 20 && height <= 30, "skygate pine must be 20~30 blocks tall, got " + height);
 
         int trunkHeight = height;
+        BlockState wood = ModTerrainBlocks.SKYGATE_PINE_WOOD.get().defaultBlockState();
         Set<Integer> branchHeights = new HashSet<>();
+        int branchLogs = 0;
+        int stackedLogs = 0;
+        int strayLogs = 0;
         for (int dy = 0; dy <= trunkHeight; dy++) {
             for (int dx = -8; dx <= 8; dx++) {
                 for (int dz = -8; dz <= 8; dz++) {
@@ -86,8 +90,17 @@ public final class SkygatePineTests {
                         continue;
                     }
 
-                    if (helper.getLevel().getBlockState(trunkBase.offset(dx, dy, dz)).is(log.getBlock())) {
+                    BlockState state = helper.getLevel().getBlockState(trunkBase.offset(dx, dy, dz));
+                    if (state.is(wood.getBlock())) {
+                        branchLogs++;
                         branchHeights.add(dy);
+
+                        if (helper.getLevel().getBlockState(trunkBase.offset(dx, dy + 1, dz)).is(wood.getBlock())) {
+                            stackedLogs++;
+                        }
+                    } else if (state.is(log.getBlock())) {
+                        // 枝端会露出原木横截面，所以离干的位置只准出现天门松木
+                        strayLogs++;
                     }
                 }
             }
@@ -99,6 +112,15 @@ public final class SkygatePineTests {
             "branches must reach the lower half of the trunk, got " + branchHeights);
         helper.assertTrue(branchHeights.stream().anyMatch(dy -> dy >= trunkHeight * 2 / 3),
             "branches must reach the upper third of the trunk, got " + branchHeights);
+
+        helper.assertTrue(branchLogs > 0, "no side branch was grown out of skygate_pine_wood");
+        helper.assertTrue(strayLogs == 0,
+            "branches must use skygate_pine_wood instead of the log, got " + strayLogs + " logs off the trunk");
+
+        // 每根枝是一条三维直线：每步只落一块，离干的原木不会竖直叠在另一块上。
+        // 逐格单轴步进加竖木填充的老写法在 45 度斜枝上会留下一串竖直叠块，会顶到这条断言
+        helper.assertTrue(stackedLogs == 0,
+            "side branches must stay one block thick, got " + stackedLogs + " vertically stacked logs off the trunk");
         helper.succeed();
     }
 

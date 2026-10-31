@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "aa",
+    "aa"
+  ],
+  "key": {
+    "a": {
+      "item": "dawnduskterminal:stripped_skygate_pine_log"
+    }
+  },
+  "result": {
+    "id": "dawnduskterminal:stripped_skygate_pine_wood",
+    "count": 3
+  }
+}
