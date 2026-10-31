@@ -4,25 +4,18 @@ import com.dawnduskterminal.registry.ModSounds;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -38,6 +31,9 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import twilightforest.entity.monster.CarminiteGhastling;
+import twilightforest.init.TFDamageTypes;
+import twilightforest.init.TFEntities;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -144,12 +140,7 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     private static final float FIREBALL_SPREAD_DEGREES = 8.0F;
 
     /** 暮色森林的泪滴伤害类型；缺暮色森林时退回普通生物伤害 */
-    private static final ResourceKey<DamageType> GHAST_TEAR =
-        ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.parse("twilightforest:ghast_tear"));
 
-    /** 暮色森林的迷你恶魂 */
-    private static final ResourceLocation GHASTLING =
-        ResourceLocation.parse("twilightforest:carminite_ghastling");
 
     /**
      * 脸上那两张薄片的状态，必须同步
@@ -378,12 +369,9 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
             }
         }
         // 泪滴落到小鬼身上就把它吸收掉：治疗本体 {@value #TEAR_HEAL} 点，然后消失
-        EntityType<?> ghastling = BuiltInRegistries.ENTITY_TYPE.getOptional(GHASTLING).orElse(null);
-        if (ghastling != null) {
-            for (Entity minion : level.getEntitiesOfClass(Entity.class, below, entity -> entity.getType() == ghastling)) {
-                minion.discard();
-                this.heal(TEAR_HEAL);
-            }
+        for (CarminiteGhastling minion : level.getEntitiesOfClass(CarminiteGhastling.class, below)) {
+            minion.discard();
+            this.heal(TEAR_HEAL);
         }
         level.sendParticles(ParticleTypes.FALLING_DRIPSTONE_WATER,
             this.getX(), this.getY() + this.getBbHeight() * 0.5D, this.getZ(),
@@ -391,11 +379,7 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
     }
 
     private DamageSource tearDamage() {
-        if (this.level() instanceof ServerLevel level
-            && level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolder(GHAST_TEAR).isPresent()) {
-            return this.damageSources().source(GHAST_TEAR, this);
-        }
-        return this.damageSources().mobAttack(this);
+        return this.damageSources().source(TFDamageTypes.GHAST_TEAR, this);
     }
 
     /** 一次性技能：在自身 24 格内召一批迷你恶魂，并把当前索敌共享给它们 */
@@ -403,14 +387,10 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
         if (!(this.level() instanceof ServerLevel level)) {
             return false;
         }
-        EntityType<?> ghastling = BuiltInRegistries.ENTITY_TYPE.getOptional(GHASTLING).orElse(null);
-        if (ghastling == null) {
-            return false;
-        }
         LivingEntity target = this.getTarget();
         int spawned = 0;
         for (int i = 0; i < MINION_COUNT; i++) {
-            Entity minion = ghastling.create(level);
+            CarminiteGhastling minion = TFEntities.CARMINITE_GHASTLING.get().create(level);
             if (minion == null) {
                 continue;
             }
@@ -428,8 +408,8 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
             }
             // 不设 persistence：与暮色森林的 boss 小鬼一样（TF 的 makeBossMinion 也不设），
             // 战斗结束后玩家走远就自然消失，不会打一次攒一堆
-            if (minion instanceof Mob mob && target != null && target.isAlive()) {
-                mob.setTarget(target);
+            if (target != null && target.isAlive()) {
+                minion.setTarget(target);
             }
             minion.getPersistentData().putBoolean(MINION_TAG, true);
             level.addFreshEntity(minion);
@@ -460,23 +440,16 @@ public class GhastEliteEntity extends Ghast implements GeoEntity {
         if (!(this.level() instanceof ServerLevel level)) {
             return;
         }
-        EntityType<?> ghastling = BuiltInRegistries.ENTITY_TYPE.getOptional(GHASTLING).orElse(null);
-        if (ghastling == null) {
-            return;
-        }
         LivingEntity target = this.getTarget();
         Vec3 center = this.getBoundingBox().getCenter();
-        for (Entity minion : level.getEntitiesOfClass(Entity.class,
-            this.getBoundingBox().inflate(MINION_TEND_RADIUS), entity -> entity.getType() == ghastling)) {
-            if (!(minion instanceof Mob mob)) {
-                continue;
+        for (CarminiteGhastling minion : level.getEntitiesOfClass(CarminiteGhastling.class,
+            this.getBoundingBox().inflate(MINION_TEND_RADIUS))) {
+            if (minion.getTarget() == null && target != null && target.isAlive() && this.canAttack(target)) {
+                minion.setTarget(target);
             }
-            if (mob.getTarget() == null && target != null && target.isAlive() && this.canAttack(target)) {
-                mob.setTarget(target);
-            }
-            if (mob.getTarget() == null) {
-                Vec3 hold = holdPoint(center, mob.position());
-                mob.getMoveControl().setWantedPosition(hold.x, hold.y, hold.z, 1.0D);
+            if (minion.getTarget() == null) {
+                Vec3 hold = holdPoint(center, minion.position());
+                minion.getMoveControl().setWantedPosition(hold.x, hold.y, hold.z, 1.0D);
             }
         }
     }

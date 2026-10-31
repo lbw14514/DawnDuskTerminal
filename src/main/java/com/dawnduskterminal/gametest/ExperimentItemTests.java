@@ -17,6 +17,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFItems;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.DamageTypeTags;
@@ -304,9 +305,9 @@ public final class ExperimentItemTests {
         ItemStack expected = new ItemStack(ModExperimentItems.placeholders().get(13).get());
         CraftingInput input = CraftingInput.of(2, 2, List.of(
             new ItemStack(ModItems.RAW_SCARLET_MOLYBDENUM.get()),
-            foreign("twilightforest:raw_ironwood"),
+            new ItemStack(TFItems.RAW_IRONWOOD.get()),
             from016,
-            foreign("twilightforest:carminite")));
+            new ItemStack(TFItems.CARMINITE.get())));
         var recipe = helper.getLevel().getRecipeManager()
             .getRecipeFor(RecipeType.CRAFTING, input, helper.getLevel());
         helper.assertTrue(recipe.isPresent(),

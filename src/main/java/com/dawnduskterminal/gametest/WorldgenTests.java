@@ -17,10 +17,10 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFBlocks;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import java.io.BufferedReader;
@@ -303,7 +303,7 @@ public final class WorldgenTests {
             helper.assertTrue(ground.defaultBlockState().is(BlockTags.DIRT),
                 ground.getName().getString() + " must stay in the #minecraft:dirt tag the sapling checks");
         }
-        Block sapling = BuiltInRegistries.BLOCK.get(ResourceLocation.parse("twilightforest:twilight_oak_sapling"));
+        Block sapling = TFBlocks.TWILIGHT_OAK_SAPLING.get();
         helper.assertTrue(sapling != Blocks.AIR,
             "twilightforest:twilight_oak_sapling must be registered, Twilight Forest is a required dependency");
         BlockPos groundPos = new BlockPos(1, 1, 1);

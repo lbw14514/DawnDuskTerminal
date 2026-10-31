@@ -11,6 +11,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFItems;
+import twilightforest.init.TFBlocks;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
@@ -244,10 +246,8 @@ public final class Experiment051Tests {
         helper.assertTrue(plan.inputCount() == 1,
             "one experiment_017 must be eaten per uncraft, got " + plan.inputCount());
 
-        ItemStack steelLeaf = foreign("twilightforest:steeleaf_ingot");
-        ItemStack darkLeaves = foreign("twilightforest:dark_leaves");
-        helper.assertFalse(steelLeaf.isEmpty() || darkLeaves.isEmpty(),
-            "twilightforest must be installed: steeleaf=" + steelLeaf + " dark_leaves=" + darkLeaves);
+        ItemStack steelLeaf = new ItemStack(TFItems.STEELEAF_INGOT.get());
+        ItemStack darkLeaves = new ItemStack(TFBlocks.DARK_LEAVES.get().asItem());
         for (int slot : new int[] {2, 3, 4, 7}) {
             helper.assertTrue(plan.products().get(slot).is(steelLeaf.getItem()),
                 "output slot " + slot + " must be a steeleaf ingot, got " + plan.products().get(slot));

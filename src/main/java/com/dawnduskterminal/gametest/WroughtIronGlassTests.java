@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFItems;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -133,7 +134,7 @@ public final class WroughtIronGlassTests {
         helper.assertTrue(holder.value() instanceof ShapelessRecipe,
             "锻铁玻璃的配方必须是无序合成，实际是 " + holder.value().getClass().getName());
 
-        ItemStack wroughtIron = foreignItem("twilightforest:wrought_iron_bar");
+        ItemStack wroughtIron = new ItemStack(TFItems.WROUGHT_IRON_BAR.get());
         helper.assertFalse(wroughtIron.isEmpty(),
             "暮色森林的锻铁锭（twilightforest:wrought_iron_bar）必须存在，本模组运行要求装暮色森林");
 

@@ -98,11 +98,11 @@ c2me 本体采用 MIT 许可证，`c2me-opts-accel-opencl` 为 All Rights Reserv
 
 暮色森林自身的 modmaven 已于 2024-07-06 停止更新，1.21.1 所使用的 4.8.3345 在该源上仅有空目录。
 
-代码中只使用字符串 ID 引用暮色森林，不存在 `import twilightforest.*`。
+暮色森林是必装依赖，Java 代码直接 `import twilightforest.*` 引用它的类型（注册项取 `TFEntities` / `TFBlocks` / `TFSounds` 等常量，方法直接调用）。编译期检查优先：暮色森林升级导致类名或签名变化时，构建直接失败，而不是运行期悄悄降级。
 
-因此，缺少该 jar 仍可编译，但运行时将缺少相应的注册项。
+因此构建期必须有该 jar（`build.gradle` 的 `compileOnly`，来自 CurseMaven，需要联网）。
 
-`gradle.properties` 中的 `twilight_dependency` 控制依赖类型，默认值为 `required`。
+只有编译期没有常量的数据 ID 仍写成字符串：`data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id（这些由数据包定义，类型化不了）。
 
 ## GeckoLib
 

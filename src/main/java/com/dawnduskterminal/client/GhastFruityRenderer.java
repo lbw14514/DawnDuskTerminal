@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -89,7 +88,7 @@ public final class GhastFruityRenderer {
                 if (key == GhastFruityEntity.HeldBlock.NONE) {
                     return Blocks.AIR.defaultBlockState();
                 }
-                Block resolved = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(key.blockId()));
+                Block resolved = key.block();
                 return resolved == null ? Blocks.AIR.defaultBlockState() : resolved.defaultBlockState();
             });
         }

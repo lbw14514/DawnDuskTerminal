@@ -8,10 +8,9 @@ import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import twilightforest.init.TFBlocks;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -24,7 +23,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
@@ -85,9 +83,9 @@ public final class Experiment114Tests {
         helper.assertTrue(Experiment114Block.BITES_TAKEN.getName().equals("omnomnom"),
             "the bites property must keep 115's name omnomnom, got " + Experiment114Block.BITES_TAKEN.getName());
 
-        // 装了暮色森林就逐字比一遍状态名；没装时这条跳过
-        Block theirs = BuiltInRegistries.BLOCK.get(ResourceLocation.parse("twilightforest:experiment_115"));
-        if (theirs != Blocks.AIR) {
+        // 状态名逐字比一遍：114 的方块照 115 写，属性少一个就说明没跟上
+        {
+            Block theirs = TFBlocks.EXPERIMENT_115.get();
             Set<String> ours = propertyNames(placed);
             Set<String> expected = propertyNames(theirs.defaultBlockState());
             helper.assertTrue(ours.equals(expected),

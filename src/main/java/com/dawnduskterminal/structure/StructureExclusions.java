@@ -4,6 +4,7 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import twilightforest.init.TFStructures;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,16 +48,16 @@ public final class StructureExclusions {
         ALLOWED.put("雪屋", ResourceLocation.withDefaultNamespace("igloo"));
         ALLOWED.put("废弃矿井", ResourceLocation.withDefaultNamespace("mineshaft"));
         ALLOWED.put("废弃矿井 平顶山", ResourceLocation.withDefaultNamespace("mineshaft_mesa"));
-        ALLOWED.put("树洞", ResourceLocation.parse("twilightforest:hollow_tree"));
-        ALLOWED.put("倒下的空心木头", ResourceLocation.parse("twilightforest:fallen_trunk"));
-        ALLOWED.put("蘑菇城堡", ResourceLocation.parse("twilightforest:mushroom_tower"));
-        ALLOWED.put("营地", ResourceLocation.parse("twilightforest:camp"));
-        ALLOWED.put("树篱迷宫", ResourceLocation.parse("twilightforest:hedge_maze"));
-        ALLOWED.put("空心矿山", ResourceLocation.parse("twilightforest:small_hollow_hill"));
+        ALLOWED.put("树洞", TFStructures.HOLLOW_TREE.location());
+        ALLOWED.put("倒下的空心木头", TFStructures.FALLEN_TRUNK.location());
+        ALLOWED.put("蘑菇城堡", TFStructures.MUSHROOM_TOWER.location());
+        ALLOWED.put("营地", TFStructures.CAMP.location());
+        ALLOWED.put("树篱迷宫", TFStructures.HEDGE_MAZE.location());
+        ALLOWED.put("空心矿山", TFStructures.HOLLOW_HILL_SMALL.location());
 
-        UNMAPPED.put("工兵矿山 文档未提", ResourceLocation.parse("twilightforest:medium_hollow_hill"));
-        UNMAPPED.put("亡灵矿山 文档未提", ResourceLocation.parse("twilightforest:large_hollow_hill"));
-        UNMAPPED.put("沼泽空心树 文档未提", ResourceLocation.parse("twilightforest:swamp_hollow_tree"));
+        UNMAPPED.put("工兵矿山 文档未提", TFStructures.HOLLOW_HILL_MEDIUM.location());
+        UNMAPPED.put("亡灵矿山 文档未提", TFStructures.HOLLOW_HILL_LARGE.location());
+        UNMAPPED.put("沼泽空心树 文档未提", TFStructures.SWAMP_HOLLOW_TREE.location());
     }
 
     private static final Set<ResourceLocation> ALLOWED_IDS = Set.copyOf(ALLOWED.values());

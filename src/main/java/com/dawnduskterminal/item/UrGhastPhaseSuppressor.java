@@ -1,8 +1,7 @@
 package com.dawnduskterminal.item;
 
-import com.dawnduskterminal.DawnDuskTerminal;
-import java.lang.reflect.Method;
 import net.minecraft.world.entity.LivingEntity;
+import twilightforest.entity.boss.UrGhast;
 
 /**
  * 把暮色恶魂（{@code twilightforest:ur_ghast}）从它的相位免伤里撬出来，只给试验物品 066 用
@@ -17,64 +16,22 @@ import net.minecraft.world.entity.LivingEntity;
  * 顺带在 {@code customServerAiStep} 里 {@code setTarget(null)}，等于把 BOSS 定住、清掉它的仇恨，
  * 那是另一档强度（强控），不在这个件里。
  *
- * <p>全部按<b>类名反射</b>调用：仓库约定是「代码里只用字符串 ID 引用暮色森林，没有
- * {@code import twilightforest.*}，缺 jar 仍可编译」，反射守住了这条；缺 jar 或方法改名时整段静默降级成普通伤害
+ * <p>这两个方法在 {@code UrGhast} 上都是 {@code public}，因此直接引用类型调用，
+ * 升级暮色森林时签名一变编译期就报错，而不是运行期悄悄降级
  */
 public final class UrGhastPhaseSuppressor {
-    private static final String URGHAST_CLASS = "twilightforest.entity.boss.UrGhast";
-    private static boolean resolved;
-    private static boolean available;
-    private static Class<?> urGhastClass;
-    private static Method setInTantrum;
-    private static Method resetDamageUntilNextPhase;
-
     /**
      * 对恶魂压一次相位：退出 tantrum、把「进下一相位还差多少血」的预算刷回 18
      *
-     * @return 真的对它动手了就是 true；不是恶魂、没装暮色、或钩子调用失败都是 false
+     * @return 真的对它动手了就是 true；不是恶魂就是 false
      */
     public static boolean avoidTantrum(LivingEntity target) {
-        resolve();
-        if (!available || !urGhastClass.isInstance(target)) {
+        if (!(target instanceof UrGhast urGhast)) {
             return false;
         }
-
-        try {
-            setInTantrum.invoke(target, Boolean.FALSE);
-            resetDamageUntilNextPhase.invoke(target);
-            return true;
-        } catch (ReflectiveOperationException | RuntimeException problem) {
-            available = false;
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 暮色恶魂的相位钩子调用失败，试验物品 066 之后按普通伤害走：{}", problem.toString());
-            return false;
-        }
-    }
-
-    /** 相位钩子能不能用：测试与日志用 */
-    public static boolean available() {
-        resolve();
-        return available;
-    }
-
-    private static synchronized void resolve() {
-        if (resolved) {
-            return;
-        }
-        resolved = true;
-        try {
-            urGhastClass = Class.forName(URGHAST_CLASS);
-            setInTantrum = urGhastClass.getMethod("setInTantrum", boolean.class);
-            resetDamageUntilNextPhase = urGhastClass.getMethod("resetDamageUntilNextPhase");
-            available = true;
-        } catch (ClassNotFoundException notInstalled) {
-            // 没装暮色森林：这本就对普通目标满额，什么都不用做
-            available = false;
-        } catch (NoSuchMethodException renamed) {
-            available = false;
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 暮色恶魂的相位钩子找不到，试验物品 066 按普通伤害走：{}", renamed.toString());
-        }
+        urGhast.setInTantrum(false);
+        urGhast.resetDamageUntilNextPhase();
+        return true;
     }
 
     private UrGhastPhaseSuppressor() {}

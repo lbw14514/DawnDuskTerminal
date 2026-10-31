@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -16,7 +14,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.world.phys.Vec3;
+import twilightforest.init.TFParticleType;
+import twilightforest.init.TFSounds;
 
 /**
  * 试验物品 066 那本恶魂陷阱书压出来的场：挂在施放者身上的一个吸口，把视线走廊里的活物往吸口里拽，
@@ -64,18 +65,15 @@ public final class GhastTrapProcess {
      * 恶魂陷阱那圈往里收的粒子，{@code assets/twilightforest/particles/ghast_trap.json} 那一支。
      * 只用资源 ID 取，不 import 暮色森林（缺它的 jar 也要能起）
      */
-    public static final ResourceLocation TRAP_PARTICLE = ResourceLocation.parse("twilightforest:ghast_trap");
+    public static final SimpleParticleType TRAP_PARTICLE = TFParticleType.GHAST_TRAP.get();
     /** 收场那阵大烟，方块的 {@code counter > 100} 分支用的同一支 */
-    public static final ResourceLocation TRAP_SMOKE = ResourceLocation.parse("twilightforest:huge_smoke");
+    public static final SimpleParticleType TRAP_SMOKE = TFParticleType.HUGE_SMOKE.get();
     /** 预热音，方块在前 {@value #WARMUP_TICKS} tick 每 tick 放一次 */
-    public static final ResourceLocation TRAP_WARMUP_SOUND =
-        ResourceLocation.parse("twilightforest:block.twilightforest.ghast_trap.warmup");
+    public static final SoundEvent TRAP_WARMUP_SOUND = TFSounds.GHAST_TRAP_WARMUP.get();
     /** 通电音，{@value #WARMUP_TICKS}~{@value #SPINDOWN_FROM} tick 每 tick 放一次 */
-    public static final ResourceLocation TRAP_ON_SOUND =
-        ResourceLocation.parse("twilightforest:block.twilightforest.ghast_trap.on");
+    public static final SoundEvent TRAP_ON_SOUND = TFSounds.GHAST_TRAP_ON.get();
     /** 收场音，{@value #SPINDOWN_FROM} tick 之后每 tick 放一次 */
-    public static final ResourceLocation TRAP_SPINDOWN_SOUND =
-        ResourceLocation.parse("twilightforest:block.twilightforest.ghast_trap.spindown");
+    public static final SoundEvent TRAP_SPINDOWN_SOUND = TFSounds.GHAST_TRAP_SPINDOWN.get();
     /** 方块的相位分界：0~29 预热、30~79 通电、80 起收场 */
     public static final int WARMUP_TICKS = 30;
     public static final int SPINDOWN_FROM = 80;
@@ -335,11 +333,7 @@ public final class GhastTrapProcess {
      * {@code addParticle(type, x, y, z, maxSpeed * xDist, maxSpeed * yDist, maxSpeed * zDist)}，
      * 速度按原值落地、不掺随机，正好等于方块客户端 {@code addParticle(...)} 的六个参数
      */
-    private void spawnParticle(ResourceLocation id, Vec3 center, Vec3 offset) {
-        if (!(BuiltInRegistries.PARTICLE_TYPE.get(id) instanceof ParticleOptions particle)) {
-            return;
-        }
-
+    private void spawnParticle(ParticleOptions particle, Vec3 center, Vec3 offset) {
         this.level.sendParticles(particle, center.x, center.y, center.z, 0, offset.x, offset.y, offset.z, 1.0);
     }
 
@@ -349,13 +343,8 @@ public final class GhastTrapProcess {
      * 都从场心出
      */
     private void playTrapSound() {
-        ResourceLocation id = this.age < WARMUP_TICKS ? TRAP_WARMUP_SOUND
+        SoundEvent sound = this.age < WARMUP_TICKS ? TRAP_WARMUP_SOUND
             : this.age < SPINDOWN_FROM ? TRAP_ON_SOUND : TRAP_SPINDOWN_SOUND;
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(id);
-        if (sound == null) {
-            return;
-        }
-
         Vec3 center = this.trapCenter();
         this.level.playSound(null, center.x, center.y, center.z, sound, SoundSource.BLOCKS, SOUND_VOLUME, SOUND_PITCH);
     }

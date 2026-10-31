@@ -6,6 +6,8 @@ import java.util.List;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFBlocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -61,14 +63,14 @@ public final class TowerWoodTests {
     @GameTest(template = "ddt_empty")
     public static void towerWoodBlocksAreCutFromDarkLog(GameTestHelper helper) {
         for (String path : DARK_LOG_STONECUT_BLOCKS) {
-            assertStonecutFrom(helper, path, "twilightforest:dark_log");
+            assertStonecutFrom(helper, path, TFBlocks.DARK_LOG.get());
         }
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void strippedCountertopIsCutFromStrippedDarkLog(GameTestHelper helper) {
-        assertStonecutFrom(helper, "stripped_dark_log_countertop", "twilightforest:stripped_dark_log");
+        assertStonecutFrom(helper, "stripped_dark_log_countertop", TFBlocks.STRIPPED_DARK_LOG.get());
         helper.succeed();
     }
 
@@ -77,10 +79,9 @@ public final class TowerWoodTests {
      *
      * <p>配方 id 与文件名同名，所以这里直接用方块路径拼：写错一边必然对不上
      */
-    private static void assertStonecutFrom(GameTestHelper helper, String blockPath, String inputId) {
+    private static void assertStonecutFrom(GameTestHelper helper, String blockPath, Block inputBlock) {
         ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath("dawnduskterminal", blockPath);
-        ItemStack input = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(inputId)));
-        helper.assertFalse(input.isEmpty(), "item " + inputId + " must exist, install The Twilight Forest");
+        ItemStack input = new ItemStack(inputBlock);
 
         RecipeHolder<?> holder = helper.getLevel().getRecipeManager().getRecipes().stream()
             .filter(candidate -> candidate.id().equals(recipeId))
@@ -93,7 +94,7 @@ public final class TowerWoodTests {
                 .is(BuiltInRegistries.BLOCK.get(recipeId).asItem()),
             recipeId + " must produce the block of the same id");
         helper.assertTrue(holder.value().getIngredients().stream().anyMatch(ingredient -> ingredient.test(input)),
-            recipeId + " must accept " + inputId);
+            recipeId + " must accept " + BuiltInRegistries.BLOCK.getKey(inputBlock));
     }
 
     private TowerWoodTests() {}

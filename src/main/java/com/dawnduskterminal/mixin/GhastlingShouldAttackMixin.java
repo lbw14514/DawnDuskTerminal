@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import twilightforest.entity.monster.CarminiteGhastling;
 
 /**
  * 大恶魂召出来的小鬼不挑人：手里有索敌、看得见就打
@@ -18,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>这里只放开被 {@link GhastEliteEntity#MINION_TAG} 标记过的那批（大恶魂召的），
  * 野生的砷铅铁恶魂守卫仍按原规则挑人；仍然要求有视线，免得隔着树开火
  */
-@Mixin(targets = "twilightforest.entity.monster.CarminiteGhastling")
+@Mixin(CarminiteGhastling.class)
 public abstract class GhastlingShouldAttackMixin {
     @Inject(method = "shouldAttack(Lnet/minecraft/world/entity/LivingEntity;)Z", at = @At("HEAD"), cancellable = true)
     private void ddt$attackSharedTarget(LivingEntity target, CallbackInfoReturnable<Boolean> info) {

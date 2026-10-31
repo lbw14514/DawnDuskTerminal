@@ -8,7 +8,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
@@ -17,12 +16,15 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import twilightforest.init.TFSounds;
+import twilightforest.init.TFEntities;
+import twilightforest.init.TFDamageTypes;
+import twilightforest.init.TFBlocks;
 
 /**
  * 试验物品 076 被挖掉之后跑的那场反应：逐拍照抄暮色森林的砷铅铁反应堆
@@ -82,19 +84,6 @@ public final class Experiment076Reaction {
     private static final TagKey<Block> ORES =
         BlockTags.create(ResourceLocation.parse("twilightforest:carminite_reactor_ores"));
 
-    /** 灌进团块里的反应堆碎片 */
-    private static final ResourceLocation DEBRIS = ResourceLocation.parse("twilightforest:reactor_debris");
-
-    /** 收尾刷的砷铅铁恶魂幼体 */
-    private static final ResourceLocation GHASTLING = ResourceLocation.parse("twilightforest:carminite_ghastling");
-
-    /** 那一阵一路涨上去的轰鸣 */
-    private static final ResourceLocation AMBIENT_SOUND =
-        ResourceLocation.parse("twilightforest:block.twilightforest.reactor.ambient");
-
-    /** 爆炸用的伤害类型，与反应堆同一条 */
-    private static final ResourceKey<DamageType> REACTOR_DAMAGE =
-        ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.parse("twilightforest:reactor"));
 
     private static final List<Experiment076Reaction> ACTIVE = new ArrayList<>();
 
@@ -323,10 +312,7 @@ public final class Experiment076Reaction {
     }
 
     private void spawnGhastling(int x, int y, int z) {
-        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(GHASTLING)) {
-            return;
-        }
-        Entity entity = BuiltInRegistries.ENTITY_TYPE.get(GHASTLING).create(level);
+        Entity entity = TFEntities.CARMINITE_GHASTLING.get().create(level);
         if (entity == null) {
             return;
         }
@@ -340,31 +326,25 @@ public final class Experiment076Reaction {
         level.addFreshEntity(entity);
     }
 
-    /** 反应堆那条伤害类型；取不到就退化成原版的爆炸 */
+    /** 反应堆那条伤害类型，与方块自己用的同一条 */
     private DamageSource reactorDamage() {
         return level.registryAccess()
             .registryOrThrow(Registries.DAMAGE_TYPE)
-            .getHolder(REACTOR_DAMAGE)
+            .getHolder(TFDamageTypes.REACTOR)
             .<DamageSource>map(DamageSource::new)
             .orElseGet(() -> level.damageSources().explosion(null, null));
     }
 
     private void playAmbient() {
-        if (!BuiltInRegistries.SOUND_EVENT.containsKey(AMBIENT_SOUND)) {
-            return;
-        }
-        SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(AMBIENT_SOUND);
+        SoundEvent sound = TFSounds.REACTOR_AMBIENT.get();
         float pitch = counter / 100.0F;
         level.playSound(null, origin.getX() + 0.5D, origin.getY() + 0.5D, origin.getZ() + 0.5D,
             sound, SoundSource.BLOCKS, pitch, pitch);
     }
 
-    /** 反应堆碎片；暮色森林没装（理论上不可能）就退化成地狱岩，至少塌陷还看得见 */
+    /** 灌进团块里的反应堆碎片 */
     private static BlockState debrisState() {
-        if (!BuiltInRegistries.BLOCK.containsKey(DEBRIS)) {
-            return Blocks.NETHERRACK.defaultBlockState();
-        }
-        return BuiltInRegistries.BLOCK.get(DEBRIS).defaultBlockState();
+        return TFBlocks.REACTOR_DEBRIS.get().defaultBlockState();
     }
 
     private static int side(RandomSource random) {

@@ -11,9 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFBlocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
@@ -190,13 +191,13 @@ public final class Experiment076Tests {
         for (int tick = 0; tick < 5; tick++) {
             Experiment076Reaction.tickAll();
         }
-        helper.assertTrue(count(level, pos, 1, "twilightforest:fake_gold", "twilightforest:fake_diamond") == 0,
+        helper.assertTrue(count(level, pos, 1, TFBlocks.FAKE_GOLD.get(), TFBlocks.FAKE_DIAMOND.get()) == 0,
             "the fake gold and fake diamond blocks are the stage we skip, none may appear around the block");
 
         for (int tick = 5; tick < 120; tick++) {
             Experiment076Reaction.tickAll();
         }
-        helper.assertTrue(count(level, pos, 1, "twilightforest:reactor_debris") > 0,
+        helper.assertTrue(count(level, pos, 1, TFBlocks.REACTOR_DEBRIS.get()) > 0,
             "after the collapse starts the shell must be filled with twilightforest:reactor_debris");
 
         Experiment076Reaction.clear();
@@ -204,14 +205,14 @@ public final class Experiment076Tests {
         helper.succeed();
     }
 
-    /** 数一数以 {@code centre} 为心、半径 {@code radius} 的立方里，ID 命中 {@code ids} 之一的方块有几个 */
-    private static int count(ServerLevel level, BlockPos centre, int radius, String... ids) {
+    /** 数一数以 {@code centre} 为心、半径 {@code radius} 的立方里，方块是 {@code blocks} 之一的几个 */
+    private static int count(ServerLevel level, BlockPos centre, int radius, Block... blocks) {
         int found = 0;
         for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-radius, -radius, -radius),
                 centre.offset(radius, radius, radius))) {
-            String key = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
-            for (String id : ids) {
-                if (key.equals(id)) {
+            Block state = level.getBlockState(pos).getBlock();
+            for (Block candidate : blocks) {
+                if (state == candidate) {
                     found++;
                     break;
                 }

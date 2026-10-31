@@ -5,12 +5,10 @@ import com.dawnduskterminal.item.GhastTrapProcess;
 import com.dawnduskterminal.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Mth;
@@ -37,11 +35,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import twilightforest.init.TFBlocks;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -119,45 +120,44 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     /**
      * 变体手里攥着的方块。{@code NONE} 就是普通恶果
      *
-     * <p>方块只用字符串 ID 记在枚举里，代码不 import 暮色森林（缺它的 jar 也要能起）；
-     * 渲染时再按 ID 取 {@code BlockState}，这三个都是暮色森林的方块
+     * <p>三个方块都是暮色森林的注册项，直接引用 {@code TFBlocks} 的 {@code DeferredBlock}：
+     * 升级暮色森林时方块改名在编译期就会报错，不必等到实机渲染
      */
     public enum HeldBlock {
-        NONE(""),
+        NONE(null),
         /** 重现方块：近战，受击时有四成概率整只消失一下 */
-        REAPPEARING_BLOCK("twilightforest:reappearing_block"),
+        REAPPEARING_BLOCK(TFBlocks.REAPPEARING_BLOCK),
         /** 封装射焰方块：按 043 的喷火打 */
-        ENCASED_FIRE_JET("twilightforest:encased_fire_jet"),
+        ENCASED_FIRE_JET(TFBlocks.ENCASED_FIRE_JET),
         /** 恶魂陷阱：按 066 的场打 */
-        GHAST_TRAP("twilightforest:ghast_trap");
+        GHAST_TRAP(TFBlocks.GHAST_TRAP);
 
-        private final String blockId;
+        @Nullable
+        private final DeferredBlock<?> block;
 
-        HeldBlock(String blockId) {
-            this.blockId = blockId;
+        HeldBlock(@Nullable DeferredBlock<?> block) {
+            this.block = block;
         }
 
-        public String blockId() {
-            return this.blockId;
+        /** 手里那块方块；{@link #NONE} 没有 */
+        @Nullable
+        public Block block() {
+            return this.block == null ? null : this.block.get();
         }
 
         public boolean isVariant() {
             return this != NONE;
         }
 
-        /**
-         * 手里那件物品对应哪种变体；不是那三个方块就返回 {@code null}
-         *
-         * <p>只按注册名比：这三个方块的物品 ID 与方块 ID 相同，代码里不 import 暮色森林
-         */
+        /** 手里那件物品对应哪种变体；不是那三个方块就返回 {@code null} */
         @Nullable
         public static HeldBlock fromItem(ItemStack stack) {
             if (stack.isEmpty()) {
                 return null;
             }
-            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
             for (HeldBlock block : values()) {
-                if (block != NONE && block.blockId.equals(itemId)) {
+                Block held = block.block();
+                if (held != null && stack.is(held.asItem())) {
                     return block;
                 }
             }

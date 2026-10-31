@@ -3,7 +3,6 @@ package com.dawnduskterminal.gametest;
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.item.Experiment066Item;
 import com.dawnduskterminal.item.GhastTrapProcess;
-import com.dawnduskterminal.item.UrGhastPhaseSuppressor;
 import com.dawnduskterminal.registry.ModExperimentItems;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -12,13 +11,12 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -33,6 +31,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
+import twilightforest.init.TFEntities;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
@@ -292,16 +291,14 @@ public final class Experiment066Tests {
     /** 粒子和音效用的是恶魂陷阱方块自己那几支，不是随手挑的原版粒子 */
     @GameTest(template = "ddt_empty")
     public static void theFieldBorrowsTheGhastTrapEffects(GameTestHelper helper) {
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.get(GhastTrapProcess.TRAP_PARTICLE) instanceof ParticleOptions,
-            "twilightforest:ghast_trap must be a particle we can send, got "
-                + BuiltInRegistries.PARTICLE_TYPE.get(GhastTrapProcess.TRAP_PARTICLE));
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.get(GhastTrapProcess.TRAP_SMOKE) instanceof ParticleOptions,
-            "twilightforest:huge_smoke must be a particle we can send, got "
-                + BuiltInRegistries.PARTICLE_TYPE.get(GhastTrapProcess.TRAP_SMOKE));
-        for (ResourceLocation id : List.of(GhastTrapProcess.TRAP_WARMUP_SOUND, GhastTrapProcess.TRAP_ON_SOUND,
+        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.getKey(GhastTrapProcess.TRAP_PARTICLE) != null,
+            "twilightforest:ghast_trap must be a registered particle, got " + GhastTrapProcess.TRAP_PARTICLE);
+        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.getKey(GhastTrapProcess.TRAP_SMOKE) != null,
+            "twilightforest:huge_smoke must be a registered particle, got " + GhastTrapProcess.TRAP_SMOKE);
+        for (SoundEvent sound : List.of(GhastTrapProcess.TRAP_WARMUP_SOUND, GhastTrapProcess.TRAP_ON_SOUND,
             GhastTrapProcess.TRAP_SPINDOWN_SOUND)) {
-            helper.assertTrue(BuiltInRegistries.SOUND_EVENT.get(id) != null,
-                id + " must be a registered sound event, twilightforest is a required dependency here");
+            helper.assertTrue(BuiltInRegistries.SOUND_EVENT.getKey(sound) != null,
+                sound + " must be a registered sound event, twilightforest is a required dependency here");
         }
         helper.assertTrue(GhastTrapProcess.WARMUP_TICKS == 30 && GhastTrapProcess.SPINDOWN_FROM == 80,
             "the sound phases must match the block: warmup until 30, on until 80, spindown from 80, got "
@@ -318,10 +315,7 @@ public final class Experiment066Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void fieldKeepsTheUrGhastOutOfItsTantrum(GameTestHelper helper) {
-        helper.assertTrue(UrGhastPhaseSuppressor.available(),
-            "the twilightforest UrGhast phase hooks must resolve, otherwise the field falls back to plain damage");
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse("twilightforest:ur_ghast"));
-        helper.assertTrue(type != null, "sanity: twilightforest:ur_ghast must be registered");
+        EntityType<?> type = TFEntities.UR_GHAST.get();
         Player player = aimPlayer(helper);
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
         Entity spawned = type.create(helper.getLevel());

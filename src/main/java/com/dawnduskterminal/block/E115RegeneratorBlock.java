@@ -7,8 +7,6 @@ import com.mojang.serialization.MapCodec;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
@@ -19,7 +17,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import twilightforest.init.TFItems;
+import twilightforest.init.TFBlocks;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -69,9 +68,6 @@ import net.minecraft.world.phys.BlockHitResult;
  * 格子里的东西由 {@link #onRemove} 撒出来
  */
 public class E115RegeneratorBlock extends BaseEntityBlock {
-    /** 顶上那块引子的方块 ID。代码里只写字符串，缺暮色森林的 jar 也要能编译 */
-    public static final String SOURCE_ID = "twilightforest:experiment_115";
-
     /** 115 的「咬了几口」状态名，0 是满的 8 片 */
     public static final String SOURCE_BITES_PROPERTY = "omnomnom";
 
@@ -213,9 +209,8 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
     /**
      * 顶上那块是不是「完整的、撒过红石粉的试验物品 115」
      *
-     * <p>状态名按字符串找（{@code omnomnom} 与 {@code regenerate}）而不是 import 暮色森林的类：
-     * 那条约定见 {@link #SOURCE_ID} 的注释。方块对得上但少了这两个属性就当不是，
-     * 免得别的模组撞了这个 ID 时拿默认值瞎判
+     * <p>状态名只能按字符串找（{@code omnomnom} 与 {@code regenerate}）：那是方块状态属性名，
+     * 没有可引用的编译期常量。方块对得上但少了这两个属性就当不是
      */
     public static boolean hasSprinkledFullSource(Level level, BlockPos pos) {
         Block source = sourceBlock();
@@ -254,28 +249,18 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
         return level.getBlockState(pos.above()).getSoundType().getPlaceSound();
     }
 
-    /** 暮色森林的试验物品 115 方块，没装就是 {@link Blocks#AIR} */
+    /** 暮色森林的试验物品 115 方块 */
     public static Block sourceBlock() {
-        if (cachedSourceBlock == null) {
-            cachedSourceBlock = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(SOURCE_ID));
-        }
-        return cachedSourceBlock;
+        return TFBlocks.EXPERIMENT_115.get();
     }
 
-    /** 暮色森林的试验物品 115 物品，没装就是 {@link Items#AIR} */
+    /** 暮色森林的试验物品 115 物品 */
     public static Item sourceItem() {
-        if (cachedSourceItem == null) {
-            cachedSourceItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(SOURCE_ID));
-        }
-        return cachedSourceItem;
+        return TFItems.EXPERIMENT_115.get();
     }
 
-    /**
-     * 产出的那一份：一个暮色森林的试验物品 115
-     *
-     * <p>没装暮色森林时给空栈，机器就停在「放得下」那一条上不动，不会凭空造出别的东西
-     */
+    /** 产出的那一份：一个暮色森林的试验物品 115 */
     public static ItemStack newSourceStack() {
-        return sourceItem() == Items.AIR ? ItemStack.EMPTY : new ItemStack(sourceItem());
+        return new ItemStack(sourceItem());
     }
 }

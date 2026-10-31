@@ -3,12 +3,10 @@ package com.dawnduskterminal.world;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.neoforge.fluids.FluidInteractionRegistry;
+import twilightforest.init.TFBlocks;
 
 /**
  * 通过 {@link FluidInteractionRegistry} 注册流体接触反应，原版 {@code 水 + 岩浆 -> 圆石 / 黑曜石} 走的
@@ -51,9 +49,8 @@ public final class FluidReactions {
                 NeoForgeMod.LAVA_TYPE.value(), ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState()));
     }
 
-    /** 热情的暮光加水之后得到的方块：暮色森林的极光方块，取不到时退化为炽热方块。也是测试的期望值来源 */
+    /** 热情的暮光加水之后得到的方块：暮色森林的极光方块。也是测试的期望值来源 */
     public static Block auroraBlock() {
-        Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse("twilightforest:aurora_block"));
-        return block == Blocks.AIR ? ModTerrainBlocks.BLAZING_BLOCK.get() : block;
+        return TFBlocks.AURORA_BLOCK.get();
     }
 }

@@ -275,8 +275,6 @@ tasks.named('runClient') { task ->
     task.classpathProvider.from(configurations.clientDevMods)
 }
 
-def twilightDependency = providers.gradleProperty('twilight_dependency').getOrElse('required')
-
 def replaceProperties = [
     minecraft_version      : minecraft_version,
     minecraft_version_range: minecraft_version_range,
@@ -289,7 +287,6 @@ def replaceProperties = [
     mod_version            : mod_version,
     mod_authors            : mod_authors,
     mod_description        : mod_description,
-    twilight_dependency    : twilightDependency,
 ]
 
 tasks.named('processResources', ProcessResources).configure {

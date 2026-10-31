@@ -11,17 +11,15 @@ import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import twilightforest.init.TFEntities;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -43,6 +41,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import twilightforest.init.TFBlocks;
 
 /**
  * 「恶果」的几件事：配置（数值、尺寸、生成、还手距离、暮色火球的继承关系）、生成表、接住火球之后往哪飞
@@ -120,9 +119,9 @@ public final class GhastFruityTests {
                 + "), was " + mouth);
 
         // 持块变体：手里那块方块只认暮色森林的三个 ID；重现方块那一只受击有四成概率整只消失
-        helper.assertTrue(GhastFruityEntity.HeldBlock.REAPPEARING_BLOCK.blockId().equals("twilightforest:reappearing_block")
-                && GhastFruityEntity.HeldBlock.ENCASED_FIRE_JET.blockId().equals("twilightforest:encased_fire_jet")
-                && GhastFruityEntity.HeldBlock.GHAST_TRAP.blockId().equals("twilightforest:ghast_trap"),
+        helper.assertTrue(GhastFruityEntity.HeldBlock.REAPPEARING_BLOCK.block() == TFBlocks.REAPPEARING_BLOCK.get()
+                && GhastFruityEntity.HeldBlock.ENCASED_FIRE_JET.block() == TFBlocks.ENCASED_FIRE_JET.get()
+                && GhastFruityEntity.HeldBlock.GHAST_TRAP.block() == TFBlocks.GHAST_TRAP.get(),
             "the three held blocks must be the twilight forest ones");
         ghast.setHeldBlock(GhastFruityEntity.HeldBlock.REAPPEARING_BLOCK);
         helper.assertTrue(ghast.isBlockVariant(), "setting a held block must turn the entity into the block variant");
@@ -209,9 +208,7 @@ public final class GhastFruityTests {
         for (int tick = 0; tick < 5; tick++) {
             elite.tick();
         }
-        EntityType<?> ghastlingType = BuiltInRegistries.ENTITY_TYPE.get(
-            ResourceLocation.parse("twilightforest:carminite_ghastling"));
-        helper.assertTrue(ghastlingType != null, "twilightforest:carminite_ghastling must be registered");
+        EntityType<?> ghastlingType = TFEntities.CARMINITE_GHASTLING.get();
         List<Entity> minions = helper.getLevel().getEntitiesOfClass(Entity.class,
             new AABB(elite.blockPosition()).inflate(64.0D), entity -> entity.getType() == ghastlingType);
         helper.assertTrue(!minions.isEmpty(),
@@ -336,8 +333,7 @@ public final class GhastFruityTests {
                 + " for " + eliteEggPos.getY());
 
         // 创造模式手持方块右击 → 变成对应变体；生存模式不许变
-        Item reappearing = BuiltInRegistries.ITEM.get(ResourceLocation.parse("twilightforest:reappearing_block"));
-        helper.assertTrue(reappearing != Items.AIR, "twilightforest:reappearing_block must exist");
+        Item reappearing = TFBlocks.REAPPEARING_BLOCK.get().asItem();
         Player creative = helper.makeMockPlayer(GameType.CREATIVE);
         creative.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(reappearing));
         aimer.setHeldBlock(GhastFruityEntity.HeldBlock.NONE);

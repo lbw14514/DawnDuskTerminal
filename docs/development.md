@@ -18,9 +18,7 @@ NeoForge 与 ModDevGradle 的版本分别记录在 `gradle.properties` 与 `sett
 
 暮色森林自带的 modmaven 已于 2024-07-06 停止更新（该源上的最新版本为 4.5.2428），而 1.21.1 所使用的版本在该源上只有空目录，因此只能使用 CurseMaven 这个第三方代理；为此 `build.gradle` 使用 `exclusiveContent` 将 `curse.maven` 这一组仓库单独摘出。
 
-代码中只按字符串 ID 引用暮色森林，不存在 `import twilightforest.*` 语句，因此缺少该依赖时仍然可以编译，只是相关功能会在运行时缺失（CI 目前也能拉取到同一份 classpath）。
-
-`gradle.properties` 中的 `twilight_dependency` 控制依赖类型，默认值为 `required`。
+暮色森林是必装依赖，Java 代码直接引用其类型（`TFEntities`、`TFBlocks`、`TFSounds`、`TFConfig` 等常量与相应实体类），因此升级暮色森林时签名变化会在编译期暴露。构建期需要联网从 CurseMaven 拉包；只有编译期没有常量的数据 ID 仍是字符串：`data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id。
 
 ## GeckoLib 依赖
 

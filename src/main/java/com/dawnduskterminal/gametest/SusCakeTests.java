@@ -19,6 +19,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import twilightforest.init.TFItems;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -70,6 +71,10 @@ public final class SusCakeTests {
     private static final String BLOODORANGE = "sus_bloodorange_cake";
     private static final String REDVELVET = "sus_redvelvet_cake";
 
+    /** 六条配方的第一条原料都是暮色森林的 115，注册名从注册项反查 */
+    private static final String EXPERIMENT_115 =
+        BuiltInRegistries.ITEM.getKey(TFItems.EXPERIMENT_115.get()).toString();
+
     /**
      * 有配方的那六种：无序配方的原料，第一条都是暮色森林的试验物品 115
      *
@@ -77,13 +82,13 @@ public final class SusCakeTests {
      * 红丝绒暂无配方，所以不在这张表里
      */
     private static final Map<String, List<String>> RECIPE_INGREDIENTS = Map.of(
-        BLOODORANGE, List.of("twilightforest:experiment_115", "dawnduskterminal:experiment_008"),
-        CHEESE, List.of("twilightforest:experiment_115", "minecraft:milk_bucket"),
-        "sus_cherrycheese_cake", List.of("twilightforest:experiment_115", "minecraft:milk_bucket",
+        BLOODORANGE, List.of(EXPERIMENT_115, "dawnduskterminal:experiment_008"),
+        CHEESE, List.of(EXPERIMENT_115, "minecraft:milk_bucket"),
+        "sus_cherrycheese_cake", List.of(EXPERIMENT_115, "minecraft:milk_bucket",
             "minecraft:sweet_berries"),
-        LAMINGTON, List.of("twilightforest:experiment_115", "minecraft:cocoa_beans", "minecraft:bone_meal"),
-        PAVLOVA, List.of("twilightforest:experiment_115", "minecraft:egg"),
-        PINEAPPLE, List.of("twilightforest:experiment_115", "minecraft:cactus"));
+        LAMINGTON, List.of(EXPERIMENT_115, "minecraft:cocoa_beans", "minecraft:bone_meal"),
+        PAVLOVA, List.of(EXPERIMENT_115, "minecraft:egg"),
+        PINEAPPLE, List.of(EXPERIMENT_115, "minecraft:cactus"));
 
     @GameTest(template = "ddt_empty")
     public static void everyFlavourFeedsItsOwnServing(GameTestHelper helper) {

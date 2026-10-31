@@ -1,13 +1,11 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import twilightforest.init.TFItems;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.bus.api.IEventBus;
@@ -123,8 +121,7 @@ public final class ModCreativeTabs {
         () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.dawnduskterminal.experiment_items"))
             .withTabsBefore(DawnDuskTerminal.id("main"))
-            .icon(() -> fallback(foreignItem("twilightforest:experiment_115"),
-                ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get()))
+            .icon(() -> new ItemStack(TFItems.EXPERIMENT_115.get()))
             .displayItems((params, output) -> {
                 SortedMap<Integer, ItemLike> sequence = new TreeMap<>();
                 sequence.put(1, ModItems.EXPERIMENT_001.get());
@@ -164,26 +161,9 @@ public final class ModCreativeTabs {
                 sequence.put(107, ModItems.EXPERIMENT_107.get());
                 sequence.put(114, ModItems.EXPERIMENT_114.get());
                 sequence.forEach((number, item) -> accept(output, item));
-                acceptForeignItem(output, "twilightforest:experiment_115");
+                output.accept(TFItems.EXPERIMENT_115.get());
             })
             .build());
-
-    /** 取别的模组的物品，取不到时给空栈：代码里只用字符串 ID 引用暮色森林，缺 jar 也要能起 */
-    private static ItemStack foreignItem(String id) {
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
-        return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
-    }
-
-    private static void acceptForeignItem(CreativeModeTab.Output output, String id) {
-        ItemStack stack = foreignItem(id);
-        if (!stack.isEmpty()) {
-            output.accept(stack);
-        }
-    }
-
-    private static ItemStack fallback(ItemStack stack, ItemLike backup) {
-        return stack.isEmpty() ? new ItemStack(backup) : stack;
-    }
 
     private static void accept(CreativeModeTab.Output output, ItemLike item) {
         if (item == null || item.asItem() == Items.AIR) {

@@ -1,9 +1,8 @@
 package com.dawnduskterminal.entity;
 
 import com.dawnduskterminal.registry.ModEntities;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import twilightforest.init.TFEntities;
 
 /**
  * 「自己人」判定：本模组的两种恶魂与暮色森林的迷你恶魂互不算敌人
@@ -16,9 +15,6 @@ import net.minecraft.world.entity.Entity;
  * 施放者自己本来就由调用方的 {@code != owner} 排除，这里再兜一次
  */
 public final class GhastKin {
-    private static final ResourceLocation GHASTLING =
-        ResourceLocation.parse("twilightforest:carminite_ghastling");
-
     public static boolean isKin(Entity owner, Entity other) {
         if (owner == other) {
             return true;
@@ -26,12 +22,11 @@ public final class GhastKin {
         return isGhastFamily(owner) && isGhastFamily(other);
     }
 
-    /** 缺暮色森林时 {@code getOptional} 给空，不会误把注册表的默认值（猪）当成小鬼 */
     private static boolean isGhastFamily(Entity entity) {
         var type = entity.getType();
         return type == ModEntities.GHASTFRUITY.get()
             || type == ModEntities.GHAST_ELITE.get()
-            || type == BuiltInRegistries.ENTITY_TYPE.getOptional(GHASTLING).orElse(null);
+            || type == TFEntities.CARMINITE_GHASTLING.get();
     }
 
     private GhastKin() {}
