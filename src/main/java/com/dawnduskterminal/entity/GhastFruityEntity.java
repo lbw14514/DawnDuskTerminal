@@ -1,7 +1,9 @@
 package com.dawnduskterminal.entity;
 
+import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.item.FireJetProcess;
 import com.dawnduskterminal.item.GhastTrapProcess;
+import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -11,6 +13,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
@@ -120,8 +123,12 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     /**
      * 变体手里攥着的方块。{@code NONE} 就是普通恶果
      *
-     * <p>三个方块都是暮色森林的注册项，直接引用 {@code TFBlocks} 的 {@code DeferredBlock}：
-     * 升级暮色森林时方块改名在编译期就会报错，不必等到实机渲染
+     * <p>前三个方块都是暮色森林的注册项，直接引用 {@code TFBlocks} 的 {@code DeferredBlock}：
+     * 升级暮色森林时方块改名在编译期就会报错，不必等到实机渲染。
+     * 最后一个 {@link #EXPERIMENT_052} 是本模组自己的那颗方雷，取的同样是注册项，不是字符串 id
+     *
+     * <p><b>新变体一律追加在末尾</b>：这个序号既进 NBT（{@code HeldBlock}）又进同步数据
+     * （{@link #DATA_HELD_BLOCK}），插在中间会把老存档里那几只换掉
      */
     public enum HeldBlock {
         NONE(null),
@@ -130,7 +137,14 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         /** 封装射焰方块：按 043 的喷火打 */
         ENCASED_FIRE_JET(TFBlocks.ENCASED_FIRE_JET),
         /** 恶魂陷阱：按 066 的场打 */
-        GHAST_TRAP(TFBlocks.GHAST_TRAP);
+        GHAST_TRAP(TFBlocks.GHAST_TRAP),
+        /**
+         * 试验物品 052：进到 4 格点火，引信期间慢慢压上去，然后按 052 那一份自爆
+         *
+         * <p>没有近战也没有远程，只有一次爆炸（{@link Experiment052Block#detonateAt}）；
+         * 自己不进死亡流程，因此不掉任何东西
+         */
+        EXPERIMENT_052(ModBlocks.EXPERIMENT_052);
 
         @Nullable
         private final DeferredBlock<?> block;
@@ -149,7 +163,7 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
             return this != NONE;
         }
 
-        /** 手里那件物品对应哪种变体；不是那三个方块就返回 {@code null} */
+        /** 手里那件物品对应哪种变体；不是那四个方块（及其方块物品）就返回 {@code null} */
         @Nullable
         public static HeldBlock fromItem(ItemStack stack) {
             if (stack.isEmpty()) {
@@ -171,6 +185,29 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     private static final float VARIANT_CHANCE = 0.25F;
 
     /**
+     * 052 变体进到离目标多近就点火（格，两只的体中心距）
+     *
+     * <p>四格之内就是「贴近」：点着之后这 3 秒引信里它还会以更慢的速度继续往里挤
+     * （见 {@link #KAMIKAZE_HUG} 与 {@code LowFlightMoveControl} 的点燃档），所以留出这段余量
+     */
+    public static final double KAMIKAZE_REACH = 4.0D;
+
+    /** 引信期间一路挤到的距离：1.5 格碰撞箱的一半再加一点余量，贴住但不在目标身体里 */
+    public static final double KAMIKAZE_HUG = 1.2D;
+
+    /** 052 变体的引信长度，与那颗方雷的引信同一个数（3 秒） */
+    public static final int KAMIKAZE_FUSE_TICKS = Experiment052Block.FUSE_TICKS;
+
+    /**
+     * 已经点着的旗子（同步）
+     *
+     * <p>客户端要靠它把手里那颗方雷画成发光的那一套（{@code experiment_052_glow}），
+     * 与方块点火后的样子一致；服务端靠它保证只点一次火
+     */
+    private static final EntityDataAccessor<Boolean> DATA_IGNITED = SynchedEntityData.defineId(
+        GhastFruityEntity.class, EntityDataSerializers.BOOLEAN);
+
+    /**
      * 生成时抬高多少格
      *
      * <p>几何在脚下一层还有一块 {@code origin=[-12,-12,-12]}、{@code size=[24,12,24]} 的裙摆，
@@ -188,6 +225,9 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
 
     private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
+    /** 052 变体剩下的引信 tick；{@code -1} 表示没点着。只在服务端有意义 */
+    private int fuse = -1;
+
     public GhastFruityEntity(EntityType<? extends GhastFruityEntity> type, Level level) {
         super(type, level);
         // 30 点生命配 15 点经验，与原版恶魂「10 点生命 5 点经验」同比
@@ -204,10 +244,10 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     }
 
     /**
-     * 自然生成时按 {@value #VARIANT_CHANCE} 的概率变成持块变体，持哪种方块三等概率随机
+     * 自然生成时按 {@value #VARIANT_CHANCE} 的概率变成持块变体，持哪种方块等概率随机
      *
      * <p>只有 {@code NATURAL} 会掷这一下：刷怪蛋、刷怪笼、{@code /summon} 拿到的是普通恶果，
-     * 想要变体就写 NBT（{@code HeldBlock:1/2/3}）或让游戏自己刷
+     * 想要变体就写 NBT（{@code HeldBlock:1/2/3/4}）或让游戏自己刷
      */
     @SuppressWarnings("deprecation")
     @Override
@@ -217,7 +257,10 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     ) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
         if (spawnType == MobSpawnType.NATURAL && this.getRandom().nextFloat() < VARIANT_CHANCE) {
-            HeldBlock[] choices = {HeldBlock.REAPPEARING_BLOCK, HeldBlock.ENCASED_FIRE_JET, HeldBlock.GHAST_TRAP};
+            HeldBlock[] choices = {
+                HeldBlock.REAPPEARING_BLOCK, HeldBlock.ENCASED_FIRE_JET, HeldBlock.GHAST_TRAP,
+                HeldBlock.EXPERIMENT_052
+            };
             this.setHeldBlock(choices[this.getRandom().nextInt(choices.length)]);
         }
         if (spawnType != MobSpawnType.COMMAND) {
@@ -238,7 +281,8 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         if (player.isCreative()) {
             HeldBlock target = HeldBlock.fromItem(player.getItemInHand(hand));
             if (target != null) {
-                if (!this.level().isClientSide() && this.getHeldBlock() != target) {
+                if (!this.level().isClientSide() && this.getHeldBlock() != target && !this.isIgnited()) {
+                    // 点着的那只不许再换手里的方块：引信已经上了，它只能是那颗方雷
                     this.setHeldBlock(target);
                 }
                 return InteractionResult.SUCCESS;
@@ -343,6 +387,7 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         super.defineSynchedData(builder);
         builder.define(DATA_FACE, (byte) Face.CALM.ordinal());
         builder.define(DATA_HELD_BLOCK, (byte) HeldBlock.NONE.ordinal());
+        builder.define(DATA_IGNITED, false);
     }
 
     /** 客户端读这一位决定用哪套几何、脸前画哪个方块 */
@@ -372,10 +417,56 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         }
     }
 
+    /** 客户端用这一位把手里那颗方雷换成发光的那套模型；服务端用它拦住第二次点火 */
+    public boolean isIgnited() {
+        return this.entityData.get(DATA_IGNITED);
+    }
+
+    /**
+     * 052 变体的点火：一声 {@code experiment_052_ignite}，此后照那颗方雷的引信
+     * {@value #KAMIKAZE_FUSE_TICKS} tick（3 秒）走完就自爆
+     *
+     * <p>点着之后再也停不下来——与那颗方块一样（那边也没有「信号没了就取消」的分支），
+     * 目标跑了、脱战了都只是白炸一场，引信照走
+     *
+     * <p>这里只管点火这一下：点燃之后的移动由 {@code VariantCombatGoal} 继续推着走，
+     * 只是移动控制器换成了更慢的一档，看起来就是「一边烧一边慢慢压过来」
+     */
+    public void igniteExperiment052() {
+        if (this.level().isClientSide() || this.isIgnited()) {
+            return;
+        }
+        this.fuse = KAMIKAZE_FUSE_TICKS;
+        this.entityData.set(DATA_IGNITED, true);
+        this.level().playSound(null, this.getX(), this.getY() + SPAWN_LIFT, this.getZ(),
+            ModSounds.EXPERIMENT_052_IGNITE.get(), SoundSource.HOSTILE, 2.0F, 1.0F);
+    }
+
+    /**
+     * 引信到点：先把自己从世界里撤掉，再在原来的位置炸出 052 那一整份后果
+     * （{@link Experiment052Block#detonateAt}：主爆炸、粒子、音效、连锁、刷新群系、碎片）
+     *
+     * <p><b>这两步的顺序不能反过来</b>：先炸的话这一只自己也在威力 6 的范围里，会被自己的爆炸打死，
+     * 于是走 {@code die()} 那条路，掉落与经验全都会掉出来。先 {@code discard()} 就不再是「死」，
+     * 因此既没有掉落也没有经验——这就是「自爆的实体没有掉落物」
+     */
+    private void selfDestruct() {
+        this.fuse = -1;
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+        double x = this.getX();
+        double y = this.getY() + this.getBbHeight() * 0.5D;
+        double z = this.getZ();
+        this.discard();
+        Experiment052Block.detonateAt(level, x, y, z);
+    }
+
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putByte("HeldBlock", (byte) this.getHeldBlock().ordinal());
+        tag.putBoolean("Ignited", this.isIgnited());
     }
 
     @Override
@@ -384,6 +475,11 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         if (tag.contains("HeldBlock")) {
             int id = tag.getByte("HeldBlock");
             this.setHeldBlock(id > 0 && id < HELD_BLOCKS.length ? HELD_BLOCKS[id] : HeldBlock.NONE);
+        }
+        if (tag.getBoolean("Ignited")) {
+            // 区块在引信途中被卸载又重新载入时，引信从头再走一遍 3 秒，而不是永远不再爆
+            this.fuse = KAMIKAZE_FUSE_TICKS;
+            this.entityData.set(DATA_IGNITED, true);
         }
     }
 
@@ -394,6 +490,9 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         if (!this.level().isClientSide()) {
             this.entityData.set(DATA_FACE, (byte) this.currentFace().ordinal());
             this.aimAtTarget();
+            if (this.fuse > 0 && --this.fuse <= 0) {
+                this.selfDestruct();
+            }
         }
     }
 
@@ -428,9 +527,9 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
         };
     }
 
-    /** 蓄力（即喷火球前最后 10 tick）用攻击脸，只是盯着目标用不悦脸，没目标用平静脸 */
+    /** 蓄力（即喷火球前最后 10 tick）用攻击脸，只是盯着目标用不悦脸，没目标用平静脸；点着的那只用攻击脸 */
     public Face currentFace() {
-        if (this.isCharging()) {
+        if (this.isIgnited() || this.isCharging()) {
             return Face.ATTACK;
         }
         return this.getTarget() != null ? Face.ANNOYED : Face.CALM;
@@ -633,6 +732,9 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
      * <p>这就是「像蜜蜂那样贴着地面飞」的全部内容——移动速度本身没有改动（加速度仍是 0.1），
      * 变的只是高度
      *
+     * <p>唯一的例外是点着了火的 052 变体：那时加速度换成 {@code 0.1 × IGNITED_APPROACH_SCALE}，
+     * 于是引信那 3 秒里它是「一边烧一边慢慢压过来」，而不是继续全速冲
+     *
      * <p><b>不做整条直线的碰撞预检</b>：原版恶魂的 {@code canReach} 会沿直线一格一格试 1.5 格见方的箱子，
      * 在林子里一条十几格的直线几乎必然撞上树干或枝叶，预检通不过就永远停在原地（上一版的症状）。
      * 这里直接推加速度，撞上东西交给实体自己的移动去滑动
@@ -640,6 +742,12 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
     private static final class LowFlightMoveControl extends RandomFloatMoveControl {
         /** 贴地高度：地表往上 4 格（这个值由作者定，别再动） */
         private static final double LOW_FLIGHT_HEIGHT = 4D;
+
+        /** 正常推进的加速度，与原版恶魂的 {@code 0.1} 同值 */
+        private static final double APPROACH_ACCEL = 0.1D;
+
+        /** 点燃之后的加速度倍数：0.5，慢到能看清它压过来 */
+        private static final double IGNITED_APPROACH_SCALE = 0.5D;
 
         /**
          * 临时下潜高度：{@code NaN} 表示不潜
@@ -677,17 +785,24 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
                 this.operation = MoveControl.Operation.WAIT;
                 return;
             }
-            this.ghast.setDeltaMovement(this.ghast.getDeltaMovement().add(offset.normalize().scale(0.1D)));
+            // 点着了火的那只把推力降到三成：引信期间仍在靠近，只是慢
+            double accel = this.ghast.isIgnited() ? APPROACH_ACCEL * IGNITED_APPROACH_SCALE : APPROACH_ACCEL;
+            this.ghast.setDeltaMovement(this.ghast.getDeltaMovement().add(offset.normalize().scale(accel)));
         }
     }
 
     /**
-     * 变体的攻击：近战、喷火、陷阱三套，共用「贴近到射程内并保持距离」的移动
+     * 变体的攻击：近战、喷火、陷阱、自爆四套，共用「贴近到射程内并保持距离」的移动
      *
      * <p>喷火与陷阱直接复用 043 / 066 那两个过程：过程自己挂在 {@code ServerTickEvent.Post} 上跑，
      * 枪口与场心每 tick 重新绑到施放者的眼睛与视线，所以这里只要让这只生物盯着目标、站在射程内即可
      *
      * <p>射程内保持的距离取 {@value #HOLD_DISTANCE} 格：太远就往前压，太近就退，到了带内就不再给新目标点
+     *
+     * <p>052 那一只是例外里的例外：它不要距离带，进到 4 格（{@link GhastFruityEntity#KAMIKAZE_REACH}）
+     * 就点火；点燃之后这个目标已经没用了，但它仍会以更慢的速度继续挤向
+     * {@link GhastFruityEntity#KAMIKAZE_HUG}，引信走完当场炸（见
+     * {@link GhastFruityEntity#igniteExperiment052}）
      */
     private static final class VariantCombatGoal extends Goal {
         /** 近战一下 6 点，间隔 1 秒 */
@@ -725,6 +840,11 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
             if (target == null || !target.isAlive()) {
                 return;
             }
+            if (this.ghast.isIgnited()) {
+                // 点着以后只剩倒计时：不再开第二枪，但仍在慢慢往里挤
+                this.closeIn(target);
+                return;
+            }
             if (this.meleeCooldown > 0) {
                 this.meleeCooldown--;
             }
@@ -737,6 +857,7 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
                 case REAPPEARING_BLOCK -> this.melee(target, distance);
                 case ENCASED_FIRE_JET -> this.ranged(target, distance, FireJetProcess.LENGTH, FireJetProcess.TOTAL_TICKS);
                 case GHAST_TRAP -> this.ranged(target, distance, GhastTrapProcess.LENGTH, GhastTrapProcess.TOTAL_TICKS);
+                case EXPERIMENT_052 -> this.kamikaze(target, distance);
                 default -> { }
             }
         }
@@ -751,6 +872,33 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
             if (this.meleeCooldown <= 0 && this.ghast.hasLineOfSight(target)) {
                 target.hurt(this.ghast.damageSources().mobAttack(this.ghast), MELEE_DAMAGE);
                 this.meleeCooldown = MELEE_COOLDOWN;
+            }
+        }
+
+        /**
+         * 052 那一只：进到 {@link GhastFruityEntity#KAMIKAZE_REACH} 格以内就点火
+         *
+         * <p>没有近战也没有远程，只有一次爆炸；进不到就一路压过去（顺带把高度也压到目标脚下，
+         * 与近战同一条下潜），进到了立刻点火，之后由 {@link #closeIn} 接着往里挤
+         */
+        private void kamikaze(LivingEntity target, double distance) {
+            this.dive(target);
+            if (distance > KAMIKAZE_REACH) {
+                this.keepDistance(target, KAMIKAZE_REACH - 0.2D);
+                return;
+            }
+            this.ghast.igniteExperiment052();
+        }
+
+        /**
+         * 引信期间：同一条下潜、同样的落点，一路挤到 {@link GhastFruityEntity#KAMIKAZE_HUG} 格
+         *
+         * <p>「慢」不在这一层：这里给的仍是正常的落点，速度是移动控制器在点燃档里降下来的
+         */
+        private void closeIn(LivingEntity target) {
+            this.dive(target);
+            if (this.ghast.distanceTo(target) > KAMIKAZE_HUG) {
+                this.keepDistance(target, KAMIKAZE_HUG);
             }
         }
 
@@ -829,7 +977,8 @@ public class GhastFruityEntity extends Ghast implements GeoEntity {
 
         @Override
         public boolean canUse() {
-            return this.ghast.isBlockVariant() && this.ghast.getTarget() == null;
+            // 点着的那只不游荡：引信走完就没了，跑来跑去只会把爆炸带到别处
+            return this.ghast.isBlockVariant() && !this.ghast.isIgnited() && this.ghast.getTarget() == null;
         }
 
         @Override

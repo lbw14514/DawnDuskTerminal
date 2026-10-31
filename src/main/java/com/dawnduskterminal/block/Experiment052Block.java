@@ -99,14 +99,26 @@ public class Experiment052Block extends Block {
         detonate(level, pos);
     }
 
-    /** 炸：先撤掉方块，再依次是主爆炸（含粒子与音效）、余火、射弹 */
+    /** 炸：先撤掉方块，再把 052 那一整份后果（{@link #detonateAt}）摊出去 */
     private void detonate(ServerLevel level, BlockPos pos) {
         double x = pos.getX() + 0.5D;
         double y = pos.getY() + 0.5D;
         double z = pos.getZ() + 0.5D;
         level.removeBlock(pos, false);
+        detonateAt(level, x, y, z);
+    }
+
+    /**
+     * 052 爆炸的全部后果，落在什么位置由调用方决定
+     *
+     * <p>抽出来是为了让持块变体（{@code GhastFruityEntity.HeldBlock#EXPERIMENT_052}）炸的和方块一模一样：
+     * 主爆炸（{@link CarminiteBlast#large}，含粒子、音效、连锁与刷新群系）在前，
+     * 再甩出 0~{@value #MAX_SHRAPNEL} 个 {@link CarminiteShrapnelEntity}
+     *
+     * <p>射弹排在爆炸之后：先炸掉方块，碎片才不会被自己的爆炸推歪
+     */
+    public static void detonateAt(ServerLevel level, double x, double y, double z) {
         CarminiteBlast.large(level, x, y, z);
-        // 射弹排在爆炸之后：先炸掉方块，碎片才不会被自己的爆炸推歪
         launchShrapnel(level, x, y, z);
     }
 

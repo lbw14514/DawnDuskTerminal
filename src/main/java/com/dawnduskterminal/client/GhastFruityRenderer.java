@@ -1,7 +1,9 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.entity.GhastFruityEntity;
+import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModEntities;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -69,6 +71,10 @@ public final class GhastFruityRenderer {
             BlockState state = this.heldState(entity.getHeldBlock());
             if (state.isAir()) {
                 return;
+            }
+            if (state.is(ModBlocks.EXPERIMENT_052.get())) {
+                // 点着之后手里那颗方雷换成发光的那一套，与方块点亮时的样子一致
+                state = state.setValue(Experiment052Block.ACTIVE, entity.isIgnited());
             }
 
             poseStack.pushPose();

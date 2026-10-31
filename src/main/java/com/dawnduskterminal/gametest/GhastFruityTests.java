@@ -1,16 +1,19 @@
 package com.dawnduskterminal.gametest;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastElitePopulation;
 import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.entity.GhastKin;
 import com.dawnduskterminal.entity.GhastFruityPopulation;
 import com.dawnduskterminal.item.FireJetProcess;
+import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -19,6 +22,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.effect.MobEffects;
@@ -119,11 +123,28 @@ public final class GhastFruityTests {
             "the mouth must sit in the facing direction (yRot=" + ghast.getYRot() + " view=" + view
                 + "), was " + mouth);
 
-        // 持块变体：手里那块方块只认暮色森林的三个 ID；重现方块那一只受击有四成概率整只消失
+        // 持块变体：手里那块方块只认暮色森林的三个 ID，外加本模组那颗 052 方雷；
+        // 重现方块那一只受击有四成概率整只消失
         helper.assertTrue(GhastFruityEntity.HeldBlock.REAPPEARING_BLOCK.block() == TFBlocks.REAPPEARING_BLOCK.get()
                 && GhastFruityEntity.HeldBlock.ENCASED_FIRE_JET.block() == TFBlocks.ENCASED_FIRE_JET.get()
                 && GhastFruityEntity.HeldBlock.GHAST_TRAP.block() == TFBlocks.GHAST_TRAP.get(),
-            "the three held blocks must be the twilight forest ones");
+            "the three twilight forest held blocks must stay registered");
+        helper.assertTrue(GhastFruityEntity.HeldBlock.EXPERIMENT_052.block() == ModBlocks.EXPERIMENT_052.get(),
+            "the experiment 052 variant must hold dawnduskterminal:experiment_052, got "
+                + GhastFruityEntity.HeldBlock.EXPERIMENT_052.block());
+        helper.assertTrue(GhastFruityEntity.HeldBlock.EXPERIMENT_052.ordinal()
+                == GhastFruityEntity.HeldBlock.values().length - 1,
+            "a new variant must be appended last, or old saves lose their held block");
+        helper.assertTrue(GhastFruityEntity.KAMIKAZE_FUSE_TICKS == Experiment052Block.FUSE_TICKS,
+            "the 052 variant must use the very fuse of the block, was "
+                + GhastFruityEntity.KAMIKAZE_FUSE_TICKS);
+        helper.assertTrue(GhastFruityEntity.KAMIKAZE_REACH == 4.0D,
+            "the 052 variant must ignite once it is 4 blocks from its target, was "
+                + GhastFruityEntity.KAMIKAZE_REACH);
+        helper.assertTrue(GhastFruityEntity.KAMIKAZE_HUG > 0.0D
+                && GhastFruityEntity.KAMIKAZE_HUG < GhastFruityEntity.KAMIKAZE_REACH,
+            "the fuse must close in to something closer than the ignition range, was "
+                + GhastFruityEntity.KAMIKAZE_HUG);
         ghast.setHeldBlock(GhastFruityEntity.HeldBlock.REAPPEARING_BLOCK);
         helper.assertTrue(ghast.isBlockVariant(), "setting a held block must turn the entity into the block variant");
         boolean dodged = false;
@@ -457,6 +478,86 @@ public final class GhastFruityTests {
         helper.assertTrue(ghast.currentFace() == GhastFruityEntity.Face.CALM,
             "the face must fall back to calm once the target is gone");
         helper.succeed();
+    }
+
+    /**
+     * 052 那一只：进到 4 格就点火，引信期间以更慢的速度继续靠近，到点自爆——自爆不进死亡流程，所以没有掉落物
+     *
+     * <p>爆炸按 052 那一份走（威力 6、真的炸方块、真的刷群系），所以这条测试**单独一个 batch**：
+     * 同一个 batch 里的阵位只隔 5 格，会互相波及
+     *
+     * <p>引信是手动一拍一拍推的（与仓库里其它推实体的测试同一做法）：游戏测试的区块有时进不了
+     * 实体刻（见 {@code GameTestChunkWaitMixin}），交给世界去 tick 会让这条测试跟着卡住
+     *
+     * <p>「没有掉落物」由两条一起钉：{@code deathTime == 0} 且血量仍在（说明它从未走 {@code die()}），
+     * 以及周围地上没有恶果那三样战利品
+     */
+    @GameTest(template = "ddt_empty", batch = "ghastfruity_kamikaze", timeoutTicks = 200)
+    public static void experiment052VariantHugsThenBlowsItselfUp(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Pig target = helper.spawn(EntityType.PIG, 4, 3, 4);
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        GhastFruityEntity ghast = helper.spawn(ModEntities.GHASTFRUITY.get(), 4, 3, 10);
+        ghast.setHeldBlock(GhastFruityEntity.HeldBlock.EXPERIMENT_052);
+        ghast.setTarget(target);
+
+        // 六格开外只许往过压，不许点着
+        for (int tick = 0; tick < 3; tick++) {
+            ghast.tick();
+        }
+        helper.assertFalse(ghast.isIgnited(),
+            "a 052 variant must not ignite from 6 blocks away, the range is "
+                + GhastFruityEntity.KAMIKAZE_REACH);
+
+        // 进到 4 格以内立刻点着，并且换成攻击脸（客户端靠同步位把手里那颗方雷画成发光的那套）
+        ghast.moveTo(target.getX(), target.getY(), target.getZ() + 3.5D);
+        ghast.tick();
+        helper.assertTrue(ghast.isIgnited(), "a 052 variant that got within 4 blocks must ignite");
+        helper.assertTrue(ghast.currentFace() == GhastFruityEntity.Face.ATTACK,
+            "an ignited ghastfruity must wear the attack face, got " + ghast.currentFace());
+        ghast.tick();
+        helper.assertTrue(ghast.isIgnited(), "the fuse must not un-ignite itself");
+
+        // 引信期间仍在靠近，只是慢：二十 tick 里必须真的近了一些，而且还没提前炸
+        double before = ghast.distanceTo(target);
+        for (int tick = 0; tick < 20; tick++) {
+            ghast.tick();
+        }
+        double after = ghast.distanceTo(target);
+        helper.assertFalse(ghast.isRemoved(), "the fuse must not blow up early");
+        helper.assertTrue(after < before - 0.05D,
+            "an ignited 052 variant must keep closing in, went from " + before + " to " + after);
+
+        // 引信走完：炸，而且不进死亡流程
+        Vec3 blast = ghast.position();
+        for (int tick = 0; tick <= GhastFruityEntity.KAMIKAZE_FUSE_TICKS && !ghast.isRemoved(); tick++) {
+            ghast.tick();
+        }
+        helper.assertTrue(ghast.isRemoved(),
+            "the 052 variant must blow itself up once the " + GhastFruityEntity.KAMIKAZE_FUSE_TICKS
+                + " tick fuse runs out");
+        helper.assertTrue(ghast.deathTime == 0 && ghast.getHealth() > 0.0F,
+            "self destructing must not go through the death path, or it would drop loot (deathTime="
+                + ghast.deathTime + ", health=" + ghast.getHealth() + ")");
+        List<String> dropped = itemsNear(level, blast, 8.0D).stream()
+            .map(item -> BuiltInRegistries.ITEM.getKey(item.getItem().getItem()).toString())
+            .filter(GHASTFRUITY_LOOT::contains)
+            .toList();
+        helper.assertTrue(dropped.isEmpty(),
+            "a self destructing 052 variant must not drop anything, found " + dropped);
+        helper.succeed();
+    }
+
+    /** 恶果身上那三样战利品：自爆不许掉它们 */
+    private static final List<String> GHASTFRUITY_LOOT = List.of(
+        "twilightforest:carminite",
+        "dawnduskterminal:carminite_ghast_leather",
+        "dawnduskterminal:carminite_ghast_meat");
+
+    /** 半径内的掉落物 */
+    private static List<ItemEntity> itemsNear(ServerLevel level, Vec3 around, double radius) {
+        return level.getEntitiesOfClass(ItemEntity.class, new AABB(around, around).inflate(radius));
     }
 
     /** 只按类名反射，代码里不 import 暮色森林，与仓库里其它暮色兼容代码同一做法；不触发静态初始化 */
