@@ -2,7 +2,6 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.TowerGhastPhysics;
-import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.model.GeoModel;
 
 /**
@@ -24,10 +23,21 @@ import software.bernie.geckolib.model.GeoModel;
  * <p>两张脸是贴在脸前的薄片：{@code annoyed}（有索敌）与 {@code atack}（蓄力中，模型里就是这么拼的）。
  * 状态取实体自己同步过来的 {@link GhastEliteEntity#getFace()}，不直接读 {@code getTarget()}
  *
+ * <p>角度一律走 {@link GeoBoneRotation}：动画文件里的度、X 与 Y 取反、加初始姿势。这三件事
+ * 必须与 GeckoLib 读关键帧时一致，否则触手的偏航与腿的俯仰会整体朝反侧摆。
+ *
+ * <p>补回的是哪些通道由 {@link YsmRuntimeContract} 的清单决定（{@code assets/dawnduskterminal/
+ * ysm_runtime/ghast_elite.json}，由 {@code tools/ysm/runtime_contract.py} 生成）：首次渲染后核对
+ * 清单里每条通道是否都有人写，没写就打一条警告。漏接一条 perlin 通道的后果是那一轴恒为 0，
+ * 只表现为「摆得有点僵」，很难靠肉眼看出来
+ *
  * <p>必须挂在 {@code GeoModel.setCustomAnimations}：它是 {@code handleAnimations} 的最后一步，
  * 夹在「动画写入骨骼」与「骨骼矩阵被读走」之间，理由与 {@link TowerGhastBonePose} 相同
  */
 final class GhastEliteBonePose {
+    /** 转换时被归零的 perlin 通道清单，首次渲染后核对是否都已补回 */
+    private final YsmRuntimeContract contract = YsmRuntimeContract.load("ghast_elite");
+
     void apply(GhastEliteEntity entity, GeoModel<GhastEliteEntity> model, float partialTick) {
         GhastEliteEntity.Face face = entity.getFace();
         model.getBone("annoyed").ifPresent(bone -> bone.setHidden(face != GhastEliteEntity.Face.ANNOYED));
@@ -60,6 +70,7 @@ final class GhastEliteBonePose {
             7.5D - 20.0D * TowerGhastPhysics.perlinNoise(114514, 0.0D, 0.0D, life),
             0.0D,
             15.0D * TowerGhastPhysics.perlinNoise(3601, 0.0D, life, 0.0D)});
+        this.contract.auditOnce();
     }
 
     /** 触手：根写死角度，两节后续段按比例递减，弯成一条跟着根摆的软链 */
@@ -77,12 +88,11 @@ final class GhastEliteBonePose {
     }
 
     private void setDegrees(GeoModel<GhastEliteEntity> model, String bone, double x, double y, double z) {
-        model.getBone(bone).ifPresent(geoBone -> apply(geoBone, x, y, z));
-    }
-
-    private static void apply(GeoBone bone, double x, double y, double z) {
-        bone.setRotX((float) Math.toRadians(x));
-        bone.setRotY((float) Math.toRadians(y));
-        bone.setRotZ((float) Math.toRadians(z));
+        model.getBone(bone).ifPresent(geoBone -> {
+            GeoBoneRotation.set(geoBone, x, y, z);
+            this.contract.declare(bone, 0);
+            this.contract.declare(bone, 1);
+            this.contract.declare(bone, 2);
+        });
     }
 }

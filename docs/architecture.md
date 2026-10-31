@@ -98,7 +98,7 @@
 
 小鬼打不打人由暮色森林自己的 `CarminiteGhastling#shouldAttack` 决定：玩家头顶戴着雕刻南瓜时不打；3.5 格以内只要看得见就打；更远时必须**玩家的准星对着它**（`dot(玩家视线, 指向它的方向) > 1 − 0.025/距离`）且有视线。照原样，侧身路过的玩家不会被追打，看起来就像「待在天上不动」。因此召唤出来时会打上 `persistentData` 标记 `dawnduskterminal:elite_minion`，`mixin/GhastlingShouldAttackMixin` 对带标记的只在 `shouldAttack` 开头放行（仍然要求有视线，免得隔着树开火）；野生的砷铅铁恶魂守卫没有这个标记，仍按原规则挑人。`@Mixin` 直接写暮色森林的类字面量，目标改名时编译期就会报错。
 
-客户端三条资源路径写在 `client/GhastEliteRenderer`；`parallel0` 里的 perlin 通道由 `client/GhastEliteBonePose` 逐帧补回（两条触手与五条腿的常数与源表达式一一对应，链上各段按 0.6 / 0.35 递减），`parallel1` 不播放——它是 YSM 宿主每帧算出的布条变量，GeckoLib 既不会赋值也不跨帧。这段写入必须挂在 `GeoModel.setCustomAnimations` 上，与高塔恶魂的 `client/TowerGhastBonePose` 同一个位置。
+客户端三条资源路径写在 `client/GhastEliteRenderer`；`parallel0` 里的 perlin 通道由 `client/GhastEliteBonePose` 逐帧补回（两条触手与五条腿的常数与源表达式一一对应，链上各段按 0.6 / 0.35 递减），`parallel1` 不播放——它是 YSM 宿主每帧算出的布条变量，GeckoLib 既不会赋值也不跨帧。这段写入必须挂在 `GeoModel.setCustomAnimations` 上，与高塔恶魂的 `client/TowerGhastBonePose` 同一个位置。角度一律经 `client/GeoBoneRotation`（度、X 与 Y 取反、加初始姿势），与 GeckoLib 读关键帧时的处理一致；手写弧度会让触手的偏航与腿的俯仰整体朝反侧摆。补回的通道不靠人工记：`client/YsmRuntimeContract` 读 `assets/dawnduskterminal/ysm_runtime/ghast_elite.json`（由 `tools/ysm/runtime_contract.py` 从源动画与转换后动画的差异生成），首次渲染后核对清单里每条通道是否都有代码写回，漏一条就打一条警告。
 
 ## 装备与武器
 

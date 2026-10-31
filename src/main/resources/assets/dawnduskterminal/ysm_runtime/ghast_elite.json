@@ -1,0 +1,125 @@
+{
+  "model": "ghast_elite",
+  "source": "ghast_elite.animation.json",
+  "converted": "ghast_elite.animation.json",
+  "played_clips": [
+    "parallel0"
+  ],
+  "skipped_clips": {
+    "parallel1": "片段未播放，其动态通道不在运行期职责内"
+  },
+  "channels": [
+    {
+      "clip": "parallel0",
+      "bone": "lefttentacle",
+      "channel": "rotation",
+      "axis": 1,
+      "expression": "-10-20*ysm.perlin_noise(325,query.life_time,0,0)",
+      "converted": "-10-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "lefttentacle",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "10+20*ysm.perlin_noise(325,0,query.life_time,0)",
+      "converted": "10+20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "righttentacle",
+      "channel": "rotation",
+      "axis": 1,
+      "expression": "10-20*ysm.perlin_noise(325,0,0,query.life_time)",
+      "converted": "10-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "righttentacle",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "-10+20*ysm.perlin_noise(325,query.life_time,325,0)",
+      "converted": "-10+20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_M",
+      "channel": "rotation",
+      "axis": 0,
+      "expression": "7.5-20*ysm.perlin_noise(1919810,query.life_time,0,0)",
+      "converted": "7.5-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_M",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "15*ysm.perlin_noise(1919810,0,query.life_time,0)",
+      "converted": "15*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_F_L",
+      "channel": "rotation",
+      "axis": 0,
+      "expression": "7.5-20*ysm.perlin_noise(59160153,query.life_time,0,0)",
+      "converted": "7.5-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_F_L",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "15*ysm.perlin_noise(59160153,0,query.life_time,0)",
+      "converted": "15*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_F_R",
+      "channel": "rotation",
+      "axis": 0,
+      "expression": "7.5-20*ysm.perlin_noise(114514,query.life_time,0,0)",
+      "converted": "7.5-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_F_R",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "15*ysm.perlin_noise(114514,0,query.life_time,0)",
+      "converted": "15*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_B_L",
+      "channel": "rotation",
+      "axis": 0,
+      "expression": "7.5-20*ysm.perlin_noise(59160153,0,0,query.life_time)",
+      "converted": "7.5-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_B_L",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "15*ysm.perlin_noise(1919810,0,0,query.life_time)",
+      "converted": "15*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_B_R",
+      "channel": "rotation",
+      "axis": 0,
+      "expression": "7.5-20*ysm.perlin_noise(114514,0,0,query.life_time)",
+      "converted": "7.5-20*0"
+    },
+    {
+      "clip": "parallel0",
+      "bone": "leg_B_R",
+      "channel": "rotation",
+      "axis": 2,
+      "expression": "15*ysm.perlin_noise(3601,0,query.life_time,0)",
+      "converted": "15*0"
+    }
+  ]
+}

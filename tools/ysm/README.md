@@ -188,6 +188,7 @@ pre_parallel0       41         24     17
 | `ysm_analyze.py` | 清点文件所使用的 YSM 构造，以及会被 GeckoLib 跳过的片段 |
 | `ysm_dump.py` | 导出指定片段的原始表达式 |
 | `physics_reference.py` | 滤波器公式，用于量度二级替换的误差 |
+| `runtime_contract.py` | 生成运行期损失清单（见「新增模型的上手清单」） |
 
 ```bash
 python ysm_to_geckolib.py <in.animation.json> <out.animation.json> --report report.json
@@ -201,6 +202,42 @@ python ysm_selftest.py
 python ysm_to_geckolib.py <源模型包>/animations/main.animation.json /tmp/regen.json
 cmp /tmp/regen.json src/main/resources/assets/dawnduskterminal/animations/tower_ghast.animation.json
 ```
+
+## 运行期损失清单
+
+转换器把三级构造改写成 `0` 是静默的：文件照样加载、片段照样播放，只是那些通道恒为 0。
+`runtime_contract.py` 把这份信息写成一份随模型走的清单，运行期由 `client/YsmRuntimeContract`
+在首次渲染后核对：清单里有、而当帧没有代码写回的通道，逐条打一条警告。
+
+判定规则只看两件事：源表达式含字母（query / 变量 / 函数调用）而转换后的同一通道不含字母，
+就记为待补回；源里有、转换后整段没有的片段，必须用 `--not-played` 显式声明，否则脚本报错退出。
+后一条才是重点——整段被丢掉是最容易被忽略的损失（`ghast_elite` 的 `parallel1` 即属此类），
+显式声明之后它才不会在下次迁移时无声消失。
+
+```bash
+python runtime_contract.py <源.animation.json> <转换后.animation.json> \
+    --model ghast_elite --played parallel0 --not-played parallel1 \
+    --out ../../src/main/resources/assets/dawnduskterminal/ysm_runtime/ghast_elite.json
+```
+
+清单内容由 `gametest/YsmRuntimeContractTests` 钉住：生成规则一旦变化，那条断言会先失败，
+而不是等到游戏里发现触手不摆。
+
+## 新增模型的上手清单
+
+同一个模型包里的每一个文件都应有一个明确的去处；没去处的要在清单里显式声明。五步：
+
+1. **几何**：`models/*.json` 复制为 `assets/dawnduskterminal/geo/<model>.geo.json`。
+2. **动画**：`animations/*.animation.json` 过一遍 `ysm_to_geckolib.py`，再用 `validate_geckolib.py` 校验到全部片段通过（被跳过的片段在客户端不会报错，只会保持上一个姿势）。
+3. **清单**：`runtime_contract.py --played <控制器确实播放的片段> --not-played <有意不播的片段>`，输出到 `assets/dawnduskterminal/ysm_runtime/<model>.json`。
+4. **运行期**：逐帧写骨骼的那一层调 `GeoBoneRotation`（角度只走它，符号约定在那一处），并在写入时 `declare`、首次渲染后 `auditOnce`。
+5. **文档**：`docs/architecture.md` 里补一段，写清哪些通道是补回的、哪些片段不播放以及为什么。
+
+三条容易踩的约定：
+
+- 角度一律「度、X 与 Y 取反、加初始姿势」。手写 `bone.setRotX(Math.toRadians(x))` 会让该骨骼整体朝反侧摆，而且看起来像素材问题。
+- 写入必须挂在 `GeoModel.setCustomAnimations`：它是 `handleAnimations` 的最后一步，夹在「动画写入骨骼」与「骨骼矩阵被读走」之间。
+- YSM 的并行层是**加法混合**，GeckoLib 是**覆盖**。注册顺序即优先级（先注册者先被覆盖），只写常量 `0` 的物理层必须存在，否则叠加写入会逐帧累积。
 
 ## 源模型包中可用的文件
 

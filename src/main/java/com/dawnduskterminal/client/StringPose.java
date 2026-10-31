@@ -90,10 +90,7 @@ public final class StringPose {
         double rootXDeg = -30.0D * TowerGhastPhysics.perlinNoise(ROOT_SEED, 1.0D, life, 2.0D);
         double rootYDeg = -30.0D * TowerGhastPhysics.perlinNoise(ROOT_SEED, life, 1.0D, 2.0D);
         double rootZDeg = 60.0D * life;
-        setRotation(layout.root,
-            (float) -Math.toRadians(rootXDeg),
-            (float) -Math.toRadians(rootYDeg),
-            (float) Math.toRadians(rootZDeg));
+        GeoBoneRotation.set(layout.root, rootXDeg, rootYDeg, rootZDeg);
         this.rootRotation.rotationZYX(layout.root.getRotZ(), layout.root.getRotY(), layout.root.getRotX());
 
         for (int i = 0; i < layout.count; i++) {
@@ -112,10 +109,7 @@ public final class StringPose {
             double spokeZDeg = layout.zAmplitude * pZ + randZ;
             double scale = 0.3D * pScale + randScale;
 
-            setRotation(spoke,
-                (float) -Math.toRadians(spokeXDeg),
-                0.0F,
-                (float) Math.toRadians(spokeZDeg));
+            GeoBoneRotation.set(spoke, spokeXDeg, 0.0D, spokeZDeg);
             spoke.setScaleX((float) scale);
             spoke.setScaleY((float) scale);
             spoke.setScaleZ((float) scale);
@@ -168,7 +162,10 @@ public final class StringPose {
         return layout;
     }
 
-    /** 源表达式是度，GeckoLib 侧要的是「初始姿势 + 取反后的弧度」 */
+    /**
+     * 只接已经算好的弧度：弦段的朝向由 {@code asin} / {@code atan2} 直接给出、没有对应的角度表达，
+     * 取反已在调用处完成。角度那条路径走 {@link GeoBoneRotation}
+     */
     private static void setRotation(GeoBone bone, float x, float y, float z) {
         BoneSnapshot initial = bone.getInitialSnapshot();
         bone.setRotX(initial.getRotX() + x);

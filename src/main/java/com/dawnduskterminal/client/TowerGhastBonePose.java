@@ -485,15 +485,9 @@ public final class TowerGhastBonePose {
         }
     }
 
-    /** 度，按 GeckoLib 对表达式的处理转成弧度：X 与 Y 取反，Z 不取反 */
+    /** 度，符号与单位见 {@link GeoBoneRotation} */
     private static void setRotation(GeoBone bone, int axis, double degrees) {
-        BoneSnapshot initial = bone.getInitialSnapshot();
-        float radians = (float) Math.toRadians(degrees);
-        switch (axis) {
-            case 0 -> bone.setRotX(initial.getRotX() - radians);
-            case 1 -> bone.setRotY(initial.getRotY() - radians);
-            default -> bone.setRotZ(initial.getRotZ() + radians);
-        }
+        GeoBoneRotation.setAxis(bone, axis, degrees);
     }
 
     /**
@@ -507,12 +501,7 @@ public final class TowerGhastBonePose {
      * 把同一个值写进去的那些，例如发丝与胸口的滤波器输入）
      */
     private static void addRotation(GeoBone bone, int axis, double degrees) {
-        float radians = (float) Math.toRadians(degrees);
-        switch (axis) {
-            case 0 -> bone.setRotX(bone.getRotX() - radians);
-            case 1 -> bone.setRotY(bone.getRotY() - radians);
-            default -> bone.setRotZ(bone.getRotZ() + radians);
-        }
+        GeoBoneRotation.add(bone, axis, degrees);
     }
 
     /** 骨骼当前角度相对初始姿势的偏移，换成动画文件里的度数（与 {@link #addRotation} 互逆） */
