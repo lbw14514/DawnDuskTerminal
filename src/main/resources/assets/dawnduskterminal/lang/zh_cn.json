@@ -342,6 +342,8 @@
   "subtitles.dawnduskterminal.string_hit": "弦震",
   "entity.dawnduskterminal.ghastfruity": "恶果",
   "item.dawnduskterminal.ghastfruity_spawn_egg": "恶果刷怪蛋",
+  "entity.dawnduskterminal.ghast_elite": "大恶魂",
+  "item.dawnduskterminal.ghast_elite_spawn_egg": "大恶魂刷怪蛋",
   "subtitles.dawnduskterminal.ghast_universal_ambient": "恶魂哀鸣",
   "subtitles.dawnduskterminal.ghast_universal_hurt": "恶魂尖叫",
   "subtitles.dawnduskterminal.ghast_universal_death": "恶魂死去",

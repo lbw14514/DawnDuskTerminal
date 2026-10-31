@@ -19,6 +19,7 @@ import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModMenus;
 import com.dawnduskterminal.advancement.ModCriteria;
 import com.dawnduskterminal.command.DdtCommands;
+import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.registry.ModIngredients;
 import com.dawnduskterminal.registry.ModItems;
@@ -98,6 +99,7 @@ public final class DawnDuskTerminal {
         NeoForge.EVENT_BUS.addListener(DdtCommands::register);
         // 恶果接火球：撞击被取消之后火球还活着，改向由实体自己算，见 GhastFruityEntity#onProjectileImpact
         NeoForge.EVENT_BUS.addListener(GhastFruityEntity::onProjectileImpact);
+        NeoForge.EVENT_BUS.addListener(GhastEliteEntity::onProjectileImpact);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             DdtClient.init(modBus);

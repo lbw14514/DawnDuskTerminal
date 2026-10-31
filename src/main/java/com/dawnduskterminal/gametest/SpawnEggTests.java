@@ -30,6 +30,8 @@ public final class SpawnEggTests {
             "string_spawn_egg must spawn dawnduskterminal:string and be reachable through SpawnEggItem#byId");
         helper.assertTrue(spawns(ModItems.GHASTFRUITY_SPAWN_EGG.get(), ModEntities.GHASTFRUITY.get()),
             "ghastfruity_spawn_egg must spawn dawnduskterminal:ghastfruity and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(spawns(ModItems.GHAST_ELITE_SPAWN_EGG.get(), ModEntities.GHAST_ELITE.get()),
+            "ghast_elite_spawn_egg must spawn dawnduskterminal:ghast_elite and be reachable through SpawnEggItem#byId");
         helper.succeed();
     }
 

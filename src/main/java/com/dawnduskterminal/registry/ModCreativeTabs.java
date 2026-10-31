@@ -97,6 +97,7 @@ public final class ModCreativeTabs {
                 accept(output, ModItems.TOWER_GHAST_SPAWN_EGG.get());
                 accept(output, ModItems.STRING_SPAWN_EGG.get());
                 accept(output, ModItems.GHASTFRUITY_SPAWN_EGG.get());
+                accept(output, ModItems.GHAST_ELITE_SPAWN_EGG.get());
                 ModEquipment.sets().values().forEach(set -> set.items().forEach(item -> accept(output, item.get())));
             })
             .build());

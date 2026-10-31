@@ -184,6 +184,12 @@ public final class ModItems {
         () -> new DeferredSpawnEggItem(ModEntities.GHASTFRUITY, 0x5B1420, 0xF0DCD2,
             new Item.Properties()));
 
+    /** 「大恶魂」的刷怪蛋：两层染色取它那张 128x128 贴图上的暗红（{@code 0x4A0F18}）与灰白（{@code 0xC9C2BD}） */
+    public static final DeferredItem<DeferredSpawnEggItem> GHAST_ELITE_SPAWN_EGG = ITEMS.register(
+        "ghast_elite_spawn_egg",
+        () -> new DeferredSpawnEggItem(ModEntities.GHAST_ELITE, 0x4A0F18, 0xC9C2BD,
+            new Item.Properties()));
+
     public static final DeferredItem<CarminiteStaffItem> CARMINITE_MOLYBDENUM_REACTOR_STAFF = ITEMS.register(
         "carminite_molybdenum_reactor_staff",
         () -> new CarminiteStaffItem(new Item.Properties()

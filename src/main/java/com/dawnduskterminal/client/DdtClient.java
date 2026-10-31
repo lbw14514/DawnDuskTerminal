@@ -73,6 +73,7 @@ public final class DdtClient {
         modBus.addListener(TowerGhastRenderer::onRegisterRenderers);
         modBus.addListener(StringRenderer::onRegisterRenderers);
         modBus.addListener(GhastFruityRenderer::onRegisterRenderers);
+        modBus.addListener(GhastEliteRenderer::onRegisterRenderers);
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
         modBus.addListener(DdtClient::onRegisterParticleProviders);
         modBus.addListener(DdtClient::registerMenuScreens);

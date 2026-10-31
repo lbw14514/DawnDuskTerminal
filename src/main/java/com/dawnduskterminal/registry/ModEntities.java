@@ -4,6 +4,8 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
+import com.dawnduskterminal.entity.GhastEliteEntity;
+import com.dawnduskterminal.entity.GhastEliteFireball;
 import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.entity.GhastPaintingEntity;
 import com.dawnduskterminal.entity.StringEntity;
@@ -104,6 +106,30 @@ public final class ModEntities {
      * 真正的包围盒由 {@link GhastPaintingEntity} 按变体的 3x2 算出来；
      * updateInterval 拉到 {@link Integer#MAX_VALUE} 是原版的做法，非初始同步不发位置包
      */
+    /**
+     * 「大恶魂」。碰撞箱与恶魂一样取几何里的主立方体 {@code thehead}：128 单位见方，即 8x8x8 格，
+     * 眼高取这个立方体的中心（模型 y=64 单位 = 4 格）；触手与腿在箱子外，与恶果的裙摆同理，不参与判定
+     *
+     * <p>模型按 1:1 绘制，不做任何缩放；{@code fireImmune()} 照抄原版恶魂
+     */
+    /** 大恶魂的火球：不与其他弹体相撞，见 {@code GhastEliteFireball} */
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastEliteFireball>> GHAST_ELITE_FIREBALL =
+        ENTITIES.register("ghast_elite_fireball", () -> EntityType.Builder
+            .<GhastEliteFireball>of(GhastEliteFireball::new, MobCategory.MISC)
+            .sized(1.0F, 1.0F)
+            .clientTrackingRange(4)
+            .updateInterval(10)
+            .build("ghast_elite_fireball"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastEliteEntity>> GHAST_ELITE =
+        ENTITIES.register("ghast_elite", () -> EntityType.Builder
+            .of(GhastEliteEntity::new, MobCategory.MONSTER)
+            .sized(8.0F, 8.0F)
+            .eyeHeight(4.0F)
+            .fireImmune()
+            .clientTrackingRange(10)
+            .build("ghast_elite"));
+
     public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_1 =
         ENTITIES.register("painting_ghast_1", () -> EntityType.Builder
             .<GhastPaintingEntity>of(GhastPaintingEntity::new, MobCategory.MISC)
@@ -126,6 +152,7 @@ public final class ModEntities {
         event.put(TOWER_GHAST.get(), TowerGhastEntity.createAttributes().build());
         event.put(STRING.get(), StringEntity.createAttributes().build());
         event.put(GHASTFRUITY.get(), GhastFruityEntity.createAttributes().build());
+        event.put(GHAST_ELITE.get(), GhastEliteEntity.createAttributes().build());
     }
 
     /**
@@ -142,6 +169,10 @@ public final class ModEntities {
         event.register(GHASTFRUITY.get(), SpawnPlacementTypes.ON_GROUND,
             Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
             GhastFruityEntity::checkGhastFruitySpawnRules,
+            RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(GHAST_ELITE.get(), SpawnPlacementTypes.ON_GROUND,
+            Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+            GhastEliteEntity::checkGhastEliteSpawnRules,
             RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
 }

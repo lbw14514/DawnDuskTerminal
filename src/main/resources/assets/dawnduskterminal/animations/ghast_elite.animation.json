@@ -1,0 +1,59 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "parallel0": {
+      "loop": true,
+      "bones": {
+        "lefttentacle": {
+          "rotation": [
+            0,
+            "-10-20*0",
+            "10+20*0"
+          ]
+        },
+        "righttentacle": {
+          "rotation": [
+            0,
+            "10-20*0",
+            "-10+20*0"
+          ]
+        },
+        "leg_M": {
+          "rotation": [
+            "7.5-20*0",
+            0,
+            "15*0"
+          ]
+        },
+        "leg_F_L": {
+          "rotation": [
+            "7.5-20*0",
+            0,
+            "15*0"
+          ]
+        },
+        "leg_F_R": {
+          "rotation": [
+            "7.5-20*0",
+            0,
+            "15*0"
+          ]
+        },
+        "leg_B_L": {
+          "rotation": [
+            "7.5-20*0",
+            0,
+            "15*0"
+          ]
+        },
+        "leg_B_R": {
+          "rotation": [
+            "7.5-20*0",
+            0,
+            "15*0"
+          ]
+        }
+      }
+    }
+  }
+}

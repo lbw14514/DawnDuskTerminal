@@ -339,6 +339,8 @@
   "subtitles.dawnduskterminal.string_hit": "String hurts",
   "entity.dawnduskterminal.ghastfruity": "Ghastfruity",
   "item.dawnduskterminal.ghastfruity_spawn_egg": "Ghastfruity Spawn Egg",
+  "entity.dawnduskterminal.ghast_elite": "Ghast Elite",
+  "item.dawnduskterminal.ghast_elite_spawn_egg": "Ghast Elite Spawn Egg",
   "subtitles.dawnduskterminal.ghast_universal_ambient": "Ghast wails",
   "subtitles.dawnduskterminal.ghast_universal_hurt": "Ghast screams",
   "subtitles.dawnduskterminal.ghast_universal_death": "Ghast dies",

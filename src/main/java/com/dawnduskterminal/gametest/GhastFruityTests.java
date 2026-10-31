@@ -1,6 +1,8 @@
 package com.dawnduskterminal.gametest;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.entity.GhastEliteEntity;
+import com.dawnduskterminal.entity.GhastElitePopulation;
 import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.entity.GhastFruityPopulation;
 import com.dawnduskterminal.registry.ModEntities;
@@ -21,6 +23,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import java.util.List;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.SpawnPlacements;
@@ -31,6 +35,7 @@ import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -166,6 +171,60 @@ public final class GhastFruityTests {
         }
         helper.assertTrue(aimer.getXRot() > 5.0F,
             "a lower target must give a real depression, got xRot=" + aimer.getXRot());
+
+        // 大恶魂：250 血、索敌 100、碰撞箱 8 格、自然生成上限 1、生成抬高裙摆的 3 格
+        helper.assertTrue(GhastEliteEntity.MAX_HEALTH == 250.0F,
+            "the elite must have 250 health, was " + GhastEliteEntity.MAX_HEALTH);
+        helper.assertTrue(GhastEliteEntity.FOLLOW_RANGE == 100.0D,
+            "the elite must target within 100 blocks, was " + GhastEliteEntity.FOLLOW_RANGE);
+        GhastEliteEntity elite = (GhastEliteEntity) helper.spawn(ModEntities.GHAST_ELITE.get(), 4, 5, 12);
+        helper.assertTrue(elite.getMaxHealth() == 250.0F,
+            "the elite attribute map must carry 250 max health, was " + elite.getMaxHealth());
+        helper.assertTrue(elite.getAttributeValue(Attributes.FOLLOW_RANGE) == 100.0D,
+            "the elite follow range must be 100, was " + elite.getAttributeValue(Attributes.FOLLOW_RANGE));
+        helper.assertTrue(elite.getBbWidth() == 8.0F && elite.getBbHeight() == 8.0F,
+            "the elite hitbox must match thehead (8x8x8), was " + elite.getBbWidth() + "x" + elite.getBbHeight());
+        helper.assertTrue(elite.getMaxSpawnClusterSize() == 1, "the elite must spawn one at a time");
+        helper.assertTrue(GhastElitePopulation.CAP == 1,
+            "the elite natural cap must be 1, was " + GhastElitePopulation.CAP);
+        helper.assertTrue(GhastElitePopulation.loaded(helper.getLevel()) == 1,
+            "one loaded elite must be counted, got " + GhastElitePopulation.loaded(helper.getLevel()));
+        helper.assertFalse(GhastElitePopulation.tryReserve(helper.getLevel()),
+            "a loaded elite must refuse a second natural spawn");
+
+        // 会飞：给出目标点之后必须真的挪动（无碰撞移动控制器）
+        Vec3 eliteStart = elite.position();
+        elite.getMoveControl().setWantedPosition(elite.getX() + 6.0D, elite.getY() + 4.0D, elite.getZ(), 1.0D);
+        for (int tick = 0; tick < 30; tick++) {
+            elite.tick();
+        }
+        helper.assertTrue(elite.position().distanceToSqr(eliteStart) > 1.0D,
+            "the elite must fly towards its waypoint, moved " + elite.position().distanceTo(eliteStart));
+
+        // 索敌之后召唤迷你恶魂：六只 twilightforest:carminite_ghastling，并把目标共享给它们
+        elite.setTarget(below);
+        for (int tick = 0; tick < 5; tick++) {
+            elite.tick();
+        }
+        EntityType<?> ghastlingType = BuiltInRegistries.ENTITY_TYPE.get(
+            ResourceLocation.parse("twilightforest:carminite_ghastling"));
+        helper.assertTrue(ghastlingType != null, "twilightforest:carminite_ghastling must be registered");
+        List<Entity> minions = helper.getLevel().getEntitiesOfClass(Entity.class,
+            new AABB(elite.blockPosition()).inflate(64.0D), entity -> entity.getType() == ghastlingType);
+        helper.assertTrue(!minions.isEmpty(),
+            "the elite must summon carminite ghastlings after acquiring a target");
+        helper.assertTrue(minions.stream().anyMatch(minion -> minion instanceof Mob mob && mob.getTarget() == below),
+            "the summoned minions must share the elite's target");
+
+        // 刷怪蛋路径：生成位置要抬高裙摆的 3 格
+        BlockPos eliteEggPos = helper.absolutePos(new BlockPos(10, 5, 12));
+        Entity eliteEgg = ModEntities.GHAST_ELITE.get().spawn(helper.getLevel(),
+            new ItemStack(ModItems.GHAST_ELITE_SPAWN_EGG.get()), null, eliteEggPos,
+            MobSpawnType.SPAWN_EGG, false, false);
+        helper.assertTrue(eliteEgg instanceof GhastEliteEntity, "the elite spawn egg must place a ghast_elite");
+        helper.assertTrue(Math.abs(eliteEgg.getY() - (eliteEggPos.getY() + 3.0D)) < 1.0E-4D,
+            "the elite egg spawn must be lifted by the skirt depth (3.0), got y=" + eliteEgg.getY()
+                + " for " + eliteEggPos.getY());
 
         // 创造模式手持方块右击 → 变成对应变体；生存模式不许变
         Item reappearing = BuiltInRegistries.ITEM.get(ResourceLocation.parse("twilightforest:reappearing_block"));
