@@ -104,6 +104,62 @@ for (Map.Entry<String, JsonElement> entry : JsonAnimationUtils.getAnimations(jso
 `ysm.bone_rot` 取骨骼自己的旋转（与 YSM 一致），**不要**改成累积到根的旋转：布条每级写的是
 `second_order(父) - 父` 的滞后量，累积输入会把整条身体链的旋转也算进去，四级下来布条会卷成一团。
 
+## 手动动作（舞蹈、待机语音动作）
+
+模型包把这些动作放在单独的 `animations/extra.animation.json` 里，由 `ysm.json` 的
+`properties.extra_animation` 声明按钮键。`YsmPacks` 把 `main` 与 `extra` 合并成一份挂在主文件的位置上，
+因此控制器按片段名就能找到它们。
+
+触发方式：`/ddt action <目标> <键>`，键取模型包声明的按钮名（高塔恶魂是 `id1`–`id7`、`bad1`–`bad5`、
+`statue`）。实体把「键 + 递增序号」同步到客户端，客户端看到序号变化就播一次，播完回主状态机。
+`extra` 控制器最后注册、名字不是 `parallel_`，因此它会覆盖主动画与并行层。
+
+## 外观开关（衣物、表情、体型、形态）
+
+模型包用 `ysm.json` 的 `properties.extra_animation_buttons[].config_forms` 声明一批 Molang 变量，
+再用 `pre_parallel2` 里「缩放 = 变量」的写法决定部件是否显示。高塔恶魂声明了这些：
+
+| 命令里的键 | 变量 | 取值范围 | 作用 |
+|---|---|---|---|
+| `type` | `v.roaming.type` | 0–2 | 形态：0 娘化本体、1 恶魂、2 试验 115 |
+| `size2` | `v.roaming.size2` | 0–3，步长 0.1 | 体型，0 等于 1 |
+| `hat` `shoe` `hair` `tear` `shin` | `v.roaming.*` | 0/1 | 帽子、鞋子、发型、小珍珠、荧光 |
+| `expe` | `v.roaming.expe` | 0–6 | 眼睛（7 种） |
+| `expm` `pat` | `v.roaming.expm` `pat` | 0–6 / 0–7 | 嘴、胸口图案 |
+| `cloth` `read` | `v.cloth` `v.read` | 0–2 / 0–1 | 换衣、脸红 |
+| `mute` | `v.roaming.mute` | 0/1 | 静音（音效未接，暂无效） |
+
+```
+/ddt roaming @e[type=dawnduskterminal:tower_ghast,limit=1] hat 1
+/ddt roaming @e[type=dawnduskterminal:tower_ghast,limit=1] type 1
+/ddt roaming @e[type=dawnduskterminal:tower_ghast,limit=1] expe 3
+```
+
+不预置默认值：YSM 里未初始化的变量就是 0，因此默认是「不带配饰、形态 0、表情 0」。
+变量写在 Molang 的 scoped 存储里（`YsmAnimatable.setRoaming`），`roaming.*` 走结构体，
+`cloth` / `read` 是顶层变量。
+
+## 模型包切换
+
+模型包 id 同步在实体上，渲染器发现 id 变了就重建动画实例（模型、动画、物理状态都挂在实例上）。
+
+```
+/ddt pack @e[type=dawnduskterminal:tower_ghast,limit=1] dawnduskterminal:ghast_elite
+/ddt pack @e[type=dawnduskterminal:tower_ghast,limit=1] ""
+```
+
+第二个命令把 `id` 用引号写成空串即回到默认包。目前两个包是给各自生物量身做的，互换只会证明机制可用，不会好看。
+
+## 手持物品
+
+模型包的 `RightHandLocator` / `LeftHandLocator` 骨骼用来挂手上的物品，`YsmEntityRenderer.renderHeldItems`
+在模型渲染完之后按这两条骨骼的矩阵画原版物品渲染。骨骼缩放到 0（模型包隐藏部件的做法）时不画。
+
+高塔恶魂的包里还有 `BladeLocator`、`RifleLocator`、`PistolLocator`、`LeftWaistLocator` 等，
+那是给拔刀剑、TACZ 之类模组用的，本模组暂不接。
+
+测试：`/item replace entity @e[type=dawnduskterminal:tower_ghast,limit=1] weapon minecraft:iron_sword`。
+
 ## 已知差距
 
 | 差距 | 影响 | 恢复方式 |

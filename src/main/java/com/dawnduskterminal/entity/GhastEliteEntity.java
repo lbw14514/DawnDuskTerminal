@@ -52,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>与「恶果」一样，火球撞到它身上会被拨走：有索敌就砸向索敌对象，没有就原路弹回，
  * 反弹时用 {@code affectionate_scream}
  */
-public class GhastEliteEntity extends Ghast {
+public class GhastEliteEntity extends Ghast implements YsmPackUser {
     /** 生命值 250 */
     public static final float MAX_HEALTH = 250.0F;
 
@@ -139,6 +139,22 @@ public class GhastEliteEntity extends Ghast {
      * <p>{@code getTarget()} 只在服务端有值，客户端要知道「现在有没有盯人」只能靠数据位；
      * 蓄力（{@code isCharging()}）本来就在原版恶魂的同步数据里，这里一并折进来，渲染器只读这一位
      */
+    /** 模型包 id，空串表示用默认包；见 {@link YsmPackUser} */
+    private static final EntityDataAccessor<String> DATA_PACK =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_PACK_SEQ =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+    /** 外观开关，形如 {@code hat=1;cloth=2} */
+    private static final EntityDataAccessor<String> DATA_ROAMING =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_ROAMING_SEQ =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+    /** 手动动作的按钮键与序号 */
+    private static final EntityDataAccessor<String> DATA_ACTION =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> DATA_ACTION_SEQ =
+        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+
     private static final EntityDataAccessor<Byte> DATA_FACE = SynchedEntityData.defineId(
         GhastEliteEntity.class, EntityDataSerializers.BYTE);
 
@@ -254,6 +270,60 @@ public class GhastEliteEntity extends Ghast {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_FACE, (byte) Face.CALM.ordinal());
+        builder.define(DATA_PACK, "");
+        builder.define(DATA_PACK_SEQ, 0);
+        builder.define(DATA_ROAMING, "");
+        builder.define(DATA_ROAMING_SEQ, 0);
+        builder.define(DATA_ACTION, "");
+        builder.define(DATA_ACTION_SEQ, 0);
+    }
+
+    @Override
+    public void setYsmPack(String id) {
+        this.entityData.set(DATA_PACK, id);
+        this.entityData.set(DATA_PACK_SEQ, this.entityData.get(DATA_PACK_SEQ) + 1);
+    }
+
+    @Override
+    public String ysmPackId() {
+        return this.entityData.get(DATA_PACK);
+    }
+
+    @Override
+    public int ysmPackSeq() {
+        return this.entityData.get(DATA_PACK_SEQ);
+    }
+
+    @Override
+    public void setRoaming(String key, double value) {
+        this.entityData.set(DATA_ROAMING, YsmPackUser.mergeRoaming(this.entityData.get(DATA_ROAMING), key, value));
+        this.entityData.set(DATA_ROAMING_SEQ, this.entityData.get(DATA_ROAMING_SEQ) + 1);
+    }
+
+    @Override
+    public String roamingBlob() {
+        return this.entityData.get(DATA_ROAMING);
+    }
+
+    @Override
+    public int roamingSeq() {
+        return this.entityData.get(DATA_ROAMING_SEQ);
+    }
+
+    @Override
+    public void playAction(String key) {
+        this.entityData.set(DATA_ACTION, key);
+        this.entityData.set(DATA_ACTION_SEQ, this.entityData.get(DATA_ACTION_SEQ) + 1);
+    }
+
+    @Override
+    public String actionKey() {
+        return this.entityData.get(DATA_ACTION);
+    }
+
+    @Override
+    public int actionSeq() {
+        return this.entityData.get(DATA_ACTION_SEQ);
     }
 
     @Override

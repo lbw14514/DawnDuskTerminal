@@ -6,7 +6,11 @@ import com.dawnduskterminal.registry.ModDimensions;
 import com.dawnduskterminal.world.ChronoLine;
 import com.dawnduskterminal.world.ChronoLineState;
 import com.dawnduskterminal.world.ChronoSkyLight;
+import com.dawnduskterminal.entity.YsmPackUser;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.world.entity.Entity;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -32,6 +36,71 @@ public final class DdtCommands {
                     distance, param, light, player.level().dimension().location())), false);
                 return 1;
             }))
+            .then(Commands.literal("action")
+                .then(Commands.argument("targets", EntityArgument.entities())
+                    .then(Commands.argument("key", StringArgumentType.word())
+                        .executes(ctx -> {
+                            String key = StringArgumentType.getString(ctx, "key");
+                            int count = 0;
+                            for (Entity entity : EntityArgument.getEntities(ctx, "targets")) {
+                                if (entity instanceof YsmPackUser user) {
+                                    user.playAction(key);
+                                    count++;
+                                }
+                            }
+                            if (count == 0) {
+                                ctx.getSource().sendFailure(Component.literal("no model-pack entity in targets"));
+                                return 0;
+                            }
+                            int played = count;
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                "action " + key + " -> " + played + " entity(s)"), false);
+                            return played;
+                        }))))
+            .then(Commands.literal("roaming")
+                .then(Commands.argument("targets", EntityArgument.entities())
+                    .then(Commands.argument("key", StringArgumentType.word())
+                        .then(Commands.argument("value", DoubleArgumentType.doubleArg())
+                            .executes(ctx -> {
+                                String key = StringArgumentType.getString(ctx, "key");
+                                double value = DoubleArgumentType.getDouble(ctx, "value");
+                                int count = 0;
+                                for (Entity entity : EntityArgument.getEntities(ctx, "targets")) {
+                                    if (entity instanceof YsmPackUser user) {
+                                        user.setRoaming(key, value);
+                                        count++;
+                                    }
+                                }
+                                if (count == 0) {
+                                    ctx.getSource().sendFailure(Component.literal("no model-pack entity in targets"));
+                                    return 0;
+                                }
+                                int applied = count;
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                    key + "=" + value + " -> " + applied + " entity(s)"), false);
+                                return applied;
+                            })))))
+            .then(Commands.literal("pack")
+                .then(Commands.argument("targets", EntityArgument.entities())
+                    .then(Commands.argument("id", StringArgumentType.string())
+                        .executes(ctx -> {
+                            String id = StringArgumentType.getString(ctx, "id");
+                            int count = 0;
+                            for (Entity entity : EntityArgument.getEntities(ctx, "targets")) {
+                                if (entity instanceof YsmPackUser user) {
+                                    user.setYsmPack(id);
+                                    count++;
+                                }
+                            }
+                            if (count == 0) {
+                                ctx.getSource().sendFailure(Component.literal("no model-pack entity in targets"));
+                                return 0;
+                            }
+                            int applied = count;
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                "pack " + (id.isEmpty() ? "(default)" : id) + " -> " + applied + " entity(s)"), false);
+                            return applied;
+                        }))))
             .then(Commands.literal("tp")
                 .then(Commands.argument("param", DoubleArgumentType.doubleArg(-1.0D, 1.0D))
                     .executes(ctx -> {

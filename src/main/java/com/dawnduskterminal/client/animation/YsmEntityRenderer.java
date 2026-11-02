@@ -7,16 +7,27 @@ import com.dawnduskterminal.client.NativeMeshBatch;
 import com.dawnduskterminal.geckolib3.core.util.Color;
 import com.dawnduskterminal.geckolib3.geo.GeoReplacedEntityRenderer;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
+import com.dawnduskterminal.geckolib3.core.processor.ILocationBone;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoModel;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoModel;
+import com.dawnduskterminal.geckolib3.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Function;
@@ -38,6 +49,7 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
 
     private final Map<T, A> animatables = new WeakHashMap<>();
     private final Function<T, A> factory;
+    private final ItemInHandRenderer itemInHandRenderer;
 
     private final NativeMeshBatch nativeBatch = new NativeMeshBatch();
     private NativeGeoMesh nativeMesh;
@@ -47,20 +59,101 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
     protected YsmEntityRenderer(EntityRendererProvider.Context context, Function<T, A> factory) {
         super(context);
         this.factory = factory;
+        this.itemInHandRenderer = context.getItemInHandRenderer();
     }
 
+    /**
+     * 每只实体一份动画实例
+     *
+     * <p>模型包可以换（{@code /ddt pack}），换了就得重建实例：模型、动画文件与物理状态都挂在实例上。
+     * 判断交给 {@link #isCurrent}。
+     */
     @Override
     public A getAnimatableEntity(T entity) {
-        return this.animatables.computeIfAbsent(entity, this.factory);
+        A current = this.animatables.get(entity);
+        if (current != null && this.isCurrent(current, entity)) {
+            return current;
+        }
+        A created = this.factory.apply(entity);
+        this.animatables.put(entity, created);
+        return created;
+    }
+
+    /**
+     * 这只实体此刻想要的模型包；返回 null 表示不支持换包，始终用默认包
+     *
+     * <p>子类实现它即可获得「`/ddt pack` 换包后自动重建动画实例」的行为。
+     */
+    @Nullable
+    protected ResourceLocation requestedPack(T entity) {
+        return null;
+    }
+
+    /** 现有的动画实例是否仍然适用于这只实体：模型包变了就得重建 */
+    protected boolean isCurrent(A animatable, T entity) {
+        ResourceLocation wanted = this.requestedPack(entity);
+        return wanted == null || wanted.equals(animatable.packId());
     }
 
     @Override
     public void render(T entity, A animatable, float entityYaw, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight) {
-        if (this.renderWithNative(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight)) {
+        if (!this.renderWithNative(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight)) {
+            super.render(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+        }
+        this.renderHeldItems(entity, animatable, poseStack, bufferSource, packedLight);
+    }
+
+    /**
+     * 把手上的物品画到模型的手部 Locator 上
+     *
+     * <p>YSM 的模型包自带 {@code RightHandLocator} / {@code LeftHandLocator} 骨骼，就是给这件事用的
+     * （高塔恶魂的包里还有 {@code BladeLocator}、{@code RifleLocator} 等，供拔刀与枪械模组使用）。
+     * 做法与 TouhouLittleMaid 的 {@code GeckoLayerMaidHeld} 相同：逐级下行到手部骨骼，
+     * 再按「向上 1/16 格、绕 X 转 -90 度」摆正物品，最后交给原版 {@link ItemInHandRenderer}。
+     *
+     * <p>骨骼缩放到 0（模型包用它隐藏部件）时不画，否则物品会留在原地。
+     */
+    private void renderHeldItems(T entity, A animatable, PoseStack poseStack, MultiBufferSource bufferSource,
+                                 int packedLight) {
+        ItemStack mainHand = entity.getMainHandItem();
+        ItemStack offHand = entity.getOffhandItem();
+        if (mainHand.isEmpty() && offHand.isEmpty()) {
             return;
         }
-        super.render(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+        AnimatedGeoModel model = animatable.getCurrentModel();
+        if (model == null) {
+            return;
+        }
+        Player player = Minecraft.getInstance().player;
+        if (player != null && entity.isInvisibleTo(player)) {
+            return;
+        }
+        if (!mainHand.isEmpty()) {
+            this.renderInHand(entity, mainHand, model.rightHandBones(), ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
+                false, poseStack, bufferSource, packedLight);
+        }
+        if (!offHand.isEmpty()) {
+            this.renderInHand(entity, offHand, model.leftHandBones(), ItemDisplayContext.THIRD_PERSON_LEFT_HAND,
+                true, poseStack, bufferSource, packedLight);
+        }
+    }
+
+    private void renderInHand(T entity, ItemStack stack, List<? extends ILocationBone> hand,
+                              ItemDisplayContext displayContext, boolean leftHand, PoseStack poseStack,
+                              MultiBufferSource bufferSource, int packedLight) {
+        if (hand.isEmpty()) {
+            return;
+        }
+        poseStack.pushPose();
+        boolean hidden = RenderUtils.prepMatrixForLocator(poseStack, hand);
+        if (!hidden) {
+            poseStack.translate(0.0D, -0.0625D, -0.1D);
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
+            this.itemInHandRenderer.renderItem(entity, stack, displayContext, leftHand, poseStack, bufferSource,
+                packedLight);
+        }
+        poseStack.popPose();
     }
 
     private boolean renderWithNative(T entity, A animatable, float entityYaw, float partialTick,

@@ -26,8 +26,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,6 +51,8 @@ import java.util.Map;
 public final class YsmPacks {
     /** 模型包在 jar 里的根目录，一个包就是这下面的一个文件夹 */
     private static final String PACK_ROOT = "ysm/";
+    /** YSM 的动画文件命名后缀，列目录时要一并去掉 */
+    private static final String ANIMATION_SUFFIX = ".animation";
     private static final Map<ResourceLocation, YsmPack> PACKS = new HashMap<>();
 
     private YsmPacks() {
@@ -91,22 +95,164 @@ public final class YsmPacks {
                 }
             }
         }
+        if (animations.containsKey("main") && !"main".equals(nameOf(animations.get("main")))) {
+            DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 的主动画文件解析异常：{}", id, animations.get("main"));
+        }
+        YsmPack pack = new YsmPack(id, models, animations, textures, defaultTexture, heightScale, widthScale,
+            extraAnimations(animations, json), roamingOptions(json));
+        mergeAnimationFiles(pack);
         if (models.isEmpty()) {
             DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 里没有 models/*.json（目录 assets/{}/{}），实体将无法渲染", id, id.getNamespace(), root);
         }
         if (textures.isEmpty()) {
             DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 里没有 textures/*.png（目录 assets/{}/{}）", id, id.getNamespace(), root);
         }
-        return new YsmPack(id, models, animations, textures, defaultTexture, heightScale, widthScale);
+        return pack;
     }
 
+    /**
+     * {@code properties.extra_animation}：按钮键 → 片段名
+     *
+     * <p>YSM 的写法里值是<strong>显示名</strong>（{@code id1} 对应「声音1」），片段名一般就等于键；
+     * 但也有键与片段不同的（{@code statue} 播 {@code pose}）。所以逐个按「键优先、其次值」去动画文件里找，
+     * 找不到就跳过；值以 {@code #} 开头的是配置表单（{@code extra0}），不是动作。
+     *
+     * <p>这里只保留键与声明值，真正的片段名在 {@link YsmPack#extraClip} 里按合并后的动画文件解析。
+     */
+    private static Map<String, String> extraAnimations(Map<String, ResourceLocation> animations, JsonObject json) {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (json == null || !json.has("properties")) {
+            return result;
+        }
+        JsonObject properties = json.getAsJsonObject("properties");
+        if (!properties.has("extra_animation")) {
+            return result;
+        }
+        JsonObject declared = properties.getAsJsonObject("extra_animation");
+        for (Map.Entry<String, JsonElement> entry : declared.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue().isJsonPrimitive() ? entry.getValue().getAsString() : "";
+            if (value.startsWith("#")) {
+                continue;
+            }
+            result.put(key, value);
+        }
+        return result;
+    }
+
+    /**
+     * {@code properties.extra_animation_buttons[].config_forms}：模型包声明的外观开关
+     *
+     * <p>每一条是「一个 Molang 变量 + 类型 + 取值范围」，例如 {@code v.roaming.hat}（帽子）、
+     * {@code v.roaming.type}（形态 0..2）、{@code v.cloth}（换衣 0..2）。宿主的职责是把这些变量写进
+     * Molang 存储，模型包的 {@code pre_parallel2} 用它们决定哪些部件缩放为 0。
+     *
+     * <p>不预置默认值：YSM 里未初始化的变量就是 0，和「帽子关、形态 0、贴图 0」的直觉一致。
+     */
+    private static List<YsmPack.RoamingOption> roamingOptions(JsonObject json) {
+        List<YsmPack.RoamingOption> options = new ArrayList<>();
+        if (json == null || !json.has("properties")) {
+            return options;
+        }
+        JsonObject properties = json.getAsJsonObject("properties");
+        if (!properties.has("extra_animation_buttons")) {
+            return options;
+        }
+        for (JsonElement element : properties.getAsJsonArray("extra_animation_buttons")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject button = element.getAsJsonObject();
+            if (!button.has("config_forms")) {
+                continue;
+            }
+            for (JsonElement form : button.getAsJsonArray("config_forms")) {
+                if (!form.isJsonObject()) {
+                    continue;
+                }
+                JsonObject option = form.getAsJsonObject();
+                if (!option.has("value")) {
+                    continue;
+                }
+                String variable = option.get("value").getAsString();
+                if (!variable.startsWith("v.")) {
+                    continue;
+                }
+                String type = option.has("type") ? option.get("type").getAsString() : "range";
+                double min = option.has("min") ? option.get("min").getAsDouble() : 0.0D;
+                double max = option.has("max") ? option.get("max").getAsDouble() : 1.0D;
+                double step = option.has("step") ? option.get("step").getAsDouble() : 1.0D;
+                String title = option.has("title") ? option.get("title").getAsString() : variable;
+                options.add(new YsmPack.RoamingOption(variable.substring(2), type, title, min, max, step));
+            }
+        }
+        return options;
+    }
+
+    /**
+     * 把模型包的动画文件合并成一份，挂在主文件的位置上
+     *
+     * <p>YSM 的动画分散在多个文件里：{@code main} 是主状态机，{@code extra} 是手动动作
+     * （舞蹈、待机语音动作），{@code tlm}/{@code tac} 是兼容层。宿主的控制器只认一个动画文件，
+     * 因此这里把 {@code main} 与 {@code extra} 合并后写回主文件的位置，控制器就能按片段名找到它们。
+     *
+     * <p>只合并这两个：其余文件是给别的模组用的兼容层，加起来超过 2 MB，而本模组一条都不用。
+     */
+    private static void mergeAnimationFiles(YsmPack pack) {
+        ResourceLocation main = pack.animation();
+        if (main == null) {
+            return;
+        }
+        AnimationFile merged = new AnimationFile();
+        merge(merged, animations(main));
+        ResourceLocation extra = pack.animations().get("extra");
+        if (extra != null) {
+            merge(merged, animations(extra));
+        }
+        GeckoLibCache.getInstance().getAnimations().put(main, merged);
+    }
+
+    private static String nameOf(ResourceLocation file) {
+        String path = file.getPath();
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private static void merge(AnimationFile target, AnimationFile source) {
+        source.animations().forEach((name, animation) -> {
+            if (target.getAnimation(name) == null) {
+                target.putAnimation(name, animation);
+            }
+        });
+    }
+
+    /**
+     * 文件路径 → 包内键名：去掉目录前缀、去掉扩展名、再去掉 YSM 动画文件的 {@code .animation} 段
+     *
+     * <p>抽成静态方法是为了能直接测，见 {@code gametest/YsmPackResourceTests}。
+     */
+    public static String nameFor(String dir, String path, String suffix) {
+        String name = path.substring(dir.length() + 1, path.length() - suffix.length());
+        if (name.endsWith(ANIMATION_SUFFIX)) {
+            name = name.substring(0, name.length() - ANIMATION_SUFFIX.length());
+        }
+        return name;
+    }
+
+    /**
+     * 列出一个子目录下的文件，键是文件名去掉扩展名
+     *
+     * <p>动画文件按 YSM 的约定叫 {@code main.animation.json}，键要写成 {@code main}（不是
+     * {@code main.animation}），否则 {@link YsmPack#animation()} 找不到主文件、
+     * 退回到排序第一的那一个——{@code extra.animation.json} 正好排在 {@code main} 前面，
+     * 结果是主状态机与并行层全部落空（实测症状：所有形态叠加显示、走与站都没有动作）。
+     */
     private static Map<String, ResourceLocation> list(String namespace, String dir, String suffix) {
         ResourceManager manager = Minecraft.getInstance().getResourceManager();
         Map<String, ResourceLocation> found = new LinkedHashMap<>();
         for (ResourceLocation file : manager.listResources(dir,
             location -> location.getNamespace().equals(namespace) && location.getPath().endsWith(suffix)).keySet()) {
             String path = file.getPath();
-            found.put(path.substring(dir.length() + 1, path.length() - suffix.length()), file);
+            found.put(nameFor(dir, path, suffix), file);
         }
         return found;
     }

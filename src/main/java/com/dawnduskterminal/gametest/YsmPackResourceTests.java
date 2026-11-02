@@ -1,5 +1,6 @@
 package com.dawnduskterminal.gametest;
 
+import com.dawnduskterminal.client.animation.YsmPacks;
 import com.dawnduskterminal.geckolib3.geo.raw.pojo.Converter;
 import com.dawnduskterminal.geckolib3.geo.raw.pojo.RawGeoModel;
 import com.dawnduskterminal.geckolib3.geo.raw.tree.RawGeometryTree;
@@ -36,14 +37,35 @@ import java.nio.charset.StandardCharsets;
 public final class YsmPackResourceTests {
     @GameTest(template = "ddt_empty")
     public static void packsAreComplete(GameTestHelper helper) {
-        check(helper, "tower_ghast", 50);
-        check(helper, "ghast_elite", 2);
+        check(helper, "tower_ghast", "animations/main.animation.json", 50);
+        // 手动动作在单独的文件里，会被合并到主文件上供 /ddt action 使用
+        check(helper, "tower_ghast", "animations/extra.animation.json", 22);
+        check(helper, "ghast_elite", "animations/main.animation.json", 2);
         helper.succeed();
     }
 
-    private static void check(GameTestHelper helper, String pack, int expectedClips) {
+    /**
+     * 包内键名：{@code main.animation.json} 必须解析成 {@code main}
+     *
+     * <p>解析成 {@code main.animation} 会让 {@code YsmPack.animation()} 找不到主文件、退回排序第一，
+     * 症状是所有形态叠加显示、走与站都没有动作。这条断言钉住它。
+     */
+    @GameTest(template = "ddt_empty")
+    public static void animationFileKeysAreStable(GameTestHelper helper) {
+        helper.assertTrue("main".equals(YsmPacks.nameFor("ysm/tower_ghast/animations",
+            "ysm/tower_ghast/animations/main.animation.json", ".json")), "main.animation.json 的键应为 main");
+        helper.assertTrue("extra".equals(YsmPacks.nameFor("ysm/tower_ghast/animations",
+            "ysm/tower_ghast/animations/extra.animation.json", ".json")), "extra.animation.json 的键应为 extra");
+        helper.assertTrue("main".equals(YsmPacks.nameFor("ysm/tower_ghast/models",
+            "ysm/tower_ghast/models/main.json", ".json")), "models/main.json 的键应为 main");
+        helper.assertTrue("ghast".equals(YsmPacks.nameFor("ysm/tower_ghast/textures",
+            "ysm/tower_ghast/textures/ghast.png", ".png")), "textures/ghast.png 的键应为 ghast");
+        helper.succeed();
+    }
+
+    private static void check(GameTestHelper helper, String pack, String animationPath, int expectedClips) {
         String geo = packFile(pack, "models/main.json");
-        String animations = packFile(pack, "animations/main.animation.json");
+        String animations = packFile(pack, animationPath);
         for (String required : new String[] {geo, animations, packFile(pack, "textures/ghast.png"),
             packFile(pack, "ysm.json")}) {
             helper.assertTrue(open(required) != null, "缺少模型包文件 " + required);

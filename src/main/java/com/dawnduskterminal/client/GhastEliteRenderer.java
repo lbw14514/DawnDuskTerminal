@@ -42,13 +42,29 @@ public final class GhastEliteRenderer {
 
         @Override
         protected float scaleOf(GhastEliteEntity entity) {
-            return YsmPacks.get(PACK).heightScale();
+            return YsmPacks.get(requestedPack(entity)).heightScale();
         }
+
+        /** 换了模型包就重建动画实例 */
+        @Override
+        protected ResourceLocation requestedPack(GhastEliteEntity entity) {
+            return resolvePack(entity);
+        }
+    }
+
+    /** 实体指定的模型包；空串或写错时用默认包 */
+    private static ResourceLocation resolvePack(GhastEliteEntity entity) {
+        String declared = entity.ysmPackId();
+        if (declared.isEmpty()) {
+            return PACK;
+        }
+        ResourceLocation parsed = ResourceLocation.tryParse(declared);
+        return parsed == null ? PACK : parsed;
     }
 
     private static final class Animatable extends YsmAnimatable<GhastEliteEntity> {
         private Animatable(GhastEliteEntity entity) {
-            super(entity, YsmPacks.get(PACK).model(), YsmPacks.get(PACK).animation(), YsmPacks.get(PACK).texture());
+            super(entity, YsmPacks.get(resolvePack(entity)));
         }
 
         /** 模型包没有主动画：所有通道都由并行动画层写 */

@@ -1,6 +1,8 @@
 package com.dawnduskterminal.gametest;
 
+import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.TowerGhastEntity;
+import com.dawnduskterminal.entity.YsmPackUser;
 import com.dawnduskterminal.registry.ModEntities;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -36,6 +38,31 @@ public final class TowerGhastAnimationTests {
         helper.assertTrue(clipOf(ghast, true).equals("death"),
             "a dying ghast must use death even while hurt");
         helper.succeed();
+    }
+
+    /**
+     * 外观开关的同步格式：{@code hat=1.0;cloth=2.0}，同名键覆盖、每次修改递增序号
+     *
+     * <p>格式一旦变了客户端就解析不出来（表现为「命令没反应」），所以在这里钉住。
+     */
+    @GameTest(template = "ddt_empty")
+    public static void roamingBlobRoundTrips(GameTestHelper helper) {
+        TowerGhastEntity ghast = new TowerGhastEntity(ModEntities.TOWER_GHAST.get(), helper.getLevel());
+        checkRoaming(helper, ghast);
+        // 同一套同步通道被所有模型包实体共用，大恶魂也要能走通
+        checkRoaming(helper, new GhastEliteEntity(ModEntities.GHAST_ELITE.get(), helper.getLevel()));
+        helper.succeed();
+    }
+
+    private static void checkRoaming(GameTestHelper helper, YsmPackUser ghast) {
+        ghast.setRoaming("hat", 1);
+        ghast.setRoaming("cloth", 2);
+        helper.assertTrue("hat=1.0;cloth=2.0".equals(ghast.roamingBlob()),
+            "开关应累积：" + ghast.roamingBlob());
+        helper.assertTrue(ghast.roamingSeq() == 2, "每次修改都要递增序号");
+        ghast.setRoaming("hat", 0);
+        helper.assertTrue("hat=0.0;cloth=2.0".equals(ghast.roamingBlob()),
+            "同名键应覆盖：" + ghast.roamingBlob());
     }
 
     private static String clipOf(TowerGhastEntity ghast, boolean moving) {

@@ -36,6 +36,12 @@ public final class TowerGhastRenderer {
             super(context, Animatable::new);
         }
 
+        /** 换了模型包就重建动画实例 */
+        @Override
+        protected ResourceLocation requestedPack(TowerGhastEntity entity) {
+            return resolvePack(entity);
+        }
+
         @Override
         protected float scaleOf(TowerGhastEntity entity) {
             return YsmPacks.get(PACK).heightScale();
@@ -48,9 +54,24 @@ public final class TowerGhastRenderer {
         }
     }
 
+    /**
+     * 实体指定的模型包；空串表示默认包
+     *
+     * <p>包名写错的后果是「只有阴影」——{@code YsmAnimatable} 会因此打一条错误日志，
+     * 所以这里不做兜底，让写错直接暴露出来。
+     */
+    private static ResourceLocation resolvePack(TowerGhastEntity entity) {
+        String declared = entity.ysmPackId();
+        if (declared.isEmpty()) {
+            return PACK;
+        }
+        ResourceLocation parsed = ResourceLocation.tryParse(declared);
+        return parsed == null ? PACK : parsed;
+    }
+
     private static final class Animatable extends YsmAnimatable<TowerGhastEntity> {
         private Animatable(TowerGhastEntity entity) {
-            super(entity, pack().model(), pack().animation(), pack().texture());
+            super(entity, YsmPacks.get(resolvePack(entity)));
         }
 
         /**
@@ -70,8 +91,6 @@ public final class TowerGhastRenderer {
                 || this.entity.getDeltaMovement().horizontalDistance() > 0.02D;
         }
 
-        private static YsmPack pack() {
-            return YsmPacks.get(PACK);
-        }
+
     }
 }
