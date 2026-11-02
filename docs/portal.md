@@ -22,7 +22,8 @@
 
 判定从种子出发进行水平洪泛，只遍历位于同一 y 坐标的水方块。
 
-水池方块数量的下限为 `MIN_WATER`，即 4 个；上限为 `MAX_WATER`，即 64 个，超出上限即判定失败。
+水池方块数量的下限为 `MIN_WATER`，即 4 个；
+上限为 `MAX_WATER`，即 64 个，超出上限即判定失败。
 
 每一列水向下最多探测 16 格并据此寻得地板，该地板必须是可站立方块。
 
@@ -36,11 +37,16 @@
 
 ## 生成传送门
 
-生成逻辑实现在 `portal/PortalBuilder.build` 中。该过程先把判定出的水池方块清除为空气，再逐个替换为 `dawnduskterminal:portal_fluid`，已经是传送门流体的方块则跳过。
+生成逻辑实现在 `portal/PortalBuilder.build` 中。
+该过程先把判定出的水池方块清除为空气，再逐个替换为 `dawnduskterminal:portal_fluid`，已经是传送门流体的方块则跳过。
 
-该过程必须分两趟执行：传送门流体一旦接触水，就会被流体反应转换为 `fragile_canopy`，而该反应在 `LiquidBlock#onPlace` 中立即生效。若在清除水的同时灌注传送门流体，则先完成灌注的位置其邻居仍为水，刚灌注的流体将被该反应消耗。
+该过程必须分两趟执行。
+传送门流体一旦接触水，就会被流体反应转换为 `fragile_canopy`，而该反应在 `LiquidBlock#onPlace` 中立即生效。
+若在清除水的同时灌注传送门流体，则先完成灌注的位置其邻居仍为水，刚灌注的流体将被该反应消耗。
 
-该反应只扫描正上方与四个水平邻居（`LiquidBlock.POSSIBLE_FLOW_DIRECTIONS` 取相反方向，不含正下方），因此水池下方的水无害，而上方的水会消耗刚填充好的传送门流体。基于这一原因，`PortalShape.find` 固定选取水体最上面那一层。
+该反应只扫描正上方与四个水平邻居，`LiquidBlock.POSSIBLE_FLOW_DIRECTIONS` 取相反方向，不含正下方。
+因此水池下方的水无害，而上方的水会消耗刚填充好的传送门流体。
+基于这一原因，`PortalShape.find` 固定选取水体最上面那一层。
 
 ## 触发
 
@@ -48,7 +54,8 @@
 
 第一条路径是：物品实体落入水中时，由 `PortalBlock.entityInside` 调用 `tryIgnite`。
 
-第二条路径是：玩家附近 12 格内落入水中的投料物，由 `DdtServerEvents.scanFuelItems` 每 10 tick 扫描一次并调用 `tryIgnite`。
+第二条路径是：玩家附近 12 格内落入水中的投料物，
+由 `DdtServerEvents.scanFuelItems` 每 10 tick 扫描一次并调用 `tryIgnite`。
 
 `tryIgnite` 先调用 `build`，只有在构建成功之后才消耗一个物品。
 
@@ -66,19 +73,24 @@
 
 ## 即时传送
 
-传送逻辑实现在 `portal/PortalTeleporter.teleportEntity` 中：实体进入方块后的下一个 tick 即被传送，既没有蓄力过程，也没有冷却。
+传送逻辑实现在 `portal/PortalTeleporter.teleportEntity` 中。
+实体进入方块后的下一个 tick 即被传送，既没有蓄力过程，也没有冷却。
 
-当前维度不是晨昏线维度时，目标为晨昏线维度；否则目标为主世界。
+当前维度不是晨昏线维度时，目标为晨昏线维度；
+否则目标为主世界。
 
 传送到目标位置之后播放 `minecraft:portal_travel`。
 
-落点搜索由 `findSafeLanding` 完成：先使用原点所在列，再按 16 格环扩展至半径 320，最多加载 64 个区块，并受 8ms 软时间预算限制。
+落点搜索由 `findSafeLanding` 完成：先使用原点所在列，再按 16 格环扩展至半径 320。
+最多加载 64 个区块，并受 8ms 软时间预算限制。
 
 单列判定使用 `MOTION_BLOCKING_NO_LEAVES` 表面，该表面必须位于 0 到 128 之间，其下方为可站立方块，脚部无碰撞且无流体。
 
 若搜索不到合适落点或超出时间预算，则铺设一块半径为 6 的回退平台，所用方块为霞草、霞土与苍穹石。
 
-进入维度时，在落点附近建造到达门 `buildArrivalPortal`：先在 24 格环内寻找平缓地面（预算 4ms），铺设半径为 4 的苍穹石台面；随后在台面上开凿 2 乘 2 的传送门流体池，并在池边铺设霞草与霞土。
+进入维度时，在落点附近建造到达门 `buildArrivalPortal`。
+先在 24 格环内寻找平缓地面（预算 4ms），铺设半径为 4 的苍穹石台面；
+随后在台面上开凿 2 乘 2 的传送门流体池，并在池边铺设霞草与霞土。
 
 回程不建造新门，而是直接传送到记住的坐标。
 
@@ -90,15 +102,22 @@
 
 ## 稳定效果
 
-效果 `dawnduskterminal:stability` 是纯标记，其作用方向由 `PortalBlock.entityInside` 决定：玩家持有该稳定效果时不过门，非玩家生物持有该稳定效果时则过门。
+效果 `dawnduskterminal:stability` 是纯标记，其作用方向由 `PortalBlock.entityInside` 决定。
+玩家持有该稳定效果时不过门，非玩家生物持有该稳定效果时则过门。
 
-若实体不过门并且受到伤害，则累计该伤害；每 40 tick 造成 2 点 `stability` 伤害，并播放 `portal_hurt`。
+若实体不过门并且受到伤害，则累计该伤害；
+每 40 tick 造成 2 点 `stability` 伤害，并播放 `portal_hurt`。
 
-药水 `dawnduskterminal:stability` 提供 8 分钟（9600 tick）的效果。物品 `dawnduskterminal:stability_potion` 采用通用药水瓶外观（模型继承 `minecraft:item/potion`），其紫色并非绘制在贴图上，而是由客户端按 `potion_contents` 取色，取出的值即效果色 `0x7F159E`，与传送门流体的雾色同值；该物品暂无配方。
+药水 `dawnduskterminal:stability` 提供 8 分钟（9600 tick）的效果。
+物品 `dawnduskterminal:stability_potion` 采用通用药水瓶外观（模型继承 `minecraft:item/potion`），
+其紫色并非绘制在贴图上，而是由客户端按 `potion_contents` 取色，取出的值即效果色 `0x7F159E`，
+与传送门流体的雾色同值；
+该物品暂无配方。
 
 ## 两种流体
 
-`dawnduskterminal:portal_fluid` 是传送门水体，同时是维度的默认流体。其流动参数沿用原版水，但不会无限生成源，也不会吞没外来的水。
+`dawnduskterminal:portal_fluid` 是传送门水体，同时是维度的默认流体。
+其流动参数沿用原版水，但不会无限生成源，也不会吞没外来的水。
 
 `dawnduskterminal:enthu_fluid`（热情的暮光）借用岩浆的方块属性，但不会点火，也不会清除植物。
 
@@ -122,9 +141,11 @@
 
 ## 桶
 
-原版桶无法舀取这两种流体。`DdtServerEvents.onRightClickItem` 会拦截该交互，取消交互、播放物品破碎音效，并销毁一个桶。
+原版桶无法舀取这两种流体。
+`DdtServerEvents.onRightClickItem` 会拦截该交互，取消交互、播放物品破碎音效，并销毁一个桶。
 
-`dawnduskterminal:canocan` 是唯一能够舀取这两种流体的容器：舀取 `portal_fluid` 得到 `portal_bucket`，舀取热情的暮光得到 `enthu_fluid_bucket`。
+`dawnduskterminal:canocan` 是唯一能舀取这两种流体的容器：
+舀取 `portal_fluid` 得到 `portal_bucket`，舀取热情的暮光得到 `enthu_fluid_bucket`。
 
 ## 音效
 

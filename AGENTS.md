@@ -50,7 +50,8 @@ Java 版本为 Java 21。
 
 `./gradlew runGameTestServer` 用于运行游戏测试服务端。
 
-格式化命令为 `./gradlew spotlessApply`，检查命令为 `./gradlew spotlessCheck`，详见 `docs/development.md` 的「格式化」一节。
+格式化命令为 `./gradlew spotlessApply`，检查命令为 `./gradlew spotlessCheck`。
+命令细节与钩子安装写在 `docs/development.md` 的「格式化」一节。
 
 `gradlew` 必须保持可执行位，因为 CI 在 Linux 上运行，权限位一旦丢失，构建将直接失败。
 
@@ -62,33 +63,54 @@ Java 版本为 Java 21。
 
 | 内容 | 位置 |
 |---|---|
-| 5 个平台的 native 网格内核 | `native/windows-x86_64` `native/linux-x86_64` `native/linux-aarch64` `native/macos-x86_64` `native/macos-aarch64` |
+| 5 个平台的 native 网格内核 | `native/` 下五个平台目录，见下文 |
 | c2me（JarJar 嵌套） | `META-INF/jars/` 与 `META-INF/jarjar/metadata.json` |
 
-本机构建即可得到全平台单文件：`buildNative` 使用 Zig 交叉编译，因此在任何宿主上执行 `./gradlew build`，都会把 5 个 native 一并打包进 jar。
+本机构建即可得到全平台单文件。
+`buildNative` 使用 Zig 交叉编译，因此在任何宿主上执行 `./gradlew build`，都会把 5 个 native 一并打包进 jar。
 
 构建流程分为四个步骤。
 
-1. `installZig` 自动下载 Zig 到 Gradle 用户目录下的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`），无需预装编译器，下载包经官方 SHA-256 校验。工具链与其缓存均保留在工程目录之外：工程目录带有 DSH 沙盒遗留的目录权限项，Zig 在其中创建编译临时目录会被拒绝（`cache: manifest_create AccessDenied`），而将同一份二进制放在用户目录下则工作正常。
-2. `buildNative` 依次编译 `windows-x86_64` `linux-x86_64` `linux-aarch64` `macos-x86_64` `macos-aarch64`，产物输出到 `build/native/<target>/`。
+1. `installZig` 自动下载 Zig 到 Gradle 用户目录下的 `ddt-zig/<version>`（默认 `~/.gradle/ddt-zig/`）。
+   无需预装编译器，下载包经官方 SHA-256 校验。
+   工具链与其缓存均保留在工程目录之外。
+   工程目录带有 DSH 沙盒遗留的目录权限项，Zig 在其中创建编译临时目录会被拒绝（`cache: manifest_create AccessDenied`）；
+   同一份二进制放在用户目录下则工作正常。
+2. `buildNative` 依次编译上面五个目标，产物输出到 `build/native/<target>/`。
 3. `./gradlew build` 的 `processResources` 任务把 `build/native` 下的全部目录打进 jar。
 4. `release.yml` 校验 5 个 `ddt_native` 均存在，缺少任意一个即直接失败。
 
-`ddt_native` 是通用的网格变换内核，它只接收顶点区间、矩阵与法线取反标志，不认识实体与方块。`NativeGeoMesh` 负责 Bedrock 模型的摊平，`NativeMeshBatch` 负责在一帧内收集并一次完成 JNI 提交，实体渲染器与方块渲染器共用该内核。
+`ddt_native` 是通用的网格变换内核，它只接收顶点区间、矩阵与法线取反标志，不认识实体与方块。
+五个目录分别是 `native/windows-x86_64`、`native/linux-x86_64`、`native/linux-aarch64`、
+`native/macos-x86_64` 与 `native/macos-aarch64`。
 
-`-Pddt_zig_version` 用于更换 Zig 版本。构建期若任一目标编译失败，`build` 即直接失败；运行期若加载失败或 ABI 不匹配，则禁用 native 并回退到 Java 渲染路径；若出现运行时错误，则熔断禁用；若发生硬崩溃，则由崩溃标记在下次启动时作为回退保障。相关内容见 `NativeMesh` 与 `docs/development.md`。
+`NativeGeoMesh` 负责 Bedrock 模型的摊平，`NativeMeshBatch` 负责在一帧内收集并一次完成 JNI 提交。
+实体渲染器与方块渲染器共用该内核。
+
+`-Pddt_zig_version` 用于更换 Zig 版本。
+构建期若任一目标编译失败，`build` 即直接失败；
+运行期若加载失败或 ABI 不匹配，则禁用 native 并回退到 Java 渲染路径；
+若出现运行时错误，则熔断禁用；
+若发生硬崩溃，则由崩溃标记在下次启动时作为回退保障。
+相关内容见 `NativeMesh` 与 `docs/development.md`。
 
 `jni_md.h` 由仓库自带：`src/main/native/win32` 供 Windows 使用，`src/main/native/posix` 供 Linux 与 macOS 使用。
 
 Windows DLL 使用 Zig 的 mingw 目标构建，只依赖 UCRT 与 `kernel32.dll`，不得依赖 `libwinpthread-1.dll`。
 
-c2me 由 `patchC2me` 从 `c2me_version` 所指定的 Modrinth Maven 坐标解析后嵌入 jar，默认保留官方全部模块。专用服务器的固定种子对照实验已经验证：官方 c2me 与不安装 c2me 时，地形高度、群系与流体指纹逐字节一致；开发环境中出现的 15 列差异是 dev classpath 组合造成的假阳性，因此不得据此移除模块。
+c2me 由 `patchC2me` 从 `c2me_version` 所指定的 Modrinth Maven 坐标解析后嵌入 jar，默认保留官方全部模块。
+专用服务器的固定种子对照实验已经验证：官方 c2me 与不安装 c2me 时，地形高度、群系与流体指纹逐字节一致；
+开发环境中出现的 15 列差异是 dev classpath 组合造成的假阳性，因此不得据此移除模块。
 
-不得使用 ModDevGradle 的 `jarJar` 配置嵌入 c2me，因为本地补丁 jar 在配置期无法解析。当前做法是手动编写 `META-INF/jarjar/metadata.json`，并让 `jar` 任务把补丁 jar 放入 `META-INF/jars/`。
+不得使用 ModDevGradle 的 `jarJar` 配置嵌入 c2me，因为本地补丁 jar 在配置期无法解析。
+当前做法是手动编写 `META-INF/jarjar/metadata.json`，并让 `jar` 任务把补丁 jar 放入 `META-INF/jars/`。
 
-玩家额外安装 c2me 时，由 JarJar 版本协商处理；已通过“内置加外部同版本”的实际测试，确认可以正常启动、正常生成地形与正常停服。
+玩家额外安装 c2me 时，由 JarJar 版本协商处理；
+已通过“内置加外部同版本”的实际测试，确认可以正常启动、正常生成地形与正常停服。
 
-c2me 本体采用 MIT 许可证，`c2me-opts-accel-opencl` 为 All Rights Reserved 且未打进产物，嵌套 jar 中保留 `LICENSE-MIT.txt`。官方 1.21.1 OpenCL devbuild 同样为 ARR，要求 Java 25，并且只能外挂安装，因此不得内置，也不得随产物分发。
+c2me 本体采用 MIT 许可证，嵌套 jar 中保留 `LICENSE-MIT.txt`。
+`c2me-opts-accel-opencl` 为 All Rights Reserved，且未打进产物。
+官方 1.21.1 OpenCL devbuild 同样为 ARR，要求 Java 25，并且只能外挂安装，因此不得内置，也不得随产物分发。
 
 不得在 `README.md` 等面向使用者的文件中写入本机独有的环境信息。
 
@@ -100,17 +122,23 @@ c2me 本体采用 MIT 许可证，`c2me-opts-accel-opencl` 为 All Rights Reserv
 
 暮色森林自身的 modmaven 已于 2024-07-06 停止更新，1.21.1 所使用的 4.8.3345 在该源上仅有空目录。
 
-暮色森林是必装依赖，Java 代码直接 `import twilightforest.*` 引用它的类型（注册项取 `TFEntities` / `TFBlocks` / `TFSounds` 等常量，方法直接调用）。编译期检查优先：暮色森林升级导致类名或签名变化时，构建直接失败，而不是运行期悄悄降级。
+暮色森林是必装依赖，Java 代码直接 `import twilightforest.*` 引用它的类型。
+注册项取 `TFEntities`、`TFBlocks`、`TFSounds` 等常量，方法直接调用。
+编译期检查优先：暮色森林升级导致类名或签名变化时，构建直接失败，而不是运行期悄悄降级。
 
 因此构建期必须有该 jar（`build.gradle` 的 `compileOnly`，来自 CurseMaven，需要联网）。
 
-只有编译期没有常量的数据 ID 仍写成字符串：`data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id（这些由数据包定义，类型化不了）。
+只有编译期没有常量的数据 ID 仍写成字符串。
+包括 `data/` 下的战利品表、配方、标签与群系，以及 Java 里引用的方块标签、群系标签、配置特征与结构 id。
+这些由数据包定义，类型化不了。
 
 ## Bedrock 动画运行时
 
-本模组不再依赖 GeckoLib。动画运行时是仓库自带的一份 Molang 版 GeckoLib 分支，位于
+本模组不再依赖 GeckoLib。
+动画运行时是仓库自带的一份 Molang 版 GeckoLib 分支，位于
 `src/main/java/com/dawnduskterminal/geckolib3/` 与 `com/dawnduskterminal/molang/`，来源是
-TouhouLittleMaid（MIT），说明与「和上游的差异」见 `docs/ysm.md`。它是一个普通库：不需要玩家安装任何前置，
+TouhouLittleMaid（MIT），说明与「和上游的差异」见 `docs/ysm.md`。
+它是一个普通库：不需要玩家安装任何前置，
 也不在 `neoforge.mods.toml` 里声明依赖。
 
 实体用的模型包按 Yes Steve Model 的原样布局放在 `assets/dawnduskterminal/ysm/<模型包>/` 下，
@@ -120,9 +148,11 @@ TouhouLittleMaid（MIT），说明与「和上游的差异」见 `docs/ysm.md`�
 不存在离线转换步骤，也不存在会被静默丢掉的片段。
 
 给实体接模型包只需要两样东西：一个 `client/animation/YsmAnimatable` 子类（决定模型、贴图、主动画选哪个片段），
-以及一个 `client/animation/YsmEntityRenderer` 子类（决定缩放与渲染类型）。参考 `client/TowerGhastRenderer`。
+以及一个 `client/animation/YsmEntityRenderer` 子类（决定缩放与渲染类型）。
+参考 `client/TowerGhastRenderer`。
 
-`YsmBinding` 与 `FnBinding` 是 `ysm.*` / `fn.*` 两张表。模型包用到表里没有的名字时，解析会静默跳过那一整条表达式
+`YsmBinding` 与 `FnBinding` 是 `ysm.*` / `fn.*` 两张表。
+模型包用到表里没有的名字时，解析会静默跳过那一整条表达式
 （表现为某个通道不动），因此新增模型包时应先跑一遍 `docs/ysm.md` 里记的离线校验。
 
 已知差距：贴图动画条（`.mcmeta`）不再逐帧上传，`entity/StringEntity` 的流体贴图因此只有第一帧；
@@ -152,7 +182,8 @@ TouhouLittleMaid（MIT），说明与「和上游的差异」见 `docs/ysm.md`�
 
 ## 硬约束与常见问题
 
-`noise_settings/chrono.json` 的 `default_fluid` 必须是 `dawnduskterminal:portal_fluid`，因为有多个 mixin 依靠它识别维度。
+`noise_settings/chrono.json` 的 `default_fluid` 必须是 `dawnduskterminal:portal_fluid`。
+有多个 mixin 依靠它识别维度。
 
 `AquiferTests` 与 `WorldgenTests` 断言地形、流体与矿脉均使用模组调色板。
 
@@ -160,7 +191,8 @@ feature 引用与 `neoforge:remove_features` 中的 ID 必须真实存在，否�
 
 在 1.21.1 中，密度函数 JSON 字段是 `argument`，不是 `input`。
 
-`runGameTestServer` 偶发卡死（区块等不到实体刻）时，由 `mixin/GameTestChunkWaitMixin` 作为回退保障，详见 `docs/development.md` 的「已知的失败与卡死」一节。
+`runGameTestServer` 偶发卡死（区块等不到实体刻）时，由 `mixin/GameTestChunkWaitMixin` 作为回退保障。
+详见 `docs/development.md` 的「已知的失败与卡死」一节。
 
 天光被烘焙进区块，因此修改天光后老存档需要重新计算。
 
@@ -182,7 +214,8 @@ feature 引用与 `neoforge:remove_features` 中的 ID 必须真实存在，否�
 
 正文仅在需要携带 subject 无法容纳的信息时才添加。
 
-提交前代码须已通过 `spotlessCheck`。`geckolib3/` 与 `molang/` 是上游代码，不参与格式化，也不得对其做纯排版改动。
+提交前代码须已通过 `spotlessCheck`。
+`geckolib3/` 与 `molang/` 是上游代码，不参与格式化，也不得对其做纯排版改动。
 
 ## 分支与协作
 
@@ -213,3 +246,8 @@ feature 引用与 `neoforge:remove_features` 中的 ID 必须真实存在，否�
 `docs/configuration.md` 为配置项。
 
 `docs/设定.md` 为世界观与内容设定。
+
+文档正文一句一行：句子写完即换行，不得把整段写成一行。
+每行不超过 120 列（中文计 2 列，与 palantir 的 `ColumnLimit` 一致）。
+超宽时改写为短句或列表，不要在逗号处硬断。
+详见 `docs/README.md` 的「书写规范」。
