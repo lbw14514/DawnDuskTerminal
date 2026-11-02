@@ -139,8 +139,12 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
      * 「上下顶/底那一格 + 四面单块侧面那一格」
      */
     @Override
-    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand,
-            ModelData data, @Nullable RenderType renderType) {
+    public List<BakedQuad> getQuads(
+            @Nullable BlockState state,
+            @Nullable Direction side,
+            RandomSource rand,
+            ModelData data,
+            @Nullable RenderType renderType) {
         List<BakedQuad> quads = super.getQuads(state, side, rand, data, renderType);
         if (quads.isEmpty()) {
             return quads;
@@ -165,8 +169,8 @@ public class WroughtIronGlassModel extends BakedModelWrapper<BakedModel> {
 
     private int defaultTile(@Nullable Direction face) {
         return this.dedicatedTopBottom && (face == Direction.UP || face == Direction.DOWN)
-            ? TILE_TOP_BOTTOM
-            : TILE_SINGLE;
+                ? TILE_TOP_BOTTOM
+                : TILE_SINGLE;
     }
 
     private static BakedQuad remap(BakedQuad quad, int index) {

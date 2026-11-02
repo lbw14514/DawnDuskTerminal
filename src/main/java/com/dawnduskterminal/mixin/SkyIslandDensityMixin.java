@@ -25,9 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class SkyIslandDensityMixin {
     @Inject(method = "createBiomes", at = @At("HEAD"))
-    private void ddt$rememberSkyIslandDensity(RandomState randomState, Blender blender,
-                                              StructureManager structures, ChunkAccess chunk,
-                                              CallbackInfoReturnable<ChunkAccess> cir) {
+    private void ddt$rememberSkyIslandDensity(
+            RandomState randomState,
+            Blender blender,
+            StructureManager structures,
+            ChunkAccess chunk,
+            CallbackInfoReturnable<ChunkAccess> cir) {
         NoiseBasedChunkGenerator generator = (NoiseBasedChunkGenerator) (Object) this;
         if (ChronoDimensionProbe.isChrono(generator.generatorSettings().value())) {
             SkyIslandDensity.remember(randomState, generator.generatorSettings().value());

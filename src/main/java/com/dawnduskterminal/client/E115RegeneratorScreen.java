@@ -43,7 +43,7 @@ public class E115RegeneratorScreen extends AbstractContainerScreen<E115Regenerat
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x404040, false);
-        graphics.drawString(this.font, this.playerInventoryTitle,
-            this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);
+        graphics.drawString(
+                this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);
     }
 }

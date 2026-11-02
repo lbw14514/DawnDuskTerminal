@@ -12,6 +12,11 @@ import com.dawnduskterminal.world.CarminiteBlast;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
@@ -30,12 +35,6 @@ import net.minecraft.world.level.block.FireBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 试验物品 052 的规格
@@ -64,55 +63,67 @@ public final class Experiment052Tests {
 
     /** 原版火焰那套模型文件名，方块状态里这十个都要用到 */
     private static final List<String> FIRE_MODELS = List.of(
-        "carminite_fire_floor0", "carminite_fire_floor1",
-        "carminite_fire_side0", "carminite_fire_side1",
-        "carminite_fire_side_alt0", "carminite_fire_side_alt1",
-        "carminite_fire_up0", "carminite_fire_up1",
-        "carminite_fire_up_alt0", "carminite_fire_up_alt1");
+            "carminite_fire_floor0", "carminite_fire_floor1",
+            "carminite_fire_side0", "carminite_fire_side1",
+            "carminite_fire_side_alt0", "carminite_fire_side_alt1",
+            "carminite_fire_up0", "carminite_fire_up1",
+            "carminite_fire_up_alt0", "carminite_fire_up_alt1");
 
     @GameTest(template = "ddt_empty")
     public static void blockReplacesThePlaceholder(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(52),
-            "number 52 must not be a placeholder anymore, it has a block now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(52),
+                "number 52 must not be a placeholder anymore, it has a block now");
         Item item = ModItems.EXPERIMENT_052.get();
-        helper.assertTrue(item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_052.get(),
-            SUBJECT + " must be the item form of its own block, got " + item);
+        helper.assertTrue(
+                item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_052.get(),
+                SUBJECT + " must be the item form of its own block, got " + item);
         // 方块物品的名字取自方块，所以语言文件的键是 block.dawnduskterminal.experiment_052
-        helper.assertTrue(item.getDescriptionId().equals("block.dawnduskterminal.experiment_052"),
-            "a block item must take its name from the block, got " + item.getDescriptionId());
-        helper.assertTrue(BuiltInRegistries.ENTITY_TYPE.containsKey(DawnDuskTerminal.id("carminite_shrapnel")),
-            "dawnduskterminal:carminite_shrapnel must be registered, the explosion needs something to throw");
-        helper.assertTrue(BuiltInRegistries.SOUND_EVENT.containsKey(DawnDuskTerminal.id("experiment_052_ignite")),
-            "dawnduskterminal:experiment_052_ignite must be registered, igniting plays it");
-        helper.assertTrue(BuiltInRegistries.SOUND_EVENT.containsKey(DawnDuskTerminal.id("experiment_052_explode")),
-            "dawnduskterminal:experiment_052_explode must be registered, the blast plays it");
+        helper.assertTrue(
+                item.getDescriptionId().equals("block.dawnduskterminal.experiment_052"),
+                "a block item must take its name from the block, got " + item.getDescriptionId());
+        helper.assertTrue(
+                BuiltInRegistries.ENTITY_TYPE.containsKey(DawnDuskTerminal.id("carminite_shrapnel")),
+                "dawnduskterminal:carminite_shrapnel must be registered, the explosion needs something to throw");
+        helper.assertTrue(
+                BuiltInRegistries.SOUND_EVENT.containsKey(DawnDuskTerminal.id("experiment_052_ignite")),
+                "dawnduskterminal:experiment_052_ignite must be registered, igniting plays it");
+        helper.assertTrue(
+                BuiltInRegistries.SOUND_EVENT.containsKey(DawnDuskTerminal.id("experiment_052_explode")),
+                "dawnduskterminal:experiment_052_explode must be registered, the blast plays it");
         // 爆炸用自己的那一种粒子（同一套贴图、更慢的帧），反应场那一种不许被改
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_blast")),
-            "dawnduskterminal:particle_carminite_blast must be registered, the blast uses it");
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_effect")),
-            "dawnduskterminal:particle_carminite_effect must stay registered for the field");
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_ember")),
-            "dawnduskterminal:particle_carminite_ember must be registered, the fire and the shrapnel use it");
+        helper.assertTrue(
+                BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_blast")),
+                "dawnduskterminal:particle_carminite_blast must be registered, the blast uses it");
+        helper.assertTrue(
+                BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_effect")),
+                "dawnduskterminal:particle_carminite_effect must stay registered for the field");
+        helper.assertTrue(
+                BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_carminite_ember")),
+                "dawnduskterminal:particle_carminite_ember must be registered, the fire and the shrapnel use it");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void activeIsTheOnlyStateAndLightsFifteen(GameTestHelper helper) {
         BlockState state = ModBlocks.EXPERIMENT_052.get().defaultBlockState();
-        helper.assertFalse(state.getValue(Experiment052Block.ACTIVE),
-            "a placed " + SUBJECT + " must start inactive");
-        helper.assertTrue(Experiment052Block.ACTIVE.getName().equals("active"),
-            "the lit property must be named active, got " + Experiment052Block.ACTIVE.getName());
-        helper.assertTrue(state.getProperties().size() == 1,
-            SUBJECT + " must carry exactly one state, got " + state.getProperties());
+        helper.assertFalse(state.getValue(Experiment052Block.ACTIVE), "a placed " + SUBJECT + " must start inactive");
+        helper.assertTrue(
+                Experiment052Block.ACTIVE.getName().equals("active"),
+                "the lit property must be named active, got " + Experiment052Block.ACTIVE.getName());
+        helper.assertTrue(
+                state.getProperties().size() == 1,
+                SUBJECT + " must carry exactly one state, got " + state.getProperties());
 
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(CENTRE);
         BlockState lit = state.setValue(Experiment052Block.ACTIVE, true);
-        helper.assertTrue(state.getLightEmission(level, pos) == 0,
-            "an inactive " + SUBJECT + " must not emit light, got " + state.getLightEmission(level, pos));
-        helper.assertTrue(lit.getLightEmission(level, pos) == 15,
-            "an armed " + SUBJECT + " must emit 15 light levels, got " + lit.getLightEmission(level, pos));
+        helper.assertTrue(
+                state.getLightEmission(level, pos) == 0,
+                "an inactive " + SUBJECT + " must not emit light, got " + state.getLightEmission(level, pos));
+        helper.assertTrue(
+                lit.getLightEmission(level, pos) == 15,
+                "an armed " + SUBJECT + " must emit 15 light levels, got " + lit.getLightEmission(level, pos));
         helper.succeed();
     }
 
@@ -126,21 +137,26 @@ public final class Experiment052Tests {
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(CENTRE);
         level.setBlockAndUpdate(centre, ModBlocks.EXPERIMENT_052.get().defaultBlockState());
-        helper.assertFalse(level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
-            "an unpowered " + SUBJECT + " must stay inactive");
+        helper.assertFalse(
+                level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
+                "an unpowered " + SUBJECT + " must stay inactive");
 
         level.setBlockAndUpdate(centre.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
-        helper.assertTrue(level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
-            "a single redstone signal must arm " + SUBJECT);
-        helper.assertTrue(level.getBlockTicks().hasScheduledTick(centre, ModBlocks.EXPERIMENT_052.get()),
-            "arming " + SUBJECT + " must schedule the " + Experiment052Block.FUSE_TICKS + " tick fuse");
+        helper.assertTrue(
+                level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
+                "a single redstone signal must arm " + SUBJECT);
+        helper.assertTrue(
+                level.getBlockTicks().hasScheduledTick(centre, ModBlocks.EXPERIMENT_052.get()),
+                "arming " + SUBJECT + " must schedule the " + Experiment052Block.FUSE_TICKS + " tick fuse");
 
         helper.runAfterDelay(Experiment052Block.FUSE_TICKS + 10, () -> {
-            helper.assertFalse(level.getBlockState(centre).is(ModBlocks.EXPERIMENT_052.get()),
-                SUBJECT + " must be gone after the fuse runs out");
+            helper.assertFalse(
+                    level.getBlockState(centre).is(ModBlocks.EXPERIMENT_052.get()),
+                    SUBJECT + " must be gone after the fuse runs out");
             // 爆炸同时会把附近刷成 dawnduskterminal:old_growth_birch_forest
-            helper.assertTrue(level.getBiome(centre).is(CarminiteBlast.BLAST_BIOME),
-                "the blast must repaint the biome around it, got " + level.getBiome(centre));
+            helper.assertTrue(
+                    level.getBiome(centre).is(CarminiteBlast.BLAST_BIOME),
+                    "the blast must repaint the biome around it, got " + level.getBiome(centre));
             helper.succeed();
         });
     }
@@ -162,18 +178,23 @@ public final class Experiment052Tests {
         level.setBlockAndUpdate(east, ModBlocks.EXPERIMENT_052.get().defaultBlockState());
         level.setBlockAndUpdate(centre.above(), Blocks.REDSTONE_BLOCK.defaultBlockState());
 
-        helper.assertTrue(level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
-            "the centre block must arm on the single redstone signal");
-        helper.assertFalse(level.getBlockState(west).getValue(Experiment052Block.ACTIVE),
-            "the neighbouring block must not arm before the blast happens");
+        helper.assertTrue(
+                level.getBlockState(centre).getValue(Experiment052Block.ACTIVE),
+                "the centre block must arm on the single redstone signal");
+        helper.assertFalse(
+                level.getBlockState(west).getValue(Experiment052Block.ACTIVE),
+                "the neighbouring block must not arm before the blast happens");
 
         helper.runAfterDelay(Experiment052Block.FUSE_TICKS + 30, () -> {
-            helper.assertFalse(level.getBlockState(centre).is(ModBlocks.EXPERIMENT_052.get()),
-                "the centre block must be gone after its fuse");
-            helper.assertFalse(level.getBlockState(west).is(ModBlocks.EXPERIMENT_052.get()),
-                "a block inside the blast radius must chain-detonate instead of being destroyed");
-            helper.assertFalse(level.getBlockState(east).is(ModBlocks.EXPERIMENT_052.get()),
-                "a block inside the blast radius must chain-detonate instead of being destroyed");
+            helper.assertFalse(
+                    level.getBlockState(centre).is(ModBlocks.EXPERIMENT_052.get()),
+                    "the centre block must be gone after its fuse");
+            helper.assertFalse(
+                    level.getBlockState(west).is(ModBlocks.EXPERIMENT_052.get()),
+                    "a block inside the blast radius must chain-detonate instead of being destroyed");
+            helper.assertFalse(
+                    level.getBlockState(east).is(ModBlocks.EXPERIMENT_052.get()),
+                    "a block inside the blast radius must chain-detonate instead of being destroyed");
             helper.succeed();
         });
     }
@@ -195,10 +216,17 @@ public final class Experiment052Tests {
         ServerLevel level = helper.getLevel();
         BlockPos centre = helper.absolutePos(CENTRE);
         BlockPos[] ring = {
-            new BlockPos(1, 0, 0), new BlockPos(-1, 0, 0), new BlockPos(0, 0, 1), new BlockPos(0, 0, -1),
-            new BlockPos(1, 0, 1), new BlockPos(-1, 0, -1), new BlockPos(1, 0, -1)};
+            new BlockPos(1, 0, 0),
+            new BlockPos(-1, 0, 0),
+            new BlockPos(0, 0, 1),
+            new BlockPos(0, 0, -1),
+            new BlockPos(1, 0, 1),
+            new BlockPos(-1, 0, -1),
+            new BlockPos(1, 0, -1)
+        };
         for (BlockPos offset : ring) {
-            level.setBlockAndUpdate(centre.offset(offset), ModBlocks.EXPERIMENT_052.get().defaultBlockState());
+            level.setBlockAndUpdate(
+                    centre.offset(offset), ModBlocks.EXPERIMENT_052.get().defaultBlockState());
         }
 
         CarminiteBlast.large(level, centre.getX() + 0.5D, centre.getY() + 0.5D, centre.getZ() + 0.5D);
@@ -215,16 +243,19 @@ public final class Experiment052Tests {
                 lit++;
             }
         }
-        helper.assertTrue(standing == ring.length,
-            "no experiment_052 inside the blast may be destroyed by it, " + standing + " of " + ring.length
-                + " still stand");
-        helper.assertTrue(lit == 5,
-            "the blast must chain only the five nearest blocks, chained " + lit + " of " + standing + " standing");
+        helper.assertTrue(
+                standing == ring.length,
+                "no experiment_052 inside the blast may be destroyed by it, " + standing + " of " + ring.length
+                        + " still stand");
+        helper.assertTrue(
+                lit == 5,
+                "the blast must chain only the five nearest blocks, chained " + lit + " of " + standing + " standing");
 
         helper.runAfterDelay(30, () -> {
             for (BlockPos offset : ring) {
-                helper.assertFalse(level.getBlockState(centre.offset(offset)).is(ModBlocks.EXPERIMENT_052.get()),
-                    "the chain must eventually consume the block at " + offset);
+                helper.assertFalse(
+                        level.getBlockState(centre.offset(offset)).is(ModBlocks.EXPERIMENT_052.get()),
+                        "the chain must eventually consume the block at " + offset);
             }
             helper.succeed();
         });
@@ -246,23 +277,24 @@ public final class Experiment052Tests {
         // 变量声明成 Block：直接拿 CarminiteFireBlock 去 instanceof FireBlock，两个类已知无关，
         // javac 会当成编译错误而不是「恒为 false」
         Block fireBlock = ModBlocks.CARMINITE_FIRE.get();
-        helper.assertFalse(fireBlock instanceof FireBlock,
-            "carminite fire must not extend the spreading FireBlock");
+        helper.assertFalse(fireBlock instanceof FireBlock, "carminite fire must not extend the spreading FireBlock");
         BlockState fire = level.getBlockState(pos);
-        helper.assertTrue(fire.is(ModBlocks.CARMINITE_FIRE.get()),
-            "the fire must be placeable on a sturdy face");
-        helper.assertTrue(fire.getValue(CarminiteFireBlock.UP),
-            "a block above the fire must switch the up plane on, got " + fire.getValue(CarminiteFireBlock.UP));
+        helper.assertTrue(fire.is(ModBlocks.CARMINITE_FIRE.get()), "the fire must be placeable on a sturdy face");
+        helper.assertTrue(
+                fire.getValue(CarminiteFireBlock.UP),
+                "a block above the fire must switch the up plane on, got " + fire.getValue(CarminiteFireBlock.UP));
 
         Pig pig = helper.spawn(EntityType.PIG, 5, 2, 4);
         // 猪没被点着时 remainingFireTicks 是负数（-getFireImmuneTicks()，猪是 -1），不是 0
         int fireTicksBefore = pig.getRemainingFireTicks();
         fire.entityInside(level, pos, pig);
-        helper.assertTrue(Math.abs(pig.getHealth() - (PIG_HEALTH - 2.0F)) < 1.0E-4F,
-            "carminite fire must deal exactly 2 damage on contact, the pig has " + pig.getHealth());
-        helper.assertTrue(pig.getRemainingFireTicks() == fireTicksBefore,
-            "carminite fire must never set an entity on fire, fire ticks went from " + fireTicksBefore
-                + " to " + pig.getRemainingFireTicks());
+        helper.assertTrue(
+                Math.abs(pig.getHealth() - (PIG_HEALTH - 2.0F)) < 1.0E-4F,
+                "carminite fire must deal exactly 2 damage on contact, the pig has " + pig.getHealth());
+        helper.assertTrue(
+                pig.getRemainingFireTicks() == fireTicksBefore,
+                "carminite fire must never set an entity on fire, fire ticks went from " + fireTicksBefore + " to "
+                        + pig.getRemainingFireTicks());
         helper.succeed();
     }
 
@@ -290,8 +322,9 @@ public final class Experiment052Tests {
             }
             state.tick(level, pos, random);
         }
-        helper.assertFalse(level.getBlockState(pos).is(ModBlocks.CARMINITE_FIRE.get()),
-            "carminite fire must burn out on its own within a handful of ageing ticks, still there after " + ticks);
+        helper.assertFalse(
+                level.getBlockState(pos).is(ModBlocks.CARMINITE_FIRE.get()),
+                "carminite fire must burn out on its own within a handful of ageing ticks, still there after " + ticks);
         helper.succeed();
     }
 
@@ -323,17 +356,19 @@ public final class Experiment052Tests {
         }
 
         float damage = PIG_HEALTH - pig.getHealth();
-        helper.assertTrue(damage > 0.0F,
-            "the shrapnel must hurt the pig it flies into, the pig still has " + pig.getHealth()
-                + " (shrapnel at " + shrapnel.position() + ", removed " + shrapnel.isRemoved()
-                + ", pig box " + pig.getBoundingBox() + ")");
-        helper.assertTrue(damage <= 10.0F,
-            "the shrapnel may deal at most 10 damage, it dealt " + damage);
+        helper.assertTrue(
+                damage > 0.0F,
+                "the shrapnel must hurt the pig it flies into, the pig still has " + pig.getHealth()
+                        + " (shrapnel at " + shrapnel.position() + ", removed " + shrapnel.isRemoved()
+                        + ", pig box " + pig.getBoundingBox() + ")");
+        helper.assertTrue(damage <= 10.0F, "the shrapnel may deal at most 10 damage, it dealt " + damage);
         DamageSource source = pig.getLastDamageSource();
-        helper.assertTrue(source != null && source.is(DamageTypes.EXPLOSION),
-            "the shrapnel must deal explosion damage, got " + source);
-        helper.assertTrue(pig.getRemainingFireTicks() <= 0,
-            "the shrapnel must not set the pig on fire, got " + pig.getRemainingFireTicks() + " fire ticks");
+        helper.assertTrue(
+                source != null && source.is(DamageTypes.EXPLOSION),
+                "the shrapnel must deal explosion damage, got " + source);
+        helper.assertTrue(
+                pig.getRemainingFireTicks() <= 0,
+                "the shrapnel must not set the pig on fire, got " + pig.getRemainingFireTicks() + " fire ticks");
         helper.succeed();
     }
 
@@ -379,8 +414,9 @@ public final class Experiment052Tests {
                 }
             }
         }
-        helper.assertFalse(fires.isEmpty(),
-            "a landed shrapnel must leave carminite fire behind, none in the 5x5 columns around " + floor);
+        helper.assertFalse(
+                fires.isEmpty(),
+                "a landed shrapnel must leave carminite fire behind, none in the 5x5 columns around " + floor);
         helper.succeed();
     }
 
@@ -395,55 +431,71 @@ public final class Experiment052Tests {
     public static void assetsMatchTheBlockAndItsStates(GameTestHelper helper) {
         JsonObject states = readJson(helper, "/assets/dawnduskterminal/blockstates/experiment_052.json");
         JsonObject variants = states.getAsJsonObject("variants");
-        helper.assertTrue(variants.getAsJsonObject("active=false").get("model").getAsString()
-                .equals("dawnduskterminal:block/experiment_052"),
-            "the idle variant must point at block/experiment_052, got " + variants.getAsJsonObject("active=false"));
-        helper.assertTrue(variants.getAsJsonObject("active=true").get("model").getAsString()
-                .equals("dawnduskterminal:block/experiment_052_glow"),
-            "the armed variant must point at block/experiment_052_glow, got "
-                + variants.getAsJsonObject("active=true"));
+        helper.assertTrue(
+                variants.getAsJsonObject("active=false")
+                        .get("model")
+                        .getAsString()
+                        .equals("dawnduskterminal:block/experiment_052"),
+                "the idle variant must point at block/experiment_052, got " + variants.getAsJsonObject("active=false"));
+        helper.assertTrue(
+                variants.getAsJsonObject("active=true")
+                        .get("model")
+                        .getAsString()
+                        .equals("dawnduskterminal:block/experiment_052_glow"),
+                "the armed variant must point at block/experiment_052_glow, got "
+                        + variants.getAsJsonObject("active=true"));
 
         assertCubeAll(helper, "block/experiment_052", "dawnduskterminal:block/experiment_052");
         assertCubeAll(helper, "block/experiment_052_glow", "dawnduskterminal:block/experiment_052_glow");
         JsonObject item = readJson(helper, "/assets/dawnduskterminal/models/item/experiment_052.json");
-        helper.assertTrue(item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_052"),
-            "the item model must point at the block model, got " + item.get("parent"));
+        helper.assertTrue(
+                item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_052"),
+                "the item model must point at the block model, got " + item.get("parent"));
 
         // 火焰：方块状态与 minecraft:fire 同构，六个 multipart 段，十个模型都要在里面
         JsonObject fireStates = readJson(helper, "/assets/dawnduskterminal/blockstates/carminite_fire.json");
         JsonArray multipart = fireStates.getAsJsonArray("multipart");
-        helper.assertTrue(multipart.size() == 6,
-            "carminite fire must mirror the six vanilla fire multipart parts, got " + multipart.size());
+        helper.assertTrue(
+                multipart.size() == 6,
+                "carminite fire must mirror the six vanilla fire multipart parts, got " + multipart.size());
         List<String> used = new ArrayList<>();
         for (int part = 0; part < multipart.size(); part++) {
             JsonArray apply = multipart.get(part).getAsJsonObject().getAsJsonArray("apply");
             for (int i = 0; i < apply.size(); i++) {
-                used.add(apply.get(i).getAsJsonObject().get("model").getAsString()
-                    .replace("dawnduskterminal:block/", ""));
+                used.add(apply.get(i)
+                        .getAsJsonObject()
+                        .get("model")
+                        .getAsString()
+                        .replace("dawnduskterminal:block/", ""));
             }
         }
         for (String model : FIRE_MODELS) {
-            helper.assertTrue(used.contains(model),
-                "blockstates/carminite_fire.json must use " + model + ", it uses " + used);
+            helper.assertTrue(
+                    used.contains(model), "blockstates/carminite_fire.json must use " + model + ", it uses " + used);
         }
         for (String model : FIRE_MODELS) {
             JsonObject json = readJson(helper, "/assets/dawnduskterminal/models/block/" + model + ".json");
             String parent = json.get("parent").getAsString();
-            helper.assertTrue(parent.startsWith("minecraft:block/template_fire_"),
-                model + " must reuse a vanilla fire template, got " + parent);
-            helper.assertTrue(json.has("render_type")
-                    && json.get("render_type").getAsString().equals("minecraft:cutout"),
-                model + " must render as cutout, otherwise its transparent pixels turn black");
+            helper.assertTrue(
+                    parent.startsWith("minecraft:block/template_fire_"),
+                    model + " must reuse a vanilla fire template, got " + parent);
+            helper.assertTrue(
+                    json.has("render_type")
+                            && json.get("render_type").getAsString().equals("minecraft:cutout"),
+                    model + " must render as cutout, otherwise its transparent pixels turn black");
             String texture = json.getAsJsonObject("textures").get("fire").getAsString();
-            helper.assertTrue(texture.startsWith("dawnduskterminal:block/carminite_fire_"),
-                model + " must use a carminite fire texture, got " + texture);
+            helper.assertTrue(
+                    texture.startsWith("dawnduskterminal:block/carminite_fire_"),
+                    model + " must use a carminite fire texture, got " + texture);
         }
 
         JsonObject sounds = readJson(helper, "/assets/dawnduskterminal/sounds.json");
-        helper.assertTrue(sounds.has("experiment_052_ignite"),
-            "sounds.json must declare experiment_052_ignite, otherwise the sound event has nothing to play");
-        helper.assertTrue(sounds.has("experiment_052_explode"),
-            "sounds.json must declare experiment_052_explode, otherwise the blast is silent");
+        helper.assertTrue(
+                sounds.has("experiment_052_ignite"),
+                "sounds.json must declare experiment_052_ignite, otherwise the sound event has nothing to play");
+        helper.assertTrue(
+                sounds.has("experiment_052_explode"),
+                "sounds.json must declare experiment_052_explode, otherwise the blast is silent");
         helper.succeed();
     }
 
@@ -452,7 +504,7 @@ public final class Experiment052Tests {
         try (InputStream stream = Experiment052Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read " + resource + ": " + e);
             return new JsonObject();
@@ -461,10 +513,12 @@ public final class Experiment052Tests {
 
     private static void assertCubeAll(GameTestHelper helper, String modelPath, String texture) {
         JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/" + modelPath + ".json");
-        helper.assertTrue(model.get("parent").getAsString().equals("minecraft:block/cube_all"),
-            modelPath + " must stay a cube_all model, got " + model.get("parent"));
-        helper.assertTrue(model.getAsJsonObject("textures").get("all").getAsString().equals(texture),
-            modelPath + " must use " + texture + ", got " + model.getAsJsonObject("textures"));
+        helper.assertTrue(
+                model.get("parent").getAsString().equals("minecraft:block/cube_all"),
+                modelPath + " must stay a cube_all model, got " + model.get("parent"));
+        helper.assertTrue(
+                model.getAsJsonObject("textures").get("all").getAsString().equals(texture),
+                modelPath + " must use " + texture + ", got " + model.getAsJsonObject("textures"));
     }
 
     /**
@@ -472,16 +526,19 @@ public final class Experiment052Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void blastParticlesShareTheEffectSprites(GameTestHelper helper) {
-        JsonArray effect = readJson(helper,
-            "/assets/dawnduskterminal/particles/particle_carminite_effect.json").getAsJsonArray("textures");
-        JsonArray blast = readJson(helper,
-            "/assets/dawnduskterminal/particles/particle_carminite_blast.json").getAsJsonArray("textures");
-        helper.assertTrue(effect.size() == blast.size() && effect.size() == 8,
-            "both particle sheets must carry the same eight sprites, got " + effect.size() + " and " + blast.size());
+        JsonArray effect = readJson(helper, "/assets/dawnduskterminal/particles/particle_carminite_effect.json")
+                .getAsJsonArray("textures");
+        JsonArray blast = readJson(helper, "/assets/dawnduskterminal/particles/particle_carminite_blast.json")
+                .getAsJsonArray("textures");
+        helper.assertTrue(
+                effect.size() == blast.size() && effect.size() == 8,
+                "both particle sheets must carry the same eight sprites, got " + effect.size() + " and "
+                        + blast.size());
         for (int i = 0; i < effect.size(); i++) {
-            helper.assertTrue(effect.get(i).getAsString().equals(blast.get(i).getAsString()),
-                "blast sprite #" + i + " must reuse the effect sprite, got " + blast.get(i)
-                    + " against " + effect.get(i));
+            helper.assertTrue(
+                    effect.get(i).getAsString().equals(blast.get(i).getAsString()),
+                    "blast sprite #" + i + " must reuse the effect sprite, got " + blast.get(i) + " against "
+                            + effect.get(i));
         }
         helper.succeed();
     }
@@ -491,14 +548,15 @@ public final class Experiment052Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void emberParticleUsesTheVanillaDustSprites(GameTestHelper helper) {
-        JsonArray ember = readJson(helper,
-            "/assets/dawnduskterminal/particles/particle_carminite_ember.json").getAsJsonArray("textures");
-        helper.assertTrue(ember.size() == 8,
-            "the ember sheet must carry the eight vanilla dust sprites, got " + ember.size());
+        JsonArray ember = readJson(helper, "/assets/dawnduskterminal/particles/particle_carminite_ember.json")
+                .getAsJsonArray("textures");
+        helper.assertTrue(
+                ember.size() == 8, "the ember sheet must carry the eight vanilla dust sprites, got " + ember.size());
         for (int i = 0; i < ember.size(); i++) {
             String sprite = ember.get(i).getAsString();
-            helper.assertTrue(sprite.startsWith("minecraft:generic_"),
-                "ember sprite #" + i + " must be a vanilla dust sprite, got " + sprite);
+            helper.assertTrue(
+                    sprite.startsWith("minecraft:generic_"),
+                    "ember sprite #" + i + " must be a vanilla dust sprite, got " + sprite);
         }
         helper.succeed();
     }

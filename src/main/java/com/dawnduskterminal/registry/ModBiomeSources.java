@@ -11,10 +11,10 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModBiomeSources {
     public static final DeferredRegister<MapCodec<? extends BiomeSource>> BIOME_SOURCES =
-        DeferredRegister.create(Registries.BIOME_SOURCE, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.BIOME_SOURCE, DawnDuskTerminal.MOD_ID);
 
     public static final DeferredHolder<MapCodec<? extends BiomeSource>, MapCodec<? extends BiomeSource>> PALETTE =
-        BIOME_SOURCES.register("palette", () -> PaletteBiomeSource.CODEC);
+            BIOME_SOURCES.register("palette", () -> PaletteBiomeSource.CODEC);
 
     private ModBiomeSources() {}
 

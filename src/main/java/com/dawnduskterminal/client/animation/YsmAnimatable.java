@@ -1,6 +1,7 @@
 package com.dawnduskterminal.client.animation;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.entity.YsmPackUser;
 import com.dawnduskterminal.geckolib3.core.AnimatableEntity;
 import com.dawnduskterminal.geckolib3.core.PlayState;
 import com.dawnduskterminal.geckolib3.core.builder.Animation;
@@ -8,14 +9,13 @@ import com.dawnduskterminal.geckolib3.core.builder.AnimationBuilder;
 import com.dawnduskterminal.geckolib3.core.builder.ILoopType;
 import com.dawnduskterminal.geckolib3.core.controller.AnimationController;
 import com.dawnduskterminal.geckolib3.core.event.predicate.AnimationEvent;
-import com.dawnduskterminal.entity.YsmPackUser;
 import com.dawnduskterminal.geckolib3.core.molang.context.AnimationContext;
-import com.dawnduskterminal.geckolib3.core.molang.util.StringPool;
 import com.dawnduskterminal.geckolib3.core.molang.storage.VariableStorage;
-import com.dawnduskterminal.geckolib3.geo.IGeoEntity;
-import com.dawnduskterminal.molang.runtime.HashMapStruct;
-import com.dawnduskterminal.geckolib3.geo.animated.ILocationModel;
+import com.dawnduskterminal.geckolib3.core.molang.util.StringPool;
 import com.dawnduskterminal.geckolib3.file.AnimationFile;
+import com.dawnduskterminal.geckolib3.geo.IGeoEntity;
+import com.dawnduskterminal.geckolib3.geo.animated.ILocationModel;
+import com.dawnduskterminal.molang.runtime.HashMapStruct;
 import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -37,10 +37,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M> implements IGeoEntity {
     private final ResourceLocation model;
+
     @Nullable
     private final ResourceLocation animationFile;
+
     @Nullable
     private final ResourceLocation texture;
+
     @Nullable
     private final YsmPack pack;
 
@@ -57,8 +60,11 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
     /** 没有长度的片段（例如 {@code statue} 这类姿态）按循环处理，直到下一个动作打断 */
     private boolean pendingLoop;
 
-    protected YsmAnimatable(M entity, @Nullable ResourceLocation model,
-                            @Nullable ResourceLocation animationFile, @Nullable ResourceLocation texture) {
+    protected YsmAnimatable(
+            M entity,
+            @Nullable ResourceLocation model,
+            @Nullable ResourceLocation animationFile,
+            @Nullable ResourceLocation texture) {
         this(entity, model, animationFile, texture, null);
     }
 
@@ -66,9 +72,12 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
         this(entity, pack.model(), pack.animation(), pack.texture(), pack);
     }
 
-    private YsmAnimatable(M entity, @Nullable ResourceLocation model,
-                          @Nullable ResourceLocation animationFile, @Nullable ResourceLocation texture,
-                          @Nullable YsmPack pack) {
+    private YsmAnimatable(
+            M entity,
+            @Nullable ResourceLocation model,
+            @Nullable ResourceLocation animationFile,
+            @Nullable ResourceLocation texture,
+            @Nullable YsmPack pack) {
         super(entity, 60);
         this.model = model;
         this.animationFile = animationFile;
@@ -76,8 +85,8 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
         this.pack = pack;
         if (model == null) {
             // 模型包路径写错时最典型的症状就是「只有阴影、看不到模型」：几何取不到，渲染层直接跳过
-            DawnDuskTerminal.LOGGER.error("{} 没有可用的模型文件，实体只会留下阴影",
-                entity.getType().toShortString());
+            DawnDuskTerminal.LOGGER.error(
+                    "{} 没有可用的模型文件，实体只会留下阴影", entity.getType().toShortString());
         }
         this.registerControllers();
     }
@@ -148,8 +157,8 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
     public boolean playOnce(String key) {
         String clip = this.pack == null ? key : this.pack.extraClip(key);
         if (clip == null) {
-            DawnDuskTerminal.LOGGER.warn("{} 的模型包没有手动动作 {}",
-                this.entity.getType().toShortString(), key);
+            DawnDuskTerminal.LOGGER.warn(
+                    "{} 的模型包没有手动动作 {}", this.entity.getType().toShortString(), key);
             return false;
         }
         Animation animation = this.getAnimation(clip);
@@ -160,9 +169,7 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
         this.pendingClip = clip;
         this.pendingLoop = animation.animationLength <= 0.0D;
         // 留一点余量：片段播完的那一帧还在插值到最后一帧，提前一 tick 收掉会看到回弹
-        this.pendingUntil = this.pendingLoop
-            ? Double.MAX_VALUE
-            : this.getSeekTime() + animation.animationLength + 1.0D;
+        this.pendingUntil = this.pendingLoop ? Double.MAX_VALUE : this.getSeekTime() + animation.animationLength + 1.0D;
         return true;
     }
 
@@ -177,8 +184,8 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
         VariableStorage storage = (VariableStorage) this.getAnimationProcessor().getPublicVariableStorage();
         if (variable.startsWith("roaming.")) {
             int roamingKey = StringPool.computeIfAbsent("roaming");
-            HashMapStruct struct = storage.getScoped(roamingKey) instanceof HashMapStruct current
-                ? current : new HashMapStruct();
+            HashMapStruct struct =
+                    storage.getScoped(roamingKey) instanceof HashMapStruct current ? current : new HashMapStruct();
             struct.putProperty(StringPool.computeIfAbsent(variable.substring("roaming.".length())), value);
             storage.setScoped(roamingKey, struct);
         } else {
@@ -211,8 +218,13 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
             this.pendingClip = null;
             return PlayState.STOP;
         }
-        event.getController().setAnimation(new AnimationBuilder().addAnimation(this.pendingClip,
-            this.pendingLoop ? ILoopType.EDefaultLoopTypes.LOOP : ILoopType.EDefaultLoopTypes.PLAY_ONCE));
+        event.getController()
+                .setAnimation(new AnimationBuilder()
+                        .addAnimation(
+                                this.pendingClip,
+                                this.pendingLoop
+                                        ? ILoopType.EDefaultLoopTypes.LOOP
+                                        : ILoopType.EDefaultLoopTypes.PLAY_ONCE));
         return PlayState.CONTINUE;
     }
 
@@ -231,8 +243,8 @@ public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M
             return;
         }
         this.addAnimationController(new AnimationController<>(this, controllerName, 0, event -> {
-            event.getController().setAnimation(
-                new AnimationBuilder().addAnimation(clip, ILoopType.EDefaultLoopTypes.LOOP));
+            event.getController()
+                    .setAnimation(new AnimationBuilder().addAnimation(clip, ILoopType.EDefaultLoopTypes.LOOP));
             return PlayState.CONTINUE;
         }));
     }

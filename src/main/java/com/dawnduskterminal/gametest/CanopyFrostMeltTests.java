@@ -28,6 +28,7 @@ public final class CanopyFrostMeltTests {
     private static final BlockPos VANILLA_SNOW = new BlockPos(4, 2, 2);
     /** 炽热方块是光照 15，放在每层下方一格 */
     private static final BlockPos FROST_LIGHT = new BlockPos(2, 1, 2);
+
     private static final BlockPos VANILLA_LIGHT = new BlockPos(4, 1, 2);
 
     @GameTest(template = "ddt_empty")
@@ -35,10 +36,12 @@ public final class CanopyFrostMeltTests {
         ServerLevel level = helper.getLevel();
         // 用 setBlockAndUpdate（即 flag 3），因为光源只有带邻居/光照更新放置时光照引擎才会得知；
         // GameTestHelper.setBlock 用的是 flag 2，光照会一直是 0
-        level.setBlockAndUpdate(helper.absolutePos(FROST_LIGHT),
-            ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState());
-        level.setBlockAndUpdate(helper.absolutePos(VANILLA_LIGHT),
-            ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState());
+        level.setBlockAndUpdate(
+                helper.absolutePos(FROST_LIGHT),
+                ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState());
+        level.setBlockAndUpdate(
+                helper.absolutePos(VANILLA_LIGHT),
+                ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState());
         helper.setBlock(FROST, ModTerrainBlocks.CANOPY_FROST.get());
         helper.setBlock(VANILLA_SNOW, Blocks.SNOW);
 
@@ -48,17 +51,20 @@ public final class CanopyFrostMeltTests {
             BlockPos snowPos = helper.absolutePos(VANILLA_SNOW);
             int frostLight = level.getBrightness(LightLayer.BLOCK, frostPos);
             int snowLight = level.getBrightness(LightLayer.BLOCK, snowPos);
-            helper.assertTrue(frostLight > MELTING_LIGHT && snowLight > MELTING_LIGHT,
-                "precondition: both layers must sit in block light > " + MELTING_LIGHT + ", got "
-                    + frostLight + " and " + snowLight);
+            helper.assertTrue(
+                    frostLight > MELTING_LIGHT && snowLight > MELTING_LIGHT,
+                    "precondition: both layers must sit in block light > " + MELTING_LIGHT + ", got " + frostLight
+                            + " and " + snowLight);
 
             helper.randomTick(VANILLA_SNOW);
-            helper.assertFalse(level.getBlockState(snowPos).is(Blocks.SNOW),
-                "control: vanilla snow must melt in this light, otherwise the assertion below proves nothing");
+            helper.assertFalse(
+                    level.getBlockState(snowPos).is(Blocks.SNOW),
+                    "control: vanilla snow must melt in this light, otherwise the assertion below proves nothing");
 
             helper.randomTick(FROST);
-            helper.assertTrue(level.getBlockState(frostPos).is(ModTerrainBlocks.CANOPY_FROST.get()),
-                "canopy frost must not melt in bright light");
+            helper.assertTrue(
+                    level.getBlockState(frostPos).is(ModTerrainBlocks.CANOPY_FROST.get()),
+                    "canopy frost must not melt in bright light");
             helper.succeed();
         });
     }

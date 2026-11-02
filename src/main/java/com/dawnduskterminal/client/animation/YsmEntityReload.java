@@ -15,8 +15,7 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
  * 旧句柄由 {@code NativeGeoMesh} 的 Cleaner 回收。
  */
 public final class YsmEntityReload extends SimplePreparableReloadListener<Void> {
-    private YsmEntityReload() {
-    }
+    private YsmEntityReload() {}
 
     public static void register(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(new YsmEntityReload());

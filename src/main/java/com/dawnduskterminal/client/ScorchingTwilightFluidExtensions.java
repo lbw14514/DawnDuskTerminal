@@ -37,15 +37,26 @@ public final class ScorchingTwilightFluidExtensions implements IClientFluidTypeE
     }
 
     @Override
-    public Vector3f modifyFogColor(Camera camera, float partialTick, ClientLevel level, int renderDistance,
-                                   float darkenWorldAmount, Vector3f fluidFogColor) {
+    public Vector3f modifyFogColor(
+            Camera camera,
+            float partialTick,
+            ClientLevel level,
+            int renderDistance,
+            float darkenWorldAmount,
+            Vector3f fluidFogColor) {
         // 必须返回新实例：ClientHooks.getFogColor 会就地修改传回的向量
         return new Vector3f(SUBMERSION_FOG);
     }
 
     @Override
-    public void modifyFogRender(Camera camera, FogRenderer.FogMode mode, float renderDistance, float partialTick,
-                                float nearDistance, float farDistance, FogShape shape) {
+    public void modifyFogRender(
+            Camera camera,
+            FogRenderer.FogMode mode,
+            float renderDistance,
+            float partialTick,
+            float nearDistance,
+            float farDistance,
+            FogShape shape) {
         // 接近岩浆的雾浓度：0.25 到 1.0 格
         RenderSystem.setShaderFogStart(0.25F);
         RenderSystem.setShaderFogEnd(1.0F);

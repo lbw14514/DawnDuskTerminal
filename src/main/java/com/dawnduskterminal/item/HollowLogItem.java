@@ -33,8 +33,8 @@ public class HollowLogItem extends BlockItem {
     @Override
     protected BlockState getPlacementState(BlockPlaceContext context) {
         return context.getClickedFace().getAxis().isVertical()
-            ? this.verticalLog.getStateForPlacement(context)
-            : this.horizontalLog.getStateForPlacement(context);
+                ? this.verticalLog.getStateForPlacement(context)
+                : this.horizontalLog.getStateForPlacement(context);
     }
 
     @Override

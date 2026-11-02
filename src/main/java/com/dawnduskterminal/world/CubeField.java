@@ -96,14 +96,16 @@ public final class CubeField {
         while (iterator.hasNext()) {
             BlockPos centre = iterator.next();
             if (Math.abs(at.getX() - centre.getX()) > RADIUS
-                || Math.abs(at.getY() - centre.getY()) > RADIUS
-                || Math.abs(at.getZ() - centre.getZ()) > RADIUS) {
+                    || Math.abs(at.getY() - centre.getY()) > RADIUS
+                    || Math.abs(at.getZ() - centre.getZ()) > RADIUS) {
                 continue;
             }
             // 方块实体在装载/卸载时登记与撤登记，这一格这时一定是载入的；真漏了也不去把区块读进来
             // （LevelReader 那几个 hasChunkAt 在 1.21.1 已废弃，不读区块的那条判定留在 ChunkSource 上）
-            if (!level.getChunkSource().hasChunk(SectionPos.blockToSectionCoord(centre.getX()),
-                SectionPos.blockToSectionCoord(centre.getZ()))) {
+            if (!level.getChunkSource()
+                    .hasChunk(
+                            SectionPos.blockToSectionCoord(centre.getX()),
+                            SectionPos.blockToSectionCoord(centre.getZ()))) {
                 continue;
             }
             if (!level.getBlockState(centre).is(this.block.get())) {

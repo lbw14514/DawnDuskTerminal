@@ -31,10 +31,10 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import org.jetbrains.annotations.Nullable;
 import twilightforest.entity.monster.CarminiteGhastling;
 import twilightforest.init.TFDamageTypes;
 import twilightforest.init.TFEntities;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * 「大恶魂」：暮色恶魂的精英模式
@@ -110,6 +110,7 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
 
     /** 召唤半径：8~24 格；同时也是小鬼被拽回来的距离 */
     private static final double MINION_MIN_RADIUS = 8.0D;
+
     private static final double MINION_MAX_RADIUS = 24.0D;
 
     /** 每隔这么多 tick 补一次索敌、并给没事干的小鬼指一次回家的路 */
@@ -132,7 +133,6 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
 
     /** 暮色森林的泪滴伤害类型；缺暮色森林时退回普通生物伤害 */
 
-
     /**
      * 脸上那两张薄片的状态，必须同步
      *
@@ -141,22 +141,25 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
      */
     /** 模型包 id，空串表示用默认包；见 {@link YsmPackUser} */
     private static final EntityDataAccessor<String> DATA_PACK =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+
     private static final EntityDataAccessor<Integer> DATA_PACK_SEQ =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
     /** 外观开关，形如 {@code hat=1;cloth=2} */
     private static final EntityDataAccessor<String> DATA_ROAMING =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
+
     private static final EntityDataAccessor<Integer> DATA_ROAMING_SEQ =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
     /** 手动动作的按钮键与序号 */
     private static final EntityDataAccessor<String> DATA_ACTION =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Integer> DATA_ACTION_SEQ =
-        SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.STRING);
 
-    private static final EntityDataAccessor<Byte> DATA_FACE = SynchedEntityData.defineId(
-        GhastEliteEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Integer> DATA_ACTION_SEQ =
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.INT);
+
+    private static final EntityDataAccessor<Byte> DATA_FACE =
+            SynchedEntityData.defineId(GhastEliteEntity.class, EntityDataSerializers.BYTE);
 
     /** 平静 / 有索敌 / 蓄力中，顺序与 {@link #DATA_FACE} 里存的序号一致 */
     public enum Face {
@@ -180,16 +183,16 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Ghast.createAttributes()
-            .add(Attributes.MAX_HEALTH, MAX_HEALTH)
-            .add(Attributes.FOLLOW_RANGE, FOLLOW_RANGE);
+                .add(Attributes.MAX_HEALTH, MAX_HEALTH)
+                .add(Attributes.FOLLOW_RANGE, FOLLOW_RANGE);
     }
 
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(5, new RandomFloatAroundGoal(this));
         this.goalSelector.addGoal(7, new EliteLookGoal(this));
-        this.goalSelector.addGoal(7, new GhastShootGoal<GhastEliteEntity>(this,
-            GhastEliteEntity::mouthPosition, this::fireVolley));
+        this.goalSelector.addGoal(
+                7, new GhastShootGoal<GhastEliteEntity>(this, GhastEliteEntity::mouthPosition, this::fireVolley));
         // 普通索敌：100 格内找玩家（跟索敌范围来自 FOLLOW_RANGE），没有原版恶魂那条 |Δy| <= 4 的过滤
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
@@ -342,8 +345,11 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         boolean hurt = super.hurt(source, amount);
-        if (hurt && !this.level().isClientSide() && source.getEntity() instanceof LivingEntity attacker
-            && this.canAttack(attacker) && !this.isAlliedTo(attacker)) {
+        if (hurt
+                && !this.level().isClientSide()
+                && source.getEntity() instanceof LivingEntity attacker
+                && this.canAttack(attacker)
+                && !this.isAlliedTo(attacker)) {
             this.setTarget(attacker);
         }
         return hurt;
@@ -352,9 +358,10 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
     @SuppressWarnings("deprecation")
     @Override
     public SpawnGroupData finalizeSpawn(
-        ServerLevelAccessor level, net.minecraft.world.DifficultyInstance difficulty, MobSpawnType spawnType,
-        @Nullable SpawnGroupData spawnGroupData
-    ) {
+            ServerLevelAccessor level,
+            net.minecraft.world.DifficultyInstance difficulty,
+            MobSpawnType spawnType,
+            @Nullable SpawnGroupData spawnGroupData) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
         if (spawnType != MobSpawnType.COMMAND) {
             // 裙摆在脚下 3 格，抬起来才不会埋进地里；/summon 的坐标由玩家自己写，不动
@@ -367,11 +374,12 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
      * 自然生成判定：和平难度不刷；自然生成时再问 {@link GhastElitePopulation}，加载范围内已有一只就拒绝
      */
     public static boolean checkGhastEliteSpawnRules(
-        EntityType<GhastEliteEntity> type, ServerLevelAccessor level, MobSpawnType spawnType,
-        BlockPos pos, RandomSource random
-    ) {
-        if (level.getDifficulty() == Difficulty.PEACEFUL
-            || !checkMobSpawnRules(type, level, spawnType, pos, random)) {
+            EntityType<GhastEliteEntity> type,
+            ServerLevelAccessor level,
+            MobSpawnType spawnType,
+            BlockPos pos,
+            RandomSource random) {
+        if (level.getDifficulty() == Difficulty.PEACEFUL || !checkMobSpawnRules(type, level, spawnType, pos, random)) {
             return false;
         }
         return spawnType != MobSpawnType.NATURAL || GhastElitePopulation.tryReserve(level.getLevel());
@@ -388,12 +396,9 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
         Vec3 view = elite.getViewVector(1.0F);
         double horizontal = Math.max(Math.abs(view.x), Math.abs(view.z));
         double forward = horizontal < 1.0E-4D
-            ? MOUTH_FORWARD
-            : Math.max(MOUTH_FORWARD, (MOUTH_HALF_WIDTH + FIREBALL_RADIUS) / horizontal);
-        return new Vec3(
-            elite.getX() + view.x * forward,
-            elite.getY() + MOUTH_HEIGHT,
-            elite.getZ() + view.z * forward);
+                ? MOUTH_FORWARD
+                : Math.max(MOUTH_FORWARD, (MOUTH_HALF_WIDTH + FIREBALL_RADIUS) / horizontal);
+        return new Vec3(elite.getX() + view.x * forward, elite.getY() + MOUTH_HEIGHT, elite.getZ() + view.z * forward);
     }
 
     /**
@@ -428,9 +433,7 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
      * 水平方向不放大，也就是只有自己那 8 格见方的一条柱子
      */
     public AABB tearField() {
-        return this.getBoundingBox()
-            .move(0.0D, -TEAR_DROP, 0.0D)
-            .inflate(0.0D, TEAR_DROP, 0.0D);
+        return this.getBoundingBox().move(0.0D, -TEAR_DROP, 0.0D).inflate(0.0D, TEAR_DROP, 0.0D);
     }
 
     private void doTearRain() {
@@ -449,9 +452,16 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
             minion.discard();
             this.heal(TEAR_HEAL);
         }
-        level.sendParticles(ParticleTypes.FALLING_DRIPSTONE_WATER,
-            this.getX(), this.getY() + this.getBbHeight() * 0.5D, this.getZ(),
-            32, this.getBbWidth() * 0.75D, this.getBbHeight() * 0.5D, this.getBbWidth() * 0.75D, 0.02D);
+        level.sendParticles(
+                ParticleTypes.FALLING_DRIPSTONE_WATER,
+                this.getX(),
+                this.getY() + this.getBbHeight() * 0.5D,
+                this.getZ(),
+                32,
+                this.getBbWidth() * 0.75D,
+                this.getBbHeight() * 0.5D,
+                this.getBbWidth() * 0.75D,
+                0.02D);
     }
 
     private DamageSource tearDamage() {
@@ -471,11 +481,12 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
                 continue;
             }
             double angle = this.getRandom().nextDouble() * Mth.TWO_PI;
-            double distance = MINION_MIN_RADIUS
-                + this.getRandom().nextDouble() * (MINION_MAX_RADIUS - MINION_MIN_RADIUS);
+            double distance =
+                    MINION_MIN_RADIUS + this.getRandom().nextDouble() * (MINION_MAX_RADIUS - MINION_MIN_RADIUS);
             double x = this.getX() + Math.cos(angle) * distance;
             double z = this.getZ() + Math.sin(angle) * distance;
-            double y = this.getY() + this.getBbHeight() * 0.5D + (this.getRandom().nextDouble() - 0.5D) * 12.0D;
+            double y =
+                    this.getY() + this.getBbHeight() * 0.5D + (this.getRandom().nextDouble() - 0.5D) * 12.0D;
             minion.moveTo(x, y, z, this.getRandom().nextFloat() * 360.0F, 0.0F);
             // 别开在树干或地里：被卡住的小鬼几 tick 就闷死了
             for (int attempt = 0; attempt < 8 && !level.noCollision(minion); attempt++) {
@@ -518,8 +529,8 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
         }
         LivingEntity target = this.getTarget();
         Vec3 center = this.getBoundingBox().getCenter();
-        for (CarminiteGhastling minion : level.getEntitiesOfClass(CarminiteGhastling.class,
-            this.getBoundingBox().inflate(MINION_TEND_RADIUS))) {
+        for (CarminiteGhastling minion : level.getEntitiesOfClass(
+                CarminiteGhastling.class, this.getBoundingBox().inflate(MINION_TEND_RADIUS))) {
             if (minion.getTarget() == null && target != null && target.isAlive() && this.canAttack(target)) {
                 minion.setTarget(target);
             }
@@ -540,8 +551,6 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
         Vec3 direction = horizontal.lengthSqr() < 1.0E-4D ? new Vec3(1.0D, 0.0D, 0.0D) : horizontal.normalize();
         return eliteCenter.add(direction.scale(MINION_HOLD_DISTANCE)).add(0.0D, 1.0D, 0.0D);
     }
-
-
 
     /**
      * 原版 {@code Ghast.RandomFloatAroundGoal}：每 16 格内的一个随机点为下一段路的终点
@@ -587,8 +596,9 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
                 x = this.ghast.getX() + (double) ((random.nextFloat() * 2.0F - 1.0F) * 16.0F);
                 y = this.ghast.getY() + (double) ((random.nextFloat() * 2.0F - 1.0F) * 16.0F);
                 z = this.ghast.getZ() + (double) ((random.nextFloat() * 2.0F - 1.0F) * 16.0F);
-                AABB destination = this.ghast.getBoundingBox()
-                    .move(x - this.ghast.getX(), y - this.ghast.getY(), z - this.ghast.getZ());
+                AABB destination = this.ghast
+                        .getBoundingBox()
+                        .move(x - this.ghast.getX(), y - this.ghast.getY(), z - this.ghast.getZ());
                 if (this.ghast.level().noCollision(this.ghast, destination)) {
                     break;
                 }
@@ -659,9 +669,7 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
             Vec3 direction = aim.yRot((float) spread);
             // 三发沿射线拉开 2 格、左右再错开 1.2 格：出膛时彼此至少隔 1 格，
             // 加上 canHitEntity 不认弹体，不会再出现「三发互相引爆」
-            Vec3 spawn = muzzle
-                .add(aim.scale(i * 2.0D))
-                .add(right.scale((i - 1) * 1.2D));
+            Vec3 spawn = muzzle.add(aim.scale(i * 2.0D)).add(right.scale((i - 1) * 1.2D));
             GhastEliteFireball fireball = new GhastEliteFireball(level, this, direction);
             fireball.setPos(spawn.x, spawn.y, spawn.z);
             serverLevel.addFreshEntity(fireball);
@@ -715,8 +723,9 @@ public class GhastEliteEntity extends Ghast implements YsmPackUser {
                 this.operation = MoveControl.Operation.WAIT;
                 return;
             }
-            this.ghast.setDeltaMovement(this.ghast.getDeltaMovement()
-                .add(dx / distance * 0.1D, dy / distance * 0.1D, dz / distance * 0.1D));
+            this.ghast.setDeltaMovement(this.ghast
+                    .getDeltaMovement()
+                    .add(dx / distance * 0.1D, dy / distance * 0.1D, dz / distance * 0.1D));
         }
 
         /**

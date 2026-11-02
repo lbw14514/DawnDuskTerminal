@@ -75,9 +75,14 @@ public final class CubeFieldMarker {
         }
         RandomSource random = level.getRandom();
         // 方块自己那一格里飘一颗：那边每 tick 都发，位置随机落在这一格内
-        level.addParticle(DustParticleOptions.REDSTONE,
-            pos.getX() + random.nextFloat(), pos.getY() + random.nextFloat(), pos.getZ() + random.nextFloat(),
-            0.0D, 0.0D, 0.0D);
+        level.addParticle(
+                DustParticleOptions.REDSTONE,
+                pos.getX() + random.nextFloat(),
+                pos.getY() + random.nextFloat(),
+                pos.getZ() + random.nextFloat(),
+                0.0D,
+                0.0D,
+                0.0D);
         if (random.nextInt(OUTLINE_CHANCE) == 0) {
             for (int draw = 0; draw < OUTLINES_PER_FLASH; draw++) {
                 outline(level, pos, random, random.nextInt(OUTLINES));
@@ -187,24 +192,26 @@ public final class CubeFieldMarker {
                 sy -= r;
                 dy -= r;
             }
-            default -> {
-            }
+            default -> {}
         }
         return new double[] {sx, sy, sz, dx, dy, dz};
     }
 
     /** 一段红石粉线：沿长度均匀采样，每格 {@value #PARTICLES_PER_BLOCK} 颗，抖动照那边（±0.005） */
-    private static void line(Level level, RandomSource random, double sx, double sy, double sz,
-                             double dx, double dy, double dz) {
+    private static void line(
+            Level level, RandomSource random, double sx, double sy, double sz, double dx, double dy, double dz) {
         double length = Math.sqrt((dx - sx) * (dx - sx) + (dy - sy) * (dy - sy) + (dz - sz) * (dz - sz));
         int particles = Math.max(2, (int) Math.round(PARTICLES_PER_BLOCK * length));
         for (int i = 0; i < particles; i++) {
             double t = i / (particles - 1.0D);
-            level.addParticle(DustParticleOptions.REDSTONE,
-                sx + (dx - sx) * t + random.nextFloat() * 0.005D,
-                sy + (dy - sy) * t + random.nextFloat() * 0.005D,
-                sz + (dz - sz) * t + random.nextFloat() * 0.005D,
-                0.0D, 0.0D, 0.0D);
+            level.addParticle(
+                    DustParticleOptions.REDSTONE,
+                    sx + (dx - sx) * t + random.nextFloat() * 0.005D,
+                    sy + (dy - sy) * t + random.nextFloat() * 0.005D,
+                    sz + (dz - sz) * t + random.nextFloat() * 0.005D,
+                    0.0D,
+                    0.0D,
+                    0.0D);
         }
     }
 }

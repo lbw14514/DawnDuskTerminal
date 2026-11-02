@@ -42,8 +42,15 @@ public final class RequiemNoteParticle extends TextureSheetParticle {
     /** 寿命在 {@link #LIFETIME} 上下浮动这么多 tick，免得每一圈同时出生、同时消失 */
     private static final int LIFETIME_JITTER = 4;
 
-    private RequiemNoteParticle(ClientLevel level, double x, double y, double z,
-                                double velocityX, double velocityY, double velocityZ, SpriteSet sprites) {
+    private RequiemNoteParticle(
+            ClientLevel level,
+            double x,
+            double y,
+            double z,
+            double velocityX,
+            double velocityY,
+            double velocityZ,
+            SpriteSet sprites) {
         super(level, x, y, z);
         this.xd = velocityX;
         this.yd = velocityY + LIFT;
@@ -72,7 +79,7 @@ public final class RequiemNoteParticle extends TextureSheetParticle {
 
     public static ParticleProvider<SimpleParticleType> provider(SpriteSet sprites) {
         return (type, level, x, y, z, velocityX, velocityY, velocityZ) ->
-            new RequiemNoteParticle(level, x, y, z, velocityX, velocityY, velocityZ, sprites);
+                new RequiemNoteParticle(level, x, y, z, velocityX, velocityY, velocityZ, sprites);
     }
 
     @Override
@@ -83,6 +90,6 @@ public final class RequiemNoteParticle extends TextureSheetParticle {
     /** 与原版音符一样从 0 涨到满，只是基数换成了这里的尺寸 */
     @Override
     public float getQuadSize(float partialTick) {
-        return this.quadSize * Mth.clamp((this.age + partialTick) / (float)this.lifetime * 32.0F, 0.0F, 1.0F);
+        return this.quadSize * Mth.clamp((this.age + partialTick) / (float) this.lifetime * 32.0F, 0.0F, 1.0F);
     }
 }

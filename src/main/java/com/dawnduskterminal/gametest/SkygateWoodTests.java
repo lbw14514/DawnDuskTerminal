@@ -9,13 +9,13 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -51,36 +51,49 @@ public final class SkygateWoodTests {
         placer.moveTo(ground.getX() + 0.5D, ground.getY() + 1.0D, ground.getZ() + 0.5D);
 
         ItemStack stack = new ItemStack(item);
-        InteractionResult clickedTop = stack.useOn(new BlockPlaceContext(placer, InteractionHand.MAIN_HAND, stack,
-            new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false)));
-        helper.assertTrue(clickedTop.consumesAction(),
-            "placing the hollow log onto a top face must succeed, got " + clickedTop);
+        InteractionResult clickedTop = stack.useOn(new BlockPlaceContext(
+                placer,
+                InteractionHand.MAIN_HAND,
+                stack,
+                new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false)));
+        helper.assertTrue(
+                clickedTop.consumesAction(), "placing the hollow log onto a top face must succeed, got " + clickedTop);
 
         BlockPos verticalPos = ground.above();
-        helper.assertTrue(level.getBlockState(verticalPos).is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get()),
-            "a top face click must place the vertical hollow log, got " + level.getBlockState(verticalPos));
+        helper.assertTrue(
+                level.getBlockState(verticalPos).is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get()),
+                "a top face click must place the vertical hollow log, got " + level.getBlockState(verticalPos));
 
         BlockPos wall = ground.offset(3, 0, 0);
         level.setBlockAndUpdate(wall, Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(wall.north(), Blocks.AIR.defaultBlockState());
         ItemStack sideStack = new ItemStack(item);
-        InteractionResult clickedSide = sideStack.useOn(new BlockPlaceContext(placer, InteractionHand.MAIN_HAND, sideStack,
-            new BlockHitResult(Vec3.atCenterOf(wall), Direction.NORTH, wall, false)));
-        helper.assertTrue(clickedSide.consumesAction(),
-            "placing the hollow log onto a side face must succeed, got " + clickedSide);
+        InteractionResult clickedSide = sideStack.useOn(new BlockPlaceContext(
+                placer,
+                InteractionHand.MAIN_HAND,
+                sideStack,
+                new BlockHitResult(Vec3.atCenterOf(wall), Direction.NORTH, wall, false)));
+        helper.assertTrue(
+                clickedSide.consumesAction(),
+                "placing the hollow log onto a side face must succeed, got " + clickedSide);
 
         BlockState horizontal = level.getBlockState(wall.north());
-        helper.assertTrue(horizontal.is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_HORIZONTAL.get()),
-            "a side face click must place the horizontal hollow log, got " + horizontal);
-        helper.assertTrue(horizontal.getValue(HorizontalHollowLogBlock.HORIZONTAL_AXIS) == Direction.Axis.Z,
-            "the horizontal hollow log must follow the clicked face axis, got "
-                + horizontal.getValue(HorizontalHollowLogBlock.HORIZONTAL_AXIS));
+        helper.assertTrue(
+                horizontal.is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_HORIZONTAL.get()),
+                "a side face click must place the horizontal hollow log, got " + horizontal);
+        helper.assertTrue(
+                horizontal.getValue(HorizontalHollowLogBlock.HORIZONTAL_AXIS) == Direction.Axis.Z,
+                "the horizontal hollow log must follow the clicked face axis, got "
+                        + horizontal.getValue(HorizontalHollowLogBlock.HORIZONTAL_AXIS));
 
-        helper.assertTrue(horizontal.getBlock().asItem() == item,
-            "the horizontal hollow log must drop the shared hollow log item, got " + horizontal.getBlock().asItem());
-        helper.assertTrue(level.getBlockState(verticalPos).getBlock().asItem() == item,
-            "the vertical hollow log must drop the shared hollow log item, got "
-                + level.getBlockState(verticalPos).getBlock().asItem());
+        helper.assertTrue(
+                horizontal.getBlock().asItem() == item,
+                "the horizontal hollow log must drop the shared hollow log item, got "
+                        + horizontal.getBlock().asItem());
+        helper.assertTrue(
+                level.getBlockState(verticalPos).getBlock().asItem() == item,
+                "the vertical hollow log must drop the shared hollow log item, got "
+                        + level.getBlockState(verticalPos).getBlock().asItem());
         helper.succeed();
     }
 
@@ -91,7 +104,8 @@ public final class SkygateWoodTests {
         BlockPos pos = helper.absolutePos(BlockPos.ZERO).above(PLACEMENT_LIFT);
         level.setBlockAndUpdate(pos.below(), Blocks.STONE.defaultBlockState());
 
-        BlockState vertical = ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get().defaultBlockState();
+        BlockState vertical =
+                ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get().defaultBlockState();
         level.setBlockAndUpdate(pos, vertical);
 
         Player placer = helper.makeMockPlayer(GameType.SURVIVAL);
@@ -103,29 +117,37 @@ public final class SkygateWoodTests {
         helper.assertTrue(placed.consumesAction(), "putting a ladder into the hollow log must succeed, got " + placed);
 
         BlockState climbed = level.getBlockState(pos);
-        helper.assertTrue(climbed.is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE.get()),
-            "a ladder must turn the hollow log into its climbable block, got " + climbed);
-        helper.assertTrue(climbed.getValue(ClimbableHollowLogBlock.VARIANT) == HollowLogVariants.Climbable.LADDER,
-            "a ladder must pick the ladder variant, got " + climbed.getValue(ClimbableHollowLogBlock.VARIANT));
-        helper.assertTrue(climbed.is(BlockTags.CLIMBABLE),
-            "the climbable hollow log must be in minecraft:climbable, otherwise it cannot be climbed");
+        helper.assertTrue(
+                climbed.is(ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE.get()),
+                "a ladder must turn the hollow log into its climbable block, got " + climbed);
+        helper.assertTrue(
+                climbed.getValue(ClimbableHollowLogBlock.VARIANT) == HollowLogVariants.Climbable.LADDER,
+                "a ladder must pick the ladder variant, got " + climbed.getValue(ClimbableHollowLogBlock.VARIANT));
+        helper.assertTrue(
+                climbed.is(BlockTags.CLIMBABLE),
+                "the climbable hollow log must be in minecraft:climbable, otherwise it cannot be climbed");
         helper.succeed();
     }
 
     /** 去皮走 NeoForge 数据图，木不能只在代码里注册、映射漏写 */
     @GameTest(template = "ddt_empty")
     public static void axeStripsTheWoodKeepingTheAxis(GameTestHelper helper) {
-        BlockState wood = ModTerrainBlocks.SKYGATE_PINE_WOOD.get().defaultBlockState()
-            .setValue(RotatedPillarBlock.AXIS, Direction.Axis.Z);
+        BlockState wood = ModTerrainBlocks.SKYGATE_PINE_WOOD
+                .get()
+                .defaultBlockState()
+                .setValue(RotatedPillarBlock.AXIS, Direction.Axis.Z);
 
         BlockState stripped = AxeItem.getAxeStrippingState(wood);
 
-        helper.assertTrue(stripped != null,
-            "the strippables data map must map skygate_pine_wood to a stripped block, AxeItem returned null");
-        helper.assertTrue(stripped.is(ModTerrainBlocks.STRIPPED_SKYGATE_PINE_WOOD.get()),
-            "skygate_pine_wood must strip into stripped_skygate_pine_wood, got " + stripped);
-        helper.assertTrue(stripped.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.Z,
-            "stripping must keep the log axis, got " + stripped);
+        helper.assertTrue(
+                stripped != null,
+                "the strippables data map must map skygate_pine_wood to a stripped block, AxeItem returned null");
+        helper.assertTrue(
+                stripped.is(ModTerrainBlocks.STRIPPED_SKYGATE_PINE_WOOD.get()),
+                "skygate_pine_wood must strip into stripped_skygate_pine_wood, got " + stripped);
+        helper.assertTrue(
+                stripped.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.Z,
+                "stripping must keep the log axis, got " + stripped);
         helper.succeed();
     }
 }

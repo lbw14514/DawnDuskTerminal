@@ -40,6 +40,7 @@ public final class StringSpawner {
     private static final int ATTEMPTS = 10;
     /** 距离玩家 12 到 44 格，太近会在脸上刷出来，太远没有意义 */
     private static final double MIN_DISTANCE = 12.0D;
+
     private static final double MAX_DISTANCE = 44.0D;
     /** 玩家周围 48 格内的上限 */
     private static final int MAX_NEARBY = 5;
@@ -102,8 +103,8 @@ public final class StringSpawner {
             }
             double y = surfaceY - 1 + fluid.getHeight(level, fluidPos) + StringEntity.SURFACE_OFFSET;
             entity.moveTo(x + 0.5D, y, z + 0.5D, random.nextFloat() * 360.0F, 0.0F);
-            entity.finalizeSpawn(level, level.getCurrentDifficultyAt(entity.blockPosition()),
-                MobSpawnType.NATURAL, null);
+            entity.finalizeSpawn(
+                    level, level.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.NATURAL, null);
             if (!level.noCollision(entity)) {
                 continue;
             }

@@ -40,16 +40,20 @@ public final class Experiment027Tests {
 
     @GameTest(template = "ddt_empty")
     public static void itemReplacesThePlaceholderAndKeepsUsingWhileHeld(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(27),
-            "number 27 must not be a placeholder anymore, it has a real item now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(27),
+                "number 27 must not be a placeholder anymore, it has a real item now");
         ItemStack stack = new ItemStack(ModExperimentItems.EXPERIMENT_027.get());
-        helper.assertTrue(stack.getItem() instanceof Experiment027Item,
-            SUBJECT + " must be an " + Experiment027Item.class.getSimpleName() + ", got " + stack.getItem());
-        helper.assertTrue(stack.getUseDuration(null) == 72000,
-            SUBJECT + " must keep using as long as a bow (72000), got " + stack.getUseDuration(null));
+        helper.assertTrue(
+                stack.getItem() instanceof Experiment027Item,
+                SUBJECT + " must be an " + Experiment027Item.class.getSimpleName() + ", got " + stack.getItem());
+        helper.assertTrue(
+                stack.getUseDuration(null) == 72000,
+                SUBJECT + " must keep using as long as a bow (72000), got " + stack.getUseDuration(null));
         // 服务端发粒子用的是同一个类型，注册丢了这里先红
-        helper.assertTrue(BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_experiment_027")),
-            "dawnduskterminal:particle_experiment_027 must be registered");
+        helper.assertTrue(
+                BuiltInRegistries.PARTICLE_TYPE.containsKey(DawnDuskTerminal.id("particle_experiment_027")),
+                "dawnduskterminal:particle_experiment_027 must be registered");
         helper.succeed();
     }
 
@@ -66,16 +70,19 @@ public final class Experiment027Tests {
 
         Vec3 point = Experiment027Item.surfacePoint(level, player);
         helper.assertTrue(point != null, "looking straight at a stone block within reach must hit it");
-        helper.assertTrue(Math.abs(point.x - (target.getX() + 0.5D)) < 1.0E-3D,
-            "the point must stay on the block's x center, got " + point
-                + " [eye=" + player.getEyePosition() + " view=" + player.getViewVector(1.0F) + "]");
-        helper.assertTrue(Math.abs(point.y - (target.getY() + 0.5D)) < 1.0E-3D,
-            "the point must stay on the block's y center, got " + point);
+        helper.assertTrue(
+                Math.abs(point.x - (target.getX() + 0.5D)) < 1.0E-3D,
+                "the point must stay on the block's x center, got " + point + " [eye=" + player.getEyePosition()
+                        + " view=" + player.getViewVector(1.0F) + "]");
+        helper.assertTrue(
+                Math.abs(point.y - (target.getY() + 0.5D)) < 1.0E-3D,
+                "the point must stay on the block's y center, got " + point);
         // 北面的落点再沿法线让出 SURFACE_OFFSET，免得粒子半边陷进方块里
         double expectedZ = target.getZ() - Experiment027Item.SURFACE_OFFSET;
-        helper.assertTrue(Math.abs(point.z - expectedZ) < 1.0E-3D,
-            "the point must sit on the north face offset by " + Experiment027Item.SURFACE_OFFSET
-                + ", got " + point);
+        helper.assertTrue(
+                Math.abs(point.z - expectedZ) < 1.0E-3D,
+                "the point must sit on the north face offset by " + Experiment027Item.SURFACE_OFFSET + ", got "
+                        + point);
         helper.succeed();
     }
 
@@ -86,8 +93,9 @@ public final class Experiment027Tests {
         player.setPos(1.5D, 2.0D, 1.5D);
         // 掉头：身后是空结构，射线什么都打不到
         aim(player, 180.0F, 0.0F);
-        helper.assertTrue(Experiment027Item.surfacePoint(level, player) == null,
-            "looking into the air must not produce a particle point");
+        helper.assertTrue(
+                Experiment027Item.surfacePoint(level, player) == null,
+                "looking into the air must not produce a particle point");
         helper.succeed();
     }
 
@@ -101,11 +109,13 @@ public final class Experiment027Tests {
         // 同样正对，但站到 5.5 格外：默认 block_interaction_range 是 4.5
         player.setPos(target.getX() + 0.5D, target.getY() + 0.5D - EYE_HEIGHT, target.getZ() - 5.5D);
         aim(player, 0.0F, 0.0F);
-        helper.assertTrue(player.blockInteractionRange() < 5.5D,
-            "the default block interaction range must be shorter than 5.5 to make this test meaningful, got "
-                + player.blockInteractionRange());
-        helper.assertTrue(Experiment027Item.surfacePoint(level, player) == null,
-            "a block beyond the block interaction range must not be hit");
+        helper.assertTrue(
+                player.blockInteractionRange() < 5.5D,
+                "the default block interaction range must be shorter than 5.5 to make this test meaningful, got "
+                        + player.blockInteractionRange());
+        helper.assertTrue(
+                Experiment027Item.surfacePoint(level, player) == null,
+                "a block beyond the block interaction range must not be hit");
         helper.succeed();
     }
 

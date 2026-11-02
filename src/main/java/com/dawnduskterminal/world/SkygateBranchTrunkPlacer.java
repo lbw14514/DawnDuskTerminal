@@ -45,55 +45,44 @@ public class SkygateBranchTrunkPlacer extends TrunkPlacer {
      * 在 1.21.1 里最多只能拼到八项，九个平铺字段编不出来。
      */
     public record Branches(
-        BlockStateProvider provider,
-        IntProvider count,
-        IntProvider length,
-        BranchBand band,
-        float riseChance
-    ) {
+            BlockStateProvider provider, IntProvider count, IntProvider length, BranchBand band, float riseChance) {
         public static final Codec<Branches> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BlockStateProvider.CODEC.fieldOf("provider").forGetter(Branches::provider),
-            IntProvider.codec(1, 16).fieldOf("count").forGetter(Branches::count),
-            IntProvider.codec(1, 16).fieldOf("length").forGetter(Branches::length),
-            BranchBand.CODEC.fieldOf("band").forGetter(Branches::band),
-            Codec.floatRange(0.0F, 1.0F).fieldOf("rise_chance").forGetter(Branches::riseChance)
-        ).apply(instance, Branches::new));
+                        BlockStateProvider.CODEC.fieldOf("provider").forGetter(Branches::provider),
+                        IntProvider.codec(1, 16).fieldOf("count").forGetter(Branches::count),
+                        IntProvider.codec(1, 16).fieldOf("length").forGetter(Branches::length),
+                        BranchBand.CODEC.fieldOf("band").forGetter(Branches::band),
+                        Codec.floatRange(0.0F, 1.0F).fieldOf("rise_chance").forGetter(Branches::riseChance))
+                .apply(instance, Branches::new));
     }
 
     /** 分枝高度带占树干高度的比例：从 {@code min} 到 {@code max} */
     public record BranchBand(float min, float max) {
         public static final Codec<BranchBand> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.floatRange(0.0F, 1.0F).fieldOf("min").forGetter(BranchBand::min),
-            Codec.floatRange(0.0F, 1.0F).fieldOf("max").forGetter(BranchBand::max)
-        ).apply(instance, BranchBand::new));
+                        Codec.floatRange(0.0F, 1.0F).fieldOf("min").forGetter(BranchBand::min),
+                        Codec.floatRange(0.0F, 1.0F).fieldOf("max").forGetter(BranchBand::max))
+                .apply(instance, BranchBand::new));
     }
 
     /** 叶团水平尺寸偏移：枝顶逐枝抖动用 {@code branch}，树干顶那团封顶用 {@code crown} */
     public record RadiusOffsets(IntProvider branch, int crown) {
         public static final Codec<RadiusOffsets> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            IntProvider.codec(-4, 4).fieldOf("branch").forGetter(RadiusOffsets::branch),
-            Codec.intRange(-4, 4).fieldOf("crown").forGetter(RadiusOffsets::crown)
-        ).apply(instance, RadiusOffsets::new));
+                        IntProvider.codec(-4, 4).fieldOf("branch").forGetter(RadiusOffsets::branch),
+                        Codec.intRange(-4, 4).fieldOf("crown").forGetter(RadiusOffsets::crown))
+                .apply(instance, RadiusOffsets::new));
     }
 
-    public static final MapCodec<SkygateBranchTrunkPlacer> CODEC = RecordCodecBuilder.mapCodec(
-        instance -> trunkPlacerParts(instance)
-            .and(Branches.CODEC.fieldOf("branches").forGetter(placer -> placer.branches))
-            .and(RadiusOffsets.CODEC.fieldOf("radius_offsets").forGetter(placer -> placer.radiusOffsets))
-            .apply(instance, SkygateBranchTrunkPlacer::new)
-    );
+    public static final MapCodec<SkygateBranchTrunkPlacer> CODEC =
+            RecordCodecBuilder.mapCodec(instance -> trunkPlacerParts(instance)
+                    .and(Branches.CODEC.fieldOf("branches").forGetter(placer -> placer.branches))
+                    .and(RadiusOffsets.CODEC.fieldOf("radius_offsets").forGetter(placer -> placer.radiusOffsets))
+                    .apply(instance, SkygateBranchTrunkPlacer::new));
     private static final float TWO_PI = (float) (Math.PI * 2.0);
 
     private final Branches branches;
     private final RadiusOffsets radiusOffsets;
 
     public SkygateBranchTrunkPlacer(
-        int baseHeight,
-        int heightRandA,
-        int heightRandB,
-        Branches branches,
-        RadiusOffsets radiusOffsets
-    ) {
+            int baseHeight, int heightRandA, int heightRandB, Branches branches, RadiusOffsets radiusOffsets) {
         super(baseHeight, heightRandA, heightRandB);
         this.branches = branches;
         this.radiusOffsets = radiusOffsets;
@@ -106,13 +95,12 @@ public class SkygateBranchTrunkPlacer extends TrunkPlacer {
 
     @Override
     public List<FoliagePlacer.FoliageAttachment> placeTrunk(
-        LevelSimulatedReader level,
-        BiConsumer<BlockPos, BlockState> setter,
-        RandomSource random,
-        int height,
-        BlockPos origin,
-        TreeConfiguration config
-    ) {
+            LevelSimulatedReader level,
+            BiConsumer<BlockPos, BlockState> setter,
+            RandomSource random,
+            int height,
+            BlockPos origin,
+            TreeConfiguration config) {
         setDirtAt(level, setter, random, origin.below(), config);
 
         for (int y = 0; y < height; y++) {
@@ -151,27 +139,35 @@ public class SkygateBranchTrunkPlacer extends TrunkPlacer {
                 reachX = length;
             }
 
-            this.growBranch(level, setter, random, config, attachments, origin.above(y), reachX, reachZ,
-                this.radiusOffsets.branch().sample(random), highestLeafY);
+            this.growBranch(
+                    level,
+                    setter,
+                    random,
+                    config,
+                    attachments,
+                    origin.above(y),
+                    reachX,
+                    reachZ,
+                    this.radiusOffsets.branch().sample(random),
+                    highestLeafY);
         }
 
         return attachments;
     }
 
     private void growBranch(
-        LevelSimulatedReader level,
-        BiConsumer<BlockPos, BlockState> setter,
-        RandomSource random,
-        TreeConfiguration config,
-        List<FoliagePlacer.FoliageAttachment> attachments,
-        BlockPos start,
-        int reachX,
-        int reachZ,
-        int radiusOffset,
-        int highestLeafY
-    ) {
-        Function<BlockState, BlockState> alongBranch = axisState(
-            Math.abs(reachX) >= Math.abs(reachZ) ? Direction.Axis.X : Direction.Axis.Z);
+            LevelSimulatedReader level,
+            BiConsumer<BlockPos, BlockState> setter,
+            RandomSource random,
+            TreeConfiguration config,
+            List<FoliagePlacer.FoliageAttachment> attachments,
+            BlockPos start,
+            int reachX,
+            int reachZ,
+            int radiusOffset,
+            int highestLeafY) {
+        Function<BlockState, BlockState> alongBranch =
+                axisState(Math.abs(reachX) >= Math.abs(reachZ) ? Direction.Axis.X : Direction.Axis.Z);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
         int steps = Math.max(Math.abs(reachX), Math.abs(reachZ));
@@ -198,6 +194,7 @@ public class SkygateBranchTrunkPlacer extends TrunkPlacer {
     }
 
     private static Function<BlockState, BlockState> axisState(Direction.Axis axis) {
-        return state -> state.hasProperty(RotatedPillarBlock.AXIS) ? state.setValue(RotatedPillarBlock.AXIS, axis) : state;
+        return state ->
+                state.hasProperty(RotatedPillarBlock.AXIS) ? state.setValue(RotatedPillarBlock.AXIS, axis) : state;
     }
 }

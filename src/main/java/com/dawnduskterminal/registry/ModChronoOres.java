@@ -25,25 +25,29 @@ public final class ModChronoOres {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DawnDuskTerminal.MOD_ID);
 
     public static final DeferredBlock<Block> DEEP_SCARLET = BLOCKS.registerSimpleBlock(
-        "charnockite_scarlet_molybdenum_ore", BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_RED)
-            .requiresCorrectToolForDrops()
-            .strength(5F, 9.0F)
-            .sound(SoundType.STONE));
+            "charnockite_scarlet_molybdenum_ore",
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .requiresCorrectToolForDrops()
+                    .strength(5F, 9.0F)
+                    .sound(SoundType.STONE));
 
     public static final DeferredBlock<Block> CARID_ORE = BLOCKS.registerSimpleBlock(
-        "carid_ore", BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_CYAN)
-            .requiresCorrectToolForDrops()
-            .strength(3.0F, 9.0F)
-            .sound(SoundType.STONE));
+            "carid_ore",
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0F, 9.0F)
+                    .sound(SoundType.STONE));
 
     public static final DeferredBlock<DiracOreBlock> DIRAC_ORE = BLOCKS.registerBlock(
-        "dirac_ore", DiracOreBlock::new, BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_PURPLE)
-            .requiresCorrectToolForDrops()
-            .strength(6.0F, 9.0F)
-            .sound(SoundType.STONE));
+            "dirac_ore",
+            DiracOreBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .requiresCorrectToolForDrops()
+                    .strength(6.0F, 9.0F)
+                    .sound(SoundType.STONE));
 
     public static final DeferredItem<BlockItem> DEEP_SCARLET_ITEM = ITEMS.registerSimpleBlockItem(DEEP_SCARLET);
     public static final DeferredItem<BlockItem> CARID_ORE_ITEM = ITEMS.registerSimpleBlockItem(CARID_ORE);

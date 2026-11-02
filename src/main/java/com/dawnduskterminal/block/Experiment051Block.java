@@ -68,9 +68,11 @@ public class Experiment051Block extends BaseEntityBlock {
     /** 只有服务端刻：配方与进度都在服务端算，客户端拿 {@code ContainerData} 显示 */
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.EXPERIMENT_051.get(),
-            Experiment051BlockEntity::serverTick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide
+                ? null
+                : createTickerHelper(type, ModBlockEntities.EXPERIMENT_051.get(), Experiment051BlockEntity::serverTick);
     }
 
     /**
@@ -80,8 +82,8 @@ public class Experiment051Block extends BaseEntityBlock {
      * 拿到的就是方块实体自己；坐标由它的 {@code writeClientSideData} 带给客户端
      */
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -120,8 +122,15 @@ public class Experiment051Block extends BaseEntityBlock {
             return;
         }
         if (random.nextDouble() < 0.1D) {
-            level.playLocalSound(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D,
-                SoundEvents.FURNACE_FIRE_CRACKLE, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+            level.playLocalSound(
+                    pos.getX() + 0.5D,
+                    pos.getY(),
+                    pos.getZ() + 0.5D,
+                    SoundEvents.FURNACE_FIRE_CRACKLE,
+                    SoundSource.BLOCKS,
+                    1.0F,
+                    1.0F,
+                    false);
         }
     }
 

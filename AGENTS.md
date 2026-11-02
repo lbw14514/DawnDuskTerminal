@@ -50,6 +50,8 @@ Java 版本为 Java 21。
 
 `./gradlew runGameTestServer` 用于运行游戏测试服务端。
 
+格式化命令为 `./gradlew spotlessApply`，检查命令为 `./gradlew spotlessCheck`，详见 `docs/development.md` 的「格式化」一节。
+
 `gradlew` 必须保持可执行位，因为 CI 在 Linux 上运行，权限位一旦丢失，构建将直接失败。
 
 ### 单一产物
@@ -179,6 +181,8 @@ feature 引用与 `neoforge:remove_features` 中的 ID 必须真实存在，否�
 格式为 `type(scope): 中文说明`，其中 subject 占一行，句末不加句号。
 
 正文仅在需要携带 subject 无法容纳的信息时才添加。
+
+提交前代码须已通过 `spotlessCheck`。`geckolib3/` 与 `molang/` 是上游代码，不参与格式化，也不得对其做纯排版改动。
 
 ## 分支与协作
 

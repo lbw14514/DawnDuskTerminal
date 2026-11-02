@@ -32,6 +32,7 @@ public final class CarminiteEmberParticle extends TextureSheetParticle {
 
     /** 寿命 12~20 tick，够把八帧播一遍 */
     private static final int MIN_LIFETIME = 12;
+
     private static final int MAX_LIFETIME = 20;
 
     /** 负重力：每 tick 往上抬 */
@@ -45,8 +46,8 @@ public final class CarminiteEmberParticle extends TextureSheetParticle {
 
     private final SpriteSet sprites;
 
-    private CarminiteEmberParticle(ClientLevel level, double x, double y, double z,
-                                   double vx, double vy, double vz, SpriteSet sprites) {
+    private CarminiteEmberParticle(
+            ClientLevel level, double x, double y, double z, double vx, double vy, double vz, SpriteSet sprites) {
         super(level, x, y, z);
         this.sprites = sprites;
         // 父类构造已经给了 0.1..0.2 的随机 quadSize，原版红石粒子就是在这个值上乘 0.75
@@ -69,8 +70,7 @@ public final class CarminiteEmberParticle extends TextureSheetParticle {
     }
 
     public static ParticleProvider<SimpleParticleType> provider(SpriteSet sprites) {
-        return (type, level, x, y, z, vx, vy, vz) ->
-            new CarminiteEmberParticle(level, x, y, z, vx, vy, vz, sprites);
+        return (type, level, x, y, z, vx, vy, vz) -> new CarminiteEmberParticle(level, x, y, z, vx, vy, vz, sprites);
     }
 
     @Override

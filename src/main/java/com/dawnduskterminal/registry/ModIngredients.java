@@ -10,10 +10,10 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 public final class ModIngredients {
     public static final DeferredRegister<IngredientType<?>> INGREDIENT_TYPES =
-        DeferredRegister.create(NeoForgeRegistries.Keys.INGREDIENT_TYPES, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(NeoForgeRegistries.Keys.INGREDIENT_TYPES, DawnDuskTerminal.MOD_ID);
 
     public static final DeferredHolder<IngredientType<?>, IngredientType<PoisonPotionIngredient>> POISON_POTION =
-        INGREDIENT_TYPES.register("poison_potion", () -> PoisonPotionIngredient.TYPE);
+            INGREDIENT_TYPES.register("poison_potion", () -> PoisonPotionIngredient.TYPE);
 
     private ModIngredients() {}
 

@@ -12,13 +12,11 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
@@ -171,7 +169,7 @@ public final class RequiemProcess {
         if (distance < 0.0D || distance >= RADIUS) {
             return 0.0F;
         }
-        return (float)((RADIUS - distance) * DAMAGE_PER_BLOCK);
+        return (float) ((RADIUS - distance) * DAMAGE_PER_BLOCK);
     }
 
     private void strike() {
@@ -221,15 +219,16 @@ public final class RequiemProcess {
             double cos = Math.cos(angle);
             double sin = Math.sin(angle);
             // 水平分量取 (cos, -sin)：x 向东、z 向南，俯视是逆时针，和砷铅铁爆炸那圈同一个方向
-            this.level.sendParticles(ModParticles.REQUIEM_NOTE.get(),
-                centreX + cos * radius,
-                centreY + (random.nextDouble() - 0.5D) * SPAWN_LIFT,
-                centreZ - sin * radius,
-                0,
-                cos * speed,
-                (random.nextDouble() - 0.5D) * SPAWN_RISE,
-                -sin * speed,
-                1.0D);
+            this.level.sendParticles(
+                    ModParticles.REQUIEM_NOTE.get(),
+                    centreX + cos * radius,
+                    centreY + (random.nextDouble() - 0.5D) * SPAWN_LIFT,
+                    centreZ - sin * radius,
+                    0,
+                    cos * speed,
+                    (random.nextDouble() - 0.5D) * SPAWN_RISE,
+                    -sin * speed,
+                    1.0D);
         }
     }
 
@@ -251,17 +250,27 @@ public final class RequiemProcess {
 
     /** 让 32 格内的玩家（含施放者）各起一支循环音；重复的包在客户端会被忽略 */
     private void play() {
-        PacketDistributor.sendToPlayersNear(this.level, null,
-            this.caster.getX(), this.caster.getY(), this.caster.getZ(), HEARING_RADIUS,
-            new RequiemStartPayload(this.caster.getId(), this.track));
+        PacketDistributor.sendToPlayersNear(
+                this.level,
+                null,
+                this.caster.getX(),
+                this.caster.getY(),
+                this.caster.getZ(),
+                HEARING_RADIUS,
+                new RequiemStartPayload(this.caster.getId(), this.track));
     }
 
     /** 收场：把停止包发给 64 格内的玩家，之后这一段不再 tick */
     private void finish() {
         this.done = true;
-        PacketDistributor.sendToPlayersNear(this.level, null,
-            this.caster.getX(), this.caster.getY(), this.caster.getZ(), STOP_RADIUS,
-            new RequiemStopPayload(this.caster.getId()));
+        PacketDistributor.sendToPlayersNear(
+                this.level,
+                null,
+                this.caster.getX(),
+                this.caster.getY(),
+                this.caster.getZ(),
+                STOP_RADIUS,
+                new RequiemStopPayload(this.caster.getId()));
     }
 
     public int age() {

@@ -2,10 +2,17 @@ package com.dawnduskterminal.world;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.config.DdtConfig;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.mojang.datafixers.util.Pair;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
@@ -18,14 +25,6 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSourceParameterList;
 import net.minecraft.world.level.levelgen.DensityFunction;
-
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 
 /**
  * 让晨昏线维度用自己那份主世界群系副本
@@ -53,10 +52,15 @@ public final class PaletteBiomeSource extends BiomeSource {
     private static final float FLOATREES_DEPTH = -1.6F;
 
     public static final MapCodec<PaletteBiomeSource> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
-        MultiNoiseBiomeSourceParameterList.CODEC.fieldOf("preset").forGetter(PaletteBiomeSource::preset),
-        RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("palette").forGetter(PaletteBiomeSource::palette),
-        ExtraBiome.CODEC.listOf().optionalFieldOf("extra", List.of()).forGetter(PaletteBiomeSource::extra)
-    ).apply(inst, PaletteBiomeSource::new));
+                    MultiNoiseBiomeSourceParameterList.CODEC.fieldOf("preset").forGetter(PaletteBiomeSource::preset),
+                    RegistryCodecs.homogeneousList(Registries.BIOME)
+                            .fieldOf("palette")
+                            .forGetter(PaletteBiomeSource::palette),
+                    ExtraBiome.CODEC
+                            .listOf()
+                            .optionalFieldOf("extra", List.of())
+                            .forGetter(PaletteBiomeSource::extra))
+            .apply(inst, PaletteBiomeSource::new));
 
     /**
      * 追加到原版气候表后面的点，形状比着内联 {@code multi_noise} 的条目写
@@ -64,27 +68,38 @@ public final class PaletteBiomeSource extends BiomeSource {
      * <p>只在原版没有覆盖的地方生效：温度跨度一旦越过 {@code ±1}，原版最近的点也要付距离，这些点则是
      * 0。湿度 大陆性 侵蚀 怪异度原版都铺满 {@code -1 ~ 1}，往那些方向加点永远输
      */
-    public record ExtraBiome(Climate.Parameter temperature, Climate.Parameter humidity,
-                             Climate.Parameter continentalness, Climate.Parameter erosion,
-                             Climate.Parameter weirdness, Holder<Biome> biome) {
+    public record ExtraBiome(
+            Climate.Parameter temperature,
+            Climate.Parameter humidity,
+            Climate.Parameter continentalness,
+            Climate.Parameter erosion,
+            Climate.Parameter weirdness,
+            Holder<Biome> biome) {
         public static final Codec<ExtraBiome> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-            Climate.Parameter.CODEC.fieldOf("temperature").forGetter(ExtraBiome::temperature),
-            Climate.Parameter.CODEC.fieldOf("humidity").forGetter(ExtraBiome::humidity),
-            Climate.Parameter.CODEC.fieldOf("continentalness").forGetter(ExtraBiome::continentalness),
-            Climate.Parameter.CODEC.fieldOf("erosion").forGetter(ExtraBiome::erosion),
-            Climate.Parameter.CODEC.fieldOf("weirdness").forGetter(ExtraBiome::weirdness),
-            Biome.CODEC.fieldOf("biome").forGetter(ExtraBiome::biome)
-        ).apply(inst, ExtraBiome::new));
+                        Climate.Parameter.CODEC.fieldOf("temperature").forGetter(ExtraBiome::temperature),
+                        Climate.Parameter.CODEC.fieldOf("humidity").forGetter(ExtraBiome::humidity),
+                        Climate.Parameter.CODEC.fieldOf("continentalness").forGetter(ExtraBiome::continentalness),
+                        Climate.Parameter.CODEC.fieldOf("erosion").forGetter(ExtraBiome::erosion),
+                        Climate.Parameter.CODEC.fieldOf("weirdness").forGetter(ExtraBiome::weirdness),
+                        Biome.CODEC.fieldOf("biome").forGetter(ExtraBiome::biome))
+                .apply(inst, ExtraBiome::new));
 
         /**
          * 深度按点值 0 与 1 各插一份，跟 {@code OverworldBiomeBuilder.addSurfaceBiome} 一致；
          * 写成跨度的话，深度落在 0 与 1 之间时原版要付距离、这里不付，群系就会随 y 乱跳
          */
         Stream<Pair<Climate.ParameterPoint, Holder<Biome>>> points() {
-            return Stream.of(0.0F, 1.0F).map(depth -> Pair.of(
-                Climate.parameters(temperature, humidity, continentalness, erosion,
-                    Climate.Parameter.point(depth), weirdness, 0.0F),
-                biome));
+            return Stream.of(0.0F, 1.0F)
+                    .map(depth -> Pair.of(
+                            Climate.parameters(
+                                    temperature,
+                                    humidity,
+                                    continentalness,
+                                    erosion,
+                                    Climate.Parameter.point(depth),
+                                    weirdness,
+                                    0.0F),
+                            biome));
         }
     }
 
@@ -99,6 +114,7 @@ public final class PaletteBiomeSource extends BiomeSource {
     private volatile Map<ResourceLocation, Holder<Biome>> replacements;
     /** 原版气候表 + {@link #extra}，构建理由同 {@link #replacements} */
     private volatile Climate.ParameterList<Holder<Biome>> extended;
+
     private volatile Holder<Biome> floatrees;
 
     /**
@@ -113,14 +129,14 @@ public final class PaletteBiomeSource extends BiomeSource {
      * 也不会长期持有 {@code NoiseChunk} 的函数图（采样器用弱引用比较）
      */
     private static final ThreadLocal<ShiftedTemperatureCache> SHIFTED_TEMPERATURES =
-        ThreadLocal.withInitial(ShiftedTemperatureCache::new);
+            ThreadLocal.withInitial(ShiftedTemperatureCache::new);
 
     public PaletteBiomeSource(Holder<MultiNoiseBiomeSourceParameterList> preset, HolderSet<Biome> palette) {
         this(preset, palette, List.of());
     }
 
-    public PaletteBiomeSource(Holder<MultiNoiseBiomeSourceParameterList> preset, HolderSet<Biome> palette,
-                              List<ExtraBiome> extra) {
+    public PaletteBiomeSource(
+            Holder<MultiNoiseBiomeSourceParameterList> preset, HolderSet<Biome> palette, List<ExtraBiome> extra) {
         this.preset = preset;
         this.palette = palette;
         this.extra = extra;
@@ -154,13 +170,17 @@ public final class PaletteBiomeSource extends BiomeSource {
         if (map == null) {
             Map<ResourceLocation, Holder<Biome>> built = new HashMap<>();
             for (Holder<Biome> holder : this.palette) {
-                holder.unwrapKey().ifPresent(key -> built.put(
-                    ResourceLocation.withDefaultNamespace(key.location().getPath()), holder));
+                holder.unwrapKey()
+                        .ifPresent(key -> built.put(
+                                ResourceLocation.withDefaultNamespace(
+                                        key.location().getPath()),
+                                holder));
             }
             if (built.isEmpty()) {
                 DawnDuskTerminal.LOGGER.error(
-                    "DawnDuskTerminal palette biome source resolved no biome copies ({} entries in the tag); "
-                        + "the chrono dimension would generate with vanilla biomes", this.palette.size());
+                        "DawnDuskTerminal palette biome source resolved no biome copies ({} entries in the tag); "
+                                + "the chrono dimension would generate with vanilla biomes",
+                        this.palette.size());
             }
             // 同名格子自己就对上了，只有一格要改指。热档那格原版是遍地的沙漠，换成白地：昼区
             // 0.6~0.8 的温度被钉在 0.55~1.0，那档里五档湿度原版全是沙漠，不改指就整片是沙
@@ -190,7 +210,7 @@ public final class PaletteBiomeSource extends BiomeSource {
         Climate.ParameterList<Holder<Biome>> list = this.extended;
         if (list == null) {
             List<Pair<Climate.ParameterPoint, Holder<Biome>>> values =
-                new ArrayList<>(this.preset.value().parameters().values());
+                    new ArrayList<>(this.preset.value().parameters().values());
             this.extra.forEach(entry -> entry.points().forEach(values::add));
             this.extended = list = new Climate.ParameterList<>(values);
         }
@@ -209,25 +229,25 @@ public final class PaletteBiomeSource extends BiomeSource {
     @Override
     protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return Stream.concat(
-            Stream.concat(this.preset.value().parameters().values().stream().map(Pair::getSecond),
-                this.palette.stream()),
-            this.extra.stream().map(ExtraBiome::biome));
+                Stream.concat(
+                        this.preset.value().parameters().values().stream().map(Pair::getSecond), this.palette.stream()),
+                this.extra.stream().map(ExtraBiome::biome));
     }
 
     @Override
     public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
         DensityFunction.SinglePointContext context = new DensityFunction.SinglePointContext(
-            QuartPos.toBlock(quartX), QuartPos.toBlock(quartY), QuartPos.toBlock(quartZ));
+                QuartPos.toBlock(quartX), QuartPos.toBlock(quartY), QuartPos.toBlock(quartZ));
         // 原版 Climate.Sampler#sample 的六项照抄，只把温度换成晨昏线分段映射。这样结构判定 区块落盘
         // locate biome 刷怪读的是同一个群系函数，两边不可能再分叉
         double temperature = SHIFTED_TEMPERATURES.get().shifted(sampler, quartX, quartZ, context);
         Climate.TargetPoint target = Climate.target(
-            (float) temperature,
-            (float) sampler.humidity().compute(context),
-            (float) sampler.continentalness().compute(context),
-            (float) sampler.erosion().compute(context),
-            (float) sampler.depth().compute(context),
-            (float) sampler.weirdness().compute(context));
+                (float) temperature,
+                (float) sampler.humidity().compute(context),
+                (float) sampler.continentalness().compute(context),
+                (float) sampler.erosion().compute(context),
+                (float) sampler.depth().compute(context),
+                (float) sampler.weirdness().compute(context));
         Holder<Biome> floatreesHolder = floatrees();
         if (floatreesHolder != null && Climate.unquantizeCoord(target.depth()) < FLOATREES_DEPTH) {
             return floatreesHolder;
@@ -259,12 +279,13 @@ public final class PaletteBiomeSource extends BiomeSource {
         private ChronoLine line;
         private double maxDistance;
 
-        double shifted(Climate.Sampler current, int quartX, int quartZ,
-                       DensityFunction.SinglePointContext context) {
+        double shifted(Climate.Sampler current, int quartX, int quartZ, DensityFunction.SinglePointContext context) {
             ChronoLine currentLine = ChronoLineState.serverLine();
             double currentMaxDistance = DdtConfig.maxDistance();
-            if (this.sampler == null || this.sampler.get() != current
-                || this.line != currentLine || this.maxDistance != currentMaxDistance) {
+            if (this.sampler == null
+                    || this.sampler.get() != current
+                    || this.line != currentLine
+                    || this.maxDistance != currentMaxDistance) {
                 this.sampler = new WeakReference<>(current);
                 this.line = currentLine;
                 this.maxDistance = currentMaxDistance;

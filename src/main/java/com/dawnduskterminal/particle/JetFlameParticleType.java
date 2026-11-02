@@ -12,7 +12,6 @@ import net.minecraft.network.codec.StreamCodec;
  * 贴图表在 {@code assets/dawnduskterminal/particles/particle_jet_flame.json}（直接借原版
  * {@code minecraft:flame}），客户端 provider 在 {@code client/JetFlameParticle}
  */
-
 public final class JetFlameParticleType extends ParticleType<JetFlameParticleOptions> {
     public JetFlameParticleType() {
         super(false);

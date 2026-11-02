@@ -56,9 +56,11 @@ public class Experiment004Block extends AbstractFurnaceBlock {
     /** 只有服务端刻：进度、燃料、经验都在服务端算，客户端拿 {@code ContainerData} 显示 */
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.EXPERIMENT_004.get(),
-            Experiment004BlockEntity::serverTick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide
+                ? null
+                : createTickerHelper(type, ModBlockEntities.EXPERIMENT_004.get(), Experiment004BlockEntity::serverTick);
     }
 
     @Override
@@ -75,8 +77,15 @@ public class Experiment004Block extends AbstractFurnaceBlock {
             return;
         }
         if (random.nextDouble() < 0.1D) {
-            level.playLocalSound(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D,
-                SoundEvents.FURNACE_FIRE_CRACKLE, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+            level.playLocalSound(
+                    pos.getX() + 0.5D,
+                    pos.getY(),
+                    pos.getZ() + 0.5D,
+                    SoundEvents.FURNACE_FIRE_CRACKLE,
+                    SoundSource.BLOCKS,
+                    1.0F,
+                    1.0F,
+                    false);
         }
     }
 

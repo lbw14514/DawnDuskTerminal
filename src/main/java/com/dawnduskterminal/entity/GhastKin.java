@@ -25,8 +25,8 @@ public final class GhastKin {
     private static boolean isGhastFamily(Entity entity) {
         var type = entity.getType();
         return type == ModEntities.GHASTFRUITY.get()
-            || type == ModEntities.GHAST_ELITE.get()
-            || type == TFEntities.CARMINITE_GHASTLING.get();
+                || type == ModEntities.GHAST_ELITE.get()
+                || type == TFEntities.CARMINITE_GHASTLING.get();
     }
 
     private GhastKin() {}

@@ -33,16 +33,16 @@ public abstract class PillarsFluidBlockMixin {
     private Aquifer.FluidPicker globalFluidPicker;
 
     @Inject(method = "computeSubstance", at = @At("HEAD"), cancellable = true)
-    private void ddt$blockPillarsFluid(DensityFunction.FunctionContext context, double density,
-                                       CallbackInfoReturnable<BlockState> cir) {
+    private void ddt$blockPillarsFluid(
+            DensityFunction.FunctionContext context, double density, CallbackInfoReturnable<BlockState> cir) {
         if (density > 0.0) {
             return; // 实心地形，原版本来就返回 null，没有什么要抽干
         }
         if (!ddt$isChrono(context)) {
             return;
         }
-        DensityFunction.SinglePointContext single = new DensityFunction.SinglePointContext(
-            context.blockX(), context.blockY(), context.blockZ());
+        DensityFunction.SinglePointContext single =
+                new DensityFunction.SinglePointContext(context.blockX(), context.blockY(), context.blockZ());
         if (this.fluidLevelFloodednessNoise.compute(single) <= -1.0) {
             cir.setReturnValue(Blocks.AIR.defaultBlockState());
         }
@@ -50,8 +50,8 @@ public abstract class PillarsFluidBlockMixin {
 
     @Unique
     private boolean ddt$isChrono(DensityFunction.FunctionContext context) {
-        Aquifer.FluidStatus status = this.globalFluidPicker.computeFluid(
-            context.blockX(), context.blockY(), context.blockZ());
+        Aquifer.FluidStatus status =
+                this.globalFluidPicker.computeFluid(context.blockX(), context.blockY(), context.blockZ());
         BlockState fluidType = ((FluidStatusAccessor) (Object) status).ddt$fluidType();
         return ChronoDimensionProbe.isChronoFluid(fluidType);
     }

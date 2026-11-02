@@ -32,9 +32,15 @@ public class DiracOreBlock extends Block {
             level.playSound(null, pos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (level instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(
-                    ParticleTypes.PORTAL,
-                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                    24, 0.4, 0.4, 0.4, 0.05);
+                        ParticleTypes.PORTAL,
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5,
+                        24,
+                        0.4,
+                        0.4,
+                        0.4,
+                        0.05);
             }
             level.setBlock(pos, ModFluids.PORTAL_FLUID.get().defaultFluidState().createLegacyBlock(), 3);
         }

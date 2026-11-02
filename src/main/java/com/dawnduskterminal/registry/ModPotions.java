@@ -20,14 +20,15 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModPotions {
     public static final DeferredRegister<Potion> POTIONS =
-        DeferredRegister.create(Registries.POTION, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.POTION, DawnDuskTerminal.MOD_ID);
 
     /** 8 分钟，也就是 9600 tick */
     public static final int STABILITY_DURATION = 8 * 60 * 20;
 
     /** 名字要与 {@code PotionItem} 拼出来的翻译键对上：{@code item.dawnduskterminal.stability_potion.effect.stability} */
-    public static final DeferredHolder<Potion, Potion> STABILITY = POTIONS.register("stability",
-        () -> new Potion("stability", new MobEffectInstance(ModEffects.STABILITY, STABILITY_DURATION)));
+    public static final DeferredHolder<Potion, Potion> STABILITY = POTIONS.register(
+            "stability",
+            () -> new Potion("stability", new MobEffectInstance(ModEffects.STABILITY, STABILITY_DURATION)));
 
     private ModPotions() {}
 
@@ -45,7 +46,8 @@ public final class ModPotions {
      * 各种掉出来的物品栈都会自带这瓶药
      */
     public static void modifyDefaultComponents(ModifyDefaultComponentsEvent event) {
-        event.modify(ModItems.STABILITY_POTION,
-            builder -> builder.set(DataComponents.POTION_CONTENTS, new PotionContents(STABILITY)));
+        event.modify(
+                ModItems.STABILITY_POTION,
+                builder -> builder.set(DataComponents.POTION_CONTENTS, new PotionContents(STABILITY)));
     }
 }

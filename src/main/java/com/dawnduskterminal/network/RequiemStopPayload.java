@@ -21,12 +21,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record RequiemStopPayload(int casterId) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<RequiemStopPayload> TYPE =
-        new CustomPacketPayload.Type<>(DawnDuskTerminal.id("requiem_stop"));
+            new CustomPacketPayload.Type<>(DawnDuskTerminal.id("requiem_stop"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RequiemStopPayload> STREAM_CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, RequiemStopPayload::casterId,
-            RequiemStopPayload::new);
+            StreamCodec.composite(ByteBufCodecs.VAR_INT, RequiemStopPayload::casterId, RequiemStopPayload::new);
 
     @Override
     public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {

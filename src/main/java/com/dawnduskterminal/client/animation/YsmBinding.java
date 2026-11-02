@@ -118,6 +118,9 @@ public class YsmBinding extends ContextBinding {
         if (!entity.level().canSeeSky(blockpos)) {
             return false;
         }
-        return entity.level().getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, blockpos).getY() <= blockpos.getY();
+        return entity.level()
+                        .getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, blockpos)
+                        .getY()
+                <= blockpos.getY();
     }
 }

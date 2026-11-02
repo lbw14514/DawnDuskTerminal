@@ -12,6 +12,11 @@ import com.dawnduskterminal.item.Experiment095Item;
 import com.dawnduskterminal.item.ExperimentArmorItem;
 import com.dawnduskterminal.item.ThrustSpearItem;
 import com.dawnduskterminal.item.UnknownMeatItem;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -34,12 +39,6 @@ import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * 试验物品栏里那批实验品：一台照熔炉工作的机器（试验物品 004）、两把近战武器（试验物品 007、017）、
@@ -72,8 +71,9 @@ public final class ModExperimentItems {
      * <p>不挂 tool tier，所以它没有耐久、挖不动方块、也不在五个原版工具标签里；要的就是一件只拿来比
      * 伤害与攻速尺子的裸武器，规格由 {@code ExperimentItemTests#experiment007IsAFourFiveWeapon} 钉住
      */
-    public static final DeferredItem<Item> EXPERIMENT_007 = ITEMS.register("experiment_007",
-        () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_007", 3.0D, 1.0D))));
+    public static final DeferredItem<Item> EXPERIMENT_007 = ITEMS.register(
+            "experiment_007",
+            () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_007", 3.0D, 1.0D))));
 
     /**
      * 试验物品 017：近战伤害 4、攻速 5，与 {@link #EXPERIMENT_007} 同一副规格
@@ -81,8 +81,9 @@ public final class ModExperimentItems {
      * <p>两件物品共用 {@link #meleeAttributes}，只有修饰符的 ID 前缀不同——同一个属性上挂两个同 ID 的
      * 修饰符会互相顶掉，所以 ID 必须按物品分开
      */
-    public static final DeferredItem<Item> EXPERIMENT_017 = ITEMS.register("experiment_017",
-        () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_017", 3.0D, 1.0D))));
+    public static final DeferredItem<Item> EXPERIMENT_017 = ITEMS.register(
+            "experiment_017",
+            () -> new Item(new Item.Properties().attributes(meleeAttributes("experiment_017", 3.0D, 1.0D))));
 
     /**
      * 试验物品 008 的食物属性：5 点饥饿、5 点饱和度
@@ -91,10 +92,8 @@ public final class ModExperimentItems {
      * 系数 × 饥饿 × 2，所以 5 与 0.5 才等于 5 点饥饿、5 点饱和度（对照烤马铃薯：5 与 0.6 → 6.0）。
      * 5 点饥饿是两块生猪排以下、一块熟猪排以上的量
      */
-    private static final FoodProperties EXPERIMENT_008_FOOD = new FoodProperties.Builder()
-        .nutrition(5)
-        .saturationModifier(0.5F)
-        .build();
+    private static final FoodProperties EXPERIMENT_008_FOOD =
+            new FoodProperties.Builder().nutrition(5).saturationModifier(0.5F).build();
 
     /**
      * 试验物品 008：食物，5 点饥饿、5 点饱和度，吃完东西就没了
@@ -102,8 +101,8 @@ public final class ModExperimentItems {
      * <p>可堆叠到 64（食物物品的默认值），没有附加效果、也不带「随时可吃」——饥饿满时吃不下，
      * 与原版普通食物一致
      */
-    public static final DeferredItem<Item> EXPERIMENT_008 = ITEMS.register("experiment_008",
-        () -> new Item(new Item.Properties().food(EXPERIMENT_008_FOOD)));
+    public static final DeferredItem<Item> EXPERIMENT_008 =
+            ITEMS.register("experiment_008", () -> new Item(new Item.Properties().food(EXPERIMENT_008_FOOD)));
 
     /**
      * 试验物品 020 的食物属性：20 点饥饿、20 点饱和度
@@ -111,10 +110,8 @@ public final class ModExperimentItems {
      * <p>系数还是 0.5：系数 × 饥饿 × 2 = 0.5 × 20 × 2 = 20.0。20 点饥饿就是整条饥饿条，
      * 饱和度的上限也正好是 20，所以这一口直接吃满
      */
-    private static final FoodProperties EXPERIMENT_020_FOOD = new FoodProperties.Builder()
-        .nutrition(20)
-        .saturationModifier(0.5F)
-        .build();
+    private static final FoodProperties EXPERIMENT_020_FOOD =
+            new FoodProperties.Builder().nutrition(20).saturationModifier(0.5F).build();
 
     /**
      * 试验物品 020：20 点饥饿、20 点饱和度的食物，吃完随机给 0~3 个效果，每个 10~300 秒
@@ -123,74 +120,104 @@ public final class ModExperimentItems {
      * 还会写进 tooltip），只能在吃完那一刻现摇
      */
     public static final DeferredItem<Experiment020Item> EXPERIMENT_020 = ITEMS.register(
-        "experiment_020",
-        () -> new Experiment020Item(new Item.Properties().food(EXPERIMENT_020_FOOD)));
+            "experiment_020", () -> new Experiment020Item(new Item.Properties().food(EXPERIMENT_020_FOOD)));
 
     /** 试验物品 027：按住右键在视线命中的方块面上每 tick 画一个红石点，行为在 {@link Experiment027Item} */
-    public static final DeferredItem<Experiment027Item> EXPERIMENT_027 = ITEMS.register(
-        "experiment_027", () -> new Experiment027Item(new Item.Properties()));
+    public static final DeferredItem<Experiment027Item> EXPERIMENT_027 =
+            ITEMS.register("experiment_027", () -> new Experiment027Item(new Item.Properties()));
 
     /** 试验物品 036：高塔剑，钻石级，行为与数值照原版钻石剑 */
-    public static final DeferredItem<SwordItem> EXPERIMENT_036 = ITEMS.register("experiment_036",
-        () -> new SwordItem(Tiers.DIAMOND, new Item.Properties()
-            .attributes(SwordItem.createAttributes(Tiers.DIAMOND, 3.0F, -2.4F))) {
-            @Override
-            public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                        List<Component> tooltip, TooltipFlag flag) {
-                super.appendHoverText(stack, context, tooltip, flag);
-                describe(tooltip, "item.dawnduskterminal.experiment_036.desc");
-            }
-        });
+    public static final DeferredItem<SwordItem> EXPERIMENT_036 = ITEMS.register(
+            "experiment_036",
+            () ->
+                    new SwordItem(
+                            Tiers.DIAMOND,
+                            new Item.Properties().attributes(SwordItem.createAttributes(Tiers.DIAMOND, 3.0F, -2.4F))) {
+                        @Override
+                        public void appendHoverText(
+                                ItemStack stack,
+                                Item.TooltipContext context,
+                                List<Component> tooltip,
+                                TooltipFlag flag) {
+                            super.appendHoverText(stack, context, tooltip, flag);
+                            describe(tooltip, "item.dawnduskterminal.experiment_036.desc");
+                        }
+                    });
 
     /** 试验物品 037：高塔镐，钻石级 */
-    public static final DeferredItem<PickaxeItem> EXPERIMENT_037 = ITEMS.register("experiment_037",
-        () -> new PickaxeItem(Tiers.DIAMOND, new Item.Properties()
-            .attributes(PickaxeItem.createAttributes(Tiers.DIAMOND, 1.0F, -2.8F))) {
-            @Override
-            public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                        List<Component> tooltip, TooltipFlag flag) {
-                super.appendHoverText(stack, context, tooltip, flag);
-                describe(tooltip, "item.dawnduskterminal.experiment_037.desc");
-            }
-        });
+    public static final DeferredItem<PickaxeItem> EXPERIMENT_037 = ITEMS.register(
+            "experiment_037",
+            () ->
+                    new PickaxeItem(
+                            Tiers.DIAMOND,
+                            new Item.Properties()
+                                    .attributes(PickaxeItem.createAttributes(Tiers.DIAMOND, 1.0F, -2.8F))) {
+                        @Override
+                        public void appendHoverText(
+                                ItemStack stack,
+                                Item.TooltipContext context,
+                                List<Component> tooltip,
+                                TooltipFlag flag) {
+                            super.appendHoverText(stack, context, tooltip, flag);
+                            describe(tooltip, "item.dawnduskterminal.experiment_037.desc");
+                        }
+                    });
 
     /** 试验物品 038：高塔锄，钻石级。039 号空着，留给后面要加的那件 */
-    public static final DeferredItem<HoeItem> EXPERIMENT_038 = ITEMS.register("experiment_038",
-        () -> new HoeItem(Tiers.DIAMOND, new Item.Properties()
-            .attributes(HoeItem.createAttributes(Tiers.DIAMOND, -3.0F, 0.0F))) {
-            @Override
-            public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                        List<Component> tooltip, TooltipFlag flag) {
-                super.appendHoverText(stack, context, tooltip, flag);
-                describe(tooltip, "item.dawnduskterminal.experiment_038.desc");
-            }
-        });
+    public static final DeferredItem<HoeItem> EXPERIMENT_038 = ITEMS.register(
+            "experiment_038",
+            () ->
+                    new HoeItem(
+                            Tiers.DIAMOND,
+                            new Item.Properties().attributes(HoeItem.createAttributes(Tiers.DIAMOND, -3.0F, 0.0F))) {
+                        @Override
+                        public void appendHoverText(
+                                ItemStack stack,
+                                Item.TooltipContext context,
+                                List<Component> tooltip,
+                                TooltipFlag flag) {
+                            super.appendHoverText(stack, context, tooltip, flag);
+                            describe(tooltip, "item.dawnduskterminal.experiment_038.desc");
+                        }
+                    });
 
-    public static final DeferredItem<ShovelItem> EXPERIMENT_040 = ITEMS.register("experiment_040",
-        () -> new ShovelItem(Tiers.DIAMOND, new Item.Properties()
-            .attributes(ShovelItem.createAttributes(Tiers.DIAMOND, 1.5F, -3.0F))) {
-            @Override
-            public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                        List<Component> tooltip, TooltipFlag flag) {
-                super.appendHoverText(stack, context, tooltip, flag);
-                describe(tooltip, "item.dawnduskterminal.experiment_040.desc");
-            }
-        });
+    public static final DeferredItem<ShovelItem> EXPERIMENT_040 = ITEMS.register(
+            "experiment_040",
+            () ->
+                    new ShovelItem(
+                            Tiers.DIAMOND,
+                            new Item.Properties().attributes(ShovelItem.createAttributes(Tiers.DIAMOND, 1.5F, -3.0F))) {
+                        @Override
+                        public void appendHoverText(
+                                ItemStack stack,
+                                Item.TooltipContext context,
+                                List<Component> tooltip,
+                                TooltipFlag flag) {
+                            super.appendHoverText(stack, context, tooltip, flag);
+                            describe(tooltip, "item.dawnduskterminal.experiment_040.desc");
+                        }
+                    });
 
-    public static final DeferredItem<AxeItem> EXPERIMENT_041 = ITEMS.register("experiment_041",
-        () -> new AxeItem(Tiers.DIAMOND, new Item.Properties()
-            .attributes(AxeItem.createAttributes(Tiers.DIAMOND, 5.0F, -3.0F))) {
-            @Override
-            public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                        List<Component> tooltip, TooltipFlag flag) {
-                super.appendHoverText(stack, context, tooltip, flag);
-                describe(tooltip, "item.dawnduskterminal.experiment_041.desc");
-            }
-        });
+    public static final DeferredItem<AxeItem> EXPERIMENT_041 = ITEMS.register(
+            "experiment_041",
+            () ->
+                    new AxeItem(
+                            Tiers.DIAMOND,
+                            new Item.Properties().attributes(AxeItem.createAttributes(Tiers.DIAMOND, 5.0F, -3.0F))) {
+                        @Override
+                        public void appendHoverText(
+                                ItemStack stack,
+                                Item.TooltipContext context,
+                                List<Component> tooltip,
+                                TooltipFlag flag) {
+                            super.appendHoverText(stack, context, tooltip, flag);
+                            describe(tooltip, "item.dawnduskterminal.experiment_041.desc");
+                        }
+                    });
 
     /** 试验物品 042：一件普通物品，没有行为也没有描述 */
-    public static final DeferredItem<Item> EXPERIMENT_042 = ITEMS.registerSimpleItem(
-        "experiment_042", new Item.Properties());
+    public static final DeferredItem<Item> EXPERIMENT_042 =
+            ITEMS.registerSimpleItem("experiment_042", new Item.Properties());
 
     /**
      * 试验物品 061、070、074：三块不明肉块，同一份规格
@@ -199,6 +226,7 @@ public final class ModExperimentItems {
      * 为什么不另写物品类去摇效果，都在 {@link UnknownMeatItem}。三块肉只差贴图，描述行都是「不明肉块」
      */
     public static final DeferredItem<UnknownMeatItem> EXPERIMENT_061 = unknownMeat("experiment_061");
+
     public static final DeferredItem<UnknownMeatItem> EXPERIMENT_070 = unknownMeat("experiment_070");
     public static final DeferredItem<UnknownMeatItem> EXPERIMENT_074 = unknownMeat("experiment_074");
 
@@ -209,8 +237,8 @@ public final class ModExperimentItems {
      * <p>64 点耐久，喷一次扣 1 点；可损坏的物品默认不可堆叠（{@code MAX_STACK_SIZE} 缺省是 1）
      */
     public static final DeferredItem<Experiment043Item> EXPERIMENT_043 = ITEMS.register(
-        "experiment_043",
-        () -> new Experiment043Item(new Item.Properties().durability(Experiment043Item.DURABILITY)));
+            "experiment_043",
+            () -> new Experiment043Item(new Item.Properties().durability(Experiment043Item.DURABILITY)));
 
     /**
      * 试验物品 066：那本手持式的恶魂陷阱书，单击右键沿视线压出一条 6 秒的走廊，里面的活物被拽住、每 tick
@@ -221,8 +249,8 @@ public final class ModExperimentItems {
      * 敌怪身上去打玩家。冷却 120 + 60 = 180 tick，64 点耐久，一次扣 1 点
      */
     public static final DeferredItem<Experiment066Item> EXPERIMENT_066 = ITEMS.register(
-        "experiment_066",
-        () -> new Experiment066Item(new Item.Properties().durability(Experiment066Item.DURABILITY)));
+            "experiment_066",
+            () -> new Experiment066Item(new Item.Properties().durability(Experiment066Item.DURABILITY)));
 
     /**
      * 试验物品 055：按住右键慢慢充能的那个场，充能 5 秒里影响半径从 0 涨到
@@ -236,8 +264,8 @@ public final class ModExperimentItems {
      * 从头按到尾 5 分钟
      */
     public static final DeferredItem<Experiment055Item> EXPERIMENT_055 = ITEMS.register(
-        "experiment_055",
-        () -> new Experiment055Item(new Item.Properties().durability(Experiment055Item.DURABILITY)));
+            "experiment_055",
+            () -> new Experiment055Item(new Item.Properties().durability(Experiment055Item.DURABILITY)));
 
     /**
      * 试验物品 057：8 点伤害、攻速 1.6 的刀，单击右键打出一片制导飞刃
@@ -252,10 +280,10 @@ public final class ModExperimentItems {
      * {@code Item#isEnchantable} 认的那一条；附魔值写在 {@link Experiment057Item} 里
      */
     public static final DeferredItem<Experiment057Item> EXPERIMENT_057 = ITEMS.register(
-        "experiment_057",
-        () -> new Experiment057Item(new Item.Properties()
-            .durability(Experiment057Item.DURABILITY)
-            .attributes(Experiment057Item.createAttributes())));
+            "experiment_057",
+            () -> new Experiment057Item(new Item.Properties()
+                    .durability(Experiment057Item.DURABILITY)
+                    .attributes(Experiment057Item.createAttributes())));
 
     /**
      * 试验物品 045：一面盾，格挡那套整份照抄原版盾（{@link Experiment045Item} 继承 {@code ShieldItem}）
@@ -265,10 +293,10 @@ public final class ModExperimentItems {
      * 并把图案一层层叠上去（见客户端 {@code client/Experiment045ShieldRenderer}）
      */
     public static final DeferredItem<Experiment045Item> EXPERIMENT_045 = ITEMS.register(
-        "experiment_045",
-        () -> new Experiment045Item(new Item.Properties()
-            .durability(Experiment045Item.DURABILITY)
-            .component(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY)));
+            "experiment_045",
+            () -> new Experiment045Item(new Item.Properties()
+                    .durability(Experiment045Item.DURABILITY)
+                    .component(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY)));
 
     /**
      * 试验物品 047~050：一套护甲（047 头、048 胸、049 腿、050 脚）
@@ -280,20 +308,21 @@ public final class ModExperimentItems {
      * {@code client/model/ExperimentArmorModel}，发光层由 {@code mixin/ExperimentArmorGlowMixin} 叠上去
      */
     public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_047 =
-        armor("experiment_047", ArmorItem.Type.HELMET);
+            armor("experiment_047", ArmorItem.Type.HELMET);
+
     public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_048 =
-        armor("experiment_048", ArmorItem.Type.CHESTPLATE);
+            armor("experiment_048", ArmorItem.Type.CHESTPLATE);
     public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_049 =
-        armor("experiment_049", ArmorItem.Type.LEGGINGS);
+            armor("experiment_049", ArmorItem.Type.LEGGINGS);
     public static final DeferredItem<ExperimentArmorItem> EXPERIMENT_050 =
-        armor("experiment_050", ArmorItem.Type.BOOTS);
+            armor("experiment_050", ArmorItem.Type.BOOTS);
 
     /** 试验物品 032、033：按住右键架起来突刺的长矛，行为在 {@link ThrustSpearItem} */
-    public static final DeferredItem<ThrustSpearItem> EXPERIMENT_032 = ITEMS.register(
-        "experiment_032", () -> new ThrustSpearItem(new Item.Properties()));
+    public static final DeferredItem<ThrustSpearItem> EXPERIMENT_032 =
+            ITEMS.register("experiment_032", () -> new ThrustSpearItem(new Item.Properties()));
 
-    public static final DeferredItem<ThrustSpearItem> EXPERIMENT_033 = ITEMS.register(
-        "experiment_033", () -> new ThrustSpearItem(new Item.Properties()));
+    public static final DeferredItem<ThrustSpearItem> EXPERIMENT_033 =
+            ITEMS.register("experiment_033", () -> new ThrustSpearItem(new Item.Properties()));
 
     /**
      * 试验物品 095：镇魂曲，按住右键奏一支循环曲、每 0.5 秒甩出一圈音符，32 格内除自己以外的活物
@@ -306,9 +335,8 @@ public final class ModExperimentItems {
      * <p>{@value Experiment095Item#DURABILITY} 点耐久，每次按住扣 1 点、每秒一次，从头按到尾 5 分钟
      */
     public static final DeferredItem<Experiment095Item> EXPERIMENT_095 = ITEMS.register(
-        "experiment_095",
-        () -> new Experiment095Item(new Item.Properties().durability(Experiment095Item.DURABILITY)));
-
+            "experiment_095",
+            () -> new Experiment095Item(new Item.Properties().durability(Experiment095Item.DURABILITY)));
 
     /** 序号上限：115 及以内 */
     private static final int LAST_NUMBER = 115;
@@ -346,9 +374,9 @@ public final class ModExperimentItems {
      *
      * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
      */
-    private static final Set<Integer> TAKEN =
-        Set.of(1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50,
-            51, 52, 55, 57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
+    private static final Set<Integer> TAKEN = Set.of(
+            1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55, 57, 61,
+            65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 
@@ -379,18 +407,23 @@ public final class ModExperimentItems {
      * <p>玩家底数是攻击力 1、攻速 4，所以「面板 4 伤害、5 攻速」对应的是 +3 与 +1。修饰符 ID 带上物品 ID
      * 前缀，同一属性上挂两个同 ID 的修饰符会互相顶掉
      */
-    private static ItemAttributeModifiers meleeAttributes(String itemPath, double attackDamage,
-                                                          double attackSpeed) {
+    private static ItemAttributeModifiers meleeAttributes(String itemPath, double attackDamage, double attackSpeed) {
         return ItemAttributeModifiers.builder()
-            .add(Attributes.ATTACK_DAMAGE,
-                new AttributeModifier(DawnDuskTerminal.id(itemPath + "_attack_damage"), attackDamage,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .add(Attributes.ATTACK_SPEED,
-                new AttributeModifier(DawnDuskTerminal.id(itemPath + "_attack_speed"), attackSpeed,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .build();
+                .add(
+                        Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(
+                                DawnDuskTerminal.id(itemPath + "_attack_damage"),
+                                attackDamage,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(
+                        Attributes.ATTACK_SPEED,
+                        new AttributeModifier(
+                                DawnDuskTerminal.id(itemPath + "_attack_speed"),
+                                attackSpeed,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
     }
 
     private static void describe(List<Component> tooltip, String key) {
@@ -399,9 +432,12 @@ public final class ModExperimentItems {
 
     /** 试验物品 047~050 四件护甲，材质固定在 {@link ModArmorMaterials#EXPERIMENT_ARMOR} */
     private static DeferredItem<ExperimentArmorItem> armor(String name, ArmorItem.Type type) {
-        return ITEMS.register(name, () -> new ExperimentArmorItem(
-            ModArmorMaterials.EXPERIMENT_ARMOR, type,
-            new Item.Properties().durability(type.getDurability(IRON_DURABILITY_FACTOR))));
+        return ITEMS.register(
+                name,
+                () -> new ExperimentArmorItem(
+                        ModArmorMaterials.EXPERIMENT_ARMOR,
+                        type,
+                        new Item.Properties().durability(type.getDurability(IRON_DURABILITY_FACTOR))));
     }
 
     /** 不明肉块：三块共用 {@link UnknownMeatItem#FOOD}，只有注册名不同 */

@@ -23,19 +23,19 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
-        DeferredRegister.create(Registries.PARTICLE_TYPE, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.PARTICLE_TYPE, DawnDuskTerminal.MOD_ID);
 
     /** 飞行中的弹体本体 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_BALL =
-        register("particle_carminite_ball");
+            register("particle_carminite_ball");
 
     /** 弹体拖尾 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_TRACE =
-        register("particle_carminite_trace");
+            register("particle_carminite_trace");
 
     /** 命中后炸开的反应场 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_EFFECT =
-        register("particle_carminite_effect");
+            register("particle_carminite_effect");
 
     /**
      * 爆炸专用：与 {@link #CARMINITE_EFFECT} 同一套贴图（{@code particle_carminite_effect_1..8}），
@@ -45,11 +45,11 @@ public final class ModParticles {
      * 爆炸想要更慢的帧不该顺带把反应场也改掉
      */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_BLAST =
-        register("particle_carminite_blast");
+            register("particle_carminite_blast");
 
     /** 试验物品 027 画在方块面上的红石点：静止、半尺寸、60 秒 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> EXPERIMENT_027 =
-        register("particle_experiment_027");
+            register("particle_experiment_027");
 
     /**
      * 砷铅铁余烬：红石粒子那组贴图（{@code minecraft:generic_0..7}）另开的一种粒子，
@@ -59,7 +59,7 @@ public final class ModParticles {
      * 实现见 {@link com.dawnduskterminal.client.CarminiteEmberParticle}
      */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_EMBER =
-        register("particle_carminite_ember");
+            register("particle_carminite_ember");
 
     /**
      * 试验物品 043 的大火焰：初速随粒子选项一起发，不走原版那种给客户端现摇随机速度的路子
@@ -67,7 +67,7 @@ public final class ModParticles {
      * <p>类型见 {@link JetFlameParticleType}，数据见 {@link com.dawnduskterminal.particle.JetFlameParticleOptions}
      */
     public static final DeferredHolder<ParticleType<?>, JetFlameParticleType> JET_FLAME =
-        PARTICLE_TYPES.register("particle_jet_flame", JetFlameParticleType::new);
+            PARTICLE_TYPES.register("particle_jet_flame", JetFlameParticleType::new);
 
     /**
      * 试验物品 095 那一圈音符：贴图直接借原版 {@code minecraft:note}，颜色在客户端现摇，
@@ -82,7 +82,7 @@ public final class ModParticles {
      * 就不用为了一个 {@code float} 再造一套 {@code ParticleType}
      */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> REQUIEM_NOTE =
-        register("particle_requiem_note");
+            register("particle_requiem_note");
 
     private ModParticles() {}
 

@@ -4,7 +4,6 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.registry.ModDimensions;
 import com.dawnduskterminal.world.ChronoLine;
 import com.dawnduskterminal.world.ChronoLineState;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +18,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 
 /**
@@ -85,13 +83,15 @@ public final class ChronoParityProbe {
                         int chunkX = baseChunkX + dx;
                         int chunkZ = baseChunkZ + dz;
                         // 只推到 SURFACE：不含雕刻 结构 特征 这三样才是 c2me 也承认跑两次会不一样的
-                        ChunkAccess chunk = level.getChunkSource()
-                            .getChunk(chunkX, chunkZ, ChunkStatus.SURFACE, true);
+                        ChunkAccess chunk = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.SURFACE, true);
                         if (chunk == null) {
                             throw new IllegalStateException("chunk " + chunkX + "," + chunkZ + " is not available");
                         }
-                        DawnDuskTerminal.LOGGER.info("DDT_CHRONO_PARITY chunk=({},{}) status={}",
-                            chunkX, chunkZ, chunk.getPersistedStatus());
+                        DawnDuskTerminal.LOGGER.info(
+                                "DDT_CHRONO_PARITY chunk=({},{}) status={}",
+                                chunkX,
+                                chunkZ,
+                                chunk.getPersistedStatus());
                         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
                         for (int x = 0; x < 16; x++) {
                             for (int z = 0; z < 16; z++) {
@@ -108,25 +108,33 @@ public final class ChronoParityProbe {
                                 }
                                 int surfaceY = Math.max(height - 1, level.getMinBuildHeight());
                                 Holder<Biome> biome = chunk.getNoiseBiome(
-                                    QuartPos.fromBlock(worldX), QuartPos.fromBlock(surfaceY), QuartPos.fromBlock(worldZ));
+                                        QuartPos.fromBlock(worldX),
+                                        QuartPos.fromBlock(surfaceY),
+                                        QuartPos.fromBlock(worldZ));
                                 String biomeId = biome.unwrapKey()
-                                    .map(key -> key.location().toString()).orElse("?");
+                                        .map(key -> key.location().toString())
+                                        .orElse("?");
 
                                 String heightLine = chunkX + ":" + chunkZ + ":" + x + ":" + z + ":" + height + "\n";
                                 String biomeLine = chunkX + ":" + chunkZ + ":" + x + ":" + z + ":" + biomeId + "\n";
-                                full.append(heightLine, 0, heightLine.length() - 1).append(' ').append(biomeId).append('\n');
+                                full.append(heightLine, 0, heightLine.length() - 1)
+                                        .append(' ')
+                                        .append(biomeId)
+                                        .append('\n');
                                 heights.update(heightLine.getBytes(StandardCharsets.UTF_8));
                                 biomes.update(biomeLine.getBytes(StandardCharsets.UTF_8));
 
                                 // SURFACE 已经算完含水层，抽三层流体，重点看 c2me 的含水层优化有没有把
                                 // default_fluid（portal_fluid）或岩浆调色板改掉
                                 for (int fluidY : FLUID_SAMPLE_YS) {
-                                    int y = Math.max(level.getMinBuildHeight(),
-                                        Math.min(level.getMaxBuildHeight() - 1, fluidY));
+                                    int y = Math.max(
+                                            level.getMinBuildHeight(), Math.min(level.getMaxBuildHeight() - 1, fluidY));
                                     FluidState fluid = chunk.getFluidState(new BlockPos(worldX, y, worldZ));
-                                    String fluidId = BuiltInRegistries.FLUID.getKey(fluid.getType()).toString();
-                                    String fluidLine = chunkX + ":" + chunkZ + ":" + x + ":" + z + ":" + y + ":"
-                                        + fluidId + "\n";
+                                    String fluidId = BuiltInRegistries.FLUID
+                                            .getKey(fluid.getType())
+                                            .toString();
+                                    String fluidLine =
+                                            chunkX + ":" + chunkZ + ":" + x + ":" + z + ":" + y + ":" + fluidId + "\n";
                                     full.append("fluid:").append(fluidLine);
                                     fluids.update(fluidLine.getBytes(StandardCharsets.UTF_8));
                                 }
@@ -140,10 +148,17 @@ public final class ChronoParityProbe {
             Path out = server.getServerDirectory().resolve("ddt-chrono-fingerprint.txt");
             Files.writeString(out, full.toString(), StandardCharsets.UTF_8);
             DawnDuskTerminal.LOGGER.info(
-                "DDT_CHRONO_PARITY seed={} line={} normal=({},{}) columns={} height={} biome={} fluid={} combined={} file={}",
-                level.getSeed(), line, normalX, normalZ, columns,
-                hex(heights.digest()), hex(biomes.digest()), hex(fluids.digest()),
-                hex(sha256(full.toString())), out);
+                    "DDT_CHRONO_PARITY seed={} line={} normal=({},{}) columns={} height={} biome={} fluid={} combined={} file={}",
+                    level.getSeed(),
+                    line,
+                    normalX,
+                    normalZ,
+                    columns,
+                    hex(heights.digest()),
+                    hex(biomes.digest()),
+                    hex(fluids.digest()),
+                    hex(sha256(full.toString())),
+                    out);
         } catch (Throwable t) {
             DawnDuskTerminal.LOGGER.error("DDT_CHRONO_PARITY failed", t);
         } finally {

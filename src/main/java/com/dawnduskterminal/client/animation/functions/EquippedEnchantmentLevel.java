@@ -26,7 +26,11 @@ public class EquippedEnchantmentLevel extends LivingEntityFunction {
         if (id == null) {
             return null;
         }
-        HolderLookup.RegistryLookup<Enchantment> lookup = context.entity().level().registryAccess().lookup(Registries.ENCHANTMENT).orElse(null);
+        HolderLookup.RegistryLookup<Enchantment> lookup = context.entity()
+                .level()
+                .registryAccess()
+                .lookup(Registries.ENCHANTMENT)
+                .orElse(null);
         if (lookup == null) {
             return 0;
         }

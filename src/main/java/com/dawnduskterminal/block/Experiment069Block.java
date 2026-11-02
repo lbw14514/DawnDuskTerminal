@@ -44,8 +44,8 @@ public class Experiment069Block extends Block implements EntityBlock {
     /** 只有客户端刻：那颗 ticker 只负责把场的立方框画出来，服务端没有任何每 tick 要做的事 */
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
-                                                                  BlockEntityType<T> type) {
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type) {
         if (!level.isClientSide) {
             return null;
         }

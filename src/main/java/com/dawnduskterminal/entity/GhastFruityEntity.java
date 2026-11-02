@@ -5,6 +5,7 @@ import com.dawnduskterminal.item.FireJetProcess;
 import com.dawnduskterminal.item.GhastTrapProcess;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModSounds;
+import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -38,17 +39,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
-import twilightforest.init.TFBlocks;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.EnumSet;
+import twilightforest.init.TFBlocks;
 
 /**
  * 「恶果」：飘在原维度白桦林里的恶魂变体，行为照抄原版恶魂，只有挨火球这一条不同
@@ -101,8 +100,8 @@ public class GhastFruityEntity extends Ghast {
      * （同步的只有 {@code DATA_MOB_FLAGS_ID} 里那一位「激进」，原版没有任何地方写它），
      * 所以客户端要知道「这只恶果现在盯上谁了」只能靠自己的数据位
      */
-    private static final EntityDataAccessor<Byte> DATA_FACE = SynchedEntityData.defineId(
-        GhastFruityEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_FACE =
+            SynchedEntityData.defineId(GhastFruityEntity.class, EntityDataSerializers.BYTE);
 
     /** 平静 / 有索敌 / 蓄力中，顺序与 {@link #DATA_FACE} 里存的序号一致 */
     public enum Face {
@@ -195,8 +194,8 @@ public class GhastFruityEntity extends Ghast {
      * <p>客户端要靠它把手里那颗方雷画成发光的那一套（{@code experiment_052_glow}），
      * 与方块点火后的样子一致；服务端靠它保证只点一次火
      */
-    private static final EntityDataAccessor<Boolean> DATA_IGNITED = SynchedEntityData.defineId(
-        GhastFruityEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_IGNITED =
+            SynchedEntityData.defineId(GhastFruityEntity.class, EntityDataSerializers.BOOLEAN);
 
     /**
      * 生成时抬高多少格
@@ -208,12 +207,12 @@ public class GhastFruityEntity extends Ghast {
 
     /** 重现方块变体受击时整只消失的概率，以及那次隐身持续多久（5 秒） */
     private static final float VANISH_CHANCE = 0.4F;
+
     private static final int VANISH_INVISIBLE_TICKS = 100;
 
     /** 变体同步的持有方块，序号与 {@link HeldBlock} 一致 */
-    private static final EntityDataAccessor<Byte> DATA_HELD_BLOCK = SynchedEntityData.defineId(
-        GhastFruityEntity.class, EntityDataSerializers.BYTE);
-
+    private static final EntityDataAccessor<Byte> DATA_HELD_BLOCK =
+            SynchedEntityData.defineId(GhastFruityEntity.class, EntityDataSerializers.BYTE);
 
     /** 052 变体剩下的引信 tick；{@code -1} 表示没点着。只在服务端有意义 */
     private int fuse = -1;
@@ -228,9 +227,7 @@ public class GhastFruityEntity extends Ghast {
 
     public static AttributeSupplier.Builder createAttributes() {
         // 生命值 30，索敌 24 格（正常的实体索敌距离，不再是原版恶魂的 100 格）
-        return Mob.createMobAttributes()
-            .add(Attributes.MAX_HEALTH, 30.0D)
-            .add(Attributes.FOLLOW_RANGE, 24.0D);
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 30.0D).add(Attributes.FOLLOW_RANGE, 24.0D);
     }
 
     /**
@@ -242,14 +239,14 @@ public class GhastFruityEntity extends Ghast {
     @SuppressWarnings("deprecation")
     @Override
     public SpawnGroupData finalizeSpawn(
-        ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType,
-        @Nullable SpawnGroupData spawnGroupData
-    ) {
+            ServerLevelAccessor level,
+            DifficultyInstance difficulty,
+            MobSpawnType spawnType,
+            @Nullable SpawnGroupData spawnGroupData) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
         if (spawnType == MobSpawnType.NATURAL && this.getRandom().nextFloat() < VARIANT_CHANCE) {
             HeldBlock[] choices = {
-                HeldBlock.REAPPEARING_BLOCK, HeldBlock.ENCASED_FIRE_JET, HeldBlock.GHAST_TRAP,
-                HeldBlock.EXPERIMENT_052
+                HeldBlock.REAPPEARING_BLOCK, HeldBlock.ENCASED_FIRE_JET, HeldBlock.GHAST_TRAP, HeldBlock.EXPERIMENT_052
             };
             this.setHeldBlock(choices[this.getRandom().nextInt(choices.length)]);
         }
@@ -292,11 +289,12 @@ public class GhastFruityEntity extends Ghast {
      * <p>只拦 {@code NATURAL}：刷怪笼（{@code SPAWNER}）与刷怪蛋是玩家自己放的，不该被自然容量卡住
      */
     public static boolean checkGhastFruitySpawnRules(
-        EntityType<GhastFruityEntity> type, ServerLevelAccessor level, MobSpawnType spawnType,
-        BlockPos pos, RandomSource random
-    ) {
-        if (level.getDifficulty() == Difficulty.PEACEFUL
-            || !checkMobSpawnRules(type, level, spawnType, pos, random)) {
+            EntityType<GhastFruityEntity> type,
+            ServerLevelAccessor level,
+            MobSpawnType spawnType,
+            BlockPos pos,
+            RandomSource random) {
+        if (level.getDifficulty() == Difficulty.PEACEFUL || !checkMobSpawnRules(type, level, spawnType, pos, random)) {
             return false;
         }
         return spawnType != MobSpawnType.NATURAL || GhastFruityPopulation.tryReserve(level.getLevel());
@@ -310,8 +308,10 @@ public class GhastFruityEntity extends Ghast {
         this.goalSelector.addGoal(5, new VariantWanderGoal(this));
         this.goalSelector.addGoal(7, new GhastLookGoal(this));
         // 普通恶果用共用骨架（一发）；持块变体走 VariantCombatGoal，所以由 ready 挡掉
-        this.goalSelector.addGoal(7, new GhastShootGoal<GhastFruityEntity>(this,
-            ghast -> !ghast.isBlockVariant(), GhastFruityEntity::mouthPosition, this::fireAtTarget));
+        this.goalSelector.addGoal(
+                7,
+                new GhastShootGoal<GhastFruityEntity>(
+                        this, ghast -> !ghast.isBlockVariant(), GhastFruityEntity::mouthPosition, this::fireAtTarget));
         // 正常的实体索敌：24 格内找玩家，不再叠原版恶魂那条 |Δy| <= 4 的过滤
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
@@ -342,15 +342,19 @@ public class GhastFruityEntity extends Ghast {
      */
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (amount > 0.0F && !this.level().isClientSide()
-            && this.getHeldBlock() == HeldBlock.REAPPEARING_BLOCK
-            && this.getRandom().nextFloat() < VANISH_CHANCE) {
+        if (amount > 0.0F
+                && !this.level().isClientSide()
+                && this.getHeldBlock() == HeldBlock.REAPPEARING_BLOCK
+                && this.getRandom().nextFloat() < VANISH_CHANCE) {
             this.vanish();
             return false;
         }
         boolean hurt = super.hurt(source, amount);
-        if (hurt && !this.level().isClientSide() && source.getEntity() instanceof LivingEntity attacker
-            && this.canAttack(attacker) && !this.isAlliedTo(attacker)) {
+        if (hurt
+                && !this.level().isClientSide()
+                && source.getEntity() instanceof LivingEntity attacker
+                && this.canAttack(attacker)
+                && !this.isAlliedTo(attacker)) {
             this.setTarget(attacker);
         }
         return hurt;
@@ -359,13 +363,19 @@ public class GhastFruityEntity extends Ghast {
     /** 重现方块那一招：一片红石粉尘，然后 5 秒无粒子隐身 */
     private void vanish() {
         if (this.level() instanceof ServerLevel level) {
-            level.sendParticles(DustParticleOptions.REDSTONE,
-                this.getX(), this.getY() + this.getBbHeight() * 0.5D, this.getZ(),
-                24, 0.6D, 0.6D, 0.6D, 0.0D);
+            level.sendParticles(
+                    DustParticleOptions.REDSTONE,
+                    this.getX(),
+                    this.getY() + this.getBbHeight() * 0.5D,
+                    this.getZ(),
+                    24,
+                    0.6D,
+                    0.6D,
+                    0.6D,
+                    0.0D);
         }
         this.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, VANISH_INVISIBLE_TICKS, 0, false, false, false));
     }
-
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -398,7 +408,8 @@ public class GhastFruityEntity extends Ghast {
 
     private void refreshHeldMoveControl() {
         if (!this.level().isClientSide()) {
-            this.moveControl = this.isBlockVariant() ? new LowFlightMoveControl(this) : new RandomFloatMoveControl(this);
+            this.moveControl =
+                    this.isBlockVariant() ? new LowFlightMoveControl(this) : new RandomFloatMoveControl(this);
         }
     }
 
@@ -423,8 +434,16 @@ public class GhastFruityEntity extends Ghast {
         }
         this.fuse = KAMIKAZE_FUSE_TICKS;
         this.entityData.set(DATA_IGNITED, true);
-        this.level().playSound(null, this.getX(), this.getY() + SPAWN_LIFT, this.getZ(),
-            ModSounds.EXPERIMENT_052_IGNITE.get(), SoundSource.HOSTILE, 2.0F, 1.0F);
+        this.level()
+                .playSound(
+                        null,
+                        this.getX(),
+                        this.getY() + SPAWN_LIFT,
+                        this.getZ(),
+                        ModSounds.EXPERIMENT_052_IGNITE.get(),
+                        SoundSource.HOSTILE,
+                        2.0F,
+                        1.0F);
     }
 
     /**
@@ -520,7 +539,6 @@ public class GhastFruityEntity extends Ghast {
         return this.getTarget() != null ? Face.ANNOYED : Face.CALM;
     }
 
-
     @Override
     protected SoundEvent getAmbientSound() {
         return ModSounds.GHAST_UNIVERSAL_AMBIENT.get();
@@ -563,9 +581,9 @@ public class GhastFruityEntity extends Ghast {
     public static Vec3 mouthPosition(GhastFruityEntity ghast) {
         Vec3 view = ghast.getViewVector(1.0F);
         return new Vec3(
-            ghast.getX() + view.x * MOUTH_FORWARD,
-            ghast.getY() + MOUTH_HEIGHT,
-            ghast.getZ() + view.z * MOUTH_FORWARD);
+                ghast.getX() + view.x * MOUTH_FORWARD,
+                ghast.getY() + MOUTH_HEIGHT,
+                ghast.getZ() + view.z * MOUTH_FORWARD);
     }
 
     private void playVoice(SoundEvent sound) {
@@ -673,7 +691,8 @@ public class GhastFruityEntity extends Ghast {
         public void tick() {
             if (this.operation == MoveControl.Operation.MOVE_TO) {
                 if (this.floatDuration-- <= 0) {
-                    this.floatDuration = this.floatDuration + this.ghast.getRandom().nextInt(5) + 2;
+                    this.floatDuration =
+                            this.floatDuration + this.ghast.getRandom().nextInt(5) + 2;
                     this.step(this.wantedY);
                 }
             }
@@ -682,9 +701,7 @@ public class GhastFruityEntity extends Ghast {
         /** 朝 (wantedX, targetY, wantedZ) 推一步；子类只换高度 */
         protected void step(double targetY) {
             Vec3 offset = new Vec3(
-                this.wantedX - this.ghast.getX(),
-                targetY - this.ghast.getY(),
-                this.wantedZ - this.ghast.getZ());
+                    this.wantedX - this.ghast.getX(), targetY - this.ghast.getY(), this.wantedZ - this.ghast.getZ());
             double length = offset.length();
             offset = offset.normalize();
             if (this.canReach(offset, Mth.ceil(length))) {
@@ -754,21 +771,19 @@ public class GhastFruityEntity extends Ghast {
         @Override
         protected void step(double targetY) {
             Heightmap.Types heightmap = Heightmap.Types.MOTION_BLOCKING_NO_LEAVES;
-            int surface = this.ghast.level().getHeight(heightmap,
-                Mth.floor(this.wantedX), Mth.floor(this.wantedZ));
+            int surface = this.ghast.level().getHeight(heightmap, Mth.floor(this.wantedX), Mth.floor(this.wantedZ));
             double low = surface + LOW_FLIGHT_HEIGHT;
             double height = Double.isNaN(this.diveY) ? low : Math.min(low, this.diveY);
             Vec3 offset = new Vec3(
-                this.wantedX - this.ghast.getX(),
-                height - this.ghast.getY(),
-                this.wantedZ - this.ghast.getZ());
+                    this.wantedX - this.ghast.getX(), height - this.ghast.getY(), this.wantedZ - this.ghast.getZ());
             if (offset.lengthSqr() < 1.0E-4D) {
                 this.operation = MoveControl.Operation.WAIT;
                 return;
             }
             // 点着了火的那只把推力降到三成：引信期间仍在靠近，只是慢
             double accel = this.ghast.isIgnited() ? APPROACH_ACCEL * IGNITED_APPROACH_SCALE : APPROACH_ACCEL;
-            this.ghast.setDeltaMovement(this.ghast.getDeltaMovement().add(offset.normalize().scale(accel)));
+            this.ghast.setDeltaMovement(
+                    this.ghast.getDeltaMovement().add(offset.normalize().scale(accel)));
         }
     }
 
@@ -788,6 +803,7 @@ public class GhastFruityEntity extends Ghast {
     private static final class VariantCombatGoal extends Goal {
         /** 近战一下 6 点，间隔 1 秒 */
         private static final float MELEE_DAMAGE = 6.0F;
+
         private static final int MELEE_COOLDOWN = 20;
         /** 近战够得着的距离：1.5 格碰撞箱的一半再加一点余量 */
         private static final double MELEE_REACH = 2.2D;
@@ -836,10 +852,11 @@ public class GhastFruityEntity extends Ghast {
             double distance = this.ghast.distanceTo(target);
             switch (this.ghast.getHeldBlock()) {
                 case REAPPEARING_BLOCK -> this.melee(target, distance);
-                case ENCASED_FIRE_JET -> this.ranged(target, distance, FireJetProcess.LENGTH, FireJetProcess.TOTAL_TICKS);
+                case ENCASED_FIRE_JET -> this.ranged(
+                        target, distance, FireJetProcess.LENGTH, FireJetProcess.TOTAL_TICKS);
                 case GHAST_TRAP -> this.ranged(target, distance, GhastTrapProcess.LENGTH, GhastTrapProcess.TOTAL_TICKS);
                 case EXPERIMENT_052 -> this.kamikaze(target, distance);
-                default -> { }
+                default -> {}
             }
         }
 
@@ -1011,12 +1028,8 @@ public class GhastFruityEntity extends Ghast {
      */
     private void fireAtTarget(LivingEntity target, Vec3 muzzle) {
         Level level = this.level();
-        Vec3 aim = new Vec3(
-            target.getX() - muzzle.x,
-            target.getY(0.5D) - muzzle.y,
-            target.getZ() - muzzle.z);
-        LargeFireball fireball =
-            new LargeFireball(level, this, aim.normalize(), this.getExplosionPower());
+        Vec3 aim = new Vec3(target.getX() - muzzle.x, target.getY(0.5D) - muzzle.y, target.getZ() - muzzle.z);
+        LargeFireball fireball = new LargeFireball(level, this, aim.normalize(), this.getExplosionPower());
         fireball.setPos(muzzle.x, muzzle.y, muzzle.z);
         level.addFreshEntity(fireball);
     }

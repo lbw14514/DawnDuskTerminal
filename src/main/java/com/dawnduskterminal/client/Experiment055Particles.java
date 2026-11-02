@@ -32,8 +32,7 @@ public final class Experiment055Particles {
     private Experiment055Particles() {}
 
     /** 收到服务端那条射线（方向是单位向量，长度已按 1.5 × 影响半径算好） */
-    public static void spawn(int casterId, double directionX, double directionY, double directionZ,
-                             double length) {
+    public static void spawn(int casterId, double directionX, double directionY, double directionZ, double length) {
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) {
@@ -49,15 +48,18 @@ public final class Experiment055Particles {
         }
         Vec3 direction = new Vec3(directionX / norm, directionY / norm, directionZ / norm);
         Vec3 centre = caster.position().add(0.0D, caster.getBbHeight() * 0.5D, 0.0D);
-        int count = Mth.clamp((int)Math.ceil(length * PER_BLOCK), 1, MAX_PARTICLES_PER_RAY);
+        int count = Mth.clamp((int) Math.ceil(length * PER_BLOCK), 1, MAX_PARTICLES_PER_RAY);
         for (int i = 0; i < count; i++) {
             // 沿射线均匀铺开，每颗再抖半格间距，免得排成一条等距的点线；速度 0，剩下的交给原版粒子自己飘
             double along = length * (i + level.getRandom().nextDouble()) / count;
-            level.addParticle(ParticleTypes.ENCHANT,
-                centre.x + direction.x * along,
-                centre.y + direction.y * along,
-                centre.z + direction.z * along,
-                0.0D, 0.0D, 0.0D);
+            level.addParticle(
+                    ParticleTypes.ENCHANT,
+                    centre.x + direction.x * along,
+                    centre.y + direction.y * along,
+                    centre.z + direction.z * along,
+                    0.0D,
+                    0.0D,
+                    0.0D);
         }
     }
 }

@@ -4,10 +4,10 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.client.NativeGeoMesh;
 import com.dawnduskterminal.client.NativeMesh;
 import com.dawnduskterminal.client.NativeMeshBatch;
+import com.dawnduskterminal.geckolib3.core.processor.ILocationBone;
 import com.dawnduskterminal.geckolib3.core.util.Color;
 import com.dawnduskterminal.geckolib3.geo.GeoReplacedEntityRenderer;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
-import com.dawnduskterminal.geckolib3.core.processor.ILocationBone;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoModel;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoModel;
@@ -15,6 +15,10 @@ import com.dawnduskterminal.geckolib3.util.RenderUtils;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -26,11 +30,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.function.Function;
 
 /**
  * 本模组所有 Bedrock 模型实体的渲染器基类：每只实体一份动画实例 + native 网格捷径
@@ -45,7 +44,7 @@ import java.util.function.Function;
  * 见 {@link NativeGeoMesh}。
  */
 public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T>>
-    extends GeoReplacedEntityRenderer<T, A> {
+        extends GeoReplacedEntityRenderer<T, A> {
 
     private final Map<T, A> animatables = new WeakHashMap<>();
     private final Function<T, A> factory;
@@ -96,8 +95,14 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
     }
 
     @Override
-    public void render(T entity, A animatable, float entityYaw, float partialTick, PoseStack poseStack,
-                       MultiBufferSource bufferSource, int packedLight) {
+    public void render(
+            T entity,
+            A animatable,
+            float entityYaw,
+            float partialTick,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight) {
         if (!this.renderWithNative(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight)) {
             super.render(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         }
@@ -114,8 +119,8 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
      *
      * <p>骨骼缩放到 0（模型包用它隐藏部件）时不画，否则物品会留在原地。
      */
-    private void renderHeldItems(T entity, A animatable, PoseStack poseStack, MultiBufferSource bufferSource,
-                                 int packedLight) {
+    private void renderHeldItems(
+            T entity, A animatable, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
         ItemStack mainHand = entity.getMainHandItem();
         ItemStack offHand = entity.getOffhandItem();
         if (mainHand.isEmpty() && offHand.isEmpty()) {
@@ -130,18 +135,38 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
             return;
         }
         if (!mainHand.isEmpty()) {
-            this.renderInHand(entity, mainHand, model.rightHandBones(), ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
-                false, poseStack, bufferSource, packedLight);
+            this.renderInHand(
+                    entity,
+                    mainHand,
+                    model.rightHandBones(),
+                    ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
+                    false,
+                    poseStack,
+                    bufferSource,
+                    packedLight);
         }
         if (!offHand.isEmpty()) {
-            this.renderInHand(entity, offHand, model.leftHandBones(), ItemDisplayContext.THIRD_PERSON_LEFT_HAND,
-                true, poseStack, bufferSource, packedLight);
+            this.renderInHand(
+                    entity,
+                    offHand,
+                    model.leftHandBones(),
+                    ItemDisplayContext.THIRD_PERSON_LEFT_HAND,
+                    true,
+                    poseStack,
+                    bufferSource,
+                    packedLight);
         }
     }
 
-    private void renderInHand(T entity, ItemStack stack, List<? extends ILocationBone> hand,
-                              ItemDisplayContext displayContext, boolean leftHand, PoseStack poseStack,
-                              MultiBufferSource bufferSource, int packedLight) {
+    private void renderInHand(
+            T entity,
+            ItemStack stack,
+            List<? extends ILocationBone> hand,
+            ItemDisplayContext displayContext,
+            boolean leftHand,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight) {
         if (hand.isEmpty()) {
             return;
         }
@@ -150,14 +175,20 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
         if (!hidden) {
             poseStack.translate(0.0D, -0.0625D, -0.1D);
             poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            this.itemInHandRenderer.renderItem(entity, stack, displayContext, leftHand, poseStack, bufferSource,
-                packedLight);
+            this.itemInHandRenderer.renderItem(
+                    entity, stack, displayContext, leftHand, poseStack, bufferSource, packedLight);
         }
         poseStack.popPose();
     }
 
-    private boolean renderWithNative(T entity, A animatable, float entityYaw, float partialTick,
-                                     PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+    private boolean renderWithNative(
+            T entity,
+            A animatable,
+            float entityYaw,
+            float partialTick,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight) {
         if (!NativeMesh.isAvailable() || !animatable.updateModel()) {
             return false;
         }
@@ -178,8 +209,8 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
                 // 中途抛异常时也要收尾，否则批次会一直挂在 active 上，把后面几帧的立方体全攒进来
                 this.nativeBatch.end();
             }
-            RenderType type = this.getRenderType(entity, partialTick, poseStack, bufferSource, null, packedLight,
-                this.getTextureLocation(entity));
+            RenderType type = this.getRenderType(
+                    entity, partialTick, poseStack, bufferSource, null, packedLight, this.getTextureLocation(entity));
             this.nativeBatch.flush(bufferSource.getBuffer(type));
             return true;
         } catch (NativeMesh.NativeMeshException failure) {
@@ -190,8 +221,16 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
     }
 
     @Override
-    public void renderCubesOfBone(AnimatedGeoBone bone, PoseStack poseStack, VertexConsumer buffer,
-                                  int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
+    public void renderCubesOfBone(
+            AnimatedGeoBone bone,
+            PoseStack poseStack,
+            VertexConsumer buffer,
+            int packedLight,
+            int packedOverlay,
+            float red,
+            float green,
+            float blue,
+            float alpha) {
         if (!this.nativeBatch.isActive()) {
             super.renderCubesOfBone(bone, poseStack, buffer, packedLight, packedOverlay, red, green, blue, alpha);
             return;
@@ -227,8 +266,8 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
         } catch (IllegalStateException emptyModel) {
             // 空模型是模型资源本身的问题，native 没坏：不能让它熔断，也不能每帧重试
             this.emptyNativeModel = model;
-            DawnDuskTerminal.LOGGER.warn("{} 的模型没有可渲染的立方体，回退 Java 路径",
-                this.getClass().getSimpleName());
+            DawnDuskTerminal.LOGGER.warn(
+                    "{} 的模型没有可渲染的立方体，回退 Java 路径", this.getClass().getSimpleName());
         }
         return this.nativeMesh;
     }
@@ -267,8 +306,8 @@ public abstract class YsmEntityRenderer<T extends Mob, A extends YsmAnimatable<T
     }
 
     @Override
-    protected void setupRotations(T entity, PoseStack poseStack, float ageInTicks, float rotationYaw,
-                                  float partialTicks, float scale) {
+    protected void setupRotations(
+            T entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTicks, float scale) {
         int deathTime = entity.deathTime;
         if (deathTime <= 0 || !this.suppressDeathRotation(entity)) {
             super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTicks, scale);

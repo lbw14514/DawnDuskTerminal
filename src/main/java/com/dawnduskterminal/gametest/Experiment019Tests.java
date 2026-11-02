@@ -44,12 +44,16 @@ public final class Experiment019Tests {
     public static void itemPlacesThePlantBlock(GameTestHelper helper) {
         Block block = ModBlocks.EXPERIMENT_019.get();
         Item item = ModItems.EXPERIMENT_019.get();
-        helper.assertTrue(item instanceof BlockItem,
-            BLOCK_ID + " must be placed by a BlockItem, got " + item.getClass().getSimpleName());
-        helper.assertTrue(((BlockItem) item).getBlock() == block,
-            "the block item must place " + BLOCK_ID + ", got " + ((BlockItem) item).getBlock());
-        helper.assertTrue(item.getDescriptionId().equals("block." + BLOCK_ID.replace(':', '.')),
-            "a block item must take its name from the block, got " + item.getDescriptionId());
+        helper.assertTrue(
+                item instanceof BlockItem,
+                BLOCK_ID + " must be placed by a BlockItem, got "
+                        + item.getClass().getSimpleName());
+        helper.assertTrue(
+                ((BlockItem) item).getBlock() == block,
+                "the block item must place " + BLOCK_ID + ", got " + ((BlockItem) item).getBlock());
+        helper.assertTrue(
+                item.getDescriptionId().equals("block." + BLOCK_ID.replace(':', '.')),
+                "a block item must take its name from the block, got " + item.getDescriptionId());
         helper.succeed();
     }
 
@@ -57,24 +61,30 @@ public final class Experiment019Tests {
     @SuppressWarnings("deprecation") // 无参 getSoundType 是读方块音效的原版入口，NeoForge 标了废弃，原版也还在用
     public static void isAPlantLikeVanillaFlowers(GameTestHelper helper) {
         Block block = ModBlocks.EXPERIMENT_019.get();
-        helper.assertTrue(block instanceof BushBlock,
-            BLOCK_ID + " must extend BushBlock so it grows on soil and vanishes with it, got "
-                + block.getClass().getSimpleName());
+        helper.assertTrue(
+                block instanceof BushBlock,
+                BLOCK_ID + " must extend BushBlock so it grows on soil and vanishes with it, got "
+                        + block.getClass().getSimpleName());
 
         BlockState state = block.defaultBlockState();
         // instabreak：空手一下就掉，硬度就是 0
-        helper.assertTrue(state.getDestroySpeed(null, null) == 0.0F,
-            BLOCK_ID + " must break instantly, got destroy speed " + state.getDestroySpeed(null, null));
-        helper.assertTrue(state.getSoundType() == SoundType.GRASS,
-            BLOCK_ID + " must sound like grass, got " + state.getSoundType());
-        helper.assertTrue(block.defaultMapColor() == MapColor.PLANT,
-            BLOCK_ID + " map color must be PLANT, got " + block.defaultMapColor());
+        helper.assertTrue(
+                state.getDestroySpeed(null, null) == 0.0F,
+                BLOCK_ID + " must break instantly, got destroy speed " + state.getDestroySpeed(null, null));
+        helper.assertTrue(
+                state.getSoundType() == SoundType.GRASS,
+                BLOCK_ID + " must sound like grass, got " + state.getSoundType());
+        helper.assertTrue(
+                block.defaultMapColor() == MapColor.PLANT,
+                BLOCK_ID + " map color must be PLANT, got " + block.defaultMapColor());
         // noCollission：站不进碰撞箱，活塞推过来是直接推掉
-        helper.assertTrue(state.getCollisionShape(helper.getLevel(), BlockPos.ZERO).isEmpty(),
-            BLOCK_ID + " must have no collision shape, got "
-                + state.getCollisionShape(helper.getLevel(), BlockPos.ZERO));
-        helper.assertTrue(state.getPistonPushReaction() == PushReaction.DESTROY,
-            BLOCK_ID + " must be destroyed by pistons, got " + state.getPistonPushReaction());
+        helper.assertTrue(
+                state.getCollisionShape(helper.getLevel(), BlockPos.ZERO).isEmpty(),
+                BLOCK_ID + " must have no collision shape, got "
+                        + state.getCollisionShape(helper.getLevel(), BlockPos.ZERO));
+        helper.assertTrue(
+                state.getPistonPushReaction() == PushReaction.DESTROY,
+                BLOCK_ID + " must be destroyed by pistons, got " + state.getPistonPushReaction());
         helper.succeed();
     }
 
@@ -85,15 +95,15 @@ public final class Experiment019Tests {
         BlockState plant = ModBlocks.EXPERIMENT_019.get().defaultBlockState();
 
         level.setBlockAndUpdate(pos.below(), Blocks.GRASS_BLOCK.defaultBlockState());
-        helper.assertTrue(plant.canSurvive(level, pos),
-            BLOCK_ID + " must survive on a grass block, exactly like a vanilla flower");
+        helper.assertTrue(
+                plant.canSurvive(level, pos),
+                BLOCK_ID + " must survive on a grass block, exactly like a vanilla flower");
 
         level.setBlockAndUpdate(pos.below(), Blocks.FARMLAND.defaultBlockState());
         helper.assertTrue(plant.canSurvive(level, pos), BLOCK_ID + " must survive on farmland too");
 
         level.setBlockAndUpdate(pos.below(), Blocks.STONE.defaultBlockState());
-        helper.assertFalse(plant.canSurvive(level, pos),
-            BLOCK_ID + " must not survive on stone");
+        helper.assertFalse(plant.canSurvive(level, pos), BLOCK_ID + " must not survive on stone");
         helper.succeed();
     }
 
@@ -105,10 +115,9 @@ public final class Experiment019Tests {
         level.setBlockAndUpdate(pos, ModBlocks.EXPERIMENT_019.get().defaultBlockState());
 
         List<ItemStack> drops = Block.getDrops(level.getBlockState(pos), level, pos, null);
-        helper.assertTrue(drops.size() == 1,
-            BLOCK_ID + " must drop exactly one stack, got " + drops);
-        helper.assertTrue(drops.get(0).is(ModItems.EXPERIMENT_019.get()),
-            BLOCK_ID + " must drop itself, got " + drops.get(0));
+        helper.assertTrue(drops.size() == 1, BLOCK_ID + " must drop exactly one stack, got " + drops);
+        helper.assertTrue(
+                drops.get(0).is(ModItems.EXPERIMENT_019.get()), BLOCK_ID + " must drop itself, got " + drops.get(0));
         helper.succeed();
     }
 
@@ -122,13 +131,15 @@ public final class Experiment019Tests {
     @GameTest(template = "ddt_empty")
     public static void crossModelDeclaresCutoutRenderType(GameTestHelper helper) {
         JsonObject model = readModel(helper, "block/experiment_019");
-        helper.assertTrue(model.has("parent")
-                && model.get("parent").getAsString().equals("minecraft:block/cross"),
-            "block/experiment_019 must stay a cross model, got " + model.get("parent"));
-        helper.assertTrue(model.has("render_type"),
-            "block/experiment_019 must declare render_type, otherwise its transparent pixels turn black");
-        helper.assertTrue(model.get("render_type").getAsString().equals("minecraft:cutout"),
-            "block/experiment_019 must render as cutout, got " + model.get("render_type"));
+        helper.assertTrue(
+                model.has("parent") && model.get("parent").getAsString().equals("minecraft:block/cross"),
+                "block/experiment_019 must stay a cross model, got " + model.get("parent"));
+        helper.assertTrue(
+                model.has("render_type"),
+                "block/experiment_019 must declare render_type, otherwise its transparent pixels turn black");
+        helper.assertTrue(
+                model.get("render_type").getAsString().equals("minecraft:cutout"),
+                "block/experiment_019 must render as cutout, got " + model.get("render_type"));
         helper.succeed();
     }
 
@@ -138,7 +149,7 @@ public final class Experiment019Tests {
         try (InputStream stream = Experiment019Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read " + resource + ": " + e);
             return new JsonObject();

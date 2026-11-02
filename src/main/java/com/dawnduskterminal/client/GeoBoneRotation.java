@@ -14,8 +14,7 @@ import com.dawnduskterminal.geckolib3.core.snapshot.BoneSnapshot;
  * {@code initialSnapshot.rotationValueX + 动画值} 一致；{@link #add} 是叠加式写入。
  */
 public final class GeoBoneRotation {
-    private GeoBoneRotation() {
-    }
+    private GeoBoneRotation() {}
 
     /** 三轴一起写，入参为动画文件里的度数 */
     public static void set(IBone bone, double xDegrees, double yDegrees, double zDegrees) {

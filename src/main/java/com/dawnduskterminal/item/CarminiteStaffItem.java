@@ -4,12 +4,13 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModSounds;
+import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
-import net.minecraft.core.Holder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -26,8 +27,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.List;
 
 /**
  * 砷铅铁钼反应权杖
@@ -49,6 +48,7 @@ public class CarminiteStaffItem extends Item {
     private static final int COOLDOWN_PER_QUICK_CHARGE = 25;
     /** 快速装填的原版上限，命令给超过 3 级时冷却会算成负数 */
     private static final int MAX_QUICK_CHARGE = 3;
+
     private static final float VELOCITY = 1.0F;
     private static final float VELOCITY_PER_POWER = 0.2F;
     private static final float INACCURACY = 1.0F;
@@ -56,6 +56,7 @@ public class CarminiteStaffItem extends Item {
     private static final int ENCHANTMENT_VALUE = 2;
     /** 近战与挖掘的耐久消耗，照抄源 mod */
     private static final int HURT_ENEMY_DAMAGE = 2;
+
     private static final int MINE_BLOCK_DAMAGE = 1;
 
     public CarminiteStaffItem(Properties properties) {
@@ -65,15 +66,21 @@ public class CarminiteStaffItem extends Item {
     /** 单手武器的属性表，1.21.1 通过 {@link Item.Properties#attributes} 挂到物品上 */
     public static ItemAttributeModifiers createAttributes() {
         return ItemAttributeModifiers.builder()
-            .add(Attributes.ATTACK_DAMAGE,
-                new AttributeModifier(DawnDuskTerminal.id("staff_attack_damage"), ATTACK_DAMAGE,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .add(Attributes.ATTACK_SPEED,
-                new AttributeModifier(DawnDuskTerminal.id("staff_attack_speed"), ATTACK_SPEED,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .build();
+                .add(
+                        Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(
+                                DawnDuskTerminal.id("staff_attack_damage"),
+                                ATTACK_DAMAGE,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(
+                        Attributes.ATTACK_SPEED,
+                        new AttributeModifier(
+                                DawnDuskTerminal.id("staff_attack_speed"),
+                                ATTACK_SPEED,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
     }
 
     @Override
@@ -86,18 +93,30 @@ public class CarminiteStaffItem extends Item {
         if (!level.isClientSide) {
             int power = CarminiteBallEntity.enchantmentLevel(stack, Enchantments.POWER);
             CarminiteBallEntity ball = new CarminiteBallEntity(level, player, stack);
-            ball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
-                VELOCITY + VELOCITY_PER_POWER * power, INACCURACY);
+            ball.shootFromRotation(
+                    player,
+                    player.getXRot(),
+                    player.getYRot(),
+                    0.0F,
+                    VELOCITY + VELOCITY_PER_POWER * power,
+                    INACCURACY);
             level.addFreshEntity(ball);
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                ModSounds.CARMINITE_STAFF_SHOOT.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+            level.playSound(
+                    null,
+                    player.getX(),
+                    player.getY(),
+                    player.getZ(),
+                    ModSounds.CARMINITE_STAFF_SHOOT.get(),
+                    SoundSource.PLAYERS,
+                    1.0F,
+                    1.0F);
             if (!infinite) {
                 consumeAmmo(player);
             }
             player.awardStat(Stats.ITEM_USED.get(this));
         }
-        int quickCharge = Math.min(MAX_QUICK_CHARGE,
-            CarminiteBallEntity.enchantmentLevel(stack, Enchantments.QUICK_CHARGE));
+        int quickCharge =
+                Math.min(MAX_QUICK_CHARGE, CarminiteBallEntity.enchantmentLevel(stack, Enchantments.QUICK_CHARGE));
         player.getCooldowns().addCooldown(this, COOLDOWN_TICKS - COOLDOWN_PER_QUICK_CHARGE * quickCharge);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
@@ -138,10 +157,11 @@ public class CarminiteStaffItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable("item.dawnduskterminal.carminite_molybdenum_reactor_staff.desc")
-            .withStyle(ChatFormatting.GRAY));
+                .withStyle(ChatFormatting.GRAY));
     }
 
     /** 背包里有没有砷铅铁球。护甲槽也扫，和原版掏箭的做法一致 */

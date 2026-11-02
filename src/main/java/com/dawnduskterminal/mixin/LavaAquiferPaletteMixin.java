@@ -33,17 +33,18 @@ public abstract class LavaAquiferPaletteMixin {
     private DensityFunction lavaNoise;
 
     @Inject(method = "computeFluidType", at = @At("HEAD"), cancellable = true)
-    private void ddt$lavaAquiferPalette(int x, int y, int z, Aquifer.FluidStatus status, int fluidLevel,
-                                        CallbackInfoReturnable<BlockState> cir) {
+    private void ddt$lavaAquiferPalette(
+            int x, int y, int z, Aquifer.FluidStatus status, int fluidLevel, CallbackInfoReturnable<BlockState> cir) {
         BlockState globalType = ((FluidStatusAccessor) (Object) status).ddt$fluidType();
         if (!ChronoDimensionProbe.isChronoFluid(globalType)) {
             return; // 不是晨昏线维度，走原版逻辑
         }
         BlockState blockstate = globalType;
-        if (fluidLevel <= -10 && fluidLevel != DimensionType.WAY_BELOW_MIN_Y
+        if (fluidLevel <= -10
+                && fluidLevel != DimensionType.WAY_BELOW_MIN_Y
                 && !globalType.is(ModScorchingTwilight.BLOCK.get())) {
             double d0 = this.lavaNoise.compute(new DensityFunction.SinglePointContext(
-                Mth.floorDiv(x, 64), Mth.floorDiv(y, 40), Mth.floorDiv(z, 64)));
+                    Mth.floorDiv(x, 64), Mth.floorDiv(y, 40), Mth.floorDiv(z, 64)));
             if (Math.abs(d0) > 0.3) {
                 blockstate = ModScorchingTwilight.BLOCK.get().defaultBlockState();
             }

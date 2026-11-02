@@ -1,10 +1,10 @@
 package com.dawnduskterminal.client.animation.functions;
 
-import com.dawnduskterminal.geckolib3.core.molang.function.entity.EntityFunction;
+import com.dawnduskterminal.client.animation.YsmNoise;
 import com.dawnduskterminal.geckolib3.core.molang.context.IContext;
+import com.dawnduskterminal.geckolib3.core.molang.function.entity.EntityFunction;
 import com.dawnduskterminal.molang.runtime.ExecutionContext;
 import net.minecraft.world.entity.Entity;
-import com.dawnduskterminal.client.animation.YsmNoise;
 
 /**
  * {@code ysm.perlin_noise(seed, x, y, z)}

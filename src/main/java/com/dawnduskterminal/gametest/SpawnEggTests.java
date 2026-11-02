@@ -24,14 +24,18 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class SpawnEggTests {
     @GameTest(template = "ddt_empty")
     public static void eggsPointAtTheirEntities(GameTestHelper helper) {
-        helper.assertTrue(spawns(ModItems.TOWER_GHAST_SPAWN_EGG.get(), ModEntities.TOWER_GHAST.get()),
-            "tower_ghast_spawn_egg must spawn dawnduskterminal:tower_ghast and be reachable through SpawnEggItem#byId");
-        helper.assertTrue(spawns(ModItems.STRING_SPAWN_EGG.get(), ModEntities.STRING.get()),
-            "string_spawn_egg must spawn dawnduskterminal:string and be reachable through SpawnEggItem#byId");
-        helper.assertTrue(spawns(ModItems.GHASTFRUITY_SPAWN_EGG.get(), ModEntities.GHASTFRUITY.get()),
-            "ghastfruity_spawn_egg must spawn dawnduskterminal:ghastfruity and be reachable through SpawnEggItem#byId");
-        helper.assertTrue(spawns(ModItems.GHAST_ELITE_SPAWN_EGG.get(), ModEntities.GHAST_ELITE.get()),
-            "ghast_elite_spawn_egg must spawn dawnduskterminal:ghast_elite and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(
+                spawns(ModItems.TOWER_GHAST_SPAWN_EGG.get(), ModEntities.TOWER_GHAST.get()),
+                "tower_ghast_spawn_egg must spawn dawnduskterminal:tower_ghast and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(
+                spawns(ModItems.STRING_SPAWN_EGG.get(), ModEntities.STRING.get()),
+                "string_spawn_egg must spawn dawnduskterminal:string and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(
+                spawns(ModItems.GHASTFRUITY_SPAWN_EGG.get(), ModEntities.GHASTFRUITY.get()),
+                "ghastfruity_spawn_egg must spawn dawnduskterminal:ghastfruity and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(
+                spawns(ModItems.GHAST_ELITE_SPAWN_EGG.get(), ModEntities.GHAST_ELITE.get()),
+                "ghast_elite_spawn_egg must spawn dawnduskterminal:ghast_elite and be reachable through SpawnEggItem#byId");
         helper.succeed();
     }
 

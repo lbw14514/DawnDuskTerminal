@@ -23,8 +23,9 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class ClientLevelSkyColorMixin {
     private static final double SKY_BRIGHTNESS = 0.75D;
 
-    @ModifyReturnValue(method = "getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;",
-        at = @At("RETURN"))
+    @ModifyReturnValue(
+            method = "getSkyColor(Lnet/minecraft/world/phys/Vec3;F)Lnet/minecraft/world/phys/Vec3;",
+            at = @At("RETURN"))
     private Vec3 ddt$dimChronoSky(Vec3 original) {
         ClientLevel level = (ClientLevel) (Object) this;
         if (!level.dimension().equals(ModDimensions.CHRONO)) {

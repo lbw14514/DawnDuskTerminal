@@ -17,8 +17,8 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  */
 public record SkyIslandMarker(DensityFunction wrapped) implements DensityFunction {
     public static final MapCodec<SkyIslandMarker> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-        DensityFunction.DIRECT_CODEC.fieldOf("argument").forGetter(SkyIslandMarker::wrapped)
-    ).apply(instance, SkyIslandMarker::new));
+                    DensityFunction.DIRECT_CODEC.fieldOf("argument").forGetter(SkyIslandMarker::wrapped))
+            .apply(instance, SkyIslandMarker::new));
 
     @Override
     public double compute(FunctionContext context) {

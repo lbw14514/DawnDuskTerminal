@@ -9,16 +9,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -29,7 +28,6 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.resources.ResourceKey;
 
 /**
  * 试验物品 055 按住右键期间的那个场
@@ -74,7 +72,7 @@ public final class BeetrootProcess {
     public static final double RAY_RADIUS = 32.0D;
     /** 刷成的群系：与 052 那颗方雷炸完之后刷的是同一个 */
     public static final ResourceKey<Biome> TARGET_BIOME =
-        ResourceKey.create(Registries.BIOME, DawnDuskTerminal.id("old_growth_birch_forest"));
+            ResourceKey.create(Registries.BIOME, DawnDuskTerminal.id("old_growth_birch_forest"));
 
     private static final List<BeetrootProcess> ACTIVE = new ArrayList<>();
 
@@ -184,7 +182,7 @@ public final class BeetrootProcess {
 
     /** 充能进度：0 就是刚按下，1 就是满（之后一直是 1） */
     public double progress() {
-        return Math.min(this.age, CHARGE_TICKS) / (double)CHARGE_TICKS;
+        return Math.min(this.age, CHARGE_TICKS) / (double) CHARGE_TICKS;
     }
 
     public boolean charged() {
@@ -206,7 +204,7 @@ public final class BeetrootProcess {
         if (distance < 0.0D || distance >= radius) {
             return 0.0F;
         }
-        return (float)(factor * (radius - distance));
+        return (float) (factor * (radius - distance));
     }
 
     private void strike() {
@@ -237,9 +235,16 @@ public final class BeetrootProcess {
     /** 伤害落点散一片红石：位置取包围盒中心，向上让出半格，免得半片埋在脚下 */
     private void spawnRedstone(LivingEntity target) {
         AABB box = target.getBoundingBox();
-        this.level.sendParticles(DustParticleOptions.REDSTONE,
-            box.getCenter().x, box.minY + box.getYsize() * 0.5D, box.getCenter().z,
-            REDSTONE_BURST, box.getXsize() * 0.5D, box.getYsize() * 0.5D, box.getZsize() * 0.5D, 0.02D);
+        this.level.sendParticles(
+                DustParticleOptions.REDSTONE,
+                box.getCenter().x,
+                box.minY + box.getYsize() * 0.5D,
+                box.getCenter().z,
+                REDSTONE_BURST,
+                box.getXsize() * 0.5D,
+                box.getYsize() * 0.5D,
+                box.getZsize() * 0.5D,
+                0.02D);
     }
 
     /** 充满之后，使用者自己每 tick 挨 1 点同类型伤害（节拍同样交给无敌帧） */
@@ -279,8 +284,8 @@ public final class BeetrootProcess {
         if (radius < 1.0D) {
             return;
         }
-        Optional<Holder.Reference<Biome>> target = this.level.registryAccess()
-            .registryOrThrow(Registries.BIOME).getHolder(TARGET_BIOME);
+        Optional<Holder.Reference<Biome>> target =
+                this.level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(TARGET_BIOME);
         if (target.isEmpty()) {
             return;
         }
@@ -300,20 +305,22 @@ public final class BeetrootProcess {
                 if (chunk == null) {
                     continue;
                 }
-                chunk.fillBiomesFromNoise((quartX, quartY, quartZ, sampler) -> {
-                    Holder<Biome> current = chunk.getNoiseBiome(quartX, quartY, quartZ);
-                    // 单元中心（+2）落在球内才换：三个轴用同一个半径
-                    double dx = QuartPos.toBlock(quartX) + 2 - centreX;
-                    double dy = QuartPos.toBlock(quartY) + 2 - centreY;
-                    double dz = QuartPos.toBlock(quartZ) + 2 - centreZ;
-                    if (dx * dx + dy * dy + dz * dz > radiusSqr) {
-                        return current;
-                    }
-                    int unitY = QuartPos.toBlock(quartY) + 2;
-                    this.biomeMinY = Math.min(this.biomeMinY, unitY);
-                    this.biomeMaxY = Math.max(this.biomeMaxY, unitY);
-                    return biome;
-                }, this.level.getChunkSource().randomState().sampler());
+                chunk.fillBiomesFromNoise(
+                        (quartX, quartY, quartZ, sampler) -> {
+                            Holder<Biome> current = chunk.getNoiseBiome(quartX, quartY, quartZ);
+                            // 单元中心（+2）落在球内才换：三个轴用同一个半径
+                            double dx = QuartPos.toBlock(quartX) + 2 - centreX;
+                            double dy = QuartPos.toBlock(quartY) + 2 - centreY;
+                            double dz = QuartPos.toBlock(quartZ) + 2 - centreZ;
+                            if (dx * dx + dy * dy + dz * dz > radiusSqr) {
+                                return current;
+                            }
+                            int unitY = QuartPos.toBlock(quartY) + 2;
+                            this.biomeMinY = Math.min(this.biomeMinY, unitY);
+                            this.biomeMaxY = Math.max(this.biomeMaxY, unitY);
+                            return biome;
+                        },
+                        this.level.getChunkSource().randomState().sampler());
                 chunk.setUnsaved(true);
                 touched.add(chunk);
                 this.biomeFills++;
@@ -339,11 +346,16 @@ public final class BeetrootProcess {
         }
         this.enchantRays++;
         Vec3 direction = randomDirection(this.level.getRandom());
-        PacketDistributor.sendToPlayersNear(this.level, null,
-            this.caster.getX(), this.caster.getY(), this.caster.getZ(), RAY_RADIUS,
-            new Experiment055RayPayload(this.caster.getId(),
-                (float)direction.x, (float)direction.y, (float)direction.z,
-                (float)(radius * RAY_LENGTH_SCALE)));
+        PacketDistributor.sendToPlayersNear(
+                this.level,
+                null,
+                this.caster.getX(),
+                this.caster.getY(),
+                this.caster.getZ(),
+                RAY_RADIUS,
+                new Experiment055RayPayload(
+                        this.caster.getId(), (float) direction.x, (float) direction.y, (float) direction.z, (float)
+                                (radius * RAY_LENGTH_SCALE)));
     }
 
     /** 球面上的均匀随机单位向量：三轴高斯再归一化——「从使用者随机指到 1.5 × 影响半径 处」 */
@@ -363,24 +375,32 @@ public final class BeetrootProcess {
      * <p>每秒重发一次是幂等的——客户端按施放者认人，已经在放同一支就什么都不做
      */
     private void refreshSound() {
-        this.sendSound(this.charged()
-            ? Experiment055SoundPayload.MODE_GEIGER
-            : Experiment055SoundPayload.MODE_CHARGE);
+        this.sendSound(this.charged() ? Experiment055SoundPayload.MODE_GEIGER : Experiment055SoundPayload.MODE_CHARGE);
     }
 
     private void sendSound(int mode) {
         this.soundMode = mode;
-        PacketDistributor.sendToPlayersNear(this.level, null,
-            this.caster.getX(), this.caster.getY(), this.caster.getZ(), HEARING_RADIUS,
-            new Experiment055SoundPayload(this.caster.getId(), mode));
+        PacketDistributor.sendToPlayersNear(
+                this.level,
+                null,
+                this.caster.getX(),
+                this.caster.getY(),
+                this.caster.getZ(),
+                HEARING_RADIUS,
+                new Experiment055SoundPayload(this.caster.getId(), mode));
     }
 
     /** 收场：把停止包发给 64 格内的玩家，之后这一段不再 tick */
     private void finish() {
         this.done = true;
-        PacketDistributor.sendToPlayersNear(this.level, null,
-            this.caster.getX(), this.caster.getY(), this.caster.getZ(), STOP_RADIUS,
-            new Experiment055SoundPayload(this.caster.getId(), Experiment055SoundPayload.MODE_STOP));
+        PacketDistributor.sendToPlayersNear(
+                this.level,
+                null,
+                this.caster.getX(),
+                this.caster.getY(),
+                this.caster.getZ(),
+                STOP_RADIUS,
+                new Experiment055SoundPayload(this.caster.getId(), Experiment055SoundPayload.MODE_STOP));
     }
 
     public int age() {

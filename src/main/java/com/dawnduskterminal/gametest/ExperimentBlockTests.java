@@ -32,49 +32,64 @@ public final class ExperimentBlockTests {
     @SuppressWarnings("deprecation") // 爆炸抗性只有这个没带 Explosion 的取值入口，NeoForge 把它标了废弃
     public static void propertiesMatchCraftingTable(GameTestHelper helper) {
         Block ours = ModBlocks.EXPERIMENT_001.get();
-        helper.assertTrue(ours instanceof CraftingTableBlock,
-            SUBJECT + " must be a CraftingTableBlock, otherwise right click cannot open the crafting menu");
-        helper.assertTrue(ours.defaultDestroyTime() == Blocks.CRAFTING_TABLE.defaultDestroyTime(),
-            SUBJECT + " destroy time must be " + Blocks.CRAFTING_TABLE.defaultDestroyTime()
-                + ", got " + ours.defaultDestroyTime());
-        helper.assertTrue(ours.getExplosionResistance() == Blocks.CRAFTING_TABLE.getExplosionResistance(),
-            SUBJECT + " explosion resistance must be " + Blocks.CRAFTING_TABLE.getExplosionResistance()
-                + ", got " + ours.getExplosionResistance());
-        helper.assertTrue(ours.defaultMapColor() == Blocks.CRAFTING_TABLE.defaultMapColor(),
-            SUBJECT + " map color must be " + Blocks.CRAFTING_TABLE.defaultMapColor()
-                + ", got " + ours.defaultMapColor());
+        helper.assertTrue(
+                ours instanceof CraftingTableBlock,
+                SUBJECT + " must be a CraftingTableBlock, otherwise right click cannot open the crafting menu");
+        helper.assertTrue(
+                ours.defaultDestroyTime() == Blocks.CRAFTING_TABLE.defaultDestroyTime(),
+                SUBJECT + " destroy time must be " + Blocks.CRAFTING_TABLE.defaultDestroyTime() + ", got "
+                        + ours.defaultDestroyTime());
+        helper.assertTrue(
+                ours.getExplosionResistance() == Blocks.CRAFTING_TABLE.getExplosionResistance(),
+                SUBJECT + " explosion resistance must be " + Blocks.CRAFTING_TABLE.getExplosionResistance() + ", got "
+                        + ours.getExplosionResistance());
+        helper.assertTrue(
+                ours.defaultMapColor() == Blocks.CRAFTING_TABLE.defaultMapColor(),
+                SUBJECT + " map color must be " + Blocks.CRAFTING_TABLE.defaultMapColor() + ", got "
+                        + ours.defaultMapColor());
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void craftingTableTagHoldsBoth(GameTestHelper helper) {
-        helper.assertTrue(ModBlocks.EXPERIMENT_001.get().defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
-            SUBJECT + " must be in #dawnduskterminal:crafting_tables, otherwise its crafting menu closes at once");
-        helper.assertTrue(Blocks.CRAFTING_TABLE.defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
-            "minecraft:crafting_table must stay in #dawnduskterminal:crafting_tables, "
-                + "otherwise the vanilla crafting table breaks");
-        helper.assertFalse(Blocks.DIRT.defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
-            "minecraft:dirt must not be in #dawnduskterminal:crafting_tables");
+        helper.assertTrue(
+                ModBlocks.EXPERIMENT_001.get().defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
+                SUBJECT + " must be in #dawnduskterminal:crafting_tables, otherwise its crafting menu closes at once");
+        helper.assertTrue(
+                Blocks.CRAFTING_TABLE.defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
+                "minecraft:crafting_table must stay in #dawnduskterminal:crafting_tables, "
+                        + "otherwise the vanilla crafting table breaks");
+        helper.assertFalse(
+                Blocks.DIRT.defaultBlockState().is(ModBlocks.CRAFTING_TABLES),
+                "minecraft:dirt must not be in #dawnduskterminal:crafting_tables");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void craftingMenuStaysValidOnExperimentBlock(GameTestHelper helper) {
-        assertCraftingMenuValidity(helper, new BlockPos(1, 1, 1), ModBlocks.EXPERIMENT_001.get(), true,
-            "a crafting menu opened on " + SUBJECT + " must stay valid");
+        assertCraftingMenuValidity(
+                helper,
+                new BlockPos(1, 1, 1),
+                ModBlocks.EXPERIMENT_001.get(),
+                true,
+                "a crafting menu opened on " + SUBJECT + " must stay valid");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void craftingMenuRejectsOtherBlocks(GameTestHelper helper) {
-        assertCraftingMenuValidity(helper, new BlockPos(2, 1, 2), Blocks.DIRT, false,
-            "a crafting menu opened on minecraft:dirt must not stay valid");
+        assertCraftingMenuValidity(
+                helper,
+                new BlockPos(2, 1, 2),
+                Blocks.DIRT,
+                false,
+                "a crafting menu opened on minecraft:dirt must not stay valid");
         helper.succeed();
     }
 
     /** 摆块、站到旁边、开一个合成台菜单，直接问它的 would-close 判定 */
-    private static void assertCraftingMenuValidity(GameTestHelper helper, BlockPos relative, Block block,
-        boolean expected, String message) {
+    private static void assertCraftingMenuValidity(
+            GameTestHelper helper, BlockPos relative, Block block, boolean expected, String message) {
         ServerLevel level = helper.getLevel();
         helper.setBlock(relative, block);
         BlockPos pos = helper.absolutePos(relative);
@@ -83,8 +98,8 @@ public final class ExperimentBlockTests {
         player.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D);
         CraftingMenu menu = new CraftingMenu(0, player.getInventory(), ContainerLevelAccess.create(level, pos));
         boolean valid = menu.stillValid(player);
-        helper.assertTrue(valid == expected,
-            message + " (stillValid returned " + valid + ", expected " + expected + ")");
+        helper.assertTrue(
+                valid == expected, message + " (stillValid returned " + valid + ", expected " + expected + ")");
     }
 
     private ExperimentBlockTests() {}

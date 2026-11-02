@@ -1,11 +1,9 @@
 package com.dawnduskterminal.portal;
 
-import com.dawnduskterminal.config.DdtConfig;
 import com.dawnduskterminal.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class PortalTrigger {

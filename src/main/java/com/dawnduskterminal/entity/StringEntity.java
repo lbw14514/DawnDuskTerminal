@@ -4,6 +4,7 @@ import com.dawnduskterminal.registry.ModDamageTypes;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModSounds;
+import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -48,8 +49,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.EnumSet;
 
 /**
  * 「弦」：只在不稳定液体（portal_fluid）的液面上活动的环状生物
@@ -99,9 +98,11 @@ public class StringEntity extends PathfinderMob implements Enemy {
     private static final float LARGE_CHANCE = 0.25F;
     /** 随机体型偏移的范围 */
     private static final float MIN_SIZE = 0.85F;
+
     private static final float MAX_SIZE = 1.15F;
     /** 小型与大型的碰撞箱宽度，模型半径分别是 1 格与 2.5 格 */
     private static final float SMALL_WIDTH = 1.8F;
+
     private static final float LARGE_WIDTH = 4.4F;
     /** 液面之上的定点偏移 */
     public static final double SURFACE_OFFSET = 0.02D;
@@ -168,12 +169,11 @@ public class StringEntity extends PathfinderMob implements Enemy {
     private static final int AMBIENT_PERIOD_TICKS = AMBIENT_LENGTH_TICKS - AMBIENT_OVERLAP_TICKS;
 
     private static final EntityDataAccessor<Boolean> DATA_LARGE =
-        SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.BOOLEAN);
+            SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DATA_SIZE =
-        SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.FLOAT);
+            SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Byte> DATA_KIND =
-        SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.BYTE);
-
+            SynchedEntityData.defineId(StringEntity.class, EntityDataSerializers.BYTE);
 
     private boolean largeVariant;
     private float sizeScale = 1.0F;
@@ -184,6 +184,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
 
     /** 上一个确认站在液面上的位置，离开流体时弹回这里 */
     private double anchorX;
+
     private double anchorY;
     private double anchorZ;
     private boolean hasAnchor;
@@ -198,12 +199,12 @@ public class StringEntity extends PathfinderMob implements Enemy {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
-            .add(Attributes.MAX_HEALTH, 60.0D)
-            .add(Attributes.ATTACK_DAMAGE, 10.0D)
-            .add(Attributes.MOVEMENT_SPEED, SMALL_BASE_SPEED)
-            .add(Attributes.FLYING_SPEED, SMALL_BASE_SPEED)
-            .add(Attributes.FOLLOW_RANGE, 24.0D)
-            .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D);
+                .add(Attributes.MAX_HEALTH, 60.0D)
+                .add(Attributes.ATTACK_DAMAGE, 10.0D)
+                .add(Attributes.MOVEMENT_SPEED, SMALL_BASE_SPEED)
+                .add(Attributes.FLYING_SPEED, SMALL_BASE_SPEED)
+                .add(Attributes.FOLLOW_RANGE, 24.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0D);
     }
 
     @Override
@@ -260,8 +261,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
     private void rebuildGoals() {
         this.goalSelector.removeAllGoals(goal -> true);
         this.targetSelector.removeAllGoals(goal -> true);
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(
-            this, Player.class, 10, false, false, this::isValidPrey));
+        this.targetSelector.addGoal(
+                1, new NearestAttackableTargetGoal<>(this, Player.class, 10, false, false, this::isValidPrey));
         switch (this.kind) {
             case SURFACE -> {
                 this.goalSelector.addGoal(2, new StalkGoal(this));
@@ -278,8 +279,6 @@ public class StringEntity extends PathfinderMob implements Enemy {
             }
         }
     }
-
-
 
     // ---------------------------------------------------------------- 大小变种
 
@@ -344,8 +343,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
         float geometry = this.largeVariant ? 2.5F : 1.0F;
         double health = 60.0D * geometry * this.sizeScale;
         double attack = 10.0D * geometry * this.sizeScale;
-        double speed = SMALL_BASE_SPEED * (this.largeVariant ? LARGE_SPEED_FACTOR : 1.0D)
-            * this.sizeScale;
+        double speed = SMALL_BASE_SPEED * (this.largeVariant ? LARGE_SPEED_FACTOR : 1.0D) * this.sizeScale;
         this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(health);
         this.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(attack);
         this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(speed);
@@ -377,8 +375,11 @@ public class StringEntity extends PathfinderMob implements Enemy {
 
     @SuppressWarnings("deprecation")
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
-                                        MobSpawnType reason, @Nullable SpawnGroupData spawnData) {
+    public SpawnGroupData finalizeSpawn(
+            ServerLevelAccessor level,
+            DifficultyInstance difficulty,
+            MobSpawnType reason,
+            @Nullable SpawnGroupData spawnData) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, reason, spawnData);
         RandomSource random = level.getRandom();
         boolean large = random.nextFloat() < LARGE_CHANCE;
@@ -401,8 +402,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         this.largeVariant = tag.getBoolean("Large");
-        this.sizeScale = Mth.clamp(tag.contains("SizeScale") ? tag.getFloat("SizeScale") : 1.0F,
-            MIN_SIZE, MAX_SIZE);
+        this.sizeScale = Mth.clamp(tag.contains("SizeScale") ? tag.getFloat("SizeScale") : 1.0F, MIN_SIZE, MAX_SIZE);
         this.kind = kindById(tag.getByte("Kind"));
         if (!this.level().isClientSide) {
             this.entityData.set(DATA_LARGE, this.largeVariant);
@@ -430,8 +430,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
         switch (this.kind) {
             case SURFACE -> keepOnFluidSurface();
             case SWIMMER -> keepSubmerged();
-            // 低空飞行型不夹位置：高度交给 FlyingMoveControl 与行为层给的目标点
-            case FLYER -> { }
+                // 低空飞行型不夹位置：高度交给 FlyingMoveControl 与行为层给的目标点
+            case FLYER -> {}
         }
         tickAmbientSound();
     }
@@ -529,8 +529,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
                 BlockPos ground = this.getBlockPosBelowThatAffectsMyMovement();
                 float friction = 0.91F;
                 if (this.onGround()) {
-                    friction = this.level().getBlockState(ground)
-                        .getFriction(this.level(), ground, this) * 0.91F;
+                    friction = this.level().getBlockState(ground).getFriction(this.level(), ground, this) * 0.91F;
                 }
                 this.moveRelative(this.getFlyingSpeed(), input);
                 this.move(MoverType.SELF, this.getDeltaMovement());
@@ -578,13 +577,11 @@ public class StringEntity extends PathfinderMob implements Enemy {
             return null;
         }
         int bottom = found.getY();
-        while (bottom > level.getMinBuildHeight()
-            && isPortalFluid(level, new BlockPos(x, bottom - 1, z))) {
+        while (bottom > level.getMinBuildHeight() && isPortalFluid(level, new BlockPos(x, bottom - 1, z))) {
             bottom--;
         }
         int top = found.getY();
-        while (top < level.getMaxBuildHeight()
-            && isPortalFluid(level, new BlockPos(x, top + 1, z))) {
+        while (top < level.getMaxBuildHeight() && isPortalFluid(level, new BlockPos(x, top + 1, z))) {
             top++;
         }
         BlockPos topPos = new BlockPos(x, top, z);
@@ -646,8 +643,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
     }
 
     public static boolean isPortalFluid(FluidState fluid) {
-        return fluid.getType() == ModFluids.PORTAL_FLUID.get()
-            || fluid.getType() == ModFluids.PORTAL_FLOWING.get();
+        return fluid.getType() == ModFluids.PORTAL_FLUID.get() || fluid.getType() == ModFluids.PORTAL_FLOWING.get();
     }
 
     /**
@@ -805,10 +801,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
      * <p>低空飞行型的回家行为用它判断「是不是已经到家了」；用高度图找液面，所以飞多高都成立
      */
     private boolean isHoveringOverFluid() {
-        double surface = findSurfaceByHeightmap(this.level(), Mth.floor(this.getX()),
-            Mth.floor(this.getZ()));
-        return !Double.isNaN(surface)
-            && Math.abs(this.getY() - (surface + LOW_FLIGHT_HEIGHT)) < 1.5D;
+        double surface = findSurfaceByHeightmap(this.level(), Mth.floor(this.getX()), Mth.floor(this.getZ()));
+        return !Double.isNaN(surface) && Math.abs(this.getY() - (surface + LOW_FLIGHT_HEIGHT)) < 1.5D;
     }
 
     /**
@@ -900,8 +894,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
             return;
         }
         AABB contact = this.getBoundingBox().inflate(0.15D);
-        for (LivingEntity candidate : this.level().getEntitiesOfClass(LivingEntity.class, contact,
-            StringEntity::canHurtContact)) {
+        for (LivingEntity candidate :
+                this.level().getEntitiesOfClass(LivingEntity.class, contact, StringEntity::canHurtContact)) {
             if (candidate != this && this.doHurtTarget(candidate)) {
                 this.attackCooldown = ATTACK_COOLDOWN;
                 break;
@@ -940,9 +934,12 @@ public class StringEntity extends PathfinderMob implements Enemy {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         boolean hurt = super.hurt(source, amount);
-        if (hurt && !this.level().isClientSide && this.kind == Kind.SURFACE
-            && amount > SPLIT_MIN_DAMAGE && this.isAlive()
-            && this.getRandom().nextFloat() < SPLIT_CHANCE) {
+        if (hurt
+                && !this.level().isClientSide
+                && this.kind == Kind.SURFACE
+                && amount > SPLIT_MIN_DAMAGE
+                && this.isAlive()
+                && this.getRandom().nextFloat() < SPLIT_CHANCE) {
             this.splitIntoPair();
         }
         return hurt;
@@ -959,10 +956,16 @@ public class StringEntity extends PathfinderMob implements Enemy {
             return;
         }
         double centerY = this.getY() + this.getBbHeight() * 0.5D;
-        serverLevel.sendParticles(ParticleTypes.PORTAL, this.getX(), centerY, this.getZ(),
-            60, 0.7D, 0.7D, 0.7D, 0.1D);
-        serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(),
-            SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0F, 1.0F);
+        serverLevel.sendParticles(ParticleTypes.PORTAL, this.getX(), centerY, this.getZ(), 60, 0.7D, 0.7D, 0.7D, 0.1D);
+        serverLevel.playSound(
+                null,
+                this.getX(),
+                this.getY(),
+                this.getZ(),
+                SoundEvents.ENDERMAN_TELEPORT,
+                SoundSource.HOSTILE,
+                1.0F,
+                1.0F);
         // 飞行型抬高一点直接悬空，游动型留在原位、由 keepSubmerged 按进水里
         this.spawnKind(serverLevel, Kind.FLYER, SPLIT_FLYER_LIFT);
         this.spawnKind(serverLevel, Kind.SWIMMER, 0.0D);
@@ -975,8 +978,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
         if (spawned == null) {
             return;
         }
-        spawned.moveTo(this.getX(), this.getY() + lift, this.getZ(),
-            this.getRandom().nextFloat() * 360.0F, 0.0F);
+        spawned.moveTo(
+                this.getX(), this.getY() + lift, this.getZ(), this.getRandom().nextFloat() * 360.0F, 0.0F);
         spawned.setKind(kind);
         spawned.setVariant(this.largeVariant, this.sizeScale);
         level.addFreshEntity(spawned);
@@ -1063,9 +1066,16 @@ public class StringEntity extends PathfinderMob implements Enemy {
     @Override
     public void die(DamageSource source) {
         if (this.level() instanceof ServerLevel serverLevel) {
-            serverLevel.sendParticles(ParticleTypes.PORTAL, this.getX(),
-                this.getY() + this.getBbHeight() * 0.5D, this.getZ(),
-                60, 0.7D, 0.7D, 0.7D, 0.1D);
+            serverLevel.sendParticles(
+                    ParticleTypes.PORTAL,
+                    this.getX(),
+                    this.getY() + this.getBbHeight() * 0.5D,
+                    this.getZ(),
+                    60,
+                    0.7D,
+                    0.7D,
+                    0.7D,
+                    0.1D);
         }
         super.die(source);
     }
@@ -1107,8 +1117,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
             this.mob.setYRot(this.rotlerp(this.mob.getYRot(), yaw, TURN_SPEED));
             this.mob.yBodyRot = this.mob.getYRot();
             this.mob.yHeadRot = this.mob.getYRot();
-            this.mob.setSpeed((float) (this.speedModifier
-                * this.mob.getAttributeValue(Attributes.MOVEMENT_SPEED)));
+            this.mob.setSpeed((float) (this.speedModifier * this.mob.getAttributeValue(Attributes.MOVEMENT_SPEED)));
             this.mob.setXxa(0.0F);
             this.mob.setZza(1.0F);
             this.mob.setYya(0.0F);
@@ -1155,8 +1164,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
                 this.mob.setSpeed(0.0F);
                 return;
             }
-            float speed = (float) (this.speedModifier
-                * this.mob.getAttributeValue(Attributes.MOVEMENT_SPEED));
+            float speed = (float) (this.speedModifier * this.mob.getAttributeValue(Attributes.MOVEMENT_SPEED));
             this.mob.setSpeed(Mth.lerp(0.125F, this.mob.getSpeed(), speed));
             double dx = this.wantedX - this.mob.getX();
             double dy = this.wantedY - this.mob.getY();
@@ -1164,8 +1172,8 @@ public class StringEntity extends PathfinderMob implements Enemy {
             if (dy != 0.0D) {
                 double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                 if (distance > 1.0E-4D) {
-                    this.mob.setDeltaMovement(this.mob.getDeltaMovement()
-                        .add(0.0D, this.mob.getSpeed() * (dy / distance) * 0.1D, 0.0D));
+                    this.mob.setDeltaMovement(
+                            this.mob.getDeltaMovement().add(0.0D, this.mob.getSpeed() * (dy / distance) * 0.1D, 0.0D));
                 }
             }
             if (dx != 0.0D || dz != 0.0D) {
@@ -1216,8 +1224,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
             this.cooldown = 8 + this.mob.getRandom().nextInt(10);
             Vec3 point = this.mob.randomSurfacePoint(4.0D + this.mob.getRandom().nextDouble() * 6.0D);
             if (point != null) {
-                this.mob.getMoveControl().setWantedPosition(point.x, point.y, point.z,
-                    wanderSpeed());
+                this.mob.getMoveControl().setWantedPosition(point.x, point.y, point.z, wanderSpeed());
             }
         }
     }
@@ -1239,9 +1246,10 @@ public class StringEntity extends PathfinderMob implements Enemy {
 
         @Override
         public boolean canUse() {
-            return this.mob.getTarget() == null && this.mob.isAlive()
-                && this.mob.getMoveControl().hasWanted() == false
-                && this.mob.getRandom().nextInt(40) == 0;
+            return this.mob.getTarget() == null
+                    && this.mob.isAlive()
+                    && this.mob.getMoveControl().hasWanted() == false
+                    && this.mob.getRandom().nextInt(40) == 0;
         }
 
         @Override
@@ -1276,8 +1284,9 @@ public class StringEntity extends PathfinderMob implements Enemy {
 
         @Override
         public boolean canUse() {
-            return this.mob.getTarget() == null && this.mob.getNavigation().isDone()
-                && this.mob.getRandom().nextInt(10) == 0;
+            return this.mob.getTarget() == null
+                    && this.mob.getNavigation().isDone()
+                    && this.mob.getRandom().nextInt(10) == 0;
         }
 
         @Override
@@ -1289,8 +1298,9 @@ public class StringEntity extends PathfinderMob implements Enemy {
         public void start() {
             Vec3 point = this.mob.randomHoverPoint(8.0D);
             if (point != null) {
-                this.mob.getNavigation().moveTo(
-                    this.mob.getNavigation().createPath(BlockPos.containing(point), 1), 1.0D);
+                this.mob
+                        .getNavigation()
+                        .moveTo(this.mob.getNavigation().createPath(BlockPos.containing(point), 1), 1.0D);
             }
         }
     }
@@ -1304,6 +1314,7 @@ public class StringEntity extends PathfinderMob implements Enemy {
      */
     private static final class ReturnToFluidGoal extends Goal {
         private final StringEntity mob;
+
         @Nullable
         private Vec3 hover;
 
@@ -1345,8 +1356,9 @@ public class StringEntity extends PathfinderMob implements Enemy {
             }
             if (this.mob.position().distanceTo(this.hover) > 3.0D) {
                 if (this.mob.getNavigation().isDone()) {
-                    this.mob.getNavigation().moveTo(
-                        this.mob.getNavigation().createPath(BlockPos.containing(this.hover), 1), 1.0D);
+                    this.mob
+                            .getNavigation()
+                            .moveTo(this.mob.getNavigation().createPath(BlockPos.containing(this.hover), 1), 1.0D);
                 }
             } else {
                 this.mob.getMoveControl().setWantedPosition(this.hover.x, this.hover.y, this.hover.z, 0.35D);
@@ -1396,14 +1408,14 @@ public class StringEntity extends PathfinderMob implements Enemy {
                 this.recalc = 8 + this.mob.getRandom().nextInt(8);
                 Vec3 point = this.mob.approachPoint(target);
                 if (point != null) {
-                    this.mob.getMoveControl().setWantedPosition(point.x, point.y, point.z,
-                        stalkSpeed());
+                    this.mob.getMoveControl().setWantedPosition(point.x, point.y, point.z, stalkSpeed());
                 }
             } else {
                 this.recalc--;
             }
-            if (this.mob.isWithinMeleeAttackRange(target) && this.mob.attackCooldown <= 0
-                && this.mob.doHurtTarget(target)) {
+            if (this.mob.isWithinMeleeAttackRange(target)
+                    && this.mob.attackCooldown <= 0
+                    && this.mob.doHurtTarget(target)) {
                 this.mob.attackCooldown = ATTACK_COOLDOWN;
             }
         }

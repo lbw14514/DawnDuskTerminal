@@ -75,17 +75,16 @@ public class Experiment114Block extends Block {
 
     private static final VoxelShape QUARTER_SHAPE = box(1.0D, 0.0D, 1.0D, 8.0D, 8.0D, 8.0D);
     private static final VoxelShape HALF_SHAPE = box(1.0D, 0.0D, 1.0D, 8.0D, 8.0D, 15.0D);
-    private static final VoxelShape THREE_QUARTER_SHAPE = Shapes.join(
-        HALF_SHAPE, box(8.0D, 0.0D, 8.0D, 15.0D, 8.0D, 15.0D), BooleanOp.OR);
+    private static final VoxelShape THREE_QUARTER_SHAPE =
+            Shapes.join(HALF_SHAPE, box(8.0D, 0.0D, 8.0D, 15.0D, 8.0D, 15.0D), BooleanOp.OR);
     private static final VoxelShape FULL_SHAPE = box(1.0D, 0.0D, 1.0D, 15.0D, 8.0D, 15.0D);
 
     public Experiment114Block(Properties properties) {
         super(properties);
         // 与 115 的第一处差别：摆下来就是满的 8 片（115 的默认态是 7）。BooleanProperty 的 any() 先取 true，
         // 所以 regenerate 必须显式写一遍
-        this.registerDefaultState(this.stateDefinition.any()
-            .setValue(BITES_TAKEN, 0)
-            .setValue(REGENERATE, false));
+        this.registerDefaultState(
+                this.stateDefinition.any().setValue(BITES_TAKEN, 0).setValue(REGENERATE, false));
     }
 
     @Override
@@ -105,8 +104,14 @@ public class Experiment114Block extends Block {
      * 全满的方块生效，吃到一半的收不走。补片与撒粉用的物品都是我们自己的 114 与红石粉
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
-                                              Player player, InteractionHand hand, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         int bitesTaken = state.getValue(BITES_TAKEN);
         if (!player.isSecondaryUseActive()) {
             if (stack.is(ModItems.EXPERIMENT_114.get())) {
@@ -115,8 +120,13 @@ public class Experiment114Block extends Block {
                 }
                 // 一次补满，不是补一片
                 level.setBlockAndUpdate(pos, state.setValue(BITES_TAKEN, 0));
-                level.playSound(null, pos, state.getSoundType(level, pos, player).getPlaceSound(),
-                    SoundSource.BLOCKS, 1.0F, 1.0F);
+                level.playSound(
+                        null,
+                        pos,
+                        state.getSoundType(level, pos, player).getPlaceSound(),
+                        SoundSource.BLOCKS,
+                        1.0F,
+                        1.0F);
                 stack.consume(1, player);
                 if (player instanceof ServerPlayer serverPlayer) {
                     CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, stack);
@@ -125,8 +135,13 @@ public class Experiment114Block extends Block {
             }
             if (!state.getValue(REGENERATE) && bitesTaken == 0 && stack.is(Items.REDSTONE)) {
                 level.setBlockAndUpdate(pos, state.setValue(REGENERATE, true));
-                level.playSound(null, pos, state.getSoundType(level, pos, player).getPlaceSound(),
-                    SoundSource.BLOCKS, 1.0F, 1.0F);
+                level.playSound(
+                        null,
+                        pos,
+                        state.getSoundType(level, pos, player).getPlaceSound(),
+                        SoundSource.BLOCKS,
+                        1.0F,
+                        1.0F);
                 stack.consume(1, player);
                 if (player instanceof ServerPlayer) {
                     player.awardStat(Stats.ITEM_USED.get(Items.REDSTONE));
@@ -149,15 +164,15 @@ public class Experiment114Block extends Block {
      * 空手右键吃一片，逐行照 115，只有一处不同：吃完那一下额外随机放一声恶魂受伤
      */
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!player.canEat(false)) {
             return InteractionResult.PASS;
         }
         player.awardStat(Stats.EAT_CAKE_SLICE);
         player.getFoodData().eat(SLICE_NUTRITION, SLICE_SATURATION);
-        level.playSound(null, pos, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS,
-            0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+        level.playSound(
+                null, pos, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
         // 与 115 的第二处差别
         if (!level.isClientSide) {
             Experiment114Item.playGhastHurt(level, pos);
@@ -169,8 +184,8 @@ public class Experiment114Block extends Block {
             level.removeBlock(pos, false);
         }
         if (player instanceof ServerPlayer serverPlayer) {
-            CriteriaTriggers.CONSUME_ITEM.trigger(serverPlayer,
-                new ItemStack(ModItems.EXPERIMENT_114.get(), 8 - bitesTaken));
+            CriteriaTriggers.CONSUME_ITEM.trigger(
+                    serverPlayer, new ItemStack(ModItems.EXPERIMENT_114.get(), 8 - bitesTaken));
             player.awardStat(Stats.ITEM_USED.get(ModItems.EXPERIMENT_114.get()));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
@@ -183,8 +198,8 @@ public class Experiment114Block extends Block {
      * <p>只有 {@code regenerate} 版会响，普通 114 收到信号没反应
      */
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block fromBlock, BlockPos fromPos,
-                                   boolean isMoving) {
+    protected void neighborChanged(
+            BlockState state, Level level, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean isMoving) {
         super.neighborChanged(state, level, pos, fromBlock, fromPos, isMoving);
         if (level.isClientSide || !state.getValue(REGENERATE) || !level.hasNeighborSignal(pos)) {
             return;
@@ -204,11 +219,16 @@ public class Experiment114Block extends Block {
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor level,
-                                     BlockPos currentPos, BlockPos facingPos) {
+    protected BlockState updateShape(
+            BlockState state,
+            Direction facing,
+            BlockState facingState,
+            LevelAccessor level,
+            BlockPos currentPos,
+            BlockPos facingPos) {
         return facing == Direction.DOWN && !state.canSurvive(level, currentPos)
-            ? Blocks.AIR.defaultBlockState()
-            : super.updateShape(state, facing, facingState, level, currentPos, facingPos);
+                ? Blocks.AIR.defaultBlockState()
+                : super.updateShape(state, facing, facingState, level, currentPos, facingPos);
     }
 
     @Override

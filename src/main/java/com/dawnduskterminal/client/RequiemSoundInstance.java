@@ -52,8 +52,9 @@ public final class RequiemSoundInstance extends EntityBoundSoundInstance {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || this.caster.isRemoved()
-            || minecraft.player.distanceToSqr(this.caster) > CUTOFF * CUTOFF) {
+        if (minecraft.player == null
+                || this.caster.isRemoved()
+                || minecraft.player.distanceToSqr(this.caster) > CUTOFF * CUTOFF) {
             this.stop();
         }
     }

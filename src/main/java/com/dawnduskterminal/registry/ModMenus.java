@@ -21,18 +21,17 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModMenus {
     public static final DeferredRegister<MenuType<?>> MENUS =
-        DeferredRegister.create(Registries.MENU, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.MENU, DawnDuskTerminal.MOD_ID);
 
     public static final DeferredHolder<MenuType<?>, MenuType<Experiment004Menu>> EXPERIMENT_004 =
-        MENUS.register("experiment_004",
-            () -> new MenuType<>(Experiment004Menu::new, FeatureFlags.DEFAULT_FLAGS));
+            MENUS.register("experiment_004", () -> new MenuType<>(Experiment004Menu::new, FeatureFlags.DEFAULT_FLAGS));
 
     public static final DeferredHolder<MenuType<?>, MenuType<Experiment051Menu>> EXPERIMENT_051 =
-        MENUS.register("experiment_051", () -> IMenuTypeExtension.create(Experiment051Menu::fromNetwork));
+            MENUS.register("experiment_051", () -> IMenuTypeExtension.create(Experiment051Menu::fromNetwork));
 
     /** 115 再生机的界面：一格产物格加一条进度条，同样靠坐标找方块实体 */
     public static final DeferredHolder<MenuType<?>, MenuType<E115RegeneratorMenu>> E_115_REGENERATOR =
-        MENUS.register("e_115_regenerator", () -> IMenuTypeExtension.create(E115RegeneratorMenu::fromNetwork));
+            MENUS.register("e_115_regenerator", () -> IMenuTypeExtension.create(E115RegeneratorMenu::fromNetwork));
 
     private ModMenus() {}
 

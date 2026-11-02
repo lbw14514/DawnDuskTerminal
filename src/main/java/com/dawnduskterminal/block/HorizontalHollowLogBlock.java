@@ -54,34 +54,42 @@ import twilightforest.init.TFBlocks;
 public class HorizontalHollowLogBlock extends Block {
     public static final EnumProperty<Direction.Axis> HORIZONTAL_AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public static final EnumProperty<HollowLogVariants.Horizontal> VARIANT =
-        EnumProperty.create("variant", HollowLogVariants.Horizontal.class);
+            EnumProperty.create("variant", HollowLogVariants.Horizontal.class);
 
     private static final VoxelShape HOLLOW_SHAPE_X =
-        Shapes.join(Shapes.block(), Block.box(0.0, 2.0, 2.0, 16.0, 14.0, 14.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(0.0, 2.0, 2.0, 16.0, 14.0, 14.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape HOLLOW_SHAPE_Z =
-        Shapes.join(Shapes.block(), Block.box(2.0, 2.0, 0.0, 14.0, 14.0, 16.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(2.0, 2.0, 0.0, 14.0, 14.0, 16.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape CARPET_SHAPE_X =
-        Shapes.join(Shapes.block(), Block.box(0.0, 3.0, 2.0, 16.0, 14.0, 14.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(0.0, 3.0, 2.0, 16.0, 14.0, 14.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape CARPET_SHAPE_Z =
-        Shapes.join(Shapes.block(), Block.box(2.0, 3.0, 0.0, 14.0, 14.0, 16.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(2.0, 3.0, 0.0, 14.0, 14.0, 16.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape COLLISION_SHAPE_X =
-        Shapes.join(Shapes.block(), Block.box(0.0, 1.0, 1.0, 16.0, 15.0, 15.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(0.0, 1.0, 1.0, 16.0, 15.0, 15.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape COLLISION_SHAPE_Z =
-        Shapes.join(Shapes.block(), Block.box(1.0, 1.0, 0.0, 15.0, 15.0, 16.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(1.0, 1.0, 0.0, 15.0, 15.0, 16.0), BooleanOp.ONLY_FIRST);
 
     public HorizontalHollowLogBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.getStateDefinition().any()
-            .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
-            .setValue(VARIANT, HollowLogVariants.Horizontal.EMPTY));
+        this.registerDefaultState(this.getStateDefinition()
+                .any()
+                .setValue(HORIZONTAL_AXIS, Direction.Axis.X)
+                .setValue(VARIANT, HollowLogVariants.Horizontal.EMPTY));
     }
 
     /** 洞里塞的东西只能在「空」与「没进水的洞」上换；两端有水时不允许盖住 */
-    private static boolean canChangeVariant(HollowLogVariants.Horizontal variant, Level level, BlockPos pos, Direction.Axis axis) {
+    private static boolean canChangeVariant(
+            HollowLogVariants.Horizontal variant, Level level, BlockPos pos, Direction.Axis axis) {
         return variant == HollowLogVariants.Horizontal.EMPTY
-            || variant == HollowLogVariants.Horizontal.WATERLOGGED
-                && level.getFluidState(pos.relative(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE))).getType() != Fluids.WATER
-                && level.getFluidState(pos.relative(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE))).getType() != Fluids.WATER;
+                || variant == HollowLogVariants.Horizontal.WATERLOGGED
+                        && level.getFluidState(pos.relative(
+                                                Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE)))
+                                        .getType()
+                                != Fluids.WATER
+                        && level.getFluidState(pos.relative(
+                                                Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE)))
+                                        .getType()
+                                != Fluids.WATER;
     }
 
     /** 点击位置是否落在洞口那一块，只有点在洞里才算「往洞里塞东西」 */
@@ -100,10 +108,11 @@ public class HorizontalHollowLogBlock extends Block {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        boolean flat = switch (state.getValue(VARIANT)) {
-            case EMPTY, WATERLOGGED -> true;
-            default -> false;
-        };
+        boolean flat =
+                switch (state.getValue(VARIANT)) {
+                    case EMPTY, WATERLOGGED -> true;
+                    default -> false;
+                };
 
         if (state.getValue(HORIZONTAL_AXIS) == Direction.Axis.X) {
             return flat ? HOLLOW_SHAPE_X : CARPET_SHAPE_X;
@@ -129,28 +138,33 @@ public class HorizontalHollowLogBlock extends Block {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState()
-            .setValue(HORIZONTAL_AXIS, context.getClickedFace().getAxis())
-            .setValue(VARIANT, context.getLevel().getBlockState(context.getClickedPos()).getFluidState().getType() == Fluids.WATER
-                ? HollowLogVariants.Horizontal.WATERLOGGED
-                : HollowLogVariants.Horizontal.EMPTY);
+                .setValue(HORIZONTAL_AXIS, context.getClickedFace().getAxis())
+                .setValue(
+                        VARIANT,
+                        context.getLevel()
+                                                .getBlockState(context.getClickedPos())
+                                                .getFluidState()
+                                                .getType()
+                                        == Fluids.WATER
+                                ? HollowLogVariants.Horizontal.WATERLOGGED
+                                : HollowLogVariants.Horizontal.EMPTY);
     }
 
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.getValue(VARIANT) == HollowLogVariants.Horizontal.WATERLOGGED
-            ? Fluids.WATER.getSource(false)
-            : super.getFluidState(state);
+                ? Fluids.WATER.getSource(false)
+                : super.getFluidState(state);
     }
 
     @Override
     protected BlockState updateShape(
-        BlockState state,
-        Direction facing,
-        BlockState neighborState,
-        LevelAccessor level,
-        BlockPos pos,
-        BlockPos neighborPos
-    ) {
+            BlockState state,
+            Direction facing,
+            BlockState neighborState,
+            LevelAccessor level,
+            BlockPos pos,
+            BlockPos neighborPos) {
         if (state.getValue(VARIANT) == HollowLogVariants.Horizontal.WATERLOGGED) {
             level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
@@ -160,14 +174,13 @@ public class HorizontalHollowLogBlock extends Block {
 
     @Override
     protected ItemInteractionResult useItemOn(
-        ItemStack stack,
-        BlockState state,
-        Level level,
-        BlockPos pos,
-        Player player,
-        InteractionHand hand,
-        BlockHitResult hit
-    ) {
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         Direction.Axis axis = state.getValue(HORIZONTAL_AXIS);
         if (!isInside(hit, axis, pos)) {
             return super.useItemOn(stack, state, level, pos, player, hand, hit);
@@ -201,23 +214,41 @@ public class HorizontalHollowLogBlock extends Block {
                 level.setBlock(pos, state.setValue(VARIANT, HollowLogVariants.Horizontal.EMPTY), 3);
                 playBreakSound(Blocks.SNOW.defaultBlockState(), level, pos, player);
                 if (!player.isCreative()) {
-                    stack.hurtAndBreak(1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
-                    level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, new ItemStack(Items.SNOWBALL)));
+                    stack.hurtAndBreak(
+                            1,
+                            player,
+                            hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                    level.addFreshEntity(new ItemEntity(
+                            level,
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.5,
+                            pos.getZ() + 0.5,
+                            new ItemStack(Items.SNOWBALL)));
                 }
 
                 return ItemInteractionResult.sidedSuccess(level.isClientSide());
             }
         } else if (stack.canPerformAction(ItemAbilities.SHEARS_HARVEST)
-            && (variant == HollowLogVariants.Horizontal.MOSS || variant == HollowLogVariants.Horizontal.MOSS_AND_GRASS)) {
+                && (variant == HollowLogVariants.Horizontal.MOSS
+                        || variant == HollowLogVariants.Horizontal.MOSS_AND_GRASS)) {
             level.setBlock(pos, state.setValue(VARIANT, HollowLogVariants.Horizontal.EMPTY), 3);
             level.playSound(null, pos, SoundEvents.SHEEP_SHEAR, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (!player.isCreative()) {
-                stack.hurtAndBreak(1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
-                level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                    new ItemStack(TFBlocks.MOSS_PATCH.get())));
+                stack.hurtAndBreak(
+                        1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+                level.addFreshEntity(new ItemEntity(
+                        level,
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5,
+                        new ItemStack(TFBlocks.MOSS_PATCH.get())));
                 if (variant == HollowLogVariants.Horizontal.MOSS_AND_GRASS) {
-                    level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                        new ItemStack(Blocks.SHORT_GRASS)));
+                    level.addFreshEntity(new ItemEntity(
+                            level,
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.5,
+                            pos.getZ() + 0.5,
+                            new ItemStack(Blocks.SHORT_GRASS)));
                 }
             }
 
@@ -229,14 +260,15 @@ public class HorizontalHollowLogBlock extends Block {
 
     /** 潜行着点洞口、且人和洞口在同一条轴上时切成游泳姿势，好钻进去 */
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         Direction.Axis axis = state.getValue(HORIZONTAL_AXIS);
         if (isInside(hit, axis, pos)
-            && player.isSecondaryUseActive()
-            && player.getDirection().getAxis() == axis
-            && player.blockPosition().getY() == pos.getY()
-            && !player.isFallFlying()
-            && player.position().distanceTo(Vec3.atBottomCenterOf(pos)) < 0.81) {
+                && player.isSecondaryUseActive()
+                && player.getDirection().getAxis() == axis
+                && player.blockPosition().getY() == pos.getY()
+                && !player.isFallFlying()
+                && player.position().distanceTo(Vec3.atBottomCenterOf(pos)) < 0.81) {
             player.setPose(Pose.SWIMMING);
         }
 
@@ -245,11 +277,23 @@ public class HorizontalHollowLogBlock extends Block {
 
     public static void playPlaceSound(BlockState state, Level level, BlockPos pos, Player player) {
         SoundType sound = state.getSoundType(level, pos, player);
-        level.playSound(null, pos, sound.getPlaceSound(), SoundSource.BLOCKS, (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
+        level.playSound(
+                null,
+                pos,
+                sound.getPlaceSound(),
+                SoundSource.BLOCKS,
+                (sound.getVolume() + 1.0F) / 2.0F,
+                sound.getPitch() * 0.8F);
     }
 
     public static void playBreakSound(BlockState state, Level level, BlockPos pos, Player player) {
         SoundType sound = state.getSoundType(level, pos, player);
-        level.playSound(null, pos, sound.getBreakSound(), SoundSource.BLOCKS, (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
+        level.playSound(
+                null,
+                pos,
+                sound.getBreakSound(),
+                SoundSource.BLOCKS,
+                (sound.getVolume() + 1.0F) / 2.0F,
+                sound.getPitch() * 0.8F);
     }
 }

@@ -26,18 +26,21 @@ public class FnBinding extends ContextBinding {
     public static final FnBinding INSTANCE = new FnBinding();
 
     private FnBinding() {
-        function("oltoquaternion", (Function) (context, arguments) -> toStruct(new Quaternionf().rotationZYX(
-            (float) Math.toRadians(arguments.getAsFloat(context, 0)),
-            (float) Math.toRadians(arguments.getAsFloat(context, 1)),
-            (float) Math.toRadians(arguments.getAsFloat(context, 2)))));
-        function("quaternionmultiply", (Function) (context, arguments) -> toStruct(
-            new Quaternionf(structToQuaternion(arguments.getValue(context, 0)))
-                .mul(structToQuaternion(arguments.getValue(context, 1)))));
-        function("quaternionandvector", (Function) (context, arguments) -> toStruct(
-            structToQuaternion(arguments.getValue(context, 1)).transform(structToVector(arguments.getValue(context, 0)))));
+        function("oltoquaternion", (Function) (context, arguments) -> toStruct(new Quaternionf()
+                .rotationZYX(
+                        (float) Math.toRadians(arguments.getAsFloat(context, 0)),
+                        (float) Math.toRadians(arguments.getAsFloat(context, 1)),
+                        (float) Math.toRadians(arguments.getAsFloat(context, 2)))));
+        function("quaternionmultiply", (Function)
+                (context, arguments) -> toStruct(new Quaternionf(structToQuaternion(arguments.getValue(context, 0)))
+                        .mul(structToQuaternion(arguments.getValue(context, 1)))));
+        function("quaternionandvector", (Function)
+                (context, arguments) -> toStruct(structToQuaternion(arguments.getValue(context, 1))
+                        .transform(structToVector(arguments.getValue(context, 0)))));
         function("vectortovectorquaternion", (Function) (context, arguments) -> toStruct(new Quaternionf()
-            .rotationTo(structToVector(arguments.getValue(context, 0)).normalize(),
-                structToVector(arguments.getValue(context, 1)).normalize())));
+                .rotationTo(
+                        structToVector(arguments.getValue(context, 0)).normalize(),
+                        structToVector(arguments.getValue(context, 1)).normalize())));
         function("quaterniontool", (Function) (context, arguments) -> {
             Vector3f euler = structToQuaternion(arguments.getValue(context, 0)).getEulerAnglesZYX(new Vector3f());
             HashMapStruct struct = new HashMapStruct();
@@ -69,16 +72,14 @@ public class FnBinding extends ContextBinding {
         if (!(value instanceof Struct struct)) {
             return new Quaternionf();
         }
-        return new Quaternionf(number(struct, "x"), number(struct, "y"), number(struct, "z"),
-            number(struct, "w"));
+        return new Quaternionf(number(struct, "x"), number(struct, "y"), number(struct, "z"), number(struct, "w"));
     }
 
     private static Vector3f structToVector(Object value) {
         if (!(value instanceof Struct struct)) {
             return new Vector3f();
         }
-        return new Vector3f((float) number(struct, "x"), (float) number(struct, "y"),
-            (float) number(struct, "z"));
+        return new Vector3f((float) number(struct, "x"), (float) number(struct, "y"), (float) number(struct, "z"));
     }
 
     private static double number(Struct struct, String name) {

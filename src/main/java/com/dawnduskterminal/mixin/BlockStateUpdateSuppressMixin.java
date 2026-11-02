@@ -33,8 +33,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BlockStateUpdateSuppressMixin {
     /** 邻居更新：这一格在场里就不投递 */
     @Inject(method = "handleNeighborChanged", at = @At("HEAD"), cancellable = true)
-    private void ddt$suppressNeighborUpdate(Level level, BlockPos pos, Block fromBlock, BlockPos fromPos,
-                                             boolean movedByPiston, CallbackInfo ci) {
+    private void ddt$suppressNeighborUpdate(
+            Level level, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean movedByPiston, CallbackInfo ci) {
         if (Experiment069Field.suppressed(level, pos)) {
             ci.cancel();
         }

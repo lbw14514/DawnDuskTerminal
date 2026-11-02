@@ -44,22 +44,23 @@ import net.neoforged.neoforge.common.ItemAbilities;
  */
 public class ClimbableHollowLogBlock extends HorizontalDirectionalBlock {
     public static final EnumProperty<HollowLogVariants.Climbable> VARIANT =
-        EnumProperty.create("variant", HollowLogVariants.Climbable.class);
+            EnumProperty.create("variant", HollowLogVariants.Climbable.class);
 
     private static final VoxelShape LADDER_NORTH = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 3.0);
     private static final VoxelShape LADDER_SOUTH = Block.box(0.0, 0.0, 13.0, 16.0, 16.0, 16.0);
     private static final VoxelShape LADDER_EAST = Block.box(13.0, 0.0, 0.0, 16.0, 16.0, 16.0);
     private static final VoxelShape LADDER_WEST = Block.box(0.0, 0.0, 0.0, 3.0, 16.0, 16.0);
     private static final VoxelShape HOLLOW_SHAPE =
-        Shapes.join(Shapes.block(), Block.box(2.0, 0.0, 2.0, 14.0, 16.0, 14.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(2.0, 0.0, 2.0, 14.0, 16.0, 14.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape COLLISION_SHAPE =
-        Shapes.join(Shapes.block(), Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0), BooleanOp.ONLY_FIRST);
 
     public ClimbableHollowLogBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.getStateDefinition().any()
-            .setValue(VARIANT, HollowLogVariants.Climbable.VINE)
-            .setValue(FACING, Direction.NORTH));
+        this.registerDefaultState(this.getStateDefinition()
+                .any()
+                .setValue(VARIANT, HollowLogVariants.Climbable.VINE)
+                .setValue(FACING, Direction.NORTH));
     }
 
     private static boolean isInside(HitResult result, BlockPos pos) {
@@ -72,12 +73,14 @@ public class ClimbableHollowLogBlock extends HorizontalDirectionalBlock {
             return base;
         }
 
-        return Shapes.or(base, switch (state.getValue(FACING)) {
-            case SOUTH -> LADDER_SOUTH;
-            case EAST -> LADDER_EAST;
-            case WEST -> LADDER_WEST;
-            default -> LADDER_NORTH;
-        });
+        return Shapes.or(
+                base,
+                switch (state.getValue(FACING)) {
+                    case SOUTH -> LADDER_SOUTH;
+                    case EAST -> LADDER_EAST;
+                    case WEST -> LADDER_WEST;
+                    default -> LADDER_NORTH;
+                });
     }
 
     @Override
@@ -103,19 +106,18 @@ public class ClimbableHollowLogBlock extends HorizontalDirectionalBlock {
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.getValue(VARIANT) == HollowLogVariants.Climbable.LADDER_WATERLOGGED
-            ? Fluids.WATER.getSource(false)
-            : super.getFluidState(state);
+                ? Fluids.WATER.getSource(false)
+                : super.getFluidState(state);
     }
 
     @Override
     protected BlockState updateShape(
-        BlockState state,
-        Direction facing,
-        BlockState neighborState,
-        LevelAccessor level,
-        BlockPos pos,
-        BlockPos neighborPos
-    ) {
+            BlockState state,
+            Direction facing,
+            BlockState neighborState,
+            LevelAccessor level,
+            BlockPos pos,
+            BlockPos neighborPos) {
         if (state.getValue(VARIANT) == HollowLogVariants.Climbable.LADDER_WATERLOGGED) {
             level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
@@ -125,26 +127,37 @@ public class ClimbableHollowLogBlock extends HorizontalDirectionalBlock {
 
     @Override
     protected ItemInteractionResult useItemOn(
-        ItemStack stack,
-        BlockState state,
-        Level level,
-        BlockPos pos,
-        Player player,
-        InteractionHand hand,
-        BlockHitResult hit
-    ) {
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         if (!isInside(hit, pos) || !stack.canPerformAction(ItemAbilities.SHEARS_HARVEST)) {
             return super.useItemOn(stack, state, level, pos, player, hand, hit);
         }
 
         HollowLogVariants.Climbable variant = state.getValue(VARIANT);
-        level.setBlock(pos, ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL.get().defaultBlockState()
-            .setValue(VerticalHollowLogBlock.WATERLOGGED, variant == HollowLogVariants.Climbable.LADDER_WATERLOGGED), 3);
+        level.setBlock(
+                pos,
+                ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_VERTICAL
+                        .get()
+                        .defaultBlockState()
+                        .setValue(
+                                VerticalHollowLogBlock.WATERLOGGED,
+                                variant == HollowLogVariants.Climbable.LADDER_WATERLOGGED),
+                3);
         level.playSound(null, pos, SoundEvents.SHEEP_SHEAR, SoundSource.BLOCKS, 1.0F, 1.0F);
         if (!player.isCreative()) {
-            stack.hurtAndBreak(1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
-            level.addFreshEntity(new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                new ItemStack(variant == HollowLogVariants.Climbable.VINE ? Items.VINE : Items.LADDER)));
+            stack.hurtAndBreak(
+                    1, player, hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND);
+            level.addFreshEntity(new ItemEntity(
+                    level,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.5,
+                    pos.getZ() + 0.5,
+                    new ItemStack(variant == HollowLogVariants.Climbable.VINE ? Items.VINE : Items.LADDER)));
         }
 
         return ItemInteractionResult.sidedSuccess(level.isClientSide());

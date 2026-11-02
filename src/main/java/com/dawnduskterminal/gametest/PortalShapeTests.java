@@ -5,7 +5,6 @@ import com.dawnduskterminal.portal.PortalShape;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
@@ -36,8 +35,10 @@ public final class PortalShapeTests {
         }
     }
 
-    private static void buildRim(GameTestHelper helper, net.minecraft.world.level.block.Block rim,
-                                 net.minecraft.world.level.block.Block plant) {
+    private static void buildRim(
+            GameTestHelper helper,
+            net.minecraft.world.level.block.Block rim,
+            net.minecraft.world.level.block.Block plant) {
         for (int x = POOL_MIN - 1; x <= POOL_MAX + 1; x++) {
             for (int z = POOL_MIN - 1; z <= POOL_MAX + 1; z++) {
                 boolean edge = x == POOL_MIN - 1 || x == POOL_MAX + 1 || z == POOL_MIN - 1 || z == POOL_MAX + 1;
@@ -59,8 +60,10 @@ public final class PortalShapeTests {
         buildPool(helper);
         buildRim(helper, ModTerrainBlocks.ROSY_GRASS.get(), Blocks.SHORT_GRASS);
         ServerLevel level = helper.getLevel();
-        helper.assertTrue(PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN))).isPresent(),
-            "planted pool should be recognised as a portal shape");
+        helper.assertTrue(
+                PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN)))
+                        .isPresent(),
+                "planted pool should be recognised as a portal shape");
         helper.succeed();
     }
 
@@ -70,8 +73,10 @@ public final class PortalShapeTests {
         buildPool(helper);
         buildRim(helper, Blocks.GLASS, null);
         ServerLevel level = helper.getLevel();
-        helper.assertTrue(PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN))).isEmpty(),
-            "a glass rim must not count as a portal edge");
+        helper.assertTrue(
+                PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN)))
+                        .isEmpty(),
+                "a glass rim must not count as a portal edge");
         helper.succeed();
     }
 
@@ -81,8 +86,10 @@ public final class PortalShapeTests {
         buildPool(helper);
         buildRim(helper, ModTerrainBlocks.ROSY_GRASS.get(), null);
         ServerLevel level = helper.getLevel();
-        helper.assertTrue(PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN))).isEmpty(),
-            "open air above the rim must not count as plants");
+        helper.assertTrue(
+                PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN)))
+                        .isEmpty(),
+                "open air above the rim must not count as plants");
         helper.succeed();
     }
 
@@ -91,8 +98,10 @@ public final class PortalShapeTests {
         buildFloor(helper, ModTerrainBlocks.CANOPY_STONE.get());
         helper.setBlock(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN), Blocks.WATER);
         ServerLevel level = helper.getLevel();
-        helper.assertTrue(PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN))).isEmpty(),
-            "four water blocks are the minimum");
+        helper.assertTrue(
+                PortalShape.find(level, helper.absolutePos(new BlockPos(POOL_MIN, POOL_Y, POOL_MIN)))
+                        .isEmpty(),
+                "four water blocks are the minimum");
         helper.succeed();
     }
 
@@ -124,8 +133,7 @@ public final class PortalShapeTests {
                 helper.setBlock(new BlockPos(x, POOL_Y - 1, z), ModTerrainBlocks.CANOPY_STONE.get());
                 boolean edge = x == POOL_MIN - 1 || x == POOL_MAX + 1 || z == POOL_MIN - 1 || z == POOL_MAX + 1;
                 for (int y = POOL_Y; y <= POOL_Y + 1; y++) {
-                    helper.setBlock(new BlockPos(x, y, z),
-                        edge ? ModTerrainBlocks.ROSY_GRASS.get() : Blocks.WATER);
+                    helper.setBlock(new BlockPos(x, y, z), edge ? ModTerrainBlocks.ROSY_GRASS.get() : Blocks.WATER);
                 }
                 if (edge) {
                     helper.setBlock(new BlockPos(x, POOL_Y + 2, z), Blocks.SHORT_GRASS);
@@ -171,11 +179,12 @@ public final class PortalShapeTests {
         helper.setBlock(new BlockPos(3, 1, 2), ModBlocks.PORTAL_FLUID.get());
         helper.setBlock(new BlockPos(2, 1, 3), ModBlocks.PORTAL_FLUID.get());
         ServerLevel level = helper.getLevel();
-        helper.assertTrue(PortalShape.isCompletePortalPart(level, helper.absolutePos(new BlockPos(2, 1, 2))),
-            "the corner of an L has two neighbours so it counts as a complete part");
         helper.assertTrue(
-            !PortalShape.isCompletePortalPart(level, helper.absolutePos(new BlockPos(3, 1, 2))),
-            "a block with a single neighbour is not complete");
+                PortalShape.isCompletePortalPart(level, helper.absolutePos(new BlockPos(2, 1, 2))),
+                "the corner of an L has two neighbours so it counts as a complete part");
+        helper.assertTrue(
+                !PortalShape.isCompletePortalPart(level, helper.absolutePos(new BlockPos(3, 1, 2))),
+                "a block with a single neighbour is not complete");
         helper.succeed();
     }
 }

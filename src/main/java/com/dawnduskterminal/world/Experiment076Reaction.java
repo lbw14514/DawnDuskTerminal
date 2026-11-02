@@ -21,10 +21,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import twilightforest.init.TFSounds;
-import twilightforest.init.TFEntities;
-import twilightforest.init.TFDamageTypes;
 import twilightforest.init.TFBlocks;
+import twilightforest.init.TFDamageTypes;
+import twilightforest.init.TFEntities;
+import twilightforest.init.TFSounds;
 
 /**
  * 试验物品 076 被挖掉之后跑的那场反应：逐拍照抄暮色森林的砷铅铁反应堆
@@ -78,12 +78,11 @@ public final class Experiment076Reaction {
 
     /** 反应堆不动的那批方块：暮色森林自己的保护标签（里头套着 {@code common_protections}） */
     private static final TagKey<Block> IMMUNE =
-        BlockTags.create(ResourceLocation.parse("twilightforest:carminite_reactor_immune"));
+            BlockTags.create(ResourceLocation.parse("twilightforest:carminite_reactor_immune"));
 
     /** 覆盖阶段有八分之一概率把方块换成这个标签里的矿，原版只有下界石英矿与下界金矿两个 */
     private static final TagKey<Block> ORES =
-        BlockTags.create(ResourceLocation.parse("twilightforest:carminite_reactor_ores"));
-
+            BlockTags.create(ResourceLocation.parse("twilightforest:carminite_reactor_ores"));
 
     private static final List<Experiment076Reaction> ACTIVE = new ArrayList<>();
 
@@ -303,8 +302,16 @@ public final class Experiment076Reaction {
     private void finish() {
         // 我们那块方块在被挖掉的时候就没了，这一下只是兜底
         level.destroyBlock(origin, false);
-        level.explode(null, reactorDamage(), null,
-            origin.getX(), origin.getY(), origin.getZ(), 4.0F, true, Level.ExplosionInteraction.BLOCK);
+        level.explode(
+                null,
+                reactorDamage(),
+                null,
+                origin.getX(),
+                origin.getY(),
+                origin.getZ(),
+                4.0F,
+                true,
+                Level.ExplosionInteraction.BLOCK);
         for (int i = 0; i < 3; i++) {
             spawnGhastling(origin.getX() + secX, origin.getY() + secY, origin.getZ() + secZ);
             spawnGhastling(origin.getX() + terX, origin.getY() + terY, origin.getZ() + terZ);
@@ -318,28 +325,35 @@ public final class Experiment076Reaction {
         }
         RandomSource random = level.getRandom();
         entity.moveTo(
-            x - 1.5D + random.nextFloat() * 3.0D,
-            y - 1.5D + random.nextFloat() * 3.0D,
-            z - 1.5D + random.nextFloat() * 3.0D,
-            random.nextFloat() * 360.0F,
-            0.0F);
+                x - 1.5D + random.nextFloat() * 3.0D,
+                y - 1.5D + random.nextFloat() * 3.0D,
+                z - 1.5D + random.nextFloat() * 3.0D,
+                random.nextFloat() * 360.0F,
+                0.0F);
         level.addFreshEntity(entity);
     }
 
     /** 反应堆那条伤害类型，与方块自己用的同一条 */
     private DamageSource reactorDamage() {
         return level.registryAccess()
-            .registryOrThrow(Registries.DAMAGE_TYPE)
-            .getHolder(TFDamageTypes.REACTOR)
-            .<DamageSource>map(DamageSource::new)
-            .orElseGet(() -> level.damageSources().explosion(null, null));
+                .registryOrThrow(Registries.DAMAGE_TYPE)
+                .getHolder(TFDamageTypes.REACTOR)
+                .<DamageSource>map(DamageSource::new)
+                .orElseGet(() -> level.damageSources().explosion(null, null));
     }
 
     private void playAmbient() {
         SoundEvent sound = TFSounds.REACTOR_AMBIENT.get();
         float pitch = counter / 100.0F;
-        level.playSound(null, origin.getX() + 0.5D, origin.getY() + 0.5D, origin.getZ() + 0.5D,
-            sound, SoundSource.BLOCKS, pitch, pitch);
+        level.playSound(
+                null,
+                origin.getX() + 0.5D,
+                origin.getY() + 0.5D,
+                origin.getZ() + 0.5D,
+                sound,
+                SoundSource.BLOCKS,
+                pitch,
+                pitch);
     }
 
     /** 灌进团块里的反应堆碎片 */

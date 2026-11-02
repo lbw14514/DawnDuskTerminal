@@ -1,6 +1,7 @@
 package com.dawnduskterminal.crafting;
 
 import com.mojang.serialization.MapCodec;
+import java.util.stream.Stream;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
@@ -9,8 +10,6 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.common.crafting.IngredientType;
-
-import java.util.stream.Stream;
 
 /**
  * 匹配任意一种效果里带 {@link MobEffects#POISON} 的药水，饮用 喷溅 滞留都算
@@ -41,9 +40,9 @@ public final class PoisonPotionIngredient implements ICustomIngredient {
     @Override
     public Stream<ItemStack> getItems() {
         return Stream.of(
-            PotionContents.createItemStack(Items.POTION, Potions.POISON),
-            PotionContents.createItemStack(Items.SPLASH_POTION, Potions.POISON),
-            PotionContents.createItemStack(Items.LINGERING_POTION, Potions.POISON));
+                PotionContents.createItemStack(Items.POTION, Potions.POISON),
+                PotionContents.createItemStack(Items.SPLASH_POTION, Potions.POISON),
+                PotionContents.createItemStack(Items.LINGERING_POTION, Potions.POISON));
     }
 
     @Override

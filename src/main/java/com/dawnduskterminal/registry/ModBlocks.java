@@ -13,6 +13,10 @@ import com.dawnduskterminal.block.Experiment076Block;
 import com.dawnduskterminal.block.Experiment114Block;
 import com.dawnduskterminal.block.SusCakeBlock;
 import com.dawnduskterminal.portal.PortalBlock;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.AbstractFurnaceBlock;
@@ -27,36 +31,31 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 public final class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(DawnDuskTerminal.MOD_ID);
 
     public static final DeferredBlock<PortalBlock> PORTAL_FLUID = BLOCKS.registerBlock(
-        "portal_fluid",
-        props -> new PortalBlock(ModFluids.PORTAL_FLUID.get(), props),
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_CYAN)
-            .replaceable()
-            .noCollission()
-            .randomTicks()
-            .strength(100.0F)
-            .lightLevel(state -> 15)
-            .pushReaction(PushReaction.DESTROY)
-            .noLootTable()
-            .liquid()
-            .sound(SoundType.EMPTY));
+            "portal_fluid",
+            props -> new PortalBlock(ModFluids.PORTAL_FLUID.get(), props),
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .replaceable()
+                    .noCollission()
+                    .randomTicks()
+                    .strength(100.0F)
+                    .lightLevel(state -> 15)
+                    .pushReaction(PushReaction.DESTROY)
+                    .noLootTable()
+                    .liquid()
+                    .sound(SoundType.EMPTY));
 
     public static final DeferredBlock<Block> CHRONO_CRUST = BLOCKS.registerSimpleBlock(
-        "chrono_crust",
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_BLACK)
-            .strength(-1.0F, 3600000.0F)
-            .noLootTable()
-            .lightLevel(state -> 3));
+            "chrono_crust",
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(-1.0F, 3600000.0F)
+                    .noLootTable()
+                    .lightLevel(state -> 3));
 
     /**
      * 能当合成台用的方块
@@ -68,7 +67,7 @@ public final class ModBlocks {
      * 标签文件在 {@code data/dawnduskterminal/tags/block/crafting_tables.json}，原版工作台也在里面
      */
     public static final TagKey<Block> CRAFTING_TABLES =
-        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("crafting_tables"));
+            TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("crafting_tables"));
 
     /**
      * 试验物品 019 摆下来的样子：一丛植物，行为在 {@link Experiment019Block}
@@ -78,15 +77,15 @@ public final class ModBlocks {
      * {@code data/dawnduskterminal/loot_table/blocks/experiment_019.json}
      */
     public static final DeferredBlock<Experiment019Block> EXPERIMENT_019 = BLOCKS.registerBlock(
-        "experiment_019",
-        Experiment019Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.PLANT)
-            .noCollission()
-            .instabreak()
-            .sound(SoundType.GRASS)
-            .offsetType(BlockBehaviour.OffsetType.XZ)
-            .pushReaction(PushReaction.DESTROY));
+            "experiment_019",
+            Experiment019Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.GRASS)
+                    .offsetType(BlockBehaviour.OffsetType.XZ)
+                    .pushReaction(PushReaction.DESTROY));
 
     /**
      * 试验物品 001：属性和工作台完全一样（{@link net.minecraft.world.level.block.Blocks#CRAFTING_TABLE}
@@ -96,14 +95,14 @@ public final class ModBlocks {
      * {@code data/dawnduskterminal/loot_table/blocks/experiment_001.json}
      */
     public static final DeferredBlock<CraftingTableBlock> EXPERIMENT_001 = BLOCKS.registerBlock(
-        "experiment_001",
-        CraftingTableBlock::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.WOOD)
-            .instrument(NoteBlockInstrument.BASS)
-            .strength(2.5F)
-            .sound(SoundType.WOOD)
-            .ignitedByLava());
+            "experiment_001",
+            CraftingTableBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2.5F)
+                    .sound(SoundType.WOOD)
+                    .ignitedByLava());
 
     /**
      * 试验物品 004：照熔炉工作的那一台
@@ -118,14 +117,14 @@ public final class ModBlocks {
      * {@code data/dawnduskterminal/loot_table/blocks/experiment_004.json}
      */
     public static final DeferredBlock<Experiment004Block> EXPERIMENT_004 = BLOCKS.registerBlock(
-        "experiment_004",
-        Experiment004Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.STONE)
-            .requiresCorrectToolForDrops()
-            .strength(3.5F)
-            .sound(SoundType.STONE)
-            .lightLevel(state -> state.getValue(AbstractFurnaceBlock.LIT) ? 13 : 0));
+            "experiment_004",
+            Experiment004Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.5F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> state.getValue(AbstractFurnaceBlock.LIT) ? 13 : 0));
 
     /**
      * 试验物品 114 摆下来的那一块：整块照抄暮色森林的试验物品 115 方块
@@ -135,13 +134,13 @@ public final class ModBlocks {
      * {@code regenerate} 那版补片，我们那版不补片而是收到红石信号响一声，所以没有随机刻要做的事
      */
     public static final DeferredBlock<Experiment114Block> EXPERIMENT_114 = BLOCKS.registerBlock(
-        "experiment_114",
-        Experiment114Block::new,
-        BlockBehaviour.Properties.of()
-            .noLootTable()
-            .pushReaction(PushReaction.DESTROY)
-            .sound(SoundType.WOOL)
-            .strength(0.5F));
+            "experiment_114",
+            Experiment114Block::new,
+            BlockBehaviour.Properties.of()
+                    .noLootTable()
+                    .pushReaction(PushReaction.DESTROY)
+                    .sound(SoundType.WOOL)
+                    .strength(0.5F));
 
     /**
      * 七种可疑蛋糕（{@code sus_<口味>_cake}）：暮色森林试验物品 115 的衍生物
@@ -151,7 +150,7 @@ public final class ModBlocks {
      * 外加 {@code randomTicks()}：这一版不需要先撒红石粉，吃到一半靠随机刻自己补片，见 {@link SusCakeBlock}
      */
     public static final List<String> SUS_CAKE_FLAVORS =
-        List.of("bloodorange", "cheese", "cherrycheese", "lamington", "pavlova", "pineapple", "redvelvet");
+            List.of("bloodorange", "cheese", "cherrycheese", "lamington", "pavlova", "pineapple", "redvelvet");
 
     /**
      * 各口味一片的数值，没列出的走 {@link SusCakeBlock#DEFAULT_SERVING}
@@ -161,8 +160,8 @@ public final class ModBlocks {
      * 那张表在静态初始化里就要读这份数值
      */
     private static final Map<String, SusCakeBlock.Serving> SUS_CAKE_SERVINGS = Map.of(
-        "bloodorange", SusCakeBlock.EIGHT_SERVING,
-        "redvelvet", SusCakeBlock.EIGHT_SERVING);
+            "bloodorange", SusCakeBlock.EIGHT_SERVING,
+            "redvelvet", SusCakeBlock.EIGHT_SERVING);
 
     /** 六种可疑蛋糕的方块，键是完整注册 ID（{@code sus_<口味>_cake}），顺序同 {@link #SUS_CAKE_FLAVORS} */
     private static final Map<String, DeferredBlock<SusCakeBlock>> SUS_CAKES = registerSusCakes();
@@ -177,13 +176,17 @@ public final class ModBlocks {
         for (String flavor : SUS_CAKE_FLAVORS) {
             String id = "sus_" + flavor + "_cake";
             SusCakeBlock.Serving serving = SUS_CAKE_SERVINGS.getOrDefault(flavor, SusCakeBlock.DEFAULT_SERVING);
-            map.put(id, BLOCKS.registerBlock(id, properties -> new SusCakeBlock(properties, serving),
-                BlockBehaviour.Properties.of()
-                    .noLootTable()
-                    .pushReaction(PushReaction.DESTROY)
-                    .randomTicks()
-                    .sound(SoundType.WOOL)
-                    .strength(0.5F)));
+            map.put(
+                    id,
+                    BLOCKS.registerBlock(
+                            id,
+                            properties -> new SusCakeBlock(properties, serving),
+                            BlockBehaviour.Properties.of()
+                                    .noLootTable()
+                                    .pushReaction(PushReaction.DESTROY)
+                                    .randomTicks()
+                                    .sound(SoundType.WOOL)
+                                    .strength(0.5F)));
         }
         return Collections.unmodifiableMap(map);
     }
@@ -200,13 +203,13 @@ public final class ModBlocks {
      * 格子里攒下的 115 由方块自己的 {@code onRemove} 撒出来
      */
     public static final DeferredBlock<E115RegeneratorBlock> E_115_REGENERATOR = BLOCKS.registerBlock(
-        "e_115_regenerator",
-        E115RegeneratorBlock::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_RED)
-            .requiresCorrectToolForDrops()
-            .strength(3.5F)
-            .sound(SoundType.STONE));
+            "e_115_regenerator",
+            E115RegeneratorBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.5F)
+                    .sound(SoundType.STONE));
 
     /**
      * 试验物品 051：拆解台那台机器
@@ -220,16 +223,16 @@ public final class ModBlocks {
      * 里面 11 格的内容物由方块自己的 {@code onRemove} 撒出来
      */
     public static final DeferredBlock<Experiment051Block> EXPERIMENT_051 = BLOCKS.registerBlock(
-        "experiment_051",
-        Experiment051Block::new,
-        BlockBehaviour.Properties.of()
-            .ignitedByLava()
-            .mapColor(MapColor.FIRE)
-            .sound(SoundType.WOOD)
-            .strength(2.5F)
-            // 烧起来时发 13 级光，数字与原版熔炉的 litBlockEmission(13) 一致；
-            // 原版那个辅助方法写死了 BlockStateProperties.LIT，我们用的是 active，只能自己写一行
-            .lightLevel(state -> state.getValue(Experiment051Block.ACTIVE) ? 13 : 0));
+            "experiment_051",
+            Experiment051Block::new,
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .mapColor(MapColor.FIRE)
+                    .sound(SoundType.WOOD)
+                    .strength(2.5F)
+                    // 烧起来时发 13 级光，数字与原版熔炉的 litBlockEmission(13) 一致；
+                    // 原版那个辅助方法写死了 BlockStateProperties.LIT，我们用的是 active，只能自己写一行
+                    .lightLevel(state -> state.getValue(Experiment051Block.ACTIVE) ? 13 : 0));
 
     /**
      * 试验物品 052：照砷铅铁反应堆做的那颗方雷，行为在 {@link Experiment052Block}
@@ -241,14 +244,14 @@ public final class ModBlocks {
      * <p>掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_052.json}
      */
     public static final DeferredBlock<Experiment052Block> EXPERIMENT_052 = BLOCKS.registerBlock(
-        "experiment_052",
-        Experiment052Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_RED)
-            .requiresCorrectToolForDrops()
-            .strength(3.5F)
-            .sound(SoundType.STONE)
-            .lightLevel(state -> state.getValue(Experiment052Block.ACTIVE) ? 15 : 0));
+            "experiment_052",
+            Experiment052Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.5F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> state.getValue(Experiment052Block.ACTIVE) ? 15 : 0));
 
     /**
      * 试验物品 065：反建器那一档里更高级的一台，压出一张 17×17×17 的「打不出伤害」场
@@ -261,14 +264,14 @@ public final class ModBlocks {
      * {@code world/Experiment065Field}；掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_065.json}
      */
     public static final DeferredBlock<Experiment065Block> EXPERIMENT_065 = BLOCKS.registerBlock(
-        "experiment_065",
-        Experiment065Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_ORANGE)
-            .requiresCorrectToolForDrops()
-            .strength(3.5F)
-            .sound(SoundType.STONE)
-            .lightLevel(state -> 15));
+            "experiment_065",
+            Experiment065Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.5F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> 15));
 
     /**
      * 试验物品 069：反建器那一档里更高级的第二台，压出一张 17×17×17 的「更新不处理」场
@@ -284,14 +287,14 @@ public final class ModBlocks {
      * <p>掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_069.json}
      */
     public static final DeferredBlock<Experiment069Block> EXPERIMENT_069 = BLOCKS.registerBlock(
-        "experiment_069",
-        Experiment069Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.TERRACOTTA_ORANGE)
-            .requiresCorrectToolForDrops()
-            .strength(3.5F)
-            .sound(SoundType.STONE)
-            .lightLevel(state -> 15));
+            "experiment_069",
+            Experiment069Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_ORANGE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.5F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> 15));
 
     /**
      * 试验物品 076：那个每个面每一刻都在换贴图的异常方块，外观整个在客户端
@@ -305,14 +308,14 @@ public final class ModBlocks {
      * 挖掉掉自己，走 {@code data/dawnduskterminal/loot_table/blocks/experiment_076.json}
      */
     public static final DeferredBlock<Experiment076Block> EXPERIMENT_076 = BLOCKS.registerBlock(
-        "experiment_076",
-        Experiment076Block::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_BLACK)
-            .requiresCorrectToolForDrops()
-            .strength(5.0F, 1200.0F)
-            .sound(SoundType.STONE)
-            .lightLevel(state -> 15));
+            "experiment_076",
+            Experiment076Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0F, 1200.0F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> 15));
 
     /**
      * 砷铅铁火焰：试验物品 052 炸出来、碎片落地补上的那种火，行为在 {@link CarminiteFireBlock}
@@ -321,17 +324,17 @@ public final class ModBlocks {
      * 以及没有战利品表（敲掉什么都不掉，也没有对应的物品）
      */
     public static final DeferredBlock<CarminiteFireBlock> CARMINITE_FIRE = BLOCKS.registerBlock(
-        "carminite_fire",
-        CarminiteFireBlock::new,
-        BlockBehaviour.Properties.of()
-            .mapColor(MapColor.FIRE)
-            .replaceable()
-            .noCollission()
-            .instabreak()
-            .lightLevel(state -> 10)
-            .sound(SoundType.WOOL)
-            .pushReaction(PushReaction.DESTROY)
-            .noLootTable());
+            "carminite_fire",
+            CarminiteFireBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.FIRE)
+                    .replaceable()
+                    .noCollission()
+                    .instabreak()
+                    .lightLevel(state -> 10)
+                    .sound(SoundType.WOOL)
+                    .pushReaction(PushReaction.DESTROY)
+                    .noLootTable());
 
     private ModBlocks() {}
 

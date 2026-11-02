@@ -34,34 +34,55 @@ import org.jetbrains.annotations.Nullable;
  * 图集按 {@code BannerPatternLayers} 的顺序取。发光层单独走一条注册过的固定渲染缓冲
  * （{@link #GLOW_LAYER}），保证它排在木盾本体与图案之后
  */
-
 public final class Experiment045ShieldRenderer extends BlockEntityWithoutLevelRenderer {
-    private static final Material NO_PATTERN = new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_nopattern"));
-    private static final Material BASE = new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_base"));
-    private static final Material GLOW = new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_glow"));
+    private static final Material NO_PATTERN =
+            new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_nopattern"));
+    private static final Material BASE =
+            new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_base"));
+    private static final Material GLOW =
+            new Material(InventoryMenu.BLOCK_ATLAS, DawnDuskTerminal.id("item/experiment_045_glow"));
     private static final RenderType BODY = RenderType.entitySolid(InventoryMenu.BLOCK_ATLAS);
     public static final RenderType GLOW_LAYER = RenderType.entityTranslucentEmissive(InventoryMenu.BLOCK_ATLAS);
+
     @Nullable
     private ShieldModel model;
 
     public Experiment045ShieldRenderer() {
-        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+        super(
+                Minecraft.getInstance().getBlockEntityRenderDispatcher(),
+                Minecraft.getInstance().getEntityModels());
     }
 
-    public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+    public void renderByItem(
+            ItemStack stack,
+            ItemDisplayContext context,
+            PoseStack pose,
+            MultiBufferSource buffers,
+            int light,
+            int overlay) {
         ShieldModel shield = this.model();
-        BannerPatternLayers layers = (BannerPatternLayers)stack.getOrDefault(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY);
-        DyeColor baseColor = (DyeColor)stack.get(DataComponents.BASE_COLOR);
+        BannerPatternLayers layers =
+                (BannerPatternLayers) stack.getOrDefault(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY);
+        DyeColor baseColor = (DyeColor) stack.get(DataComponents.BASE_COLOR);
         boolean patterned = !layers.layers().isEmpty() || baseColor != null;
         pose.pushPose();
         pose.scale(1.0F, -1.0F, -1.0F);
         Material material = patterned ? BASE : NO_PATTERN;
-        VertexConsumer body = material.sprite().wrap(ItemRenderer.getFoilBufferDirect(buffers, BODY, true, stack.hasFoil()));
+        VertexConsumer body =
+                material.sprite().wrap(ItemRenderer.getFoilBufferDirect(buffers, BODY, true, stack.hasFoil()));
         shield.handle().render(pose, body, light, overlay);
         if (patterned) {
             BannerRenderer.renderPatterns(
-                pose, buffers, light, overlay, shield.plate(), material, false, Objects.requireNonNullElse(baseColor, DyeColor.WHITE), layers, stack.hasFoil()
-            );
+                    pose,
+                    buffers,
+                    light,
+                    overlay,
+                    shield.plate(),
+                    material,
+                    false,
+                    Objects.requireNonNullElse(baseColor, DyeColor.WHITE),
+                    layers,
+                    stack.hasFoil());
         } else {
             shield.plate().render(pose, body, light, overlay);
         }
@@ -73,7 +94,8 @@ public final class Experiment045ShieldRenderer extends BlockEntityWithoutLevelRe
 
     private ShieldModel model() {
         if (this.model == null) {
-            this.model = new ShieldModel(Minecraft.getInstance().getEntityModels().bakeLayer(ModelLayers.SHIELD));
+            this.model =
+                    new ShieldModel(Minecraft.getInstance().getEntityModels().bakeLayer(ModelLayers.SHIELD));
         }
 
         return this.model;

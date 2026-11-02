@@ -2,6 +2,7 @@ package com.dawnduskterminal.mixin;
 
 import com.dawnduskterminal.structure.StructureExclusions;
 import com.dawnduskterminal.world.ChronoDimensionProbe;
+import java.util.Optional;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -11,12 +12,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Optional;
-
 @Mixin(Structure.class)
 public abstract class StructureExclusionMixin {
     @Inject(method = "findValidGenerationPoint", at = @At("HEAD"), cancellable = true)
-    private void ddt$suppressExcludedLandmarks(Structure.GenerationContext context, CallbackInfoReturnable<Optional<Structure.GenerationStub>> cir) {
+    private void ddt$suppressExcludedLandmarks(
+            Structure.GenerationContext context, CallbackInfoReturnable<Optional<Structure.GenerationStub>> cir) {
         if (!ChronoDimensionProbe.isChrono(context)) {
             return;
         }

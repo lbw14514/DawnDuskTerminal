@@ -27,11 +27,11 @@ public class Experiment051Screen extends AbstractContainerScreen<Experiment051Me
 
     /** 原版熔炉的火苗 sprite（14x14，从下往上亮） */
     private static final ResourceLocation LIT_PROGRESS =
-        ResourceLocation.withDefaultNamespace("container/furnace/lit_progress");
+            ResourceLocation.withDefaultNamespace("container/furnace/lit_progress");
 
     /** 原版熔炉的箭头 sprite（24x16，从左往右长） */
     private static final ResourceLocation COOK_PROGRESS =
-        ResourceLocation.withDefaultNamespace("container/furnace/burn_progress");
+            ResourceLocation.withDefaultNamespace("container/furnace/burn_progress");
 
     private static final int FLAME_SIZE = 14;
     private static final int ARROW_HEIGHT = 16;
@@ -58,18 +58,35 @@ public class Experiment051Screen extends AbstractContainerScreen<Experiment051Me
 
         if (this.menu.isLit()) {
             int lit = Mth.ceil(this.menu.litProgress() * (FLAME_SIZE - 1)) + 1;
-            graphics.blitSprite(LIT_PROGRESS, FLAME_SIZE, FLAME_SIZE, 0, FLAME_SIZE - lit,
-                x + Experiment051Menu.FLAME_X, y + Experiment051Menu.FLAME_Y + FLAME_SIZE - lit, FLAME_SIZE, lit);
+            graphics.blitSprite(
+                    LIT_PROGRESS,
+                    FLAME_SIZE,
+                    FLAME_SIZE,
+                    0,
+                    FLAME_SIZE - lit,
+                    x + Experiment051Menu.FLAME_X,
+                    y + Experiment051Menu.FLAME_Y + FLAME_SIZE - lit,
+                    FLAME_SIZE,
+                    lit);
         }
 
         int progress = Mth.ceil(this.menu.cookProgress() * ARROW_WIDTH);
-        graphics.blitSprite(COOK_PROGRESS, ARROW_WIDTH, ARROW_HEIGHT, 0, 0,
-            x + Experiment051Menu.ARROW_X, y + Experiment051Menu.ARROW_Y, progress, ARROW_HEIGHT);
+        graphics.blitSprite(
+                COOK_PROGRESS,
+                ARROW_WIDTH,
+                ARROW_HEIGHT,
+                0,
+                0,
+                x + Experiment051Menu.ARROW_X,
+                y + Experiment051Menu.ARROW_Y,
+                progress,
+                ARROW_HEIGHT);
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0x404040, false);
-        graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);
+        graphics.drawString(
+                this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0x404040, false);
     }
 }

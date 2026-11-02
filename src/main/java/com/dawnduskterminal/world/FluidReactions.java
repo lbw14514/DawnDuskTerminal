@@ -26,27 +26,31 @@ public final class FluidReactions {
     public static void register() {
         // 不稳定液体（portal_fluid）
         FluidInteractionRegistry.addInteraction(
-            ModFluids.PORTAL_FLUID_TYPE.value(),
-            new FluidInteractionRegistry.InteractionInformation(
-                NeoForgeMod.WATER_TYPE.value(), ModTerrainBlocks.FRAGILE_CANOPY.get().defaultBlockState()));
+                ModFluids.PORTAL_FLUID_TYPE.value(),
+                new FluidInteractionRegistry.InteractionInformation(
+                        NeoForgeMod.WATER_TYPE.value(),
+                        ModTerrainBlocks.FRAGILE_CANOPY.get().defaultBlockState()));
         FluidInteractionRegistry.addInteraction(
-            ModFluids.PORTAL_FLUID_TYPE.value(),
-            new FluidInteractionRegistry.InteractionInformation(
-                NeoForgeMod.LAVA_TYPE.value(), ModTerrainBlocks.CHAOS_STONE.get().defaultBlockState()));
+                ModFluids.PORTAL_FLUID_TYPE.value(),
+                new FluidInteractionRegistry.InteractionInformation(
+                        NeoForgeMod.LAVA_TYPE.value(),
+                        ModTerrainBlocks.CHAOS_STONE.get().defaultBlockState()));
         FluidInteractionRegistry.addInteraction(
-            ModFluids.PORTAL_FLUID_TYPE.value(),
-            new FluidInteractionRegistry.InteractionInformation(
-                ModScorchingTwilight.TYPE.value(), ModTerrainBlocks.CANOPY_STONE.get().defaultBlockState()));
+                ModFluids.PORTAL_FLUID_TYPE.value(),
+                new FluidInteractionRegistry.InteractionInformation(
+                        ModScorchingTwilight.TYPE.value(),
+                        ModTerrainBlocks.CANOPY_STONE.get().defaultBlockState()));
 
         // 热情暮光（enthu_fluid）
         FluidInteractionRegistry.addInteraction(
-            ModScorchingTwilight.TYPE.value(),
-            new FluidInteractionRegistry.InteractionInformation(
-                NeoForgeMod.WATER_TYPE.value(), auroraBlock().defaultBlockState()));
+                ModScorchingTwilight.TYPE.value(),
+                new FluidInteractionRegistry.InteractionInformation(
+                        NeoForgeMod.WATER_TYPE.value(), auroraBlock().defaultBlockState()));
         FluidInteractionRegistry.addInteraction(
-            ModScorchingTwilight.TYPE.value(),
-            new FluidInteractionRegistry.InteractionInformation(
-                NeoForgeMod.LAVA_TYPE.value(), ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState()));
+                ModScorchingTwilight.TYPE.value(),
+                new FluidInteractionRegistry.InteractionInformation(
+                        NeoForgeMod.LAVA_TYPE.value(),
+                        ModTerrainBlocks.BLAZING_BLOCK.get().defaultBlockState()));
     }
 
     /** 热情的暮光加水之后得到的方块：暮色森林的极光方块。也是测试的期望值来源 */

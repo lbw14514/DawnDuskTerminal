@@ -40,43 +40,43 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class RecipeTagTests {
     /** 改写过的原版配方，以石头为原料的那些（不含石切机，那条单独验） */
     private static final List<String> STONE_RECIPES = List.of(
-        "stone_bricks",
-        "stone_bricks_from_stone_stonecutting",
-        "stone_brick_slab_from_stone_stonecutting",
-        "stone_brick_stairs_from_stone_stonecutting",
-        "stone_brick_walls_from_stone_stonecutting",
-        "chiseled_stone_bricks_stone_from_stonecutting",
-        "stone_slab",
-        "stone_slab_from_stone_stonecutting",
-        "stone_stairs",
-        "stone_stairs_from_stone_stonecutting",
-        "stone_button",
-        "stone_pressure_plate",
-        "comparator",
-        "repeater",
-        "smooth_stone");
+            "stone_bricks",
+            "stone_bricks_from_stone_stonecutting",
+            "stone_brick_slab_from_stone_stonecutting",
+            "stone_brick_stairs_from_stone_stonecutting",
+            "stone_brick_walls_from_stone_stonecutting",
+            "chiseled_stone_bricks_stone_from_stonecutting",
+            "stone_slab",
+            "stone_slab_from_stone_stonecutting",
+            "stone_stairs",
+            "stone_stairs_from_stone_stonecutting",
+            "stone_button",
+            "stone_pressure_plate",
+            "comparator",
+            "repeater",
+            "smooth_stone");
 
     /** 以圆石为原料的那些：前七条模组自己改写，后半段是 NeoForge 覆盖、只能靠通用标签 */
     private static final List<String> COBBLESTONE_RECIPES = List.of(
-        "cobblestone_slab",
-        "cobblestone_slab_from_cobblestone_stonecutting",
-        "cobblestone_stairs",
-        "cobblestone_stairs_from_cobblestone_stonecutting",
-        "cobblestone_wall",
-        "cobblestone_wall_from_cobblestone_stonecutting",
-        "stone",
-        "mossy_cobblestone_from_vine",
-        "mossy_cobblestone_from_moss_block",
-        "andesite",
-        "diorite",
-        "dispenser",
-        "dropper",
-        "lever",
-        "observer",
-        "piston",
-        "coast_armor_trim_smithing_template",
-        "sentry_armor_trim_smithing_template",
-        "vex_armor_trim_smithing_template");
+            "cobblestone_slab",
+            "cobblestone_slab_from_cobblestone_stonecutting",
+            "cobblestone_stairs",
+            "cobblestone_stairs_from_cobblestone_stonecutting",
+            "cobblestone_wall",
+            "cobblestone_wall_from_cobblestone_stonecutting",
+            "stone",
+            "mossy_cobblestone_from_vine",
+            "mossy_cobblestone_from_moss_block",
+            "andesite",
+            "diorite",
+            "dispenser",
+            "dropper",
+            "lever",
+            "observer",
+            "piston",
+            "coast_armor_trim_smithing_template",
+            "sentry_armor_trim_smithing_template",
+            "vex_armor_trim_smithing_template");
 
     @GameTest(template = "ddt_empty")
     public static void canopyStoneSitsInStoneTags(GameTestHelper helper) {
@@ -107,16 +107,18 @@ public final class RecipeTagTests {
     public static void canopyStoneCraftsAStonecutter(GameTestHelper helper) {
         ItemStack canopyStone = new ItemStack(ModTerrainBlocks.CANOPY_STONE.get());
         boolean any = helper.getLevel().getRecipeManager().getRecipes().stream()
-            .anyMatch(holder -> holder.value().getResultItem(helper.getLevel().registryAccess()).is(Items.STONECUTTER)
-                && accepts(holder, canopyStone));
+                .anyMatch(holder -> holder.value()
+                                .getResultItem(helper.getLevel().registryAccess())
+                                .is(Items.STONECUTTER)
+                        && accepts(holder, canopyStone));
         helper.assertTrue(any, "some recipe producing minecraft:stonecutter must accept dawnduskterminal:canopy_stone");
         helper.succeed();
     }
 
     private static void assertTagged(GameTestHelper helper, Item item, String namespace, String path) {
         TagKey<Item> tag = ItemTags.create(ResourceLocation.fromNamespaceAndPath(namespace, path));
-        helper.assertTrue(new ItemStack(item).is(tag),
-            "dawnduskterminal:canopy_stone must be in #" + namespace + ":" + path);
+        helper.assertTrue(
+                new ItemStack(item).is(tag), "dawnduskterminal:canopy_stone must be in #" + namespace + ":" + path);
     }
 
     /**
@@ -131,12 +133,13 @@ public final class RecipeTagTests {
         for (String path : recipePaths) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("minecraft", path);
             RecipeHolder<?> holder = manager.getRecipes().stream()
-                .filter(candidate -> candidate.id().equals(id))
-                .findFirst()
-                .orElse(null);
+                    .filter(candidate -> candidate.id().equals(id))
+                    .findFirst()
+                    .orElse(null);
             helper.assertTrue(holder != null, "recipe " + id + " (" + group + ") is missing from the recipe manager");
-            helper.assertTrue(accepts(holder, canopyStone),
-                "recipe " + id + " (" + group + ") must accept dawnduskterminal:canopy_stone");
+            helper.assertTrue(
+                    accepts(holder, canopyStone),
+                    "recipe " + id + " (" + group + ") must accept dawnduskterminal:canopy_stone");
         }
     }
 

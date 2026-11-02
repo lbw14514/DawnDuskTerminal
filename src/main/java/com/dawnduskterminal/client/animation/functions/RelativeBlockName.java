@@ -21,9 +21,8 @@ public class RelativeBlockName extends EntityFunction {
             return false;
         }
 
-        BlockPos pos = new BlockPos((int) entity.getX() + offsetX,
-                (int) entity.getY() + offsetY,
-                (int) entity.getZ() + offsetZ);
+        BlockPos pos = new BlockPos(
+                (int) entity.getX() + offsetX, (int) entity.getY() + offsetY, (int) entity.getZ() + offsetZ);
         BlockState block = ctx.entity().entity().level().getBlockState(pos);
         ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(block.getBlock());
         if (blockId == null) {

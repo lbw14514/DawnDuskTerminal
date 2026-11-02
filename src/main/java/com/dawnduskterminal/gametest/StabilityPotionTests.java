@@ -31,27 +31,31 @@ public final class StabilityPotionTests {
     @GameTest(template = "ddt_empty")
     public static void potionIsEightMinutesOfStability(GameTestHelper helper) {
         PotionContents contents = new ItemStack(ModItems.STABILITY_POTION.get())
-            .getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
-        helper.assertTrue(contents.is(ModPotions.STABILITY),
-            "stability_potion must default to dawnduskterminal:stability, got " + contents.potion());
+                .getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+        helper.assertTrue(
+                contents.is(ModPotions.STABILITY),
+                "stability_potion must default to dawnduskterminal:stability, got " + contents.potion());
 
         List<MobEffectInstance> effects = new ArrayList<>();
         contents.forEachEffect(effects::add);
-        helper.assertTrue(effects.size() == 1,
-            "the stability potion must carry exactly one effect, got " + effects.size());
+        helper.assertTrue(
+                effects.size() == 1, "the stability potion must carry exactly one effect, got " + effects.size());
 
         MobEffectInstance effect = effects.get(0);
-        helper.assertTrue(effect.getEffect().value() == ModEffects.STABILITY.get(),
-            "the effect must be dawnduskterminal:stability, got " + effect.getEffect());
-        helper.assertTrue(effect.getDuration() == 8 * 60 * 20,
-            "the effect must last 8 minutes (9600 ticks), got " + effect.getDuration());
-        helper.assertTrue(effect.getAmplifier() == 0,
-            "the effect must be level I, got amplifier " + effect.getAmplifier());
+        helper.assertTrue(
+                effect.getEffect().value() == ModEffects.STABILITY.get(),
+                "the effect must be dawnduskterminal:stability, got " + effect.getEffect());
+        helper.assertTrue(
+                effect.getDuration() == 8 * 60 * 20,
+                "the effect must last 8 minutes (9600 ticks), got " + effect.getDuration());
+        helper.assertTrue(
+                effect.getAmplifier() == 0, "the effect must be level I, got amplifier " + effect.getAmplifier());
 
         // 药水颜色是可见效果的加权平均，只有一条效果时就是它的颜色，也就是传送门流体的紫
-        helper.assertTrue(contents.getColor() == FastColor.ARGB32.opaque(PORTAL_PURPLE),
-            "the potion must render in the portal purple 0x7F159E, got 0x"
-                + Integer.toHexString(contents.getColor()));
+        helper.assertTrue(
+                contents.getColor() == FastColor.ARGB32.opaque(PORTAL_PURPLE),
+                "the potion must render in the portal purple 0x7F159E, got 0x"
+                        + Integer.toHexString(contents.getColor()));
         helper.succeed();
     }
 

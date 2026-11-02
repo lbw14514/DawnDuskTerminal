@@ -76,7 +76,30 @@ OpenYSM 自带一份分叉的 GeckoLib（包名位于 `org.openysm.geckolib3` �
 
 若仅有资源文件发生改动，任务可能报告 UP-TO-DATE，此时须验证 jar 中的实际内容。
 
-依赖校验方面，仓库自带 `gradle/verification-metadata.xml`，在解析依赖时逐个核对 SHA-256，Twilight Forest 与 c2me 也在覆盖范围之内。新增或升级依赖后须运行 `./gradlew --write-verification-metadata sha256 compileJava` 更新校验值；由于 NeoForm 运行时的 `neoFormRuntimeDependenciesCompileClasspath` 在不同平台上解析出的模块元数据并不完全一致，至少还须再运行一次 `./gradlew --write-verification-metadata sha256 dependencies --configuration neoFormRuntimeDependenciesCompileClasspath`；LWJGL 的 native 包按平台分发，在 Windows 上生成校验值后须补上 Linux 与 macOS 的校验值，否则 CI 首次解析 native 时会报告缺少校验。
+依赖校验方面，仓库自带 `gradle/verification-metadata.xml`，在解析依赖时逐个核对 SHA-256，Twilight Forest 与 c2me 也在覆盖范围之内。新增或升级依赖后须运行 `./gradlew --write-verification-metadata sha256 compileJava` 更新校验值；该命令会重写整份文件（含缩进与排序），提交前建议只保留新增的 `component` 块，避免整篇 diff。由于 NeoForm 运行时的 `neoFormRuntimeDependenciesCompileClasspath` 在不同平台上解析出的模块元数据并不完全一致，至少还须再运行一次 `./gradlew --write-verification-metadata sha256 dependencies --configuration neoFormRuntimeDependenciesCompileClasspath`；LWJGL 的 native 包按平台分发，在 Windows 上生成校验值后须补上 Linux 与 macOS 的校验值，否则 CI 首次解析 native 时会报告缺少校验。
+
+## 格式化
+
+格式化由 Spotless 提供，规则写在 `build.gradle` 的 `spotless` 块中，引擎为 palantir-java-format（120 列，4 空格缩进，该引擎是 google-java-format 的 4 空格分支，与本仓库原有风格最接近），并会删除未使用的 import。
+
+```bash
+./gradlew spotlessApply   # 就地格式化
+./gradlew spotlessCheck   # 只检查，CI 与 build 走这一条
+```
+
+`spotlessCheck` 由插件自动挂到 `check` 上，因此 `./gradlew build` 在有未格式化的代码时会失败。
+
+`geckolib3/` 与 `molang/` 不参与格式化：它们是来自 TouhouLittleMaid 的上游代码，重排后将来与上游对拍时满屏都是排版差异，见 `docs/ysm.md`。
+
+### 提交前自动格式化
+
+`.githooks/pre-commit` 在存在暂存的 `.java` 文件时运行 `spotlessApply`，并把改动重新放回暂存区；格式化失败则提交中止。hooks 目录不会随 clone 生效，每台机器须安装一次：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+该钩子会启动一次 Gradle（数秒）。临时绕过用 `git commit --no-verify`，但 CI 仍会因 `spotlessCheck` 失败，绕过没有意义。
 
 ## VS Code 的 Gradle 任务
 

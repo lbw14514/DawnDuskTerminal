@@ -13,8 +13,7 @@ import org.lwjgl.stb.STBPerlin;
  * 只用单轴复现不出这种错位。
  */
 public final class YsmNoise {
-    private YsmNoise() {
-    }
+    private YsmNoise() {}
 
     public static double perlin(int seed, double x, double y, double z) {
         return STBPerlin.stb_perlin_noise3_seed((float) x, (float) y, (float) z, 0, 0, 0, seed);

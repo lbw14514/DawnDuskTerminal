@@ -54,11 +54,11 @@ public class UnknownMeatItem extends Item {
 
     /** 三块肉共用这一份食物属性 */
     public static final FoodProperties FOOD = new FoodProperties.Builder()
-        .nutrition(NUTRITION)
-        .saturationModifier(SATURATION_MODIFIER)
-        .effect(() -> new MobEffectInstance(MobEffects.HUNGER, HUNGER_TICKS, 0), HUNGER_CHANCE)
-        .effect(() -> new MobEffectInstance(MobEffects.POISON, POISON_TICKS, 0), POISON_CHANCE)
-        .build();
+            .nutrition(NUTRITION)
+            .saturationModifier(SATURATION_MODIFIER)
+            .effect(() -> new MobEffectInstance(MobEffects.HUNGER, HUNGER_TICKS, 0), HUNGER_CHANCE)
+            .effect(() -> new MobEffectInstance(MobEffects.POISON, POISON_TICKS, 0), POISON_CHANCE)
+            .build();
 
     public UnknownMeatItem(Properties properties) {
         super(properties);
@@ -71,8 +71,8 @@ public class UnknownMeatItem extends Item {
      * 与本模组其它试验物品的描述行同一套写法；物品名字仍是「试验物品NNN」
      */
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-                                TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable(getDescriptionId() + ".desc").withStyle(ChatFormatting.GRAY));
     }

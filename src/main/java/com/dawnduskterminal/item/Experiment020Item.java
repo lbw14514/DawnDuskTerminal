@@ -102,11 +102,12 @@ public class Experiment020Item extends Item {
      */
     public static List<Holder<MobEffect>> effectPool() {
         Set<Holder<MobEffect>> potionEffects = potionEffects();
-        return BuiltInRegistries.MOB_EFFECT.holders()
-            .<Holder<MobEffect>>map(holder -> holder)
-            .filter(holder -> !holder.value().isInstantenous())
-            .filter(holder -> isVanilla(holder) || potionEffects.contains(holder))
-            .toList();
+        return BuiltInRegistries.MOB_EFFECT
+                .holders()
+                .<Holder<MobEffect>>map(holder -> holder)
+                .filter(holder -> !holder.value().isInstantenous())
+                .filter(holder -> isVanilla(holder) || potionEffects.contains(holder))
+                .toList();
     }
 
     /** 药水瓶里出现过的效果：把 {@code BuiltInRegistries.POTION} 整张表扫一遍 */
@@ -123,15 +124,15 @@ public class Experiment020Item extends Item {
     /** 效果是不是原版的：看注册 ID 的命名空间 */
     private static boolean isVanilla(Holder<MobEffect> effect) {
         return effect.unwrapKey()
-            .map(key -> key.location().getNamespace().equals(VANILLA_NAMESPACE))
-            .orElse(false);
+                .map(key -> key.location().getNamespace().equals(VANILLA_NAMESPACE))
+                .orElse(false);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-                                TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable("item.dawnduskterminal.experiment_020.desc")
-            .withStyle(ChatFormatting.GRAY));
+                .withStyle(ChatFormatting.GRAY));
     }
 }

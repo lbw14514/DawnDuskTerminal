@@ -1,16 +1,15 @@
 package com.dawnduskterminal.client;
 
+import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 /**
  * native 网格批处理
@@ -61,8 +60,7 @@ public final class NativeMeshBatch {
 
     public void begin(NativeGeoMesh mesh) {
         if (mesh == null || mesh.handle() == 0L) {
-            throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_INVALID_HANDLE,
-                "native 网格句柄无效");
+            throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_INVALID_HANDLE, "native 网格句柄无效");
         }
         ensurePool();
         reset();
@@ -79,8 +77,14 @@ public final class NativeMeshBatch {
      * @param cube  立方体在几何表里的下标
      * @return 这个 cube 不在 native 网格里 例如没有任何可见顶点 时返回 false
      */
-    public boolean add(GeoMesh mesh, int cube, PoseStack poseStack, VertexConsumer buffer,
-                       int packedLight, int packedOverlay, int colour) {
+    public boolean add(
+            GeoMesh mesh,
+            int cube,
+            PoseStack poseStack,
+            VertexConsumer buffer,
+            int packedLight,
+            int packedOverlay,
+            int colour) {
         if (!this.active) {
             throw new IllegalStateException("native 网格批处理没有开始");
         }
@@ -127,9 +131,13 @@ public final class NativeMeshBatch {
 
             ensureOutput();
             int result = NativeMesh.transform(
-                this.pool, this.mesh.handle(),
-                this.matrixBuffer, this.normalBuffer, this.pieceIdBuffer, this.count,
-                this.output);
+                    this.pool,
+                    this.mesh.handle(),
+                    this.matrixBuffer,
+                    this.normalBuffer,
+                    this.pieceIdBuffer,
+                    this.count,
+                    this.output);
             if (result < this.mesh.vertexCount()) {
                 String detail = "native 只写出 " + result + " 个顶点 网格应有 " + this.mesh.vertexCount();
                 NativeMesh.reportRuntimeFailure(detail);
@@ -173,8 +181,8 @@ public final class NativeMeshBatch {
         }
         this.pool = NativeMesh.sharedPool();
         if (this.pool == 0L) {
-            throw new NativeMesh.NativeMeshException(NativeMesh.ERROR_UNAVAILABLE,
-                "native 网格线程池不可用 " + NativeMesh.failureDescription());
+            throw new NativeMesh.NativeMeshException(
+                    NativeMesh.ERROR_UNAVAILABLE, "native 网格线程池不可用 " + NativeMesh.failureDescription());
         }
     }
 
@@ -231,22 +239,20 @@ public final class NativeMeshBatch {
      * 调用方要保留旧内容时先用 growInputs 搬 这里本身不负责拷贝
      */
     private void allocateInputs(int capacity) {
-        this.matrixBuffer = ByteBuffer.allocateDirect(capacity * 16 * Float.BYTES)
-            .order(ByteOrder.nativeOrder());
+        this.matrixBuffer =
+                ByteBuffer.allocateDirect(capacity * 16 * Float.BYTES).order(ByteOrder.nativeOrder());
         this.matrixFloats = this.matrixBuffer.asFloatBuffer();
-        this.normalBuffer = ByteBuffer.allocateDirect(capacity * 9 * Float.BYTES)
-            .order(ByteOrder.nativeOrder());
+        this.normalBuffer =
+                ByteBuffer.allocateDirect(capacity * 9 * Float.BYTES).order(ByteOrder.nativeOrder());
         this.normalFloats = this.normalBuffer.asFloatBuffer();
-        this.pieceIdBuffer = ByteBuffer.allocateDirect(capacity * Integer.BYTES)
-            .order(ByteOrder.nativeOrder());
+        this.pieceIdBuffer = ByteBuffer.allocateDirect(capacity * Integer.BYTES).order(ByteOrder.nativeOrder());
         this.pieceIds = this.pieceIdBuffer.asIntBuffer();
     }
 
     private void ensureOutput() {
         int floats = this.mesh.vertexCount() * NativeMesh.VERTEX_FLOATS;
         if (this.output == null || this.output.capacity() < floats * Float.BYTES) {
-            this.output = ByteBuffer.allocateDirect(floats * Float.BYTES)
-                .order(ByteOrder.nativeOrder());
+            this.output = ByteBuffer.allocateDirect(floats * Float.BYTES).order(ByteOrder.nativeOrder());
             this.outputFloats = this.output.asFloatBuffer();
         }
     }

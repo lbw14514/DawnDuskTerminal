@@ -20,12 +20,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record RequiemStartPayload(int casterId, int track) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<RequiemStartPayload> TYPE =
-        new CustomPacketPayload.Type<>(DawnDuskTerminal.id("requiem_start"));
+            new CustomPacketPayload.Type<>(DawnDuskTerminal.id("requiem_start"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, RequiemStartPayload> STREAM_CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, RequiemStartPayload::casterId,
-            ByteBufCodecs.VAR_INT, RequiemStartPayload::track,
+    public static final StreamCodec<RegistryFriendlyByteBuf, RequiemStartPayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT,
+            RequiemStartPayload::casterId,
+            ByteBufCodecs.VAR_INT,
+            RequiemStartPayload::track,
             RequiemStartPayload::new);
 
     @Override

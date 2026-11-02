@@ -23,7 +23,8 @@ public final class ChronoVeinPalette {
 
     private static final class Holder {
         static final BlockState OCHRE = ModTerrainBlocks.OCHRE.get().defaultBlockState();
-        static final BlockState TWILIGHT_STONE = ModTerrainBlocks.TWILIGHT_STONE.get().defaultBlockState();
+        static final BlockState TWILIGHT_STONE =
+                ModTerrainBlocks.TWILIGHT_STONE.get().defaultBlockState();
     }
 
     /**

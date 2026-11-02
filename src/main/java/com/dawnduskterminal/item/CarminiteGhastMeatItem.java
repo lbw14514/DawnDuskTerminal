@@ -24,6 +24,7 @@ public class CarminiteGhastMeatItem extends Item {
     private static final int HUNGER_TICKS = 600;
     /** 已经饥饿时继续吃，有概率延长饥饿并中毒 */
     private static final float ESCALATE_CHANCE = 0.4F;
+
     private static final int POISON_TICKS = 100;
     /** 效果等级上限，防止反复吃把等级堆到不可收拾 */
     private static final int MAX_AMPLIFIER = 9;
@@ -43,9 +44,9 @@ public class CarminiteGhastMeatItem extends Item {
             // 概率从 40% 掉到 8%，与腐肉那套行为对不上
             if (hunger != null && player.getRandom().nextFloat() < ESCALATE_CHANCE) {
                 player.addEffect(new MobEffectInstance(
-                    MobEffects.HUNGER,
-                    hunger.getDuration() + HUNGER_TICKS / 2,
-                    Math.min(hunger.getAmplifier() + 1, MAX_AMPLIFIER)));
+                        MobEffects.HUNGER,
+                        hunger.getDuration() + HUNGER_TICKS / 2,
+                        Math.min(hunger.getAmplifier() + 1, MAX_AMPLIFIER)));
                 player.addEffect(new MobEffectInstance(MobEffects.POISON, POISON_TICKS, 0));
             }
         }

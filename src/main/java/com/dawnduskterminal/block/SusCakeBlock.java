@@ -61,8 +61,8 @@ public class SusCakeBlock extends Block {
     public record Serving(int nutrition, float saturationModifier) {
         public Serving {
             if (nutrition <= 0 || saturationModifier <= 0.0F) {
-                throw new IllegalArgumentException("a serving must feed something, got "
-                    + nutrition + " and " + saturationModifier);
+                throw new IllegalArgumentException(
+                        "a serving must feed something, got " + nutrition + " and " + saturationModifier);
             }
         }
 
@@ -89,8 +89,8 @@ public class SusCakeBlock extends Block {
 
     private static final VoxelShape QUARTER_SHAPE = box(1.0D, 0.0D, 1.0D, 8.0D, 8.0D, 8.0D);
     private static final VoxelShape HALF_SHAPE = box(1.0D, 0.0D, 1.0D, 8.0D, 8.0D, 15.0D);
-    private static final VoxelShape THREE_QUARTER_SHAPE = Shapes.join(
-        HALF_SHAPE, box(8.0D, 0.0D, 8.0D, 15.0D, 8.0D, 15.0D), BooleanOp.OR);
+    private static final VoxelShape THREE_QUARTER_SHAPE =
+            Shapes.join(HALF_SHAPE, box(8.0D, 0.0D, 8.0D, 15.0D, 8.0D, 15.0D), BooleanOp.OR);
     private static final VoxelShape FULL_SHAPE = box(1.0D, 0.0D, 1.0D, 15.0D, 8.0D, 15.0D);
 
     public SusCakeBlock(Properties properties) {
@@ -126,8 +126,14 @@ public class SusCakeBlock extends Block {
      * 回 {@link ItemInteractionResult#FAIL}
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
-                                              Player player, InteractionHand hand, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         int bitesTaken = state.getValue(BITES_TAKEN);
         if (!player.isSecondaryUseActive()) {
             if (stack.is(this.asItem())) {
@@ -136,8 +142,13 @@ public class SusCakeBlock extends Block {
                 }
                 // 一次只补一片，115 也是这么补的
                 level.setBlockAndUpdate(pos, state.setValue(BITES_TAKEN, bitesTaken - 1));
-                level.playSound(null, pos, state.getSoundType(level, pos, player).getPlaceSound(),
-                    SoundSource.BLOCKS, 1.0F, 1.0F);
+                level.playSound(
+                        null,
+                        pos,
+                        state.getSoundType(level, pos, player).getPlaceSound(),
+                        SoundSource.BLOCKS,
+                        1.0F,
+                        1.0F);
                 stack.consume(1, player);
                 if (player instanceof ServerPlayer serverPlayer) {
                     CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, stack);
@@ -162,15 +173,15 @@ public class SusCakeBlock extends Block {
 
     /** 空手右键吃一片，逐行照 115：数量看这一块的 {@link #serving()} */
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!player.canEat(false)) {
             return InteractionResult.PASS;
         }
         player.awardStat(Stats.EAT_CAKE_SLICE);
         player.getFoodData().eat(serving.nutrition(), serving.saturationModifier());
-        level.playSound(null, pos, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS,
-            0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+        level.playSound(
+                null, pos, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
         int bitesTaken = state.getValue(BITES_TAKEN);
         if (bitesTaken < MAX_BITES) {
             level.setBlock(pos, state.setValue(BITES_TAKEN, bitesTaken + 1), Block.UPDATE_ALL);
@@ -205,11 +216,16 @@ public class SusCakeBlock extends Block {
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor level,
-                                     BlockPos currentPos, BlockPos facingPos) {
+    protected BlockState updateShape(
+            BlockState state,
+            Direction facing,
+            BlockState facingState,
+            LevelAccessor level,
+            BlockPos currentPos,
+            BlockPos facingPos) {
         return facing == Direction.DOWN && !state.canSurvive(level, currentPos)
-            ? Blocks.AIR.defaultBlockState()
-            : super.updateShape(state, facing, facingState, level, currentPos, facingPos);
+                ? Blocks.AIR.defaultBlockState()
+                : super.updateShape(state, facing, facingState, level, currentPos, facingPos);
     }
 
     @Override

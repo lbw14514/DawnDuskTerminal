@@ -25,16 +25,23 @@ import net.minecraft.world.level.Level;
  */
 public final class Experiment076ItemRenderer extends BlockEntityWithoutLevelRenderer {
     public Experiment076ItemRenderer() {
-        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+        super(
+                Minecraft.getInstance().getBlockEntityRenderDispatcher(),
+                Minecraft.getInstance().getEntityModels());
     }
 
     @Override
-    public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack poseStack,
-                             MultiBufferSource bufferSource, int light, int overlay) {
+    public void renderByItem(
+            ItemStack stack,
+            ItemDisplayContext context,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int light,
+            int overlay) {
         Level level = Minecraft.getInstance().level;
         long tick = level == null ? 0L : level.getGameTime();
         VertexConsumer buffer = bufferSource.getBuffer(Experiment076Cube.LAYER);
-        Experiment076Cube.drawCube(buffer, poseStack.last().pose(),
-            Experiment076Cube.mix(tick * 0x9E3779B97F4A7C15L), overlay);
+        Experiment076Cube.drawCube(
+                buffer, poseStack.last().pose(), Experiment076Cube.mix(tick * 0x9E3779B97F4A7C15L), overlay);
     }
 }

@@ -11,11 +11,37 @@ import com.dawnduskterminal.registry.ModEquipment;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModTiers;
 import com.mojang.serialization.DynamicOps;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.ArmorMaterial.Layer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.armortrim.ArmorTrim;
 import net.minecraft.world.item.armortrim.TrimMaterial;
 import net.minecraft.world.item.armortrim.TrimMaterials;
@@ -25,37 +51,11 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SmithingRecipe;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
-import net.minecraft.world.item.ArmorMaterial.Layer;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Optional;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.gametest.framework.GameTest;
-import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AnvilMenu;
-import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.entity.animal.Sheep;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -96,45 +96,47 @@ public final class EquipmentTests {
         for (ArmorItem.Type type : SLOTS) {
             defense += material.getDefense(type);
         }
-        helper.assertTrue(defense == T2_DEFENSE,
-            "T2 armor must total " + T2_DEFENSE + " defense, got " + defense);
-        helper.assertTrue(material.toughness() == T2_TOUGHNESS,
-            "T2 armor toughness must be " + T2_TOUGHNESS + ", got " + material.toughness());
-        helper.assertTrue(material.enchantmentValue() == 15,
-            "T2 armor enchantment value must be 15, got " + material.enchantmentValue());
+        helper.assertTrue(defense == T2_DEFENSE, "T2 armor must total " + T2_DEFENSE + " defense, got " + defense);
+        helper.assertTrue(
+                material.toughness() == T2_TOUGHNESS,
+                "T2 armor toughness must be " + T2_TOUGHNESS + ", got " + material.toughness());
+        helper.assertTrue(
+                material.enchantmentValue() == 15,
+                "T2 armor enchantment value must be 15, got " + material.enchantmentValue());
 
         ArmorItem helmet = ModItems.SCARLET_MOLYBD_HELMET.get();
         int expected = ArmorItem.Type.HELMET.getDurability(T2_DURABILITY_FACTOR);
         int actual = new ItemStack(helmet).getMaxDamage();
-        helper.assertTrue(actual == expected,
-            "helmet durability must be " + expected + ", got " + actual);
+        helper.assertTrue(actual == expected, "helmet durability must be " + expected + ", got " + actual);
 
         // 四个部件必须是同一个材质，否则穿齐时属性会缺一块
-        helper.assertTrue(ModItems.SCARLET_MOLYBD_CHESTPLATE.get().getMaterial().value() == material,
-            "chestplate must use the scarlet molybdenum material");
+        helper.assertTrue(
+                ModItems.SCARLET_MOLYBD_CHESTPLATE.get().getMaterial().value() == material,
+                "chestplate must use the scarlet molybdenum material");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void carminiteEquipmentIsRegistered(GameTestHelper helper) {
-        helper.assertTrue(ModEntities.CARMINITE_BALL.get().getCategory() == MobCategory.MISC,
-            "the carminite ball must be a MISC entity");
-        helper.assertTrue(edible(ModItems.COOKED_CARMIN_GHAST_MEAT.get()),
-            "cooked carminite ghast meat must be edible");
-        helper.assertTrue(edible(ModItems.CARMINITE_GHAST_MEAT.get()),
-            "raw carminite ghast meat must be edible");
-        helper.assertTrue(ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get() instanceof CarminiteStaffItem,
-            "the reactor staff must be registered as a staff");
+        helper.assertTrue(
+                ModEntities.CARMINITE_BALL.get().getCategory() == MobCategory.MISC,
+                "the carminite ball must be a MISC entity");
+        helper.assertTrue(
+                edible(ModItems.COOKED_CARMIN_GHAST_MEAT.get()), "cooked carminite ghast meat must be edible");
+        helper.assertTrue(edible(ModItems.CARMINITE_GHAST_MEAT.get()), "raw carminite ghast meat must be edible");
+        helper.assertTrue(
+                ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get() instanceof CarminiteStaffItem,
+                "the reactor staff must be registered as a staff");
 
         // 三项都是源 mod 的硬数值：128 耐久、恒定光效、攻速 -3.5
         ItemStack staff = new ItemStack(ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get());
-        helper.assertTrue(staff.getMaxDamage() == 128,
-            "staff durability must be 128, got " + staff.getMaxDamage());
+        helper.assertTrue(staff.getMaxDamage() == 128, "staff durability must be 128, got " + staff.getMaxDamage());
         helper.assertTrue(staff.hasFoil(), "staff must always have the enchantment glint");
-        helper.assertTrue(CarminiteStaffItem.createAttributes().modifiers().stream()
-                .anyMatch(entry -> entry.attribute().value() == Attributes.ATTACK_SPEED.value()
-                    && Math.abs(entry.modifier().amount() + 3.5D) < 1.0E-6D),
-            "staff attack speed must be -3.5");
+        helper.assertTrue(
+                CarminiteStaffItem.createAttributes().modifiers().stream()
+                        .anyMatch(entry -> entry.attribute().value() == Attributes.ATTACK_SPEED.value()
+                                && Math.abs(entry.modifier().amount() + 3.5D) < 1.0E-6D),
+                "staff attack speed must be -3.5");
         helper.succeed();
     }
 
@@ -157,10 +159,10 @@ public final class EquipmentTests {
         CarminiteFieldEntity.spawn(level, center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D, null, 0, 0, 0);
 
         helper.succeedWhen(() -> {
-            helper.assertTrue(inside.getHealth() < before,
-                "a sheep 2 blocks away must take field damage");
-            helper.assertTrue(corner.getHealth() == corner.getMaxHealth(),
-                "a sheep in the corner of the old 4x4 box must stay outside the cylinder");
+            helper.assertTrue(inside.getHealth() < before, "a sheep 2 blocks away must take field damage");
+            helper.assertTrue(
+                    corner.getHealth() == corner.getMaxHealth(),
+                    "a sheep in the corner of the old 4x4 box must stay outside the cylinder");
         });
     }
 
@@ -193,16 +195,18 @@ public final class EquipmentTests {
         CarminiteFieldEntity.spawn(level, center.getX() + 0.5D, center.getY(), center.getZ() + 0.5D, null, 0, 0, 0);
 
         helper.runAfterDelay(5, () -> {
-            helper.assertTrue(sheep.getHealth() == 192.0F,
-                "one hit within 5 ticks, got health " + sheep.getHealth());
-            helper.assertTrue(sheep.getDeltaMovement().lengthSqr() < 1.0E-6,
-                "the field must not knock the sheep back, got " + sheep.getDeltaMovement());
+            helper.assertTrue(sheep.getHealth() == 192.0F, "one hit within 5 ticks, got health " + sheep.getHealth());
+            helper.assertTrue(
+                    sheep.getDeltaMovement().lengthSqr() < 1.0E-6,
+                    "the field must not knock the sheep back, got " + sheep.getDeltaMovement());
         });
-        helper.runAfterDelay(15, () -> helper.assertTrue(sheep.getHealth() == 184.0F,
-            "two hits within 15 ticks, got health " + sheep.getHealth()));
+        helper.runAfterDelay(
+                15,
+                () -> helper.assertTrue(
+                        sheep.getHealth() == 184.0F, "two hits within 15 ticks, got health " + sheep.getHealth()));
         helper.runAfterDelay(25, () -> {
-            helper.assertTrue(sheep.getHealth() == 176.0F,
-                "three hits within 25 ticks, got health " + sheep.getHealth());
+            helper.assertTrue(
+                    sheep.getHealth() == 176.0F, "three hits within 25 ticks, got health " + sheep.getHealth());
             helper.succeed();
         });
     }
@@ -253,8 +257,10 @@ public final class EquipmentTests {
         level.addFreshEntity(ball);
 
         helper.runAfterDelay(80, () -> {
-            int alive = level.getEntitiesOfClass(CarminiteBallEntity.class,
-                new AABB(helper.absolutePos(new BlockPos(0, 0, 0))).inflate(32.0D)).size();
+            int alive = level.getEntitiesOfClass(
+                            CarminiteBallEntity.class,
+                            new AABB(helper.absolutePos(new BlockPos(0, 0, 0))).inflate(32.0D))
+                    .size();
             helper.assertTrue(alive <= 40, "enchantment levels must be clamped, " + alive + " balls alive");
             helper.succeed();
         });
@@ -269,18 +275,23 @@ public final class EquipmentTests {
         helper.assertTrue(staff.getEnchantmentValue() > 0, "staff must be enchantable");
 
         var enchantments = helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
-        helper.assertTrue(staff.supportsEnchantment(enchantments.getHolderOrThrow(Enchantments.POWER)),
-            "staff must accept power");
-        helper.assertFalse(staff.supportsEnchantment(enchantments.getHolderOrThrow(Enchantments.INFINITY)),
-            "staff must refuse infinity");
-        helper.assertFalse(EnchantmentHelper.getAvailableEnchantmentResults(30, staff,
-                enchantments.holders().map(holder -> (Holder<Enchantment>) holder)).stream()
-                .anyMatch(instance -> instance.enchantment.is(Enchantments.INFINITY)),
-            "the enchanting table must not offer infinity for the staff");
+        helper.assertTrue(
+                staff.supportsEnchantment(enchantments.getHolderOrThrow(Enchantments.POWER)),
+                "staff must accept power");
+        helper.assertFalse(
+                staff.supportsEnchantment(enchantments.getHolderOrThrow(Enchantments.INFINITY)),
+                "staff must refuse infinity");
+        helper.assertFalse(
+                EnchantmentHelper.getAvailableEnchantmentResults(
+                                30, staff, enchantments.holders().map(holder -> (Holder<Enchantment>) holder))
+                        .stream()
+                        .anyMatch(instance -> instance.enchantment.is(Enchantments.INFINITY)),
+                "the enchanting table must not offer infinity for the staff");
 
         staff.enchant(enchantments.getHolderOrThrow(Enchantments.POWER), 3);
-        helper.assertTrue(CarminiteBallEntity.enchantmentLevel(staff, Enchantments.POWER) == 3,
-            "power level must be readable from the weapon stack");
+        helper.assertTrue(
+                CarminiteBallEntity.enchantmentLevel(staff, Enchantments.POWER) == 3,
+                "power level must be readable from the weapon stack");
         helper.succeed();
     }
 
@@ -297,23 +308,26 @@ public final class EquipmentTests {
 
         AnvilMenu allowed = anvilWith(helper, player, 0, Enchantments.POWER);
         allowed.createResult();
-        helper.assertFalse(allowed.getSlot(2).getItem().isEmpty(),
-            "a power book must still be applicable to the staff");
+        helper.assertFalse(
+                allowed.getSlot(2).getItem().isEmpty(), "a power book must still be applicable to the staff");
 
         AnvilMenu refused = anvilWith(helper, player, 1, Enchantments.INFINITY);
         refused.createResult();
-        helper.assertTrue(refused.getSlot(2).getItem().isEmpty(),
-            "a creative anvil must refuse infinity on the staff");
+        helper.assertTrue(refused.getSlot(2).getItem().isEmpty(), "a creative anvil must refuse infinity on the staff");
         helper.succeed();
     }
 
-    private static AnvilMenu anvilWith(GameTestHelper helper, Player player, int containerId,
-                                       ResourceKey<Enchantment> enchantment) {
+    private static AnvilMenu anvilWith(
+            GameTestHelper helper, Player player, int containerId, ResourceKey<Enchantment> enchantment) {
         AnvilMenu menu = new AnvilMenu(containerId, player.getInventory(), ContainerLevelAccess.NULL);
         menu.setItem(0, 0, new ItemStack(ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get()));
         ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
-        book.enchant(helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT)
-            .getHolderOrThrow(enchantment), 1);
+        book.enchant(
+                helper.getLevel()
+                        .registryAccess()
+                        .registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(enchantment),
+                1);
         menu.setItem(1, 0, book);
         return menu;
     }
@@ -328,26 +342,36 @@ public final class EquipmentTests {
         assertArmor(helper, ModArmorMaterials.SKYGATE_PINE.value(), 15, 0.0F, 9, "skygate_pine");
         assertArmor(helper, ModArmorMaterials.CANOPY.value(), DIAMOND_DEFENSE, DIAMOND_TOUGHNESS, 10, "canopy");
         assertArmor(helper, ModArmorMaterials.CARMINITE.value(), DIAMOND_DEFENSE, DIAMOND_TOUGHNESS, 10, "carminite");
-        assertArmor(helper, ModArmorMaterials.SCARLET_MOLYBDENUM.value(), T2_DEFENSE, T2_TOUGHNESS, 15,
-            "scarlet molybdenum");
+        assertArmor(
+                helper,
+                ModArmorMaterials.SCARLET_MOLYBDENUM.value(),
+                T2_DEFENSE,
+                T2_TOUGHNESS,
+                15,
+                "scarlet molybdenum");
         assertArmor(helper, ModArmorMaterials.DIRAC.value(), T2_DEFENSE, T2_TOUGHNESS, 15, "dirac");
         assertArmor(helper, ModArmorMaterials.HUI.value(), T3_DEFENSE, T3_TOUGHNESS, 18, "hui");
 
-        helper.assertTrue(ModTiers.SKYGATE_PINE.getUses() == 250 && ModTiers.SKYGATE_PINE.getSpeed() == 6.0F,
-            "skygate pine tools must be iron tier");
-        helper.assertTrue(ModTiers.CANOPY.getUses() == 1561 && ModTiers.CANOPY.getSpeed() == 8.0F,
-            "canopy tools must be diamond tier");
-        helper.assertTrue(ModTiers.CARMINITE.getUses() == 1561 && ModTiers.CARMINITE.getSpeed() == 8.0F,
-            "carminite tools must be diamond tier");
-        helper.assertTrue(ModTiers.SCARLET_MOLYBDENUM.getUses() == 2031
-                && ModTiers.SCARLET_MOLYBDENUM.getSpeed() == 9.0F
-                && ModTiers.DIRAC.getUses() == 2031,
-            "T2 tools must beat diamond in both durability and speed");
-        helper.assertTrue(ModTiers.HUI.getUses() == 2600 && ModTiers.HUI.getSpeed() == 10.0F,
-            "T3 tools must beat T2");
+        helper.assertTrue(
+                ModTiers.SKYGATE_PINE.getUses() == 250 && ModTiers.SKYGATE_PINE.getSpeed() == 6.0F,
+                "skygate pine tools must be iron tier");
+        helper.assertTrue(
+                ModTiers.CANOPY.getUses() == 1561 && ModTiers.CANOPY.getSpeed() == 8.0F,
+                "canopy tools must be diamond tier");
+        helper.assertTrue(
+                ModTiers.CARMINITE.getUses() == 1561 && ModTiers.CARMINITE.getSpeed() == 8.0F,
+                "carminite tools must be diamond tier");
+        helper.assertTrue(
+                ModTiers.SCARLET_MOLYBDENUM.getUses() == 2031
+                        && ModTiers.SCARLET_MOLYBDENUM.getSpeed() == 9.0F
+                        && ModTiers.DIRAC.getUses() == 2031,
+                "T2 tools must beat diamond in both durability and speed");
+        helper.assertTrue(ModTiers.HUI.getUses() == 2600 && ModTiers.HUI.getSpeed() == 10.0F, "T3 tools must beat T2");
 
         // 六套各五件工具加四件护甲
-        int registered = ModEquipment.sets().values().stream().mapToInt(set -> set.items().size()).sum();
+        int registered = ModEquipment.sets().values().stream()
+                .mapToInt(set -> set.items().size())
+                .sum();
         helper.assertTrue(registered == 54, "expected 54 equipment items, got " + registered);
         helper.succeed();
     }
@@ -363,21 +387,22 @@ public final class EquipmentTests {
     public static void scarletMolybdArmorUsesTheDedicatedTexture(GameTestHelper helper) {
         ResourceLocation expected = DawnDuskTerminal.id("textures/entities/carmarmort1.png");
         for (ScarletMolybdArmorItem armor : List.of(
-            ModItems.SCARLET_MOLYBD_HELMET.get(),
-            ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
-            ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
-            ModItems.SCARLET_MOLYBD_BOOTS.get())) {
+                ModItems.SCARLET_MOLYBD_HELMET.get(),
+                ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
+                ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
+                ModItems.SCARLET_MOLYBD_BOOTS.get())) {
             Layer layer = armor.getMaterial().value().layers().get(0);
             for (boolean innerModel : new boolean[] {false, true}) {
-                ResourceLocation texture = armor.getArmorTexture(new ItemStack(armor), null,
-                    armor.getEquipmentSlot(), layer, innerModel);
-                helper.assertTrue(expected.equals(texture),
-                    armor.getDescriptionId() + " must use the dedicated armor texture " + expected
-                        + ", got " + texture);
+                ResourceLocation texture =
+                        armor.getArmorTexture(new ItemStack(armor), null, armor.getEquipmentSlot(), layer, innerModel);
+                helper.assertTrue(
+                        expected.equals(texture),
+                        armor.getDescriptionId() + " must use the dedicated armor texture " + expected + ", got "
+                                + texture);
             }
         }
-        try (InputStream stream = EquipmentTests.class
-            .getResourceAsStream("/assets/dawnduskterminal/textures/entities/carmarmort1.png")) {
+        try (InputStream stream = EquipmentTests.class.getResourceAsStream(
+                "/assets/dawnduskterminal/textures/entities/carmarmort1.png")) {
             helper.assertTrue(stream != null, "textures/entities/carmarmort1.png must ship inside the mod resources");
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read textures/entities/carmarmort1.png: " + e);
@@ -395,51 +420,68 @@ public final class EquipmentTests {
     public static void scarletMolybdArmorRejectsArmorTrims(GameTestHelper helper) {
         ItemStack template = new ItemStack(Items.RIB_ARMOR_TRIM_SMITHING_TEMPLATE);
         ItemStack addition = new ItemStack(Items.REDSTONE);
-        Holder<TrimMaterial> material = helper.getLevel().registryAccess()
-            .lookupOrThrow(Registries.TRIM_MATERIAL).getOrThrow(TrimMaterials.REDSTONE);
-        Holder<TrimPattern> pattern = helper.getLevel().registryAccess()
-            .lookupOrThrow(Registries.TRIM_PATTERN).getOrThrow(TrimPatterns.RIB);
-        DynamicOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, helper.getLevel().registryAccess());
+        Holder<TrimMaterial> material = helper.getLevel()
+                .registryAccess()
+                .lookupOrThrow(Registries.TRIM_MATERIAL)
+                .getOrThrow(TrimMaterials.REDSTONE);
+        Holder<TrimPattern> pattern = helper.getLevel()
+                .registryAccess()
+                .lookupOrThrow(Registries.TRIM_PATTERN)
+                .getOrThrow(TrimPatterns.RIB);
+        DynamicOps<Tag> ops =
+                RegistryOps.create(NbtOps.INSTANCE, helper.getLevel().registryAccess());
 
         for (ScarletMolybdArmorItem armor : List.of(
-            ModItems.SCARLET_MOLYBD_HELMET.get(),
-            ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
-            ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
-            ModItems.SCARLET_MOLYBD_BOOTS.get())) {
-            helper.assertFalse(new ItemStack(armor).is(ItemTags.TRIMMABLE_ARMOR),
-                armor.getDescriptionId() + " must stay out of #minecraft:trimmable_armor");
-            Optional<RecipeHolder<SmithingRecipe>> recipe = helper.getLevel().getRecipeManager()
-                .getRecipeFor(RecipeType.SMITHING,
-                    new SmithingRecipeInput(template, new ItemStack(armor), addition), helper.getLevel());
-            helper.assertFalse(recipe.isPresent(),
-                armor.getDescriptionId() + " must not match a smithing trim recipe");
+                ModItems.SCARLET_MOLYBD_HELMET.get(),
+                ModItems.SCARLET_MOLYBD_CHESTPLATE.get(),
+                ModItems.SCARLET_MOLYBD_LEGGINGS.get(),
+                ModItems.SCARLET_MOLYBD_BOOTS.get())) {
+            helper.assertFalse(
+                    new ItemStack(armor).is(ItemTags.TRIMMABLE_ARMOR),
+                    armor.getDescriptionId() + " must stay out of #minecraft:trimmable_armor");
+            Optional<RecipeHolder<SmithingRecipe>> recipe = helper.getLevel()
+                    .getRecipeManager()
+                    .getRecipeFor(
+                            RecipeType.SMITHING,
+                            new SmithingRecipeInput(template, new ItemStack(armor), addition),
+                            helper.getLevel());
+            helper.assertFalse(recipe.isPresent(), armor.getDescriptionId() + " must not match a smithing trim recipe");
 
             ItemStack trimmed = new ItemStack(armor);
             trimmed.set(DataComponents.TRIM, new ArmorTrim(material, pattern));
-            helper.assertTrue(trimmed.get(DataComponents.TRIM) != null,
-                "sanity: the trim component must be set on " + armor.getDescriptionId());
+            helper.assertTrue(
+                    trimmed.get(DataComponents.TRIM) != null,
+                    "sanity: the trim component must be set on " + armor.getDescriptionId());
             Tag encoded = ItemStack.CODEC.encodeStart(ops, trimmed).getOrThrow();
             ItemStack loaded = ItemStack.CODEC.parse(ops, encoded).getOrThrow();
-            helper.assertTrue(loaded.get(DataComponents.TRIM) == null,
-                armor.getDescriptionId() + " must drop the TRIM component when loaded from data");
+            helper.assertTrue(
+                    loaded.get(DataComponents.TRIM) == null,
+                    armor.getDescriptionId() + " must drop the TRIM component when loaded from data");
             trimmed.getItem().verifyComponentsAfterLoad(trimmed);
-            helper.assertTrue(trimmed.get(DataComponents.TRIM) == null,
-                armor.getDescriptionId() + " must drop the TRIM component on verifyComponentsAfterLoad");
+            helper.assertTrue(
+                    trimmed.get(DataComponents.TRIM) == null,
+                    armor.getDescriptionId() + " must drop the TRIM component on verifyComponentsAfterLoad");
         }
         helper.succeed();
     }
 
-    private static void assertArmor(GameTestHelper helper, ArmorMaterial material, int defense, float toughness,
-                                    int enchantmentValue, String materialName) {
+    private static void assertArmor(
+            GameTestHelper helper,
+            ArmorMaterial material,
+            int defense,
+            float toughness,
+            int enchantmentValue,
+            String materialName) {
         int total = 0;
         for (ArmorItem.Type type : SLOTS) {
             total += material.getDefense(type);
         }
-        helper.assertTrue(total == defense,
-            materialName + " armor must total " + defense + " defense, got " + total);
-        helper.assertTrue(material.toughness() == toughness,
-            materialName + " armor toughness must be " + toughness + ", got " + material.toughness());
-        helper.assertTrue(material.enchantmentValue() == enchantmentValue,
-            materialName + " armor enchantment value must be " + enchantmentValue);
+        helper.assertTrue(total == defense, materialName + " armor must total " + defense + " defense, got " + total);
+        helper.assertTrue(
+                material.toughness() == toughness,
+                materialName + " armor toughness must be " + toughness + ", got " + material.toughness());
+        helper.assertTrue(
+                material.enchantmentValue() == enchantmentValue,
+                materialName + " armor enchantment value must be " + enchantmentValue);
     }
 }

@@ -73,8 +73,12 @@ public class CountertopModel extends BakedModelWrapper<BakedModel> {
     }
 
     @Override
-    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand,
-            ModelData data, @Nullable RenderType renderType) {
+    public List<BakedQuad> getQuads(
+            @Nullable BlockState state,
+            @Nullable Direction side,
+            RandomSource rand,
+            ModelData data,
+            @Nullable RenderType renderType) {
         List<BakedQuad> quads = super.getQuads(state, side, rand, data, renderType);
         if (quads.isEmpty()) {
             return quads;

@@ -15,12 +15,6 @@ import com.dawnduskterminal.geckolib3.util.json.JsonAnimationUtils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.ChainedJsonException;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,6 +25,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.ChainedJsonException;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 /**
  * YSM 模型包：磁盘上的目录布局与解析结果的读取口
@@ -53,10 +52,10 @@ public final class YsmPacks {
     private static final String PACK_ROOT = "ysm/";
     /** YSM 的动画文件命名后缀，列目录时要一并去掉 */
     private static final String ANIMATION_SUFFIX = ".animation";
+
     private static final Map<ResourceLocation, YsmPack> PACKS = new HashMap<>();
 
-    private YsmPacks() {
-    }
+    private YsmPacks() {}
 
     public static YsmPack get(ResourceLocation id) {
         return PACKS.computeIfAbsent(id, YsmPacks::load);
@@ -75,7 +74,9 @@ public final class YsmPacks {
         Map<String, ResourceLocation> animations = list(id.getNamespace(), root + "/animations", ".json");
         Map<String, ResourceLocation> textures = list(id.getNamespace(), root + "/textures", ".png");
 
-        String defaultTexture = textures.containsKey("ghast") ? "ghast" : textures.keySet().stream().sorted().findFirst().orElse("");
+        String defaultTexture = textures.containsKey("ghast")
+                ? "ghast"
+                : textures.keySet().stream().sorted().findFirst().orElse("");
         float heightScale = 1.0F;
         float widthScale = 1.0F;
         ResourceLocation meta = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), root + "/ysm.json");
@@ -98,14 +99,24 @@ public final class YsmPacks {
         if (animations.containsKey("main") && !"main".equals(nameOf(animations.get("main")))) {
             DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 的主动画文件解析异常：{}", id, animations.get("main"));
         }
-        YsmPack pack = new YsmPack(id, models, animations, textures, defaultTexture, heightScale, widthScale,
-            extraAnimations(animations, json), roamingOptions(json));
+        YsmPack pack = new YsmPack(
+                id,
+                models,
+                animations,
+                textures,
+                defaultTexture,
+                heightScale,
+                widthScale,
+                extraAnimations(animations, json),
+                roamingOptions(json));
         mergeAnimationFiles(pack);
         if (models.isEmpty()) {
-            DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 里没有 models/*.json（目录 assets/{}/{}），实体将无法渲染", id, id.getNamespace(), root);
+            DawnDuskTerminal.LOGGER.error(
+                    "YSM 模型包 {} 里没有 models/*.json（目录 assets/{}/{}），实体将无法渲染", id, id.getNamespace(), root);
         }
         if (textures.isEmpty()) {
-            DawnDuskTerminal.LOGGER.error("YSM 模型包 {} 里没有 textures/*.png（目录 assets/{}/{}）", id, id.getNamespace(), root);
+            DawnDuskTerminal.LOGGER.error(
+                    "YSM 模型包 {} 里没有 textures/*.png（目录 assets/{}/{}）", id, id.getNamespace(), root);
         }
         return pack;
     }
@@ -249,8 +260,11 @@ public final class YsmPacks {
     private static Map<String, ResourceLocation> list(String namespace, String dir, String suffix) {
         ResourceManager manager = Minecraft.getInstance().getResourceManager();
         Map<String, ResourceLocation> found = new LinkedHashMap<>();
-        for (ResourceLocation file : manager.listResources(dir,
-            location -> location.getNamespace().equals(namespace) && location.getPath().endsWith(suffix)).keySet()) {
+        for (ResourceLocation file : manager.listResources(
+                        dir,
+                        location -> location.getNamespace().equals(namespace)
+                                && location.getPath().endsWith(suffix))
+                .keySet()) {
             String path = file.getPath();
             found.put(nameFor(dir, path, suffix), file);
         }
@@ -270,8 +284,7 @@ public final class YsmPacks {
                 return null;
             }
             if (raw.getFormatVersion() != FormatVersion.NEW) {
-                DawnDuskTerminal.LOGGER.error("几何文件版本 {} 不被支持，请联系模型作者：{}",
-                    raw.getFormatVersion(), file);
+                DawnDuskTerminal.LOGGER.error("几何文件版本 {} 不被支持，请联系模型作者：{}", raw.getFormatVersion(), file);
                 return null;
             }
             GeoModel model = GeoBuilder.getGeoBuilder().constructGeoModel(RawGeometryTree.parseHierarchy(raw));
@@ -297,7 +310,7 @@ public final class YsmPacks {
                 String name = entry.getKey();
                 try {
                     Animation animation = JsonAnimationUtils.deserializeJsonToAnimation(
-                        JsonAnimationUtils.getAnimation(json, name), parser);
+                            JsonAnimationUtils.getAnimation(json, name), parser);
                     if (animation != null) {
                         result.putAnimation(name, animation);
                     }

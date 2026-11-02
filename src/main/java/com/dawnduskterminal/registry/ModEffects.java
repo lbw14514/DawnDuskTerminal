@@ -11,13 +11,13 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModEffects {
     public static final DeferredRegister<MobEffect> EFFECTS =
-        DeferredRegister.create(Registries.MOB_EFFECT, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.MOB_EFFECT, DawnDuskTerminal.MOD_ID);
 
     public static final DeferredHolder<MobEffect, MobEffect> PORTAL_SICKNESS =
-        EFFECTS.register("portal_sickness", PortalSicknessEffect::new);
+            EFFECTS.register("portal_sickness", PortalSicknessEffect::new);
 
     public static final DeferredHolder<MobEffect, MobEffect> STABILITY =
-        EFFECTS.register("stability", StabilityEffect::new);
+            EFFECTS.register("stability", StabilityEffect::new);
 
     private ModEffects() {}
 

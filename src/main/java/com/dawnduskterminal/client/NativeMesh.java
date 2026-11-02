@@ -2,9 +2,6 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.config.DdtConfig;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -18,6 +15,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
 
 /**
  * native 网格变换内核的 Java 门面
@@ -117,27 +116,29 @@ public final class NativeMesh {
             fail(Stage.CONFIG, "配置 render.native_mesh 为 false", null);
             return;
         }
-        if (Boolean.getBoolean(DISABLE_PROPERTY)
-            || "true".equalsIgnoreCase(System.getenv(DISABLE_ENV))) {
+        if (Boolean.getBoolean(DISABLE_PROPERTY) || "true".equalsIgnoreCase(System.getenv(DISABLE_ENV))) {
             fail(Stage.CONFIG, "系统属性或环境变量显式关闭了 native", null);
             return;
         }
 
         Path marker = crashMarkerPath();
         if (marker != null && Files.isRegularFile(marker) && !Boolean.getBoolean(FORCE_PROPERTY)) {
-            fail(Stage.CRASH_GUARD,
-                "检测到上次运行留下的崩溃标记 " + marker
-                    + " 本次已强制走 Java 路径 确认 native 稳定后删除该文件即可重新启用"
-                    + " 或用 -D" + FORCE_PROPERTY + "=true 单次跳过",
-                null);
+            fail(
+                    Stage.CRASH_GUARD,
+                    "检测到上次运行留下的崩溃标记 " + marker
+                            + " 本次已强制走 Java 路径 确认 native 稳定后删除该文件即可重新启用"
+                            + " 或用 -D" + FORCE_PROPERTY + "=true 单次跳过",
+                    null);
             return;
         }
 
         Platform platform = platform();
         if (platform == null) {
-            fail(Stage.UNSUPPORTED,
-                "没有为 " + System.getProperty("os.name", "?") + "/"
-                    + System.getProperty("os.arch", "?") + " 构建 native 网格内核", null);
+            fail(
+                    Stage.UNSUPPORTED,
+                    "没有为 " + System.getProperty("os.name", "?") + "/" + System.getProperty("os.arch", "?")
+                            + " 构建 native 网格内核",
+                    null);
             return;
         }
 
@@ -158,16 +159,14 @@ public final class NativeMesh {
             String expected = sha256(library);
             if (!cachedLibraryMatches(file, expected)) {
                 try {
-                    Files.write(file, library,
-                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    Files.write(file, library, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (IOException writeFailure) {
                     // 另一个实例正映射着同名 dll 时覆盖会失败，但复用前仍要确认内容没被动过
                     if (!cachedLibraryMatches(file, expected)) {
                         throw writeFailure;
                     }
                     DawnDuskTerminal.LOGGER.warn(
-                        "DawnDuskTerminal 无法覆盖 native 缓存 {}，复用已有文件: {}",
-                        file, writeFailure.toString());
+                            "DawnDuskTerminal 无法覆盖 native 缓存 {}，复用已有文件: {}", file, writeFailure.toString());
                 }
             }
             writeChecksumIfNeeded(checksum, expected);
@@ -195,8 +194,10 @@ public final class NativeMesh {
             kernel = queryKernelName();
             ready = true;
             DawnDuskTerminal.LOGGER.info(
-                "DawnDuskTerminal native mesh kernel loaded from {} (abi {}, kernel {})",
-                resource, ABI_VERSION, kernel);
+                    "DawnDuskTerminal native mesh kernel loaded from {} (abi {}, kernel {})",
+                    resource,
+                    ABI_VERSION,
+                    kernel);
         } catch (Throwable throwable) {
             removeMarker(marker);
             fail(Stage.LOAD, "准备 native 网格内核 " + resource + " 失败", throwable);
@@ -232,19 +233,21 @@ public final class NativeMesh {
 
     /** 稳定缓存目录 平台与模组版本各一层 同版本启动直接复用 不随进程退出留下新副本 */
     private static Path nativeCacheDirectory(Platform platform) {
-        return FMLPaths.CONFIGDIR.get()
-            .resolve("dawnduskterminal")
-            .resolve("native")
-            .resolve(platform.key())
-            .resolve(safeVersion());
+        return FMLPaths.CONFIGDIR
+                .get()
+                .resolve("dawnduskterminal")
+                .resolve("native")
+                .resolve(platform.key())
+                .resolve(safeVersion());
     }
 
     private static String safeVersion() {
         String version;
         try {
-            version = ModList.get().getModContainerById(DawnDuskTerminal.MOD_ID)
-                .map(container -> container.getModInfo().getVersion().toString())
-                .orElse("dev");
+            version = ModList.get()
+                    .getModContainerById(DawnDuskTerminal.MOD_ID)
+                    .map(container -> container.getModInfo().getVersion().toString())
+                    .orElse("dev");
         } catch (Throwable throwable) {
             version = "dev";
         }
@@ -290,7 +293,8 @@ public final class NativeMesh {
     private static void writeChecksumIfNeeded(Path path, String expected) {
         try {
             if (Files.isRegularFile(path)
-                && expected.equals(Files.readString(path, StandardCharsets.UTF_8).trim())) {
+                    && expected.equals(
+                            Files.readString(path, StandardCharsets.UTF_8).trim())) {
                 return;
             }
         } catch (IOException ignored) {
@@ -299,8 +303,7 @@ public final class NativeMesh {
         try {
             Files.writeString(path, expected + System.lineSeparator(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 无法写入 native 校验文件 {}: {}", path, exception.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 无法写入 native 校验文件 {}: {}", path, exception.toString());
         }
     }
 
@@ -313,12 +316,24 @@ public final class NativeMesh {
             int vertexFloats = nativeVertexFloats();
             int matrixFloats = nativeMatrixFloats();
             int normalFloats = nativeNormalFloats();
-            if (abi != ABI_VERSION || vertexFloats != VERTEX_FLOATS
-                || matrixFloats != MATRIX_FLOATS || normalFloats != NORMAL_FLOATS) {
-                fail(Stage.ABI, String.format(Locale.ROOT,
-                    "ABI 不匹配 java(abi=%d 顶点=%d 矩阵=%d 法线=%d) native(abi=%d 顶点=%d 矩阵=%d 法线=%d)",
-                    ABI_VERSION, VERTEX_FLOATS, MATRIX_FLOATS, NORMAL_FLOATS,
-                    abi, vertexFloats, matrixFloats, normalFloats), null);
+            if (abi != ABI_VERSION
+                    || vertexFloats != VERTEX_FLOATS
+                    || matrixFloats != MATRIX_FLOATS
+                    || normalFloats != NORMAL_FLOATS) {
+                fail(
+                        Stage.ABI,
+                        String.format(
+                                Locale.ROOT,
+                                "ABI 不匹配 java(abi=%d 顶点=%d 矩阵=%d 法线=%d) native(abi=%d 顶点=%d 矩阵=%d 法线=%d)",
+                                ABI_VERSION,
+                                VERTEX_FLOATS,
+                                MATRIX_FLOATS,
+                                NORMAL_FLOATS,
+                                abi,
+                                vertexFloats,
+                                matrixFloats,
+                                normalFloats),
+                        null);
                 return false;
             }
             return true;
@@ -336,8 +351,7 @@ public final class NativeMesh {
             String name = nativeKernelName();
             return name == null || name.isBlank() ? "unknown" : name;
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 读取 native 内核名失败: {}", throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 读取 native 内核名失败: {}", throwable.toString());
             return "unknown";
         }
     }
@@ -368,8 +382,8 @@ public final class NativeMesh {
                 return false;
             }
 
-            ByteBuffer output = ByteBuffer.allocateDirect(2 * VERTEX_FLOATS * Float.BYTES)
-                .order(ByteOrder.nativeOrder());
+            ByteBuffer output =
+                    ByteBuffer.allocateDirect(2 * VERTEX_FLOATS * Float.BYTES).order(ByteOrder.nativeOrder());
             ByteBuffer matrixBuffer = directFloatBuffer(new float[] {
                 1.0F, 0.0F, 0.0F, 0.0F,
                 0.0F, 1.0F, 0.0F, 0.0F,
@@ -381,8 +395,7 @@ public final class NativeMesh {
                 0.0F, 1.0F, 0.0F,
                 0.0F, 0.0F, 1.0F,
             });
-            ByteBuffer pieceIdBuffer = ByteBuffer.allocateDirect(Integer.BYTES)
-                .order(ByteOrder.nativeOrder());
+            ByteBuffer pieceIdBuffer = ByteBuffer.allocateDirect(Integer.BYTES).order(ByteOrder.nativeOrder());
             pieceIdBuffer.asIntBuffer().put(0, 0);
             int transformed = nativeTransform(pool, mesh, matrixBuffer, normalBuffer, pieceIdBuffer, 1, output);
             if (transformed != 2) {
@@ -423,8 +436,8 @@ public final class NativeMesh {
      * 把 float 数组装进按 native 字节序的直接缓冲区 只用于加载期探针
      */
     private static ByteBuffer directFloatBuffer(float[] values) {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(values.length * Float.BYTES)
-            .order(ByteOrder.nativeOrder());
+        ByteBuffer buffer =
+                ByteBuffer.allocateDirect(values.length * Float.BYTES).order(ByteOrder.nativeOrder());
         buffer.asFloatBuffer().put(values);
         return buffer;
     }
@@ -433,8 +446,7 @@ public final class NativeMesh {
         try {
             return FMLPaths.CONFIGDIR.get().resolve(CRASH_MARKER_NAME);
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 无法定位配置目录 native 崩溃标记不会启用: {}", throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 无法定位配置目录 native 崩溃标记不会启用: {}", throwable.toString());
             return null;
         }
     }
@@ -444,14 +456,14 @@ public final class NativeMesh {
             return;
         }
         try {
-            Files.writeString(marker,
-                "DawnDuskTerminal native mesh kernel was active.\n"
-                    + "Delete this file to retry native rendering after a crash.\n",
-                StandardCharsets.UTF_8);
+            Files.writeString(
+                    marker,
+                    "DawnDuskTerminal native mesh kernel was active.\n"
+                            + "Delete this file to retry native rendering after a crash.\n",
+                    StandardCharsets.UTF_8);
             marker.toFile().deleteOnExit();
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 无法写入 native 崩溃标记 {}: {}", marker, throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 无法写入 native 崩溃标记 {}: {}", marker, throwable.toString());
         }
     }
 
@@ -462,8 +474,7 @@ public final class NativeMesh {
         try {
             Files.deleteIfExists(marker);
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 无法删除 native 崩溃标记 {}: {}", marker, throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 无法删除 native 崩溃标记 {}: {}", marker, throwable.toString());
         }
     }
 
@@ -472,14 +483,15 @@ public final class NativeMesh {
         if (failure == null) {
             failure = new Failure(stage, detail, cause);
             switch (stage) {
-                case CONFIG -> DawnDuskTerminal.LOGGER.info(
-                    "DawnDuskTerminal native mesh kernel disabled: {}", detail);
+                case CONFIG -> DawnDuskTerminal.LOGGER.info("DawnDuskTerminal native mesh kernel disabled: {}", detail);
                 case CRASH_GUARD, RUNTIME, ABI, PROBE -> DawnDuskTerminal.LOGGER.error(
-                    "DawnDuskTerminal native mesh kernel disabled, using the GeckoLib Java path: {}",
-                    detail, cause);
+                        "DawnDuskTerminal native mesh kernel disabled, using the GeckoLib Java path: {}",
+                        detail,
+                        cause);
                 default -> DawnDuskTerminal.LOGGER.warn(
-                    "DawnDuskTerminal native mesh kernel unavailable, using the GeckoLib Java path: {}",
-                    detail, cause);
+                        "DawnDuskTerminal native mesh kernel unavailable, using the GeckoLib Java path: {}",
+                        detail,
+                        cause);
             }
         }
     }
@@ -496,8 +508,8 @@ public final class NativeMesh {
         }
         if (sharedPool == 0L) {
             try {
-                sharedPool = createPool(Math.min(MAX_THREADS,
-                    Math.max(1, Runtime.getRuntime().availableProcessors())));
+                sharedPool = createPool(
+                        Math.min(MAX_THREADS, Math.max(1, Runtime.getRuntime().availableProcessors())));
             } catch (NativeMeshException exception) {
                 // createPool 内部已经 fail 过一次 这里再显式标记 保证后续帧不会每帧重试建池
                 fail(Stage.RUNTIME, "共享 native 线程池创建失败", exception);
@@ -528,8 +540,7 @@ public final class NativeMesh {
         try {
             nativeDestroyPool(handle);
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 销毁 native 线程池失败: {}", throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 销毁 native 线程池失败: {}", throwable.toString());
         }
     }
 
@@ -557,8 +568,7 @@ public final class NativeMesh {
         try {
             nativeDestroyMesh(handle);
         } catch (Throwable throwable) {
-            DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal 销毁 native 网格失败: {}", throwable.toString());
+            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 销毁 native 网格失败: {}", throwable.toString());
         }
     }
 
@@ -569,8 +579,14 @@ public final class NativeMesh {
      * <p>矩阵 法线 piece id 三个入参都是直接缓冲区 且容量按 count 截断
      * 缓冲区里前 count 段之外的内容不会被读到
      */
-    public static int transform(long pool, long mesh, ByteBuffer matrices, ByteBuffer normals,
-                                ByteBuffer pieceIds, int count, ByteBuffer output) {
+    public static int transform(
+            long pool,
+            long mesh,
+            ByteBuffer matrices,
+            ByteBuffer normals,
+            ByteBuffer pieceIds,
+            int count,
+            ByteBuffer output) {
         requireReady();
         int result;
         try {
@@ -589,14 +605,13 @@ public final class NativeMesh {
             return;
         }
         Failure current = failure;
-        throw new NativeMeshException(ERROR_UNAVAILABLE,
-            current == null ? "native 网格内核不可用" : "native 网格内核不可用 " + current.describe());
+        throw new NativeMeshException(
+                ERROR_UNAVAILABLE, current == null ? "native 网格内核不可用" : "native 网格内核不可用 " + current.describe());
     }
 
     private static NativeMeshException runtimeFailure(String detail, Throwable cause) {
         reportRuntimeFailure(detail, cause);
-        return new NativeMeshException(ERROR_INTERNAL,
-            "native 网格内核运行时故障 " + detail, cause);
+        return new NativeMeshException(ERROR_INTERNAL, "native 网格内核运行时故障 " + detail, cause);
     }
 
     /**
@@ -694,6 +709,12 @@ public final class NativeMesh {
      * 数组入参会让 native 每帧做一次 GetFloatArrayElements 拷贝 712 个 piece 约 73KB
      * 实测每帧多出约 10us 直接缓冲区把这部分省掉
      */
-    private static native int nativeTransform(long pool, long mesh, ByteBuffer matrices, ByteBuffer normals,
-                                              ByteBuffer pieceIds, int count, ByteBuffer output);
+    private static native int nativeTransform(
+            long pool,
+            long mesh,
+            ByteBuffer matrices,
+            ByteBuffer normals,
+            ByteBuffer pieceIds,
+            int count,
+            ByteBuffer output);
 }

@@ -31,11 +31,12 @@ public final class TwilightUncrafting {
      * <p>{@link #allows(ResourceLocation)} 就是 {@code UncraftingMenu#getRecipesFor} 里那两个连续的
      * {@code if_icmpne}：名单默认是黑名单，所以「进名单」等于「不许拆」，{@code flip} 打开后反过来
      */
-    public record Config(boolean allowShapeless,
-                         boolean reverseRecipeBlacklist,
-                         Set<String> disabledRecipes,
-                         boolean flipModIdList,
-                         Set<String> blacklistedModIds) {
+    public record Config(
+            boolean allowShapeless,
+            boolean reverseRecipeBlacklist,
+            Set<String> disabledRecipes,
+            boolean flipModIdList,
+            Set<String> blacklistedModIds) {
         public static final Config DEFAULT = new Config(false, false, Set.of(), false, Set.of());
 
         public boolean allows(ResourceLocation recipeId) {
@@ -51,11 +52,11 @@ public final class TwilightUncrafting {
     /** 当前的配置快照，直接读暮色森林自己的字段 */
     public static Config config() {
         return new Config(
-            TFConfig.allowShapelessUncrafting,
-            TFConfig.reverseRecipeBlacklist,
-            copyOf(TFConfig.disableUncraftingRecipes),
-            TFConfig.flipUncraftingModIdList,
-            copyOf(TFConfig.blacklistedUncraftingModIds));
+                TFConfig.allowShapelessUncrafting,
+                TFConfig.reverseRecipeBlacklist,
+                copyOf(TFConfig.disableUncraftingRecipes),
+                TFConfig.flipUncraftingModIdList,
+                copyOf(TFConfig.blacklistedUncraftingModIds));
     }
 
     /** 这个配方是不是暮色森林的拆解配方 */

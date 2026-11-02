@@ -20,13 +20,13 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class Experiment004Screen extends AbstractFurnaceScreen<Experiment004Menu> {
     private static final ResourceLocation LIT_PROGRESS =
-        ResourceLocation.withDefaultNamespace("container/furnace/lit_progress");
+            ResourceLocation.withDefaultNamespace("container/furnace/lit_progress");
 
     private static final ResourceLocation BURN_PROGRESS =
-        ResourceLocation.withDefaultNamespace("container/furnace/burn_progress");
+            ResourceLocation.withDefaultNamespace("container/furnace/burn_progress");
 
     private static final ResourceLocation TEXTURE =
-        ResourceLocation.withDefaultNamespace("textures/gui/container/furnace.png");
+            ResourceLocation.withDefaultNamespace("textures/gui/container/furnace.png");
 
     public Experiment004Screen(Experiment004Menu menu, Inventory inventory, Component title) {
         super(menu, new SmeltingRecipeBookComponent(), inventory, title, TEXTURE, LIT_PROGRESS, BURN_PROGRESS);

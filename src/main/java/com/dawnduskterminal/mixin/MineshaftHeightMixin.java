@@ -20,15 +20,21 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(MineshaftStructure.class)
 public abstract class MineshaftHeightMixin {
     @Redirect(
-        method = "generatePiecesAndAdjust(Lnet/minecraft/world/level/levelgen/structure/pieces/StructurePiecesBuilder;Lnet/minecraft/world/level/levelgen/structure/Structure$GenerationContext;)I",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/level/levelgen/structure/pieces/StructurePiecesBuilder;moveBelowSeaLevel(IILnet/minecraft/util/RandomSource;I)I"
-        )
-    )
+            method =
+                    "generatePiecesAndAdjust(Lnet/minecraft/world/level/levelgen/structure/pieces/StructurePiecesBuilder;Lnet/minecraft/world/level/levelgen/structure/Structure$GenerationContext;)I",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/world/level/levelgen/structure/pieces/StructurePiecesBuilder;moveBelowSeaLevel(IILnet/minecraft/util/RandomSource;I)I"))
     @SuppressWarnings("deprecation")
-    private int ddt$restrictMineshaftY(StructurePiecesBuilder builder, int seaLevel, int minY, RandomSource random, int height,
-                                       @Local(argsOnly = true) Structure.GenerationContext context) {
+    private int ddt$restrictMineshaftY(
+            StructurePiecesBuilder builder,
+            int seaLevel,
+            int minY,
+            RandomSource random,
+            int height,
+            @Local(argsOnly = true) Structure.GenerationContext context) {
         if (ChronoDimensionProbe.isChrono(context)) {
             int bandMin = -64;
             int bandMax = -10;

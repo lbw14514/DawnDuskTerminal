@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -14,7 +15,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.world.phys.Vec3;
 import twilightforest.init.TFParticleType;
 import twilightforest.init.TFSounds;
@@ -76,12 +76,15 @@ public final class GhastTrapProcess {
     public static final SoundEvent TRAP_SPINDOWN_SOUND = TFSounds.GHAST_TRAP_SPINDOWN.get();
     /** 方块的相位分界：0~29 预热、30~79 通电、80 起收场 */
     public static final int WARMUP_TICKS = 30;
+
     public static final int SPINDOWN_FROM = 80;
     /** 方块的 {@code counter > 100} 之后每 4 tick 冒一阵大烟 */
     public static final int SMOKE_FROM = 100;
+
     public static final int SMOKE_INTERVAL = 4;
     /** 音效与方块一样：音量 1、音高 4 */
     public static final float SOUND_VOLUME = 1.0F;
+
     public static final float SOUND_PITCH = 4.0F;
     private static final List<GhastTrapProcess> ACTIVE = new ArrayList<>();
     private final ServerLevel level;
@@ -255,9 +258,13 @@ public final class GhastTrapProcess {
 
     /** 场里那一批活物：视线走廊里活着的活物，施放者自己与观察模式不算 */
     private List<LivingEntity> targets() {
-        List<LivingEntity> found = this.level.getEntitiesOfClass(LivingEntity.class, this.broadBox(),
-            entity -> !GhastKin.isKin(this.owner, entity) && entity.isAlive() && !entity.isSpectator()
-                && this.insideField(entity));
+        List<LivingEntity> found = this.level.getEntitiesOfClass(
+                LivingEntity.class,
+                this.broadBox(),
+                entity -> !GhastKin.isKin(this.owner, entity)
+                        && entity.isAlive()
+                        && !entity.isSpectator()
+                        && this.insideField(entity));
         this.targetsCaught = this.targetsCaught + found.size();
         return found;
     }
@@ -289,8 +296,7 @@ public final class GhastTrapProcess {
             return false;
         }
 
-        return Math.abs(relative.dot(right)) <= RADIUS + extent
-            && Math.abs(relative.dot(up)) <= RADIUS + extent;
+        return Math.abs(relative.dot(right)) <= RADIUS + extent && Math.abs(relative.dot(up)) <= RADIUS + extent;
     }
 
     /**
@@ -315,7 +321,8 @@ public final class GhastTrapProcess {
         this.spawnParticle(TRAP_PARTICLE, center, this.particleOffset(vx / 2.0, vy / 4.0, vz / 2.0));
         this.spawnParticle(TRAP_PARTICLE, center, this.particleOffset(-vx / 2.0, vy / 4.0, -vz / 2.0));
         if (this.age > SMOKE_FROM && this.age % SMOKE_INTERVAL == 0) {
-            this.spawnParticle(TRAP_SMOKE, center, this.particleOffset(Math.cos(spin) * 0.05, 0.25, Math.sin(spin) * 0.05));
+            this.spawnParticle(
+                    TRAP_SMOKE, center, this.particleOffset(Math.cos(spin) * 0.05, 0.25, Math.sin(spin) * 0.05));
         }
     }
 
@@ -343,8 +350,9 @@ public final class GhastTrapProcess {
      * 都从场心出
      */
     private void playTrapSound() {
-        SoundEvent sound = this.age < WARMUP_TICKS ? TRAP_WARMUP_SOUND
-            : this.age < SPINDOWN_FROM ? TRAP_ON_SOUND : TRAP_SPINDOWN_SOUND;
+        SoundEvent sound = this.age < WARMUP_TICKS
+                ? TRAP_WARMUP_SOUND
+                : this.age < SPINDOWN_FROM ? TRAP_ON_SOUND : TRAP_SPINDOWN_SOUND;
         Vec3 center = this.trapCenter();
         this.level.playSound(null, center.x, center.y, center.z, sound, SoundSource.BLOCKS, SOUND_VOLUME, SOUND_PITCH);
     }

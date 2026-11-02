@@ -4,6 +4,8 @@ import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModDamageTypes;
 import com.dawnduskterminal.registry.ModEntities;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -23,9 +25,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * 「弦」的数值 液面判定与移动
  *
@@ -39,24 +38,27 @@ public final class StringEntityTests {
     public static void variantStatsScaleWithGeometry(GameTestHelper helper) {
         StringEntity small = new StringEntity(ModEntities.STRING.get(), helper.getLevel());
         small.setVariant(false, 1.0F);
-        helper.assertTrue(close(small.getMaxHealth(), 60.0F),
-            "small string must have 60 health, got " + small.getMaxHealth());
-        helper.assertTrue(close((float) small.getAttributeValue(Attributes.ATTACK_DAMAGE), 10.0F),
-            "small string must have 10 attack");
+        helper.assertTrue(
+                close(small.getMaxHealth(), 60.0F), "small string must have 60 health, got " + small.getMaxHealth());
+        helper.assertTrue(
+                close((float) small.getAttributeValue(Attributes.ATTACK_DAMAGE), 10.0F),
+                "small string must have 10 attack");
 
         StringEntity large = new StringEntity(ModEntities.STRING.get(), helper.getLevel());
         large.setVariant(true, 1.0F);
-        helper.assertTrue(close(large.getMaxHealth(), 150.0F),
-            "large string must scale health by 2.5, got " + large.getMaxHealth());
-        helper.assertTrue(close((float) large.getAttributeValue(Attributes.ATTACK_DAMAGE), 25.0F),
-            "large string must scale attack by 2.5");
-        helper.assertTrue(large.getBbWidth() > small.getBbWidth(),
-            "large string must have a larger hitbox");
+        helper.assertTrue(
+                close(large.getMaxHealth(), 150.0F),
+                "large string must scale health by 2.5, got " + large.getMaxHealth());
+        helper.assertTrue(
+                close((float) large.getAttributeValue(Attributes.ATTACK_DAMAGE), 25.0F),
+                "large string must scale attack by 2.5");
+        helper.assertTrue(large.getBbWidth() > small.getBbWidth(), "large string must have a larger hitbox");
 
         StringEntity offset = new StringEntity(ModEntities.STRING.get(), helper.getLevel());
         offset.setVariant(false, 1.1F);
-        helper.assertTrue(close(offset.getMaxHealth(), 66.0F),
-            "random size offset must scale health, got " + offset.getMaxHealth());
+        helper.assertTrue(
+                close(offset.getMaxHealth(), 66.0F),
+                "random size offset must scale health, got " + offset.getMaxHealth());
         helper.succeed();
     }
 
@@ -73,17 +75,17 @@ public final class StringEntityTests {
         double largeSpeed = large.getAttributeValue(Attributes.MOVEMENT_SPEED);
         double biggerSpeed = bigger.getAttributeValue(Attributes.MOVEMENT_SPEED);
 
-        helper.assertTrue(smallSpeed > 0.34D,
-            "base speed must be above the old 0.34, got " + smallSpeed);
-        helper.assertTrue(largeSpeed > smallSpeed,
-            "a large string must be faster than a small one, got " + largeSpeed
-                + " vs " + smallSpeed);
-        helper.assertTrue(biggerSpeed > smallSpeed,
-            "a bigger individual must be faster, got " + biggerSpeed + " vs " + smallSpeed);
-        helper.assertTrue(Math.abs(small.getAttributeValue(Attributes.FLYING_SPEED) - smallSpeed)
-                < 1.0E-9D
-                && Math.abs(large.getAttributeValue(Attributes.FLYING_SPEED) - largeSpeed) < 1.0E-9D,
-            "FLYING_SPEED must carry the same value as MOVEMENT_SPEED");
+        helper.assertTrue(smallSpeed > 0.34D, "base speed must be above the old 0.34, got " + smallSpeed);
+        helper.assertTrue(
+                largeSpeed > smallSpeed,
+                "a large string must be faster than a small one, got " + largeSpeed + " vs " + smallSpeed);
+        helper.assertTrue(
+                biggerSpeed > smallSpeed,
+                "a bigger individual must be faster, got " + biggerSpeed + " vs " + smallSpeed);
+        helper.assertTrue(
+                Math.abs(small.getAttributeValue(Attributes.FLYING_SPEED) - smallSpeed) < 1.0E-9D
+                        && Math.abs(large.getAttributeValue(Attributes.FLYING_SPEED) - largeSpeed) < 1.0E-9D,
+                "FLYING_SPEED must carry the same value as MOVEMENT_SPEED");
         helper.succeed();
     }
 
@@ -98,12 +100,15 @@ public final class StringEntityTests {
         StringEntity glider = variant(helper, false, 1.0F);
         glider.setKind(StringEntity.Kind.SURFACE);
 
-        helper.assertTrue(glider.isValidPrey(playerAt(helper, new BlockPos(3, 1, 2))),
-            "a player with portal fluid one block from its feet must be valid prey");
-        helper.assertTrue(glider.isValidPrey(playerAt(helper, new BlockPos(2, 1, 2))),
-            "a player standing in the fluid must be valid prey");
-        helper.assertFalse(glider.isValidPrey(playerAt(helper, new BlockPos(4, 1, 2))),
-            "a player two blocks inland must not be targeted");
+        helper.assertTrue(
+                glider.isValidPrey(playerAt(helper, new BlockPos(3, 1, 2))),
+                "a player with portal fluid one block from its feet must be valid prey");
+        helper.assertTrue(
+                glider.isValidPrey(playerAt(helper, new BlockPos(2, 1, 2))),
+                "a player standing in the fluid must be valid prey");
+        helper.assertFalse(
+                glider.isValidPrey(playerAt(helper, new BlockPos(4, 1, 2))),
+                "a player two blocks inland must not be targeted");
         helper.succeed();
     }
 
@@ -122,19 +127,18 @@ public final class StringEntityTests {
         Player onShore = playerAt(helper, new BlockPos(8, 1, 8));
         Player inAir = playerAt(helper, new BlockPos(5, 8, 5));
 
-        helper.assertTrue(flyer.isValidPrey(onShore),
-            "the flyer must target shore players, the fluid rule does not apply to it");
+        helper.assertTrue(
+                flyer.isValidPrey(onShore), "the flyer must target shore players, the fluid rule does not apply to it");
         helper.assertTrue(flyer.isValidPrey(inFluid), "the flyer must target players in the fluid");
         helper.assertTrue(flyer.isValidPrey(inAir), "the flyer must target airborne players");
-        helper.assertTrue(swimmer.isValidPrey(inFluid),
-            "the swimmer must target players in the fluid");
-        helper.assertFalse(swimmer.isValidPrey(onShore),
-            "the swimmer must ignore players standing on dry land");
+        helper.assertTrue(swimmer.isValidPrey(inFluid), "the swimmer must target players in the fluid");
+        helper.assertFalse(swimmer.isValidPrey(onShore), "the swimmer must ignore players standing on dry land");
 
         Zombie zombie = EntityType.ZOMBIE.create(helper.getLevel());
         helper.assertTrue(zombie != null, "zombie entity type must create");
-        helper.assertFalse(flyer.isValidPrey(zombie) || swimmer.isValidPrey(zombie),
-            "no string variant may target anything but a player");
+        helper.assertFalse(
+                flyer.isValidPrey(zombie) || swimmer.isValidPrey(zombie),
+                "no string variant may target anything but a player");
         helper.succeed();
     }
 
@@ -160,17 +164,15 @@ public final class StringEntityTests {
             original.invulnerableTime = 0;
             original.hurt(heavy, 3.0F);
         }
-        helper.assertTrue(original.isRemoved(),
-            "a heavy hit must eventually split the surface string in two");
+        helper.assertTrue(original.isRemoved(), "a heavy hit must eventually split the surface string in two");
 
-        List<StringEntity> found = new ArrayList<>(helper.getLevel().getEntitiesOfClass(
-            StringEntity.class, new AABB(at).inflate(6.0D)));
-        boolean hasFlyer = found.stream()
-            .anyMatch(entity -> entity.getKind() == StringEntity.Kind.FLYER);
-        boolean hasSwimmer = found.stream()
-            .anyMatch(entity -> entity.getKind() == StringEntity.Kind.SWIMMER);
-        helper.assertTrue(hasFlyer && hasSwimmer,
-            "the split must leave one flyer and one swimmer, got " + found.size() + " string(s)");
+        List<StringEntity> found =
+                new ArrayList<>(helper.getLevel().getEntitiesOfClass(StringEntity.class, new AABB(at).inflate(6.0D)));
+        boolean hasFlyer = found.stream().anyMatch(entity -> entity.getKind() == StringEntity.Kind.FLYER);
+        boolean hasSwimmer = found.stream().anyMatch(entity -> entity.getKind() == StringEntity.Kind.SWIMMER);
+        helper.assertTrue(
+                hasFlyer && hasSwimmer,
+                "the split must leave one flyer and one swimmer, got " + found.size() + " string(s)");
         helper.succeed();
     }
 
@@ -190,8 +192,9 @@ public final class StringEntityTests {
             string.invulnerableTime = 0;
             string.hurt(light, 2.0F);
         }
-        helper.assertTrue(!string.isRemoved() && string.getKind() == StringEntity.Kind.SURFACE,
-            "damage of 2 or less must never split the string");
+        helper.assertTrue(
+                !string.isRemoved() && string.getKind() == StringEntity.Kind.SURFACE,
+                "damage of 2 or less must never split the string");
         helper.succeed();
     }
 
@@ -210,17 +213,20 @@ public final class StringEntityTests {
         StringEntity swimmer = variant(helper, false, 1.0F);
         swimmer.setKind(StringEntity.Kind.SWIMMER);
 
-        helper.assertTrue(flyer.getMoveControl() instanceof FlyingMoveControl,
-            "the flyer must fly on vanilla FlyingMoveControl, got "
-                + flyer.getMoveControl().getClass().getSimpleName());
-        helper.assertTrue(flyer.getNavigation() instanceof FlyingPathNavigation,
-            "the flyer must path with FlyingPathNavigation");
-        helper.assertTrue(!(swimmer.getMoveControl() instanceof FlyingMoveControl),
-            "the swimmer must not use the flying control");
-        helper.assertTrue(glider.getMoveControl() != flyer.getMoveControl()
-                && glider.getMoveControl() != swimmer.getMoveControl()
-                && swimmer.getMoveControl() != flyer.getMoveControl(),
-            "each variant must get its own control");
+        helper.assertTrue(
+                flyer.getMoveControl() instanceof FlyingMoveControl,
+                "the flyer must fly on vanilla FlyingMoveControl, got "
+                        + flyer.getMoveControl().getClass().getSimpleName());
+        helper.assertTrue(
+                flyer.getNavigation() instanceof FlyingPathNavigation, "the flyer must path with FlyingPathNavigation");
+        helper.assertTrue(
+                !(swimmer.getMoveControl() instanceof FlyingMoveControl),
+                "the swimmer must not use the flying control");
+        helper.assertTrue(
+                glider.getMoveControl() != flyer.getMoveControl()
+                        && glider.getMoveControl() != swimmer.getMoveControl()
+                        && swimmer.getMoveControl() != flyer.getMoveControl(),
+                "each variant must get its own control");
         helper.succeed();
     }
 
@@ -236,12 +242,14 @@ public final class StringEntityTests {
         helper.setBlock(new BlockPos(3, 1, 3), ModBlocks.PORTAL_FLUID.get());
         BlockPos shore = helper.absolutePos(new BlockPos(9, 1, 9));
 
-        helper.assertTrue(StringEntity.canSpawnAt(helper.getLevel(), fluid),
-            "a spawn egg must be accepted inside the portal fluid");
-        helper.assertTrue(StringEntity.canSpawnAt(helper.getLevel(), fluid.above()),
-            "a spawn egg must be accepted in the air right above the portal fluid");
-        helper.assertFalse(StringEntity.canSpawnAt(helper.getLevel(), shore),
-            "a spawn egg must be refused on dry land");
+        helper.assertTrue(
+                StringEntity.canSpawnAt(helper.getLevel(), fluid),
+                "a spawn egg must be accepted inside the portal fluid");
+        helper.assertTrue(
+                StringEntity.canSpawnAt(helper.getLevel(), fluid.above()),
+                "a spawn egg must be accepted in the air right above the portal fluid");
+        helper.assertFalse(
+                StringEntity.canSpawnAt(helper.getLevel(), shore), "a spawn egg must be refused on dry land");
         helper.succeed();
     }
 
@@ -280,8 +288,9 @@ public final class StringEntityTests {
         for (int i = 0; i < 20; i++) {
             flyer.travel(Vec3.ZERO);
         }
-        helper.assertTrue(Math.abs(flyer.getY() - startY) < 1.0E-6D,
-            "the flyer must not sink with no input, moved " + (flyer.getY() - startY));
+        helper.assertTrue(
+                Math.abs(flyer.getY() - startY) < 1.0E-6D,
+                "the flyer must not sink with no input, moved " + (flyer.getY() - startY));
 
         float health = flyer.getHealth();
         for (int i = 0; i < 40 && !flyer.onGround(); i++) {
@@ -289,11 +298,11 @@ public final class StringEntityTests {
             flyer.travel(Vec3.ZERO);
         }
         helper.assertTrue(flyer.onGround(), "the flyer must have landed on the stone floor");
-        helper.assertTrue(flyer.fallDistance <= 0.0F,
-            "the flyer must not accumulate fall distance, got " + flyer.fallDistance);
-        helper.assertTrue(flyer.getHealth() == health,
-            "the flyer must take no fall damage, health went from " + health
-                + " to " + flyer.getHealth());
+        helper.assertTrue(
+                flyer.fallDistance <= 0.0F, "the flyer must not accumulate fall distance, got " + flyer.fallDistance);
+        helper.assertTrue(
+                flyer.getHealth() == health,
+                "the flyer must take no fall damage, health went from " + health + " to " + flyer.getHealth());
         helper.succeed();
     }
 
@@ -302,13 +311,14 @@ public final class StringEntityTests {
         StringEntity string = new StringEntity(ModEntities.STRING.get(), helper.getLevel());
         string.setVariant(false, 1.0F);
         helper.assertTrue(string.fireImmune(), "string must be fire immune");
-        helper.assertTrue(!string.canBeAffected(new MobEffectInstance(MobEffects.POISON)),
-            "string must ignore potion effects");
-        helper.assertTrue(string.isInvulnerableTo(
-                helper.getLevel().damageSources().source(ModDamageTypes.STABILITY)),
-            "portal fluid damage must not hurt string");
-        helper.assertTrue(!string.isPushable() && !string.isPushedByFluid(),
-            "string must ignore entity pushing and fluid currents");
+        helper.assertTrue(
+                !string.canBeAffected(new MobEffectInstance(MobEffects.POISON)), "string must ignore potion effects");
+        helper.assertTrue(
+                string.isInvulnerableTo(helper.getLevel().damageSources().source(ModDamageTypes.STABILITY)),
+                "portal fluid damage must not hurt string");
+        helper.assertTrue(
+                !string.isPushable() && !string.isPushedByFluid(),
+                "string must ignore entity pushing and fluid currents");
         helper.succeed();
     }
 
@@ -320,19 +330,17 @@ public final class StringEntityTests {
         BlockPos absolute = helper.absolutePos(fluid);
         // 1.21 的源流体高度是 8/9 格，不是整块
         double expected = absolute.getY()
-            + helper.getLevel().getFluidState(absolute).getHeight(helper.getLevel(), absolute)
-            + StringEntity.SURFACE_OFFSET;
+                + helper.getLevel().getFluidState(absolute).getHeight(helper.getLevel(), absolute)
+                + StringEntity.SURFACE_OFFSET;
         int nearY = absolute.getY() + 1;
-        double surface = StringEntity.findFluidSurface(helper.getLevel(),
-            absolute.getX(), absolute.getZ(), nearY);
-        helper.assertTrue(!Double.isNaN(surface) && Math.abs(surface - expected) < 1.0E-4D,
-            "open portal fluid must expose a surface just above the fluid, got " + surface);
+        double surface = StringEntity.findFluidSurface(helper.getLevel(), absolute.getX(), absolute.getZ(), nearY);
+        helper.assertTrue(
+                !Double.isNaN(surface) && Math.abs(surface - expected) < 1.0E-4D,
+                "open portal fluid must expose a surface just above the fluid, got " + surface);
 
         helper.setBlock(fluid.above(), Blocks.STONE);
-        double covered = StringEntity.findFluidSurface(helper.getLevel(),
-            absolute.getX(), absolute.getZ(), nearY);
-        helper.assertTrue(Double.isNaN(covered),
-            "a sealed aquifer must not count as a surface, got " + covered);
+        double covered = StringEntity.findFluidSurface(helper.getLevel(), absolute.getX(), absolute.getZ(), nearY);
+        helper.assertTrue(Double.isNaN(covered), "a sealed aquifer must not count as a surface, got " + covered);
         helper.succeed();
     }
 
@@ -347,9 +355,9 @@ public final class StringEntityTests {
         float before = victim.getHealth();
         helper.assertTrue(attacker.doHurtTarget(victim), "attack must land");
         helper.assertTrue(victim.getHealth() < before, "attack must deal damage");
-        helper.assertTrue(Math.abs(victim.getDeltaMovement().x) < 1.0E-6D
-                && Math.abs(victim.getDeltaMovement().z) < 1.0E-6D,
-            "attack must not add horizontal knockback");
+        helper.assertTrue(
+                Math.abs(victim.getDeltaMovement().x) < 1.0E-6D && Math.abs(victim.getDeltaMovement().z) < 1.0E-6D,
+                "attack must not add horizontal knockback");
         helper.succeed();
     }
 
@@ -379,9 +387,9 @@ public final class StringEntityTests {
         double dx = string.getX() - startX;
         double dz = string.getZ() - startZ;
         double travelled = Math.sqrt(dx * dx + dz * dz);
-        helper.assertTrue(travelled >= 2.5D,
-            "the move control must thrust every tick until arrival, 30 ticks gave only "
-                + travelled + " blocks");
+        helper.assertTrue(
+                travelled >= 2.5D,
+                "the move control must thrust every tick until arrival, 30 ticks gave only " + travelled + " blocks");
         helper.succeed();
     }
 
@@ -400,10 +408,11 @@ public final class StringEntityTests {
         double dx = string.getX() - startX;
         double dz = string.getZ() - startZ;
         double travelled = Math.sqrt(dx * dx + dz * dz);
-        helper.assertTrue(!string.getMoveControl().hasWanted(),
-            "the control must go back to WAIT once the string arrives");
-        helper.assertTrue(travelled < 0.05D,
-            "a hover target closer than the arrival distance must not move the string, got " + travelled);
+        helper.assertTrue(
+                !string.getMoveControl().hasWanted(), "the control must go back to WAIT once the string arrives");
+        helper.assertTrue(
+                travelled < 0.05D,
+                "a hover target closer than the arrival distance must not move the string, got " + travelled);
         helper.succeed();
     }
 
@@ -420,8 +429,9 @@ public final class StringEntityTests {
         double doubled = firstTickGlide(helper, new BlockPos(12, 1, 12), 2.0D);
         helper.assertTrue(normal > 0.0D, "the string must move at all, got " + normal);
         double ratio = doubled / normal;
-        helper.assertTrue(Math.abs(ratio - 2.0D) < 0.05D,
-            "air thrust must scale with MOVEMENT_SPEED, moving twice as fast gave ratio " + ratio);
+        helper.assertTrue(
+                Math.abs(ratio - 2.0D) < 0.05D,
+                "air thrust must scale with MOVEMENT_SPEED, moving twice as fast gave ratio " + ratio);
         helper.succeed();
     }
 

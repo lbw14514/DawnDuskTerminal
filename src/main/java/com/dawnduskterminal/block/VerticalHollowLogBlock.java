@@ -39,9 +39,9 @@ public class VerticalHollowLogBlock extends Block implements SimpleWaterloggedBl
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
     private static final VoxelShape HOLLOW_SHAPE =
-        Shapes.join(Shapes.block(), Block.box(2.0, 0.0, 2.0, 14.0, 16.0, 14.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(2.0, 0.0, 2.0, 14.0, 16.0, 14.0), BooleanOp.ONLY_FIRST);
     private static final VoxelShape COLLISION_SHAPE =
-        Shapes.join(Shapes.block(), Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0), BooleanOp.ONLY_FIRST);
+            Shapes.join(Shapes.block(), Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0), BooleanOp.ONLY_FIRST);
 
     public VerticalHollowLogBlock(Properties properties) {
         super(properties);
@@ -76,33 +76,44 @@ public class VerticalHollowLogBlock extends Block implements SimpleWaterloggedBl
 
     @Override
     protected ItemInteractionResult useItemOn(
-        ItemStack stack,
-        BlockState state,
-        Level level,
-        BlockPos pos,
-        Player player,
-        InteractionHand hand,
-        BlockHitResult hit
-    ) {
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         if (!isInside(hit, pos)) {
             return super.useItemOn(stack, state, level, pos, player, hand, hit);
         }
 
         if (stack.is(Blocks.VINE.asItem())) {
-            level.setBlock(pos, ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE.get().defaultBlockState()
-                .setValue(ClimbableHollowLogBlock.VARIANT, HollowLogVariants.Climbable.VINE)
-                .setValue(ClimbableHollowLogBlock.FACING, attachFace(hit, player)), 3);
+            level.setBlock(
+                    pos,
+                    ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE
+                            .get()
+                            .defaultBlockState()
+                            .setValue(ClimbableHollowLogBlock.VARIANT, HollowLogVariants.Climbable.VINE)
+                            .setValue(ClimbableHollowLogBlock.FACING, attachFace(hit, player)),
+                    3);
             HorizontalHollowLogBlock.playPlaceSound(Blocks.VINE.defaultBlockState(), level, pos, player);
             stack.consume(1, player);
             return ItemInteractionResult.sidedSuccess(level.isClientSide());
         }
 
         if (stack.is(Blocks.LADDER.asItem())) {
-            level.setBlock(pos, ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE.get().defaultBlockState()
-                .setValue(ClimbableHollowLogBlock.VARIANT, state.getValue(WATERLOGGED)
-                    ? HollowLogVariants.Climbable.LADDER_WATERLOGGED
-                    : HollowLogVariants.Climbable.LADDER)
-                .setValue(ClimbableHollowLogBlock.FACING, attachFace(hit, player)), 3);
+            level.setBlock(
+                    pos,
+                    ModTerrainBlocks.HOLLOW_SKYGATE_PINE_LOG_CLIMBABLE
+                            .get()
+                            .defaultBlockState()
+                            .setValue(
+                                    ClimbableHollowLogBlock.VARIANT,
+                                    state.getValue(WATERLOGGED)
+                                            ? HollowLogVariants.Climbable.LADDER_WATERLOGGED
+                                            : HollowLogVariants.Climbable.LADDER)
+                            .setValue(ClimbableHollowLogBlock.FACING, attachFace(hit, player)),
+                    3);
             HorizontalHollowLogBlock.playPlaceSound(Blocks.LADDER.defaultBlockState(), level, pos, player);
             stack.consume(1, player);
             return ItemInteractionResult.sidedSuccess(level.isClientSide());
@@ -113,8 +124,14 @@ public class VerticalHollowLogBlock extends Block implements SimpleWaterloggedBl
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.defaultBlockState().setValue(WATERLOGGED,
-            context.getLevel().getBlockState(context.getClickedPos()).getFluidState().getType() == Fluids.WATER);
+        return this.defaultBlockState()
+                .setValue(
+                        WATERLOGGED,
+                        context.getLevel()
+                                        .getBlockState(context.getClickedPos())
+                                        .getFluidState()
+                                        .getType()
+                                == Fluids.WATER);
     }
 
     @Override
@@ -124,13 +141,12 @@ public class VerticalHollowLogBlock extends Block implements SimpleWaterloggedBl
 
     @Override
     protected BlockState updateShape(
-        BlockState state,
-        Direction facing,
-        BlockState neighborState,
-        LevelAccessor level,
-        BlockPos pos,
-        BlockPos neighborPos
-    ) {
+            BlockState state,
+            Direction facing,
+            BlockState neighborState,
+            LevelAccessor level,
+            BlockPos pos,
+            BlockPos neighborPos) {
         if (state.getValue(WATERLOGGED)) {
             level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }

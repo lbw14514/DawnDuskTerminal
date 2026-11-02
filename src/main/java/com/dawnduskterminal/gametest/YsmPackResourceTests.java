@@ -10,15 +10,14 @@ import com.dawnduskterminal.geckolib3.geo.render.built.GeoModel;
 import com.dawnduskterminal.geckolib3.util.json.JsonAnimationUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.gametest.framework.GameTest;
-import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * 模型包在 jar 里齐不齐、能不能被解析
@@ -52,22 +51,36 @@ public final class YsmPackResourceTests {
      */
     @GameTest(template = "ddt_empty")
     public static void animationFileKeysAreStable(GameTestHelper helper) {
-        helper.assertTrue("main".equals(YsmPacks.nameFor("ysm/tower_ghast/animations",
-            "ysm/tower_ghast/animations/main.animation.json", ".json")), "main.animation.json 的键应为 main");
-        helper.assertTrue("extra".equals(YsmPacks.nameFor("ysm/tower_ghast/animations",
-            "ysm/tower_ghast/animations/extra.animation.json", ".json")), "extra.animation.json 的键应为 extra");
-        helper.assertTrue("main".equals(YsmPacks.nameFor("ysm/tower_ghast/models",
-            "ysm/tower_ghast/models/main.json", ".json")), "models/main.json 的键应为 main");
-        helper.assertTrue("ghast".equals(YsmPacks.nameFor("ysm/tower_ghast/textures",
-            "ysm/tower_ghast/textures/ghast.png", ".png")), "textures/ghast.png 的键应为 ghast");
+        helper.assertTrue(
+                "main"
+                        .equals(YsmPacks.nameFor(
+                                "ysm/tower_ghast/animations",
+                                "ysm/tower_ghast/animations/main.animation.json",
+                                ".json")),
+                "main.animation.json 的键应为 main");
+        helper.assertTrue(
+                "extra"
+                        .equals(YsmPacks.nameFor(
+                                "ysm/tower_ghast/animations",
+                                "ysm/tower_ghast/animations/extra.animation.json",
+                                ".json")),
+                "extra.animation.json 的键应为 extra");
+        helper.assertTrue(
+                "main".equals(YsmPacks.nameFor("ysm/tower_ghast/models", "ysm/tower_ghast/models/main.json", ".json")),
+                "models/main.json 的键应为 main");
+        helper.assertTrue(
+                "ghast"
+                        .equals(YsmPacks.nameFor(
+                                "ysm/tower_ghast/textures", "ysm/tower_ghast/textures/ghast.png", ".png")),
+                "textures/ghast.png 的键应为 ghast");
         helper.succeed();
     }
 
     private static void check(GameTestHelper helper, String pack, String animationPath, int expectedClips) {
         String geo = packFile(pack, "models/main.json");
         String animations = packFile(pack, animationPath);
-        for (String required : new String[] {geo, animations, packFile(pack, "textures/ghast.png"),
-            packFile(pack, "ysm.json")}) {
+        for (String required :
+                new String[] {geo, animations, packFile(pack, "textures/ghast.png"), packFile(pack, "ysm.json")}) {
             helper.assertTrue(open(required) != null, "缺少模型包文件 " + required);
         }
 
@@ -87,10 +100,9 @@ public final class YsmPackResourceTests {
 
         try (InputStream stream = open(animations)) {
             JsonObject json = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
             int clips = JsonAnimationUtils.getAnimations(json).size();
-            helper.assertTrue(clips == expectedClips,
-                pack + " 的片段数应为 " + expectedClips + "，实际 " + clips);
+            helper.assertTrue(clips == expectedClips, pack + " 的片段数应为 " + expectedClips + "，实际 " + clips);
         } catch (IOException | RuntimeException error) {
             helper.assertTrue(false, "动画文件读取失败 " + animations + "：" + error);
         }

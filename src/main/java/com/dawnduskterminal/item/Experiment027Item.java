@@ -62,8 +62,7 @@ public class Experiment027Item extends Item {
             return;
         }
         // count=1、速度 0：客户端拿到一个静止的点
-        server.sendParticles(ModParticles.EXPERIMENT_027.get(),
-            point.x, point.y, point.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        server.sendParticles(ModParticles.EXPERIMENT_027.get(), point.x, point.y, point.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
     }
 
     /**
@@ -82,9 +81,10 @@ public class Experiment027Item extends Item {
             return null;
         }
         Direction face = blockHit.getDirection();
-        return blockHit.getLocation().add(
-            face.getStepX() * SURFACE_OFFSET,
-            face.getStepY() * SURFACE_OFFSET,
-            face.getStepZ() * SURFACE_OFFSET);
+        return blockHit.getLocation()
+                .add(
+                        face.getStepX() * SURFACE_OFFSET,
+                        face.getStepY() * SURFACE_OFFSET,
+                        face.getStepZ() * SURFACE_OFFSET);
     }
 }

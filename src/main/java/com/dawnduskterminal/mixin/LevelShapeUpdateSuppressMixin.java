@@ -24,8 +24,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Level.class)
 public abstract class LevelShapeUpdateSuppressMixin {
     @Inject(method = "neighborShapeChanged", at = @At("HEAD"), cancellable = true)
-    private void ddt$suppressShapeUpdate(Direction direction, BlockState sourceState, BlockPos pos,
-                                         BlockPos sourcePos, int flags, int recursionLeft, CallbackInfo ci) {
+    private void ddt$suppressShapeUpdate(
+            Direction direction,
+            BlockState sourceState,
+            BlockPos pos,
+            BlockPos sourcePos,
+            int flags,
+            int recursionLeft,
+            CallbackInfo ci) {
         if (Experiment069Field.suppressed((Level) (Object) this, pos)) {
             ci.cancel();
         }

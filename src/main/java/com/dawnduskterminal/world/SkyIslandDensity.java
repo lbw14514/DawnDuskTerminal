@@ -57,7 +57,7 @@ public final class SkyIslandDensity {
         });
         if (found[0] == null || found[1] == null) {
             DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal could not find both island density markers, sky islands will not be recognised");
+                    "DawnDuskTerminal could not find both island density markers, sky islands will not be recognised");
             return;
         }
         base = found[1];

@@ -6,6 +6,10 @@ import com.dawnduskterminal.block.Experiment052Block;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.registry.ModSounds;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
@@ -23,14 +27,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.ExplosionDamageCalculator;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,10 +61,11 @@ public final class CarminiteBlast {
 
     /** 爆炸把附近刷成的生物群系 */
     public static final ResourceKey<Biome> BLAST_BIOME =
-        ResourceKey.create(Registries.BIOME, DawnDuskTerminal.id("old_growth_birch_forest"));
+            ResourceKey.create(Registries.BIOME, DawnDuskTerminal.id("old_growth_birch_forest"));
 
     /** 刷生物群系的半径系数：威力 × 它（方块），至少 {@value #MIN_BIOME_RADIUS} 格 */
     private static final double BIOME_RADIUS_PER_POWER = 2.0D;
+
     private static final int MIN_BIOME_RADIUS = 4;
 
     /** 球形范围的半径：就是威力本身，不乘系数。威力 6 → 半径 6 格，威力 2 → 2 格 */
@@ -72,11 +73,13 @@ public final class CarminiteBlast {
 
     /** 球形范围里撒几颗：威力 × 它，夹在上下限之间。威力 8 → 144 颗，威力 2 → 36 颗 */
     private static final double PARTICLES_PER_POWER = 18.0D;
+
     private static final int MIN_PARTICLES = 24;
     private static final int MAX_PARTICLES = 160;
 
     /** 向外那点速度：小，只够慢慢散开 */
     private static final double OUTWARD_SPEED_MIN = 0.05D;
+
     private static final double OUTWARD_SPEED_MAX = 0.20D;
 
     /**
@@ -84,6 +87,7 @@ public final class CarminiteBlast {
      * 这是这一套爆炸最早的那层粒子，球形那层是后来加的，两层一起放
      */
     private static final int RING_POINTS = 48;
+
     private static final double RING_TURNS = 1.5D;
     private static final int SMALL_RING_POINTS = 16;
     private static final double SMALL_RING_TURNS = 1.0D;
@@ -97,6 +101,7 @@ public final class CarminiteBlast {
      * 所以火量随威力涨（体积涨得更快，这里按线性给，免得一地火海）。威力 8 → 24 团，威力 2 → 6 团
      */
     private static final double FIRES_PER_POWER = 3.0D;
+
     private static final int MIN_FIRES = 3;
 
     /** 一次爆炸最多连带引爆几个同类方块（挑离爆心最近的几个） */
@@ -104,6 +109,7 @@ public final class CarminiteBlast {
 
     /** 连锁方块的引爆延时：随机 1~10 tick */
     private static final int MIN_CHAIN_DELAY = 1;
+
     private static final int MAX_CHAIN_DELAY = 10;
 
     /** 主爆炸进行中的旗子：只有它立着的时候，Detonate 事件里才去摘掉同类方块 */
@@ -140,8 +146,17 @@ public final class CarminiteBlast {
         // 从破坏名单里摘出来、直接排到下一 tick 引爆（见 protectArmedBlocks）
         chainingNeighbours = true;
         try {
-            explode(level, null, null, null, x, y, z, POWER, Level.ExplosionInteraction.BLOCK,
-                ModSounds.EXPERIMENT_052_EXPLODE);
+            explode(
+                    level,
+                    null,
+                    null,
+                    null,
+                    x,
+                    y,
+                    z,
+                    POWER,
+                    Level.ExplosionInteraction.BLOCK,
+                    ModSounds.EXPERIMENT_052_EXPLODE);
         } finally {
             chainingNeighbours = false;
         }
@@ -196,8 +211,7 @@ public final class CarminiteBlast {
             // 跳过点火：不播音效、不排 3 秒引信，只把状态点亮（到点的 tick 认这个状态）
             BlockState state = level.getBlockState(pos);
             level.setBlock(pos, state.setValue(Experiment052Block.ACTIVE, true), Block.UPDATE_CLIENTS);
-            level.scheduleTick(pos, armed,
-                Mth.nextInt(level.getRandom(), MIN_CHAIN_DELAY, MAX_CHAIN_DELAY));
+            level.scheduleTick(pos, armed, Mth.nextInt(level.getRandom(), MIN_CHAIN_DELAY, MAX_CHAIN_DELAY));
         }
     }
 
@@ -206,11 +220,28 @@ public final class CarminiteBlast {
      * 粒子与主爆炸同一套（旋臂 + 球形两层），音效是原版那声爆炸
      */
     public static void small(ServerLevel level, double x, double y, double z) {
-        explode(level, null, null, NO_ENTITY_EFFECT, x, y, z, SMALL_POWER, Level.ExplosionInteraction.NONE,
-            VANILLA_EXPLOSION_SOUND);
+        explode(
+                level,
+                null,
+                null,
+                NO_ENTITY_EFFECT,
+                x,
+                y,
+                z,
+                SMALL_POWER,
+                Level.ExplosionInteraction.NONE,
+                VANILLA_EXPLOSION_SOUND);
         spreadBiome(level, x, y, z, SMALL_POWER);
-        ring(level, x, y, z, SMALL_RING_POINTS, SMALL_RING_TURNS,
-            SMALL_RING_SPEED * 0.6D, SMALL_RING_SPEED, RING_SPEED_Y * 0.5D);
+        ring(
+                level,
+                x,
+                y,
+                z,
+                SMALL_RING_POINTS,
+                SMALL_RING_TURNS,
+                SMALL_RING_SPEED * 0.6D,
+                SMALL_RING_SPEED,
+                RING_SPEED_Y * 0.5D);
         spray(level, x, y, z, SMALL_POWER);
         flash(level, x, y, z);
         scatterFiresByPower(level, BlockPos.containing(x, y, z), SMALL_POWER);
@@ -222,11 +253,30 @@ public final class CarminiteBlast {
      * <p>粒子参数两档都传 {@code particle_carminite_blast}：这个重载会把它们放进爆炸包，
      * 客户端在爆炸中心按「威力是否达到 2」挑其中一个放一颗，两个都填成同一种粒子就没有差别
      */
-    private static void explode(ServerLevel level, @Nullable Entity source, @Nullable DamageSource damageSource,
-                                @Nullable ExplosionDamageCalculator calculator, double x, double y, double z,
-                                float power, Level.ExplosionInteraction interaction, Holder<SoundEvent> sound) {
-        level.explode(source, damageSource, calculator, x, y, z, power, false, interaction,
-            ModParticles.CARMINITE_BLAST.get(), ModParticles.CARMINITE_BLAST.get(), sound);
+    private static void explode(
+            ServerLevel level,
+            @Nullable Entity source,
+            @Nullable DamageSource damageSource,
+            @Nullable ExplosionDamageCalculator calculator,
+            double x,
+            double y,
+            double z,
+            float power,
+            Level.ExplosionInteraction interaction,
+            Holder<SoundEvent> sound) {
+        level.explode(
+                source,
+                damageSource,
+                calculator,
+                x,
+                y,
+                z,
+                power,
+                false,
+                interaction,
+                ModParticles.CARMINITE_BLAST.get(),
+                ModParticles.CARMINITE_BLAST.get(),
+                sound);
     }
 
     /** 一颗烟花白闪：爆炸那一刻的强光 */
@@ -240,8 +290,16 @@ public final class CarminiteBlast {
      * <p>水平分量取 {@code (cos θ, -sin θ)}：在 Minecraft 的坐标里（x 向东、z 向南）就是从东往北转，
      * 俯视是逆时针。初速走 {@code sendParticles} 的 {@code count == 0} 那条路，一颗一颗发才控制得住方向
      */
-    private static void ring(ServerLevel level, double x, double y, double z, int points, double turns,
-                             double speedInner, double speedOuter, double speedY) {
+    private static void ring(
+            ServerLevel level,
+            double x,
+            double y,
+            double z,
+            int points,
+            double turns,
+            double speedInner,
+            double speedOuter,
+            double speedY) {
         RandomSource random = level.getRandom();
         for (int i = 0; i < points; i++) {
             double progress = (double) i / points;
@@ -271,8 +329,16 @@ public final class CarminiteBlast {
             double py = y + direction.y * distance;
             double pz = z + direction.z * distance;
             double speed = OUTWARD_SPEED_MIN + random.nextDouble() * (OUTWARD_SPEED_MAX - OUTWARD_SPEED_MIN);
-            level.sendParticles(ModParticles.CARMINITE_BLAST.get(), px, py, pz, 0,
-                direction.x * speed, direction.y * speed, direction.z * speed, 1.0D);
+            level.sendParticles(
+                    ModParticles.CARMINITE_BLAST.get(),
+                    px,
+                    py,
+                    pz,
+                    0,
+                    direction.x * speed,
+                    direction.y * speed,
+                    direction.z * speed,
+                    1.0D);
         }
     }
 
@@ -297,8 +363,8 @@ public final class CarminiteBlast {
      * 爆炸本身已经生效，不该因为群系改不动而炸掉服务端
      */
     private static void spreadBiome(ServerLevel level, double x, double y, double z, float power) {
-        Optional<Holder.Reference<Biome>> biome = level.registryAccess().registryOrThrow(Registries.BIOME)
-            .getHolder(BLAST_BIOME);
+        Optional<Holder.Reference<Biome>> biome =
+                level.registryAccess().registryOrThrow(Registries.BIOME).getHolder(BLAST_BIOME);
         if (biome.isEmpty()) {
             return;
         }
@@ -336,14 +402,15 @@ public final class CarminiteBlast {
         RandomSource random = level.getRandom();
         int placed = 0;
         for (int attempt = 0; attempt < count * 4 && placed < count; attempt++) {
-            BlockPos column = center.offset(Mth.nextInt(random, -radius, radius), 0,
-                Mth.nextInt(random, -radius, radius));
+            BlockPos column =
+                    center.offset(Mth.nextInt(random, -radius, radius), 0, Mth.nextInt(random, -radius, radius));
             for (int dy = 1; dy >= -depth; dy--) {
                 BlockPos candidate = column.offset(0, dy, 0);
                 if (!CarminiteFireBlock.canSurviveAt(level, candidate)) {
                     continue;
                 }
-                level.setBlockAndUpdate(candidate, ModBlocks.CARMINITE_FIRE.get().defaultBlockState());
+                level.setBlockAndUpdate(
+                        candidate, ModBlocks.CARMINITE_FIRE.get().defaultBlockState());
                 placed++;
                 break;
             }

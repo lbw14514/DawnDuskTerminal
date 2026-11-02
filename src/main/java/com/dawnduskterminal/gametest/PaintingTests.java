@@ -44,21 +44,24 @@ public final class PaintingTests {
 
     @GameTest(template = "ddt_empty")
     public static void variantIsThreeByTwo(GameTestHelper helper) {
-        PaintingVariant variant = ModPaintingVariants.holder(helper.getLevel().registryAccess()).value();
+        PaintingVariant variant =
+                ModPaintingVariants.holder(helper.getLevel().registryAccess()).value();
         helper.assertTrue(variant.width() == 3, VARIANT + " must be 3 blocks wide, got " + variant.width());
         helper.assertTrue(variant.height() == 2, VARIANT + " must be 2 blocks tall, got " + variant.height());
-        helper.assertTrue(variant.assetId().equals(DawnDuskTerminal.id("painting_ghast_1")),
-            VARIANT + " must render dawnduskterminal:painting_ghast_1, got " + variant.assetId());
+        helper.assertTrue(
+                variant.assetId().equals(DawnDuskTerminal.id("painting_ghast_1")),
+                VARIANT + " must render dawnduskterminal:painting_ghast_1, got " + variant.assetId());
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void vanillaPaintingItemCannotPlaceIt(GameTestHelper helper) {
-        boolean placeable = ModPaintingVariants.holder(helper.getLevel().registryAccess())
-            .is(PaintingVariantTags.PLACEABLE);
-        helper.assertFalse(placeable,
-            VARIANT + " must not be in #minecraft:painting_variant/placeable, "
-                + "otherwise the vanilla painting item could place it");
+        boolean placeable =
+                ModPaintingVariants.holder(helper.getLevel().registryAccess()).is(PaintingVariantTags.PLACEABLE);
+        helper.assertFalse(
+                placeable,
+                VARIANT + " must not be in #minecraft:painting_variant/placeable, "
+                        + "otherwise the vanilla painting item could place it");
         helper.succeed();
     }
 
@@ -66,20 +69,23 @@ public final class PaintingTests {
     public static void entityIsLockedToItsVariant(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         GhastPaintingEntity painting = new GhastPaintingEntity(
-            ModEntities.GHAST_PAINTING_1.get(), level, helper.absolutePos(new BlockPos(2, 2, 2)), Direction.SOUTH);
-        helper.assertTrue(painting.getVariant().is(ModPaintingVariants.GHAST_1),
-            "a fresh ghast painting must already hold its own variant");
+                ModEntities.GHAST_PAINTING_1.get(), level, helper.absolutePos(new BlockPos(2, 2, 2)), Direction.SOUTH);
+        helper.assertTrue(
+                painting.getVariant().is(ModPaintingVariants.GHAST_1),
+                "a fresh ghast painting must already hold its own variant");
 
         Holder<PaintingVariant> vanilla = level.registryAccess()
-            .registryOrThrow(Registries.PAINTING_VARIANT)
-            .getHolderOrThrow(ResourceKey.create(Registries.PAINTING_VARIANT,
-                ResourceLocation.withDefaultNamespace("kebab")));
+                .registryOrThrow(Registries.PAINTING_VARIANT)
+                .getHolderOrThrow(ResourceKey.create(
+                        Registries.PAINTING_VARIANT, ResourceLocation.withDefaultNamespace("kebab")));
         painting.setVariant(vanilla);
-        helper.assertTrue(painting.getVariant().is(ModPaintingVariants.GHAST_1),
-            "setVariant must be ignored, the ghast painting only ever shows its own variant");
+        helper.assertTrue(
+                painting.getVariant().is(ModPaintingVariants.GHAST_1),
+                "setVariant must be ignored, the ghast painting only ever shows its own variant");
 
-        helper.assertTrue(painting.getPickResult().is(ModItems.PAINTING_GHAST_1.get()),
-            "pick block on the ghast painting must give its own item");
+        helper.assertTrue(
+                painting.getPickResult().is(ModItems.PAINTING_GHAST_1.get()),
+                "pick block on the ghast painting must give its own item");
         helper.succeed();
     }
 
@@ -88,8 +94,9 @@ public final class PaintingTests {
         ServerLevel level = helper.getLevel();
         Painting vanilla = new Painting(EntityType.PAINTING, level);
         vanilla.setVariant(ModPaintingVariants.holder(level.registryAccess()));
-        helper.assertFalse(vanilla.getVariant().is(ModPaintingVariants.GHAST_1),
-            "a vanilla painting must never accept " + VARIANT + " (PaintingVariantGuardMixin)");
+        helper.assertFalse(
+                vanilla.getVariant().is(ModPaintingVariants.GHAST_1),
+                "a vanilla painting must never accept " + VARIANT + " (PaintingVariantGuardMixin)");
         helper.succeed();
     }
 
@@ -108,27 +115,36 @@ public final class PaintingTests {
 
         BlockPos clickedAbs = helper.absolutePos(clickedRel);
         ItemStack stack = new ItemStack(ModItems.PAINTING_GHAST_1.get());
-        UseOnContext context = new UseOnContext(level, null, InteractionHand.MAIN_HAND, stack,
-            new BlockHitResult(Vec3.atCenterOf(clickedAbs), Direction.SOUTH, clickedAbs, false));
+        UseOnContext context = new UseOnContext(
+                level,
+                null,
+                InteractionHand.MAIN_HAND,
+                stack,
+                new BlockHitResult(Vec3.atCenterOf(clickedAbs), Direction.SOUTH, clickedAbs, false));
 
         InteractionResult result = ModItems.PAINTING_GHAST_1.get().useOn(context);
         helper.assertTrue(result.consumesAction(), "using the item on a wall must consume the action");
         helper.assertTrue(stack.isEmpty(), "placing the painting must consume the item");
 
         BlockPos anchorAbs = clickedAbs.relative(Direction.SOUTH);
-        List<GhastPaintingEntity> placed = level.getEntitiesOfClass(GhastPaintingEntity.class,
-            AABB.ofSize(Vec3.atCenterOf(anchorAbs), 6.0D, 6.0D, 6.0D));
+        List<GhastPaintingEntity> placed = level.getEntitiesOfClass(
+                GhastPaintingEntity.class, AABB.ofSize(Vec3.atCenterOf(anchorAbs), 6.0D, 6.0D, 6.0D));
         helper.assertTrue(placed.size() == 1, "expected exactly one ghast painting, got " + placed.size());
 
         GhastPaintingEntity painting = placed.get(0);
-        helper.assertTrue(painting.getDirection() == Direction.SOUTH,
-            "painting must face the clicked side, got " + painting.getDirection());
-        helper.assertTrue(painting.getVariant().is(ModPaintingVariants.GHAST_1),
-            "placed painting must show " + VARIANT);
-        helper.assertTrue(painting.getBoundingBox().getXsize() == 3.0D,
-            "3x2 painting must be 3 blocks wide, got " + painting.getBoundingBox().getXsize());
-        helper.assertTrue(painting.getBoundingBox().getYsize() == 2.0D,
-            "3x2 painting must be 2 blocks tall, got " + painting.getBoundingBox().getYsize());
+        helper.assertTrue(
+                painting.getDirection() == Direction.SOUTH,
+                "painting must face the clicked side, got " + painting.getDirection());
+        helper.assertTrue(
+                painting.getVariant().is(ModPaintingVariants.GHAST_1), "placed painting must show " + VARIANT);
+        helper.assertTrue(
+                painting.getBoundingBox().getXsize() == 3.0D,
+                "3x2 painting must be 3 blocks wide, got "
+                        + painting.getBoundingBox().getXsize());
+        helper.assertTrue(
+                painting.getBoundingBox().getYsize() == 2.0D,
+                "3x2 painting must be 2 blocks tall, got "
+                        + painting.getBoundingBox().getYsize());
         helper.succeed();
     }
 }

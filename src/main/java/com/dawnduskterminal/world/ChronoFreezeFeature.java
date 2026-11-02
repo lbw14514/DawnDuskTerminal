@@ -46,8 +46,8 @@ public class ChronoFreezeFeature extends Feature<NoneFeatureConfiguration> {
                 // 原版 shouldFreeze 分两段：温度与降水的门槛，再判断水的流体标签。这里把门槛改用在我
                 // 们自己的流体上，而不是绕过它，否则每个群系里每片流体表面，包括温暖群系，都会冻上
                 boolean freezes = biome.shouldFreeze(level, below, false)
-                    || (biome.coldEnoughToSnow(below)
-                        && level.getBlockState(below).is(ModBlocks.PORTAL_FLUID.get()));
+                        || (biome.coldEnoughToSnow(below)
+                                && level.getBlockState(below).is(ModBlocks.PORTAL_FLUID.get()));
                 if (freezes) {
                     level.setBlock(below, ModTerrainBlocks.FROZEN_CANOPY.get().defaultBlockState(), 2);
                 }

@@ -81,8 +81,15 @@ public class ThrustSpearItem extends Item {
         // 无敌帧交给原版自己算，这里只负责掉血
         if (target.hurt(level.damageSources().sweetBerryBush(), THRUST_DAMAGE)) {
             // 浆果丛刺伤的那声，原版玩家撞进甜浆果丛时放的就是它
-            level.playSound(null, target.getX(), target.getY(), target.getZ(),
-                SoundEvents.PLAYER_HURT_SWEET_BERRY_BUSH, SoundSource.PLAYERS, 1.0F, 1.0F);
+            level.playSound(
+                    null,
+                    target.getX(),
+                    target.getY(),
+                    target.getZ(),
+                    SoundEvents.PLAYER_HURT_SWEET_BERRY_BUSH,
+                    SoundSource.PLAYERS,
+                    1.0F,
+                    1.0F);
         }
     }
 
@@ -112,9 +119,15 @@ public class ThrustSpearItem extends Item {
         LivingEntity best = null;
         double bestOffset = Double.MAX_VALUE;
         double bestAlong = Double.MAX_VALUE;
-        for (LivingEntity candidate : player.level().getEntitiesOfClass(LivingEntity.class, searchBox,
-            other -> other != player && other.isAlive() && !other.isSpectator()
-                && other.isAttackable() && player.canAttack(other))) {
+        for (LivingEntity candidate : player.level()
+                .getEntitiesOfClass(
+                        LivingEntity.class,
+                        searchBox,
+                        other -> other != player
+                                && other.isAlive()
+                                && !other.isSpectator()
+                                && other.isAttackable()
+                                && player.canAttack(other))) {
             if (candidate.getBoundingBox().distanceToSqr(eye) > reach * reach) {
                 continue;
             }
@@ -133,8 +146,7 @@ public class ThrustSpearItem extends Item {
                 // 隔墙不刺
                 continue;
             }
-            if (offset < bestOffset - 1.0E-6
-                || (Math.abs(offset - bestOffset) <= 1.0E-6 && along < bestAlong)) {
+            if (offset < bestOffset - 1.0E-6 || (Math.abs(offset - bestOffset) <= 1.0E-6 && along < bestAlong)) {
                 best = candidate;
                 bestOffset = offset;
                 bestAlong = along;

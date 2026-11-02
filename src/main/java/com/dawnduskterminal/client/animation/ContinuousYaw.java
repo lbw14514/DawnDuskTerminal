@@ -1,10 +1,9 @@
 package com.dawnduskterminal.client.animation;
 
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 
 /**
  * 连续的朝向角：把每 tick 的偏航增量累加起来，绕开 ±180 的跳变
@@ -22,8 +21,7 @@ import java.util.WeakHashMap;
 public final class ContinuousYaw {
     private static final Map<Entity, Entry> ENTRIES = new WeakHashMap<>();
 
-    private ContinuousYaw() {
-    }
+    private ContinuousYaw() {}
 
     public static float of(Entity entity) {
         Entry entry = ENTRIES.computeIfAbsent(entity, key -> new Entry(key.getYRot(), key.tickCount));

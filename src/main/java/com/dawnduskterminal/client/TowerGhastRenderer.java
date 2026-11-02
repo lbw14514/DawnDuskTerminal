@@ -2,11 +2,10 @@ package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.client.animation.YsmAnimatable;
-import com.dawnduskterminal.client.animation.YsmPack;
 import com.dawnduskterminal.client.animation.YsmEntityRenderer;
 import com.dawnduskterminal.client.animation.YsmPacks;
-import com.dawnduskterminal.geckolib3.core.event.predicate.AnimationEvent;
 import com.dawnduskterminal.entity.TowerGhastEntity;
+import com.dawnduskterminal.geckolib3.core.event.predicate.AnimationEvent;
 import com.dawnduskterminal.registry.ModEntities;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -22,8 +21,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
  * <p>模型的显示比例取自包内 {@code ysm.json} 的 {@code properties.height_scale}（0.7）。
  */
 public final class TowerGhastRenderer {
-    private TowerGhastRenderer() {
-    }
+    private TowerGhastRenderer() {}
 
     static final ResourceLocation PACK = DawnDuskTerminal.id("tower_ghast");
 
@@ -88,9 +86,7 @@ public final class TowerGhastRenderer {
 
         private boolean isMoving(float partialTick) {
             return this.entity.walkAnimation.speed(partialTick) > 0.05F
-                || this.entity.getDeltaMovement().horizontalDistance() > 0.02D;
+                    || this.entity.getDeltaMovement().horizontalDistance() > 0.02D;
         }
-
-
     }
 }

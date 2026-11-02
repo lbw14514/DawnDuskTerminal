@@ -18,19 +18,24 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>方向在服务端摇，所以同一圈人看到的是同一条射线；长度是 {@code 1.5 × 当时的影响半径}，
  * 由服务端按充能进度算好一并发下来，客户端不猜
  */
-public record Experiment055RayPayload(int casterId, float directionX, float directionY, float directionZ,
-                                      float length) implements CustomPacketPayload {
+public record Experiment055RayPayload(int casterId, float directionX, float directionY, float directionZ, float length)
+        implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<Experiment055RayPayload> TYPE =
-        new CustomPacketPayload.Type<>(DawnDuskTerminal.id("experiment_055_ray"));
+            new CustomPacketPayload.Type<>(DawnDuskTerminal.id("experiment_055_ray"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, Experiment055RayPayload> STREAM_CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, Experiment055RayPayload::casterId,
-            ByteBufCodecs.FLOAT, Experiment055RayPayload::directionX,
-            ByteBufCodecs.FLOAT, Experiment055RayPayload::directionY,
-            ByteBufCodecs.FLOAT, Experiment055RayPayload::directionZ,
-            ByteBufCodecs.FLOAT, Experiment055RayPayload::length,
-            Experiment055RayPayload::new);
+            StreamCodec.composite(
+                    ByteBufCodecs.VAR_INT,
+                    Experiment055RayPayload::casterId,
+                    ByteBufCodecs.FLOAT,
+                    Experiment055RayPayload::directionX,
+                    ByteBufCodecs.FLOAT,
+                    Experiment055RayPayload::directionY,
+                    ByteBufCodecs.FLOAT,
+                    Experiment055RayPayload::directionZ,
+                    ByteBufCodecs.FLOAT,
+                    Experiment055RayPayload::length,
+                    Experiment055RayPayload::new);
 
     @Override
     public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
@@ -39,8 +44,10 @@ public record Experiment055RayPayload(int casterId, float directionX, float dire
 
     public static void handle(Experiment055RayPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> Experiment055Particles.spawn(
-            payload.casterId(),
-            payload.directionX(), payload.directionY(), payload.directionZ(),
-            payload.length()));
+                payload.casterId(),
+                payload.directionX(),
+                payload.directionY(),
+                payload.directionZ(),
+                payload.length()));
     }
 }

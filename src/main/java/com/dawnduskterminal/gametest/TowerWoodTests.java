@@ -6,14 +6,14 @@ import java.util.List;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import twilightforest.init.TFBlocks;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import twilightforest.init.TFBlocks;
 
 /**
  * 塔木系列方块：石切机配方真的生效，台面两块的族标记也对
@@ -31,32 +31,34 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class TowerWoodTests {
     /** 以黑木原木为原料的石切机配方，方块那边的路径与配方文件名同名 */
     private static final List<String> DARK_LOG_STONECUT_BLOCKS = List.of(
-        "mounted_towerwood",
-        "encased_towerbeam",
-        "chiseled_towerbeam",
-        "warning_towerwood",
-        "dark_log_countertop");
+            "mounted_towerwood", "encased_towerbeam", "chiseled_towerbeam", "warning_towerwood", "dark_log_countertop");
 
     @GameTest(template = "ddt_empty")
     public static void bothCountertopsAreOneFamily(GameTestHelper helper) {
         helper.assertTrue(
-            CountertopBlock.isCountertop(ModTerrainBlocks.DARK_LOG_COUNTERTOP.get().defaultBlockState()),
-            "dawnduskterminal:dark_log_countertop must be a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.DARK_LOG_COUNTERTOP.get().defaultBlockState()),
+                "dawnduskterminal:dark_log_countertop must be a countertop");
         helper.assertTrue(
-            CountertopBlock.isCountertop(ModTerrainBlocks.STRIPPED_DARK_LOG_COUNTERTOP.get().defaultBlockState()),
-            "dawnduskterminal:stripped_dark_log_countertop must be a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.STRIPPED_DARK_LOG_COUNTERTOP.get().defaultBlockState()),
+                "dawnduskterminal:stripped_dark_log_countertop must be a countertop");
         helper.assertFalse(
-            CountertopBlock.isCountertop(ModTerrainBlocks.ENCASED_TOWERBEAM.get().defaultBlockState()),
-            "dawnduskterminal:encased_towerbeam must not count as a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.ENCASED_TOWERBEAM.get().defaultBlockState()),
+                "dawnduskterminal:encased_towerbeam must not count as a countertop");
         helper.assertFalse(
-            CountertopBlock.isCountertop(ModTerrainBlocks.CHISELED_TOWERBEAM.get().defaultBlockState()),
-            "dawnduskterminal:chiseled_towerbeam must not count as a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.CHISELED_TOWERBEAM.get().defaultBlockState()),
+                "dawnduskterminal:chiseled_towerbeam must not count as a countertop");
         helper.assertFalse(
-            CountertopBlock.isCountertop(ModTerrainBlocks.WARNING_TOWERWOOD.get().defaultBlockState()),
-            "dawnduskterminal:warning_towerwood must not count as a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.WARNING_TOWERWOOD.get().defaultBlockState()),
+                "dawnduskterminal:warning_towerwood must not count as a countertop");
         helper.assertFalse(
-            CountertopBlock.isCountertop(ModTerrainBlocks.MOUNTED_TOWERWOOD.get().defaultBlockState()),
-            "dawnduskterminal:mounted_towerwood must not count as a countertop");
+                CountertopBlock.isCountertop(
+                        ModTerrainBlocks.MOUNTED_TOWERWOOD.get().defaultBlockState()),
+                "dawnduskterminal:mounted_towerwood must not count as a countertop");
         helper.succeed();
     }
 
@@ -84,17 +86,22 @@ public final class TowerWoodTests {
         ItemStack input = new ItemStack(inputBlock);
 
         RecipeHolder<?> holder = helper.getLevel().getRecipeManager().getRecipes().stream()
-            .filter(candidate -> candidate.id().equals(recipeId))
-            .findFirst()
-            .orElse(null);
+                .filter(candidate -> candidate.id().equals(recipeId))
+                .findFirst()
+                .orElse(null);
         helper.assertTrue(holder != null, "stonecutting recipe " + recipeId + " is missing from the recipe manager");
-        helper.assertTrue(holder.value() instanceof StonecutterRecipe,
-            recipeId + " must be a stonecutting recipe, got " + holder.value().getType());
-        helper.assertTrue(holder.value().getResultItem(helper.getLevel().registryAccess())
-                .is(BuiltInRegistries.BLOCK.get(recipeId).asItem()),
-            recipeId + " must produce the block of the same id");
-        helper.assertTrue(holder.value().getIngredients().stream().anyMatch(ingredient -> ingredient.test(input)),
-            recipeId + " must accept " + BuiltInRegistries.BLOCK.getKey(inputBlock));
+        helper.assertTrue(
+                holder.value() instanceof StonecutterRecipe,
+                recipeId + " must be a stonecutting recipe, got "
+                        + holder.value().getType());
+        helper.assertTrue(
+                holder.value()
+                        .getResultItem(helper.getLevel().registryAccess())
+                        .is(BuiltInRegistries.BLOCK.get(recipeId).asItem()),
+                recipeId + " must produce the block of the same id");
+        helper.assertTrue(
+                holder.value().getIngredients().stream().anyMatch(ingredient -> ingredient.test(input)),
+                recipeId + " must accept " + BuiltInRegistries.BLOCK.getKey(inputBlock));
     }
 
     private TowerWoodTests() {}

@@ -65,7 +65,8 @@ public class WroughtIronGlassTrapdoorBlock extends TrapDoorBlock {
             Direction facing = state.getValue(FACING);
             return facing == adjacentState.getValue(FACING) && side.getAxis() != facing.getAxis();
         }
-        return state.getValue(HALF) == adjacentState.getValue(HALF) && side.getAxis().isHorizontal();
+        return state.getValue(HALF) == adjacentState.getValue(HALF)
+                && side.getAxis().isHorizontal();
     }
 
     /**

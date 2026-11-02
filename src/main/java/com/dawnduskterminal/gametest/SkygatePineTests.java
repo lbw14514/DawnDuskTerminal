@@ -32,15 +32,16 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class SkygatePineTests {
     private static final ResourceLocation SKYGATE_PINE =
-        ResourceLocation.fromNamespaceAndPath("dawnduskterminal", "tree/skygate_pine");
+            ResourceLocation.fromNamespaceAndPath("dawnduskterminal", "tree/skygate_pine");
     private static final int PLACEMENT_LIFT = 30;
 
     private static ConfiguredFeature<?, ?> feature(GameTestHelper helper) {
-        Registry<ConfiguredFeature<?, ?>> registry = helper.getLevel().getServer().registryAccess()
-            .registryOrThrow(Registries.CONFIGURED_FEATURE);
+        Registry<ConfiguredFeature<?, ?>> registry =
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
         ConfiguredFeature<?, ?> feature = registry.get(SKYGATE_PINE);
         helper.assertTrue(feature != null, "configured feature " + SKYGATE_PINE + " missing");
-        helper.assertTrue(feature.config() instanceof TreeConfiguration, "skygate_pine must be a minecraft:tree feature");
+        helper.assertTrue(
+                feature.config() instanceof TreeConfiguration, "skygate_pine must be a minecraft:tree feature");
         return feature;
     }
 
@@ -48,10 +49,12 @@ public final class SkygatePineTests {
     @GameTest(template = "ddt_empty")
     public static void treeConfigUsesTheSkygateShapes(GameTestHelper helper) {
         TreeConfiguration config = (TreeConfiguration) feature(helper).config();
-        helper.assertTrue(config.trunkPlacer instanceof SkygateBranchTrunkPlacer,
-            "the trunk placer must be dawnduskterminal:skygate_branching, got " + config.trunkPlacer);
-        helper.assertTrue(config.foliagePlacer instanceof CherryFoliagePlacer,
-            "foliage must be shaped by minecraft:cherry_foliage_placer, got " + config.foliagePlacer);
+        helper.assertTrue(
+                config.trunkPlacer instanceof SkygateBranchTrunkPlacer,
+                "the trunk placer must be dawnduskterminal:skygate_branching, got " + config.trunkPlacer);
+        helper.assertTrue(
+                config.foliagePlacer instanceof CherryFoliagePlacer,
+                "foliage must be shaped by minecraft:cherry_foliage_placer, got " + config.foliagePlacer);
         boolean hasVines = config.decorators.stream().anyMatch(decorator -> decorator instanceof LeaveVineDecorator);
         helper.assertTrue(hasVines, "skygate_pine must be allowed to grow vines, decorators were " + config.decorators);
         helper.succeed();
@@ -66,12 +69,16 @@ public final class SkygatePineTests {
 
         BlockPos trunkBase = helper.absolutePos(BlockPos.ZERO).above(PLACEMENT_LIFT);
         helper.getLevel().setBlock(trunkBase.below(), Blocks.DIRT.defaultBlockState(), 3);
-        boolean placed = feature.place(helper.getLevel(), helper.getLevel().getChunkSource().getGenerator(),
-            RandomSource.create(0x5C6A7EL), trunkBase);
+        boolean placed = feature.place(
+                helper.getLevel(),
+                helper.getLevel().getChunkSource().getGenerator(),
+                RandomSource.create(0x5C6A7EL),
+                trunkBase);
         helper.assertTrue(placed, "the skygate pine failed to place in open air");
 
         int height = 0;
-        while (height < 80 && helper.getLevel().getBlockState(trunkBase.above(height)).is(log.getBlock())) {
+        while (height < 80
+                && helper.getLevel().getBlockState(trunkBase.above(height)).is(log.getBlock())) {
             height++;
         }
 
@@ -95,7 +102,9 @@ public final class SkygatePineTests {
                         branchLogs++;
                         branchHeights.add(dy);
 
-                        if (helper.getLevel().getBlockState(trunkBase.offset(dx, dy + 1, dz)).is(wood.getBlock())) {
+                        if (helper.getLevel()
+                                .getBlockState(trunkBase.offset(dx, dy + 1, dz))
+                                .is(wood.getBlock())) {
                             stackedLogs++;
                         }
                     } else if (state.is(log.getBlock())) {
@@ -106,21 +115,27 @@ public final class SkygatePineTests {
             }
         }
 
-        helper.assertTrue(branchHeights.size() >= 4,
-            "branches must reach at least four different trunk heights, got " + branchHeights);
-        helper.assertTrue(branchHeights.stream().anyMatch(dy -> dy <= trunkHeight / 2),
-            "branches must reach the lower half of the trunk, got " + branchHeights);
-        helper.assertTrue(branchHeights.stream().anyMatch(dy -> dy >= trunkHeight * 2 / 3),
-            "branches must reach the upper third of the trunk, got " + branchHeights);
+        helper.assertTrue(
+                branchHeights.size() >= 4,
+                "branches must reach at least four different trunk heights, got " + branchHeights);
+        helper.assertTrue(
+                branchHeights.stream().anyMatch(dy -> dy <= trunkHeight / 2),
+                "branches must reach the lower half of the trunk, got " + branchHeights);
+        helper.assertTrue(
+                branchHeights.stream().anyMatch(dy -> dy >= trunkHeight * 2 / 3),
+                "branches must reach the upper third of the trunk, got " + branchHeights);
 
         helper.assertTrue(branchLogs > 0, "no side branch was grown out of skygate_pine_wood");
-        helper.assertTrue(strayLogs == 0,
-            "branches must use skygate_pine_wood instead of the log, got " + strayLogs + " logs off the trunk");
+        helper.assertTrue(
+                strayLogs == 0,
+                "branches must use skygate_pine_wood instead of the log, got " + strayLogs + " logs off the trunk");
 
         // 每根枝是一条三维直线：每步只落一块，离干的原木不会竖直叠在另一块上。
         // 逐格单轴步进加竖木填充的老写法在 45 度斜枝上会留下一串竖直叠块，会顶到这条断言
-        helper.assertTrue(stackedLogs == 0,
-            "side branches must stay one block thick, got " + stackedLogs + " vertically stacked logs off the trunk");
+        helper.assertTrue(
+                stackedLogs == 0,
+                "side branches must stay one block thick, got " + stackedLogs
+                        + " vertically stacked logs off the trunk");
         helper.succeed();
     }
 
@@ -133,17 +148,22 @@ public final class SkygatePineTests {
      */
     @GameTest(template = "ddt_empty")
     public static void axeStripsTheLogKeepingTheAxis(GameTestHelper helper) {
-        BlockState log = ModTerrainBlocks.SKYGATE_PINE_LOG.get().defaultBlockState()
-            .setValue(RotatedPillarBlock.AXIS, Direction.Axis.X);
+        BlockState log = ModTerrainBlocks.SKYGATE_PINE_LOG
+                .get()
+                .defaultBlockState()
+                .setValue(RotatedPillarBlock.AXIS, Direction.Axis.X);
 
         BlockState stripped = AxeItem.getAxeStrippingState(log);
 
-        helper.assertTrue(stripped != null,
-            "the strippables data map must map skygate_pine_log to a stripped block, AxeItem returned null");
-        helper.assertTrue(stripped.is(ModTerrainBlocks.STRIPPED_SKYGATE_PINE_LOG.get()),
-            "skygate_pine_log must strip into stripped_skygate_pine_log, got " + stripped);
-        helper.assertTrue(stripped.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.X,
-            "stripping must keep the log axis, got " + stripped);
+        helper.assertTrue(
+                stripped != null,
+                "the strippables data map must map skygate_pine_log to a stripped block, AxeItem returned null");
+        helper.assertTrue(
+                stripped.is(ModTerrainBlocks.STRIPPED_SKYGATE_PINE_LOG.get()),
+                "skygate_pine_log must strip into stripped_skygate_pine_log, got " + stripped);
+        helper.assertTrue(
+                stripped.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.X,
+                "stripping must keep the log axis, got " + stripped);
         helper.succeed();
     }
 }

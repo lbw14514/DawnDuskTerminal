@@ -54,6 +54,7 @@ public class Experiment057Item extends Item {
 
     /** 玩家自身的主手底数，原版写死在 {@code Player} 的初始属性里；修饰符是「面板值 − 底数」 */
     private static final double PLAYER_ATTACK_DAMAGE = 1.0D;
+
     private static final double PLAYER_ATTACK_SPEED = 4.0D;
 
     /** 每发扣多少耐久 */
@@ -79,15 +80,21 @@ public class Experiment057Item extends Item {
      */
     public static ItemAttributeModifiers createAttributes() {
         return ItemAttributeModifiers.builder()
-            .add(Attributes.ATTACK_DAMAGE,
-                new AttributeModifier(BASE_ATTACK_DAMAGE_ID, ATTACK_DAMAGE - PLAYER_ATTACK_DAMAGE,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .add(Attributes.ATTACK_SPEED,
-                new AttributeModifier(BASE_ATTACK_SPEED_ID, ATTACK_SPEED - PLAYER_ATTACK_SPEED,
-                    AttributeModifier.Operation.ADD_VALUE),
-                EquipmentSlotGroup.MAINHAND)
-            .build();
+                .add(
+                        Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(
+                                BASE_ATTACK_DAMAGE_ID,
+                                ATTACK_DAMAGE - PLAYER_ATTACK_DAMAGE,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(
+                        Attributes.ATTACK_SPEED,
+                        new AttributeModifier(
+                                BASE_ATTACK_SPEED_ID,
+                                ATTACK_SPEED - PLAYER_ATTACK_SPEED,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
     }
 
     @Override
@@ -113,10 +120,10 @@ public class Experiment057Item extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(
+            ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable("item.dawnduskterminal.experiment_057.desc")
-            .withStyle(ChatFormatting.GRAY));
+                .withStyle(ChatFormatting.GRAY));
     }
 }

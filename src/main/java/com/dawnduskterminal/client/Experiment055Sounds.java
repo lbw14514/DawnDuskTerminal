@@ -46,10 +46,10 @@ public final class Experiment055Sounds {
     /** 收到一档；{@code mode} 见 {@link Experiment055SoundPayload} */
     public static void handle(int casterId, int mode) {
         switch (mode) {
-            case Experiment055SoundPayload.MODE_CHARGE ->
-                ensure(casterId, ModSounds.EXPERIMENT_055_CHARGE.get(), CHARGE_TICKS, false);
-            case Experiment055SoundPayload.MODE_GEIGER ->
-                ensure(casterId, ModSounds.EXPERIMENT_055_GEIGER.get(), GEIGER_TICKS, true);
+            case Experiment055SoundPayload.MODE_CHARGE -> ensure(
+                    casterId, ModSounds.EXPERIMENT_055_CHARGE.get(), CHARGE_TICKS, false);
+            case Experiment055SoundPayload.MODE_GEIGER -> ensure(
+                    casterId, ModSounds.EXPERIMENT_055_GEIGER.get(), GEIGER_TICKS, true);
             case Experiment055SoundPayload.MODE_FULL -> {
                 stop(casterId);
                 playFull(casterId);
@@ -110,8 +110,7 @@ public final class Experiment055Sounds {
             track.onceDone = true;
         }
         Experiment055SoundInstance instance = new Experiment055SoundInstance(
-            event, caster, lengthTicks,
-            repeat ? () -> handOver(casterId, event, lengthTicks) : null);
+                event, caster, lengthTicks, repeat ? () -> handOver(casterId, event, lengthTicks) : null);
         track.instances.add(instance);
         // 必须走 queueTickingSound 而不是 play：接下一遍的调用来自 Experiment055SoundInstance#tick，
         // 那一刻引擎正在 for-each 遍历 tickingSounds，而 play 会把这一支往同一个 List 里加，
@@ -127,10 +126,17 @@ public final class Experiment055Sounds {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getSoundManager().play(new SimpleSoundInstance(
-            ModSounds.EXPERIMENT_055_FULL.get(), net.minecraft.sounds.SoundSource.PLAYERS,
-            1.0F, 1.0F, SoundInstance.createUnseededRandom(),
-            caster.getX(), caster.getY(), caster.getZ()));
+        minecraft
+                .getSoundManager()
+                .play(new SimpleSoundInstance(
+                        ModSounds.EXPERIMENT_055_FULL.get(),
+                        net.minecraft.sounds.SoundSource.PLAYERS,
+                        1.0F,
+                        1.0F,
+                        SoundInstance.createUnseededRandom(),
+                        caster.getX(),
+                        caster.getY(),
+                        caster.getZ()));
     }
 
     /** 这一位施放者名下的所有实例一起收声，不留重叠拖尾 */

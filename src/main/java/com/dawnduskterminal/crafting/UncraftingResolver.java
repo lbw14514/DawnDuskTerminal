@@ -71,7 +71,8 @@ public final class UncraftingResolver {
      * {@link TwilightUncrafting.Config#allows(net.minecraft.resources.ResourceLocation)}
      */
     @Nullable
-    private static RecipeHolder<?> findReversedCrafting(Level level, ItemStack input, TwilightUncrafting.Config config) {
+    private static RecipeHolder<?> findReversedCrafting(
+            Level level, ItemStack input, TwilightUncrafting.Config config) {
         for (RecipeHolder<?> holder : level.getRecipeManager().getRecipes()) {
             Recipe<?> recipe = holder.value();
             if (!isSupported(recipe, config)) {
@@ -130,10 +131,10 @@ public final class UncraftingResolver {
     private static UncraftingPlan fromRecipe(Level level, Recipe<?> recipe) {
         boolean uncrafting = TwilightUncrafting.isUncraftingRecipe(recipe);
         int inputCount = uncrafting
-            ? TwilightUncrafting.count(recipe)
-            : Math.max(1, recipe.getResultItem(level.registryAccess()).getCount());
-        UncraftingPlan plan = new UncraftingPlan(UncraftingPlan.productsOf(layout(recipe)), inputCount,
-            UncraftingPlan.DEFAULT_COOK_TIME);
+                ? TwilightUncrafting.count(recipe)
+                : Math.max(1, recipe.getResultItem(level.registryAccess()).getCount());
+        UncraftingPlan plan = new UncraftingPlan(
+                UncraftingPlan.productsOf(layout(recipe)), inputCount, UncraftingPlan.DEFAULT_COOK_TIME);
         return plan.producesAnything() ? plan : UncraftingPlan.none();
     }
 
@@ -196,7 +197,7 @@ public final class UncraftingResolver {
      */
     private static UncraftingPlan fromSmelting(Level level, ItemStack input) {
         Optional<RecipeHolder<SmeltingRecipe>> smelting =
-            level.getRecipeManager().getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(input), level);
+                level.getRecipeManager().getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(input), level);
         if (smelting.isEmpty()) {
             return UncraftingPlan.none();
         }

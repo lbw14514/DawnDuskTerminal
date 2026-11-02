@@ -7,11 +7,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ArmorItem.Type;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ArmorMaterial.Layer;
 import net.minecraft.world.item.Item.Properties;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * 试验物品 047~050：那套护甲
@@ -20,7 +20,6 @@ import net.minecraft.world.item.Item.Properties;
  * 穿戴贴图是源文件那张 64×64 的 {@code textures/entities/experiment_armor.png}，内外两层共用；
  * 发光层由 {@code mixin/ExperimentArmorGlowMixin} 叠上去，暗处也看得见
  */
-
 public class ExperimentArmorItem extends ArmorItem {
     public static final ResourceLocation ARMOR_TEXTURE = DawnDuskTerminal.id("textures/entities/experiment_armor.png");
 
@@ -29,8 +28,8 @@ public class ExperimentArmorItem extends ArmorItem {
     }
 
     @Override
-    public ResourceLocation getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, Layer layer,
-                                            boolean innerModel) {
+    public ResourceLocation getArmorTexture(
+            ItemStack stack, Entity entity, EquipmentSlot slot, Layer layer, boolean innerModel) {
         return ARMOR_TEXTURE;
     }
 

@@ -4,16 +4,15 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
-
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * 贴图动画条：把 {@code .mcmeta} 描述的一帧单独上传成一张贴图
@@ -31,8 +30,7 @@ import java.util.Map;
 public final class AnimatedStripTexture {
     private static final Map<ResourceLocation, Strip> STRIPS = new HashMap<>();
 
-    private AnimatedStripTexture() {
-    }
+    private AnimatedStripTexture() {}
 
     /**
      * 取这条贴图当前帧对应的动态贴图位置，并推进到当前帧
@@ -64,8 +62,13 @@ public final class AnimatedStripTexture {
 
         private int shownFrame = -1;
 
-        private Strip(NativeImage source, int frameSize, int frameCount, int frameTicks,
-                      ResourceLocation frameId, DynamicTexture dynamic) {
+        private Strip(
+                NativeImage source,
+                int frameSize,
+                int frameCount,
+                int frameTicks,
+                ResourceLocation frameId,
+                DynamicTexture dynamic) {
             this.source = source;
             this.frameSize = frameSize;
             this.frameCount = frameCount;
@@ -76,8 +79,10 @@ public final class AnimatedStripTexture {
         }
 
         private static Strip load(ResourceLocation strip) {
-            try (InputStream stream = Minecraft.getInstance().getResourceManager()
-                .getResourceOrThrow(strip).open()) {
+            try (InputStream stream = Minecraft.getInstance()
+                    .getResourceManager()
+                    .getResourceOrThrow(strip)
+                    .open()) {
                 NativeImage source = NativeImage.read(stream);
                 int frameSize = source.getWidth();
                 // 竖条：宽度就是一帧的边长，高度除以宽度即帧数
@@ -89,8 +94,8 @@ public final class AnimatedStripTexture {
                 int frameTicks = readFrameTicks(strip, frameCount);
                 NativeImage pixels = new NativeImage(frameSize, frameSize, false);
                 DynamicTexture dynamic = new DynamicTexture(pixels);
-                ResourceLocation frameId = ResourceLocation.fromNamespaceAndPath(
-                    strip.getNamespace(), "dynamic/" + strip.getPath());
+                ResourceLocation frameId =
+                        ResourceLocation.fromNamespaceAndPath(strip.getNamespace(), "dynamic/" + strip.getPath());
                 Minecraft.getInstance().getTextureManager().register(frameId, dynamic);
                 return new Strip(source, frameSize, frameCount, frameTicks, frameId, dynamic);
             } catch (Exception error) {
@@ -101,14 +106,18 @@ public final class AnimatedStripTexture {
 
         /** {@code .mcmeta} 的 {@code animation.frametime}，单位 tick；缺失时按 1 处理 */
         private static int readFrameTicks(ResourceLocation strip, int frameCount) {
-            ResourceLocation meta = ResourceLocation.fromNamespaceAndPath(strip.getNamespace(),
-                strip.getPath() + ".mcmeta");
-            try (InputStream stream = Minecraft.getInstance().getResourceManager()
-                .getResourceOrThrow(meta).open()) {
-                JsonObject json = JsonParser.parseReader(
-                    new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+            ResourceLocation meta =
+                    ResourceLocation.fromNamespaceAndPath(strip.getNamespace(), strip.getPath() + ".mcmeta");
+            try (InputStream stream = Minecraft.getInstance()
+                    .getResourceManager()
+                    .getResourceOrThrow(meta)
+                    .open()) {
+                JsonObject json = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                        .getAsJsonObject();
                 if (json.has("animation") && json.getAsJsonObject("animation").has("frametime")) {
-                    return Math.max(1, json.getAsJsonObject("animation").get("frametime").getAsInt());
+                    return Math.max(
+                            1,
+                            json.getAsJsonObject("animation").get("frametime").getAsInt());
                 }
             } catch (Exception ignored) {
                 // 没有 mcmeta 或读不动时按每 tick 一帧，与不写 frametime 的原版贴图一致

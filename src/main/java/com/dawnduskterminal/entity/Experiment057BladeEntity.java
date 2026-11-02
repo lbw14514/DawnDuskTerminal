@@ -71,6 +71,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
 
     /** 初速的两端，含两端 */
     private static final float MIN_SPEED = 1.2F;
+
     private static final float MAX_SPEED = 1.8F;
 
     /**
@@ -113,6 +114,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
 
     /** 撞击方块与寿命耗尽时那一片红石粒子的颗数与散开半径 */
     private static final int REDSTONE_BURST_COUNT = 32;
+
     private static final double REDSTONE_BURST_SPREAD = 0.35D;
 
     /** 暴击粒子颗数：近战暴击那一套（{@code crit}），命中点周围散开 */
@@ -157,8 +159,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
      * 锋利之类的近战附魔、力量效果因此当场生效，而不是发射那一刻的快照
      */
     public static Experiment057BladeEntity launch(Level level, Player shooter) {
-        Experiment057BladeEntity blade =
-            new Experiment057BladeEntity(ModEntities.EXPERIMENT_057_BLADE.get(), level);
+        Experiment057BladeEntity blade = new Experiment057BladeEntity(ModEntities.EXPERIMENT_057_BLADE.get(), level);
         Vec3 look = shooter.getViewVector(1.0F);
         Vec3 origin = shooter.getEyePosition().add(look.scale(SPAWN_OFFSET));
         blade.setPos(origin.x, origin.y, origin.z);
@@ -188,9 +189,9 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
         double azimuth = random.nextDouble() * Math.PI * 2.0D;
         double spread = Math.sin(deviation);
         return axis.scale(Math.cos(deviation))
-            .add(side.scale(spread * Math.cos(azimuth)))
-            .add(up.scale(spread * Math.sin(azimuth)))
-            .normalize();
+                .add(side.scale(spread * Math.cos(azimuth)))
+                .add(up.scale(spread * Math.sin(azimuth)))
+                .normalize();
     }
 
     @Override
@@ -213,13 +214,20 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
     /** 一声挥砍音效 + 一颗挥砍粒子，两边各管一边 */
     private void swing() {
         if (this.level().isClientSide) {
-            this.level().addParticle(ParticleTypes.SWEEP_ATTACK,
-                this.getX(), this.getY(), this.getZ(), 0.0D, 0.0D, 0.0D);
+            this.level()
+                    .addParticle(ParticleTypes.SWEEP_ATTACK, this.getX(), this.getY(), this.getZ(), 0.0D, 0.0D, 0.0D);
             return;
         }
-        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
-            SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, SWING_VOLUME,
-            0.9F + this.random.nextFloat() * 0.3F);
+        this.level()
+                .playSound(
+                        null,
+                        this.getX(),
+                        this.getY(),
+                        this.getZ(),
+                        SoundEvents.PLAYER_ATTACK_SWEEP,
+                        SoundSource.PLAYERS,
+                        SWING_VOLUME,
+                        0.9F + this.random.nextFloat() * 0.3F);
     }
 
     /**
@@ -247,9 +255,16 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
     /** 一片红石粒子：撞击方块、寿命耗尽时各来一次 */
     private void spawnRedstoneBurst(Vec3 at) {
         if (this.level() instanceof ServerLevel server) {
-            server.sendParticles(DustParticleOptions.REDSTONE, at.x, at.y, at.z,
-                REDSTONE_BURST_COUNT, REDSTONE_BURST_SPREAD, REDSTONE_BURST_SPREAD,
-                REDSTONE_BURST_SPREAD, 0.05D);
+            server.sendParticles(
+                    DustParticleOptions.REDSTONE,
+                    at.x,
+                    at.y,
+                    at.z,
+                    REDSTONE_BURST_COUNT,
+                    REDSTONE_BURST_SPREAD,
+                    REDSTONE_BURST_SPREAD,
+                    REDSTONE_BURST_SPREAD,
+                    0.05D);
         }
     }
 
@@ -284,8 +299,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
                 Vec3 lateral = offset.subtract(line.scale(offset.dot(line)));
                 Vec3 desired = line.scale(LEAD_DISTANCE).subtract(lateral);
                 if (desired.lengthSqr() > 1.0E-8D) {
-                    direction = turnTowards(direction, desired.normalize(),
-                        Math.toRadians(TURN_DEGREES_PER_TICK));
+                    direction = turnTowards(direction, desired.normalize(), Math.toRadians(TURN_DEGREES_PER_TICK));
                 }
             }
         }
@@ -306,8 +320,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
         }
         Vec3 axis = from.cross(to);
         if (axis.lengthSqr() < 1.0E-12D) {
-            Vec3 fallback = Math.abs(from.y) > 0.9D ? new Vec3(1.0D, 0.0D, 0.0D)
-                : new Vec3(0.0D, 1.0D, 0.0D);
+            Vec3 fallback = Math.abs(from.y) > 0.9D ? new Vec3(1.0D, 0.0D, 0.0D) : new Vec3(0.0D, 1.0D, 0.0D);
             axis = from.cross(fallback);
             if (axis.lengthSqr() < 1.0E-12D) {
                 return to;
@@ -336,8 +349,7 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
         Vec3 motion = this.getDeltaMovement();
         Vec3 reflected = motion.subtract(normal.scale(2.0D * motion.dot(normal)));
         double spread = BOUNCE_SPREAD * Math.max(this.speed, motion.length());
-        Vec3 deflected = reflected.add(new Vec3(centredRandom(), centredRandom(), centredRandom())
-            .scale(spread));
+        Vec3 deflected = reflected.add(new Vec3(centredRandom(), centredRandom(), centredRandom()).scale(spread));
         Vec3 bounced = deflected.lengthSqr() < 1.0E-6D ? normal : deflected.normalize();
         this.setDeltaMovement(bounced.scale(this.speed));
         Vec3 surface = result.getLocation().add(normal.scale(SURFACE_ESCAPE));
@@ -353,8 +365,16 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
     private void playImpactSound(BlockPos pos, Vec3 at) {
         BlockState state = this.level().getBlockState(pos);
         SoundType sound = state.getSoundType(this.level(), pos, this);
-        this.level().playSound(null, at.x, at.y, at.z, sound.getBreakSound(), SoundSource.BLOCKS,
-            sound.getVolume(), sound.getPitch());
+        this.level()
+                .playSound(
+                        null,
+                        at.x,
+                        at.y,
+                        at.z,
+                        sound.getBreakSound(),
+                        SoundSource.BLOCKS,
+                        sound.getVolume(),
+                        sound.getPitch());
     }
 
     /** [-1, 1) 的随机数，三个轴各来一份就是「少许随机偏转」 */
@@ -384,18 +404,16 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
             return;
         }
         Vec3 at = result.getLocation();
-        if (result.getEntity() instanceof LivingEntity target
-            && this.getOwner() instanceof Player shooter) {
+        if (result.getEntity() instanceof LivingEntity target && this.getOwner() instanceof Player shooter) {
             boolean falling = isFalling(shooter);
             float base = (float) shooter.getAttributeValue(Attributes.ATTACK_DAMAGE);
             DamageSource source = this.damageSources().playerAttack(shooter);
             float enchantmentBonus = 0.0F;
             if (this.level() instanceof ServerLevel server) {
-                enchantmentBonus = EnchantmentHelper.modifyDamage(server, shooter.getWeaponItem(),
-                    target, source, base) - base;
+                enchantmentBonus =
+                        EnchantmentHelper.modifyDamage(server, shooter.getWeaponItem(), target, source, base) - base;
             }
-            CriticalHitEvent critical = CommonHooks.fireCriticalHit(shooter, target, true,
-                critMultiplier(falling));
+            CriticalHitEvent critical = CommonHooks.fireCriticalHit(shooter, target, true, critMultiplier(falling));
             float multiplier = critical.isCriticalHit() ? critical.getDamageMultiplier() : 1.0F;
             if (target.hurt(source, base * multiplier + enchantmentBonus)) {
                 this.playCritEffects(at);
@@ -414,19 +432,31 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
      */
     private void playCritEffects(Vec3 at) {
         Entity owner = this.getOwner();
-        this.level().playSound(owner instanceof Player player ? player : null,
-            at.x, at.y, at.z, SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0F, 1.0F);
+        this.level()
+                .playSound(
+                        owner instanceof Player player ? player : null,
+                        at.x,
+                        at.y,
+                        at.z,
+                        SoundEvents.PLAYER_ATTACK_CRIT,
+                        SoundSource.PLAYERS,
+                        1.0F,
+                        1.0F);
         if (this.level() instanceof ServerLevel server) {
-            server.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, CRIT_PARTICLE_COUNT,
-                0.25D, 0.25D, 0.25D, 0.15D);
+            server.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, CRIT_PARTICLE_COUNT, 0.25D, 0.25D, 0.25D, 0.15D);
             if (owner instanceof ServerPlayer listener && listener.connection != null) {
                 double distance = listener.position().distanceTo(at);
-                float volume = (float) Math.max(1.0D, distance
-                    / (SOUND_RANGE_PER_VOLUME * (1.0D - CRIT_SOUND_GAIN_AT_LAUNCHER)));
+                float volume = (float)
+                        Math.max(1.0D, distance / (SOUND_RANGE_PER_VOLUME * (1.0D - CRIT_SOUND_GAIN_AT_LAUNCHER)));
                 listener.connection.send(new ClientboundSoundPacket(
-                    BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.PLAYER_ATTACK_CRIT),
-                    SoundSource.PLAYERS, at.x, at.y, at.z, volume, 1.0F,
-                    this.random.nextLong()));
+                        BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.PLAYER_ATTACK_CRIT),
+                        SoundSource.PLAYERS,
+                        at.x,
+                        at.y,
+                        at.z,
+                        volume,
+                        1.0F,
+                        this.random.nextLong()));
             }
         }
     }
@@ -469,15 +499,14 @@ public class Experiment057BladeEntity extends ThrowableProjectile {
      */
     public static boolean isFalling(LivingEntity entity) {
         return entity.fallDistance > 0.0F
-            && !entity.onGround()
-            && !entity.onClimbable()
-            && !entity.isInWater()
-            && !entity.isPassenger();
+                && !entity.onGround()
+                && !entity.onClimbable()
+                && !entity.isInWater()
+                && !entity.isPassenger();
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-    }
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag compound) {

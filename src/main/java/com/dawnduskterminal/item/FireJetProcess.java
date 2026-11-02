@@ -35,7 +35,6 @@ import net.minecraft.world.phys.Vec3;
  * <p>过程挂在 {@code ServerTickEvent.Post} 上推进（{@code tickAll} / {@code clear}），
  * 不依赖玩家拿着物品，所以单击一次就够，松手与换物品都不打断
  */
-
 public final class FireJetProcess {
     public static final int POP_TICKS = 80;
     public static final int FLAME_TICKS = 61;
@@ -58,6 +57,7 @@ public final class FireJetProcess {
     private final InteractionHand hand;
     /** 玩家那一路：施放者手里必须还拿着 043，换了就改成从脚下喷；生物那一路永远瞄着视线 */
     private final boolean itemDriven;
+
     private Vec3 muzzle;
     private Vec3 direction;
     private Vec3 right;
@@ -192,8 +192,8 @@ public final class FireJetProcess {
 
     private boolean holdsTheItem() {
         return this.itemDriven
-            && this.owner instanceof Player player
-            && player.getItemInHand(this.hand).getItem() instanceof Experiment043Item;
+                && this.owner instanceof Player player
+                && player.getItemInHand(this.hand).getItem() instanceof Experiment043Item;
     }
 
     private void updateAim() {
@@ -232,9 +232,9 @@ public final class FireJetProcess {
 
     private void pop() {
         this.pops++;
-        this.level.sendParticles(ParticleTypes.LAVA, this.muzzle.x, this.muzzle.y, this.muzzle.z, 8, 0.0, 0.0, 0.0, 0.0);
-        this.level
-            .playSound(
+        this.level.sendParticles(
+                ParticleTypes.LAVA, this.muzzle.x, this.muzzle.y, this.muzzle.z, 8, 0.0, 0.0, 0.0, 0.0);
+        this.level.playSound(
                 null,
                 this.muzzle.x,
                 this.muzzle.y,
@@ -242,12 +242,12 @@ public final class FireJetProcess {
                 SoundEvents.LAVA_POP,
                 SoundSource.BLOCKS,
                 0.2F + this.level.getRandom().nextFloat() * 0.2F,
-                0.9F + this.level.getRandom().nextFloat() * 0.15F
-            );
+                0.9F + this.level.getRandom().nextFloat() * 0.15F);
     }
 
     private void spawnFlameParticles() {
-        this.level.sendParticles(ParticleTypes.LARGE_SMOKE, this.muzzle.x, this.muzzle.y, this.muzzle.z, 1, 0.0, 0.0, 0.0, 0.0);
+        this.level.sendParticles(
+                ParticleTypes.LARGE_SMOKE, this.muzzle.x, this.muzzle.y, this.muzzle.z, 1, 0.0, 0.0, 0.0, 0.0);
         Vec3 forward = this.direction.scale(0.75);
         this.spawnFlame(0.0, 0.0, forward);
         this.spawnFlame(-1.0, 0.0, this.right.scale(0.05).add(forward));
@@ -258,7 +258,8 @@ public final class FireJetProcess {
 
     private void spawnFlame(double lateral, double vertical, Vec3 velocity) {
         Vec3 point = this.muzzle.add(this.right.scale(lateral)).add(this.up.scale(vertical));
-        this.level.sendParticles(new JetFlameParticleOptions(velocity), point.x, point.y, point.z, 1, 0.0, 0.0, 0.0, 0.0);
+        this.level.sendParticles(
+                new JetFlameParticleOptions(velocity), point.x, point.y, point.z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
     private void damage() {
@@ -266,9 +267,12 @@ public final class FireJetProcess {
         DamageSource source = this.level.damageSources().source(ModDamageTypes.EXPERIMENT_043, this.owner);
         boolean burnOwner = !this.aimed;
         AABB broad = new AABB(this.muzzle, this.muzzle.add(this.direction.scale(14.0))).inflate(6.0);
-        List<LivingEntity> targets = this.level
-            .getEntitiesOfClass(LivingEntity.class, broad,
-                other -> (burnOwner || !GhastKin.isKin(this.owner, other)) && !other.fireImmune() && this.insideJet(other));
+        List<LivingEntity> targets = this.level.getEntitiesOfClass(
+                LivingEntity.class,
+                broad,
+                other -> (burnOwner || !GhastKin.isKin(this.owner, other))
+                        && !other.fireImmune()
+                        && this.insideJet(other));
         this.targetsHit = this.targetsHit + targets.size();
 
         for (LivingEntity target : targets) {
@@ -287,20 +291,44 @@ public final class FireJetProcess {
         double extent = Math.max(box.getXsize(), Math.max(box.getYsize(), box.getZsize())) * 0.5;
         double along = relative.dot(this.direction);
         return !(along < -extent) && !(along > 14.0 + extent)
-            ? Math.abs(relative.dot(this.right)) <= 2.0 + extent && Math.abs(relative.dot(this.up)) <= 2.0 + extent
-            : false;
+                ? Math.abs(relative.dot(this.right)) <= 2.0 + extent && Math.abs(relative.dot(this.up)) <= 2.0 + extent
+                : false;
     }
 
     private void playStartSound() {
-        this.level.playSound(null, this.muzzle.x, this.muzzle.y, this.muzzle.z, SoundEvents.COMPARATOR_CLICK, SoundSource.BLOCKS, 0.3F, 0.6F);
+        this.level.playSound(
+                null,
+                this.muzzle.x,
+                this.muzzle.y,
+                this.muzzle.z,
+                SoundEvents.COMPARATOR_CLICK,
+                SoundSource.BLOCKS,
+                0.3F,
+                0.6F);
     }
 
     private void playFlameStartSound() {
-        this.level.playSound(null, this.muzzle.x, this.muzzle.y, this.muzzle.z, SoundEvents.COMPARATOR_CLICK, SoundSource.BLOCKS, 1.0F, this.pitch());
+        this.level.playSound(
+                null,
+                this.muzzle.x,
+                this.muzzle.y,
+                this.muzzle.z,
+                SoundEvents.COMPARATOR_CLICK,
+                SoundSource.BLOCKS,
+                1.0F,
+                this.pitch());
     }
 
     private void playActiveSound() {
-        this.level.playSound(null, this.muzzle.x, this.muzzle.y, this.muzzle.z, SoundEvents.GHAST_SHOOT, SoundSource.BLOCKS, 1.0F, this.pitch());
+        this.level.playSound(
+                null,
+                this.muzzle.x,
+                this.muzzle.y,
+                this.muzzle.z,
+                SoundEvents.GHAST_SHOOT,
+                SoundSource.BLOCKS,
+                1.0F,
+                this.pitch());
     }
 
     private float pitch() {

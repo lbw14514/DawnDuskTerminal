@@ -3,6 +3,8 @@ package com.dawnduskterminal.entity;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.world.CarminiteBlast;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
@@ -16,9 +18,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * 试验物品 052 炸出来的砷铅铁碎片：一颗不画贴图、只拖着红石粒子飞的弹体
@@ -43,10 +42,12 @@ import java.util.Set;
 public class CarminiteShrapnelEntity extends ThrowableProjectile {
     /** 随机伤害的两端，含两端 */
     private static final int MIN_DAMAGE = 1;
+
     private static final int MAX_DAMAGE = 10;
 
     /** 初速的两端，含两端 */
     private static final float MIN_SPEED = 0.5F;
+
     private static final float MAX_SPEED = 1.0F;
 
     /** 向上偏一点，免得一大半碎片直接砸在爆炸中心 */
@@ -70,10 +71,11 @@ public class CarminiteShrapnelEntity extends ThrowableProjectile {
         CarminiteShrapnelEntity shrapnel = new CarminiteShrapnelEntity(ModEntities.CARMINITE_SHRAPNEL.get(), level);
         shrapnel.setPos(x, y, z);
         shrapnel.shoot(
-            Mth.nextDouble(level.getRandom(), -1.0D, 1.0D),
-            Mth.nextDouble(level.getRandom(), 0.0D, 1.0D) + UPWARD_BIAS,
-            Mth.nextDouble(level.getRandom(), -1.0D, 1.0D),
-            (float) Mth.nextDouble(level.getRandom(), MIN_SPEED, MAX_SPEED), 0.0F);
+                Mth.nextDouble(level.getRandom(), -1.0D, 1.0D),
+                Mth.nextDouble(level.getRandom(), 0.0D, 1.0D) + UPWARD_BIAS,
+                Mth.nextDouble(level.getRandom(), -1.0D, 1.0D),
+                (float) Mth.nextDouble(level.getRandom(), MIN_SPEED, MAX_SPEED),
+                0.0F);
         level.addFreshEntity(shrapnel);
     }
 
@@ -92,14 +94,16 @@ public class CarminiteShrapnelEntity extends ThrowableProjectile {
     /** 一颗砷铅铁余烬（{@code particle_carminite_ember}），带一点抖动，拖出来就是一条红线 */
     private void spawnRedstoneParticle() {
         double jitter = 0.15D;
-        this.level().addParticle(ModParticles.CARMINITE_EMBER.get(),
-            this.getX() + (this.random.nextDouble() - 0.5D) * jitter,
-            this.getY() + (this.random.nextDouble() - 0.5D) * jitter,
-            this.getZ() + (this.random.nextDouble() - 0.5D) * jitter,
-            0.0D,
-            // 竖直速度与原版红石粒子那一档，横向不额外给速度
-            0.2D + this.random.nextDouble() * 0.05D,
-            0.0D);
+        this.level()
+                .addParticle(
+                        ModParticles.CARMINITE_EMBER.get(),
+                        this.getX() + (this.random.nextDouble() - 0.5D) * jitter,
+                        this.getY() + (this.random.nextDouble() - 0.5D) * jitter,
+                        this.getZ() + (this.random.nextDouble() - 0.5D) * jitter,
+                        0.0D,
+                        // 竖直速度与原版红石粒子那一档，横向不额外给速度
+                        0.2D + this.random.nextDouble() * 0.05D,
+                        0.0D);
     }
 
     @Override
@@ -138,8 +142,7 @@ public class CarminiteShrapnelEntity extends ThrowableProjectile {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-    }
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag compound) {

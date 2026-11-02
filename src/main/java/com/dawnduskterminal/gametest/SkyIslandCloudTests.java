@@ -1,6 +1,5 @@
 package com.dawnduskterminal.gametest;
 
-import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.world.SkyIslandClouds;
 import java.util.Arrays;
 import net.minecraft.core.BlockPos;
@@ -35,10 +34,10 @@ public final class SkyIslandCloudTests {
 
         helper.assertTrue(placed > 0, "a floating plate must get cloud under it");
         helper.assertTrue(hasCloudBelow(level, base, cloud), "the plate must have cloud hanging under it");
-        helper.assertTrue(is(level, base.offset(2, 1, 2), Blocks.STONE.defaultBlockState()),
-            "the plate top must stay stone");
-        helper.assertTrue(is(level, base.offset(2, 2, 2), Blocks.STONE.defaultBlockState()),
-            "the plate top must stay stone");
+        helper.assertTrue(
+                is(level, base.offset(2, 1, 2), Blocks.STONE.defaultBlockState()), "the plate top must stay stone");
+        helper.assertTrue(
+                is(level, base.offset(2, 2, 2), Blocks.STONE.defaultBlockState()), "the plate top must stay stone");
         helper.succeed();
     }
 
@@ -54,8 +53,9 @@ public final class SkyIslandCloudTests {
         for (int x = -4; x <= 8; x++) {
             for (int z = -4; z <= 8; z++) {
                 for (int y = 1; y <= 8; y++) {
-                    helper.assertTrue(!is(level, base.offset(x, y, z), cloud),
-                        "cloud must never grow at or above the plate top, found at " + x + "," + y + "," + z);
+                    helper.assertTrue(
+                            !is(level, base.offset(x, y, z), cloud),
+                            "cloud must never grow at or above the plate top, found at " + x + "," + y + "," + z);
                 }
             }
         }
@@ -87,8 +87,9 @@ public final class SkyIslandCloudTests {
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
                 for (int y = 0; y < 2; y++) {
-                    helper.assertTrue(is(level, base.offset(x, y, z), Blocks.STONE.defaultBlockState()),
-                        "a two thick plate must keep every block, greedy at " + x + "," + y + "," + z);
+                    helper.assertTrue(
+                            is(level, base.offset(x, y, z), Blocks.STONE.defaultBlockState()),
+                            "a two thick plate must keep every block, greedy at " + x + "," + y + "," + z);
                 }
             }
         }
@@ -107,10 +108,12 @@ public final class SkyIslandCloudTests {
 
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < 5; z++) {
-                helper.assertTrue(is(level, base.offset(x, 5, z), Blocks.STONE.defaultBlockState()),
-                    "the top layer must never be eroded");
-                helper.assertTrue(is(level, base.offset(x, 4, z), Blocks.STONE.defaultBlockState()),
-                    "the second layer from the top must never be eroded");
+                helper.assertTrue(
+                        is(level, base.offset(x, 5, z), Blocks.STONE.defaultBlockState()),
+                        "the top layer must never be eroded");
+                helper.assertTrue(
+                        is(level, base.offset(x, 4, z), Blocks.STONE.defaultBlockState()),
+                        "the second layer from the top must never be eroded");
             }
         }
         helper.succeed();
@@ -141,13 +144,20 @@ public final class SkyIslandCloudTests {
         int firstPlaced = run(level, first, 5, 5, 3, cloud, (x, y, z) -> true);
         int secondPlaced = run(level, second, 5, 5, 3, cloud, (x, y, z) -> true);
 
-        helper.assertTrue(firstPlaced > 0 && secondPlaced > 0,
-            "both plates must get cloud, got " + firstPlaced + " and " + secondPlaced);
+        helper.assertTrue(
+                firstPlaced > 0 && secondPlaced > 0,
+                "both plates must get cloud, got " + firstPlaced + " and " + secondPlaced);
         helper.succeed();
     }
 
-    private static int run(ServerLevel level, BlockPos base, int sizeX, int sizeZ, int thickness,
-                           BlockState cloud, SkyIslandClouds.IslandProbe probe) {
+    private static int run(
+            ServerLevel level,
+            BlockPos base,
+            int sizeX,
+            int sizeZ,
+            int thickness,
+            BlockState cloud,
+            SkyIslandClouds.IslandProbe probe) {
         int[] tops = new int[256];
         Arrays.fill(tops, -1);
         for (int x = 0; x < sizeX; x++) {
@@ -155,10 +165,20 @@ public final class SkyIslandCloudTests {
                 tops[z * 16 + x] = base.getY() + thickness - 1;
             }
         }
-        return SkyIslandClouds.decorate(level, (x, y, z, state) -> level.setBlock(new BlockPos(x, y, z), state, 2),
-            base.getX(), base.getZ(), tops, cloud, probe, SEED,
-            SkyIslandClouds.ISLAND_MIN_TOP_Y, level.getMaxBuildHeight() - 1,
-            SkyIslandClouds.ISLAND_SCAN_FLOOR_Y, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1);
+        return SkyIslandClouds.decorate(
+                level,
+                (x, y, z, state) -> level.setBlock(new BlockPos(x, y, z), state, 2),
+                base.getX(),
+                base.getZ(),
+                tops,
+                cloud,
+                probe,
+                SEED,
+                SkyIslandClouds.ISLAND_MIN_TOP_Y,
+                level.getMaxBuildHeight() - 1,
+                SkyIslandClouds.ISLAND_SCAN_FLOOR_Y,
+                level.getMinBuildHeight(),
+                level.getMaxBuildHeight() - 1);
     }
 
     private static void fill(ServerLevel level, BlockPos base, int sizeX, int sizeZ, int height) {
@@ -177,7 +197,8 @@ public final class SkyIslandCloudTests {
     }
 
     private static BlockState cloud(GameTestHelper helper) {
-        BlockState state = BuiltInRegistries.BLOCK.get(SkyIslandClouds.WISPY_CLOUD).defaultBlockState();
+        BlockState state =
+                BuiltInRegistries.BLOCK.get(SkyIslandClouds.WISPY_CLOUD).defaultBlockState();
         helper.assertTrue(!state.isAir(), SkyIslandClouds.WISPY_CLOUD + " must be registered");
         return state;
     }

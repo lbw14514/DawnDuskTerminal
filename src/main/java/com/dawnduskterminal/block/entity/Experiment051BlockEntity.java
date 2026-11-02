@@ -99,11 +99,12 @@ public class Experiment051BlockEntity extends BaseContainerBlockEntity implement
         @Override
         public int get(int index) {
             return switch (index) {
-                // 数据槽在网络上按 short 同步，超过 Short.MAX_VALUE 的燃料按比例缩一下，原版熔炉在 NeoForge 里也这么处理
+                    // 数据槽在网络上按 short 同步，超过 Short.MAX_VALUE 的燃料按比例缩一下，原版熔炉在 NeoForge 里也这么处理
                 case DATA_LIT_TIME -> Experiment051BlockEntity.this.litDuration > Short.MAX_VALUE
-                    ? Mth.floor((double) Experiment051BlockEntity.this.litTime
-                        / (double) Experiment051BlockEntity.this.litDuration * Short.MAX_VALUE)
-                    : Experiment051BlockEntity.this.litTime;
+                        ? Mth.floor((double) Experiment051BlockEntity.this.litTime
+                                / (double) Experiment051BlockEntity.this.litDuration
+                                * Short.MAX_VALUE)
+                        : Experiment051BlockEntity.this.litTime;
                 case DATA_LIT_DURATION -> Math.min(Experiment051BlockEntity.this.litDuration, Short.MAX_VALUE);
                 case DATA_COOK_PROGRESS -> Experiment051BlockEntity.this.cookProgress;
                 case DATA_COOK_TOTAL -> Experiment051BlockEntity.this.cookTotal;
@@ -118,8 +119,7 @@ public class Experiment051BlockEntity extends BaseContainerBlockEntity implement
                 case DATA_LIT_DURATION -> Experiment051BlockEntity.this.litDuration = value;
                 case DATA_COOK_PROGRESS -> Experiment051BlockEntity.this.cookProgress = value;
                 case DATA_COOK_TOTAL -> Experiment051BlockEntity.this.cookTotal = value;
-                default -> {
-                }
+                default -> {}
             }
         }
 
@@ -305,8 +305,8 @@ public class Experiment051BlockEntity extends BaseContainerBlockEntity implement
     /** 箭头那半边的进度 */
     public float cookProgressRatio() {
         return this.cookTotal != 0 && this.cookProgress != 0
-            ? Mth.clamp((float) this.cookProgress / (float) this.cookTotal, 0.0F, 1.0F)
-            : 0.0F;
+                ? Mth.clamp((float) this.cookProgress / (float) this.cookTotal, 0.0F, 1.0F)
+                : 0.0F;
     }
 
     @Override

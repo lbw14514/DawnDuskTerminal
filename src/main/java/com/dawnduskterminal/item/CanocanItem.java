@@ -45,8 +45,8 @@ public class CanocanItem extends Item {
         }
         var fluidState = level.getFluidState(pos);
         if (!fluidState.isSource()
-            || (fluidState.getType() != ModFluids.PORTAL_FLUID.get()
-                && fluidState.getType() != ModScorchingTwilight.SOURCE.get())) {
+                || (fluidState.getType() != ModFluids.PORTAL_FLUID.get()
+                        && fluidState.getType() != ModScorchingTwilight.SOURCE.get())) {
             return InteractionResultHolder.pass(stack);
         }
         ItemStack filled = bucketPickup.pickupBlock(player, level, pos, blockState);
@@ -57,7 +57,6 @@ public class CanocanItem extends Item {
         bucketPickup.getPickupSound(blockState).ifPresent(sound -> player.playSound(sound, 1.0F, 1.0F));
         level.gameEvent(player, GameEvent.FLUID_PICKUP, pos);
         return InteractionResultHolder.sidedSuccess(
-            ItemUtils.createFilledResult(stack, player, filled),
-            level.isClientSide());
+                ItemUtils.createFilledResult(stack, player, filled), level.isClientSide());
     }
 }

@@ -14,6 +14,9 @@ import com.dawnduskterminal.geckolib3.util.IRenderCycle;
 import com.dawnduskterminal.registry.ModEntities;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -21,13 +24,8 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * 试验物品 057 那片飞刃的客户端接线
@@ -48,18 +46,19 @@ public final class Experiment057BladeRenderer {
     private static final ResourceLocation TEXTURE = DawnDuskTerminal.id("textures/entity/e_57_blade.png");
     private static final ResourceLocation ANIMATIONS = DawnDuskTerminal.id("animations/e_57_blade.animation.json");
 
-    private Experiment057BladeRenderer() {
-    }
+    private Experiment057BladeRenderer() {}
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.EXPERIMENT_057_BLADE.get(), BladeRenderer::new);
     }
 
     private static final class BladeRenderer extends EntityRenderer<Experiment057BladeEntity>
-        implements IGeoRenderer<Experiment057BladeEntity> {
+            implements IGeoRenderer<Experiment057BladeEntity> {
         private final Map<Experiment057BladeEntity, Animatable> animatables = new WeakHashMap<>();
+
         @Nullable
         private MultiBufferSource renderBuffer;
+
         private IRenderCycle renderCycle = EModelRenderCycle.INITIAL;
 
         private BladeRenderer(EntityRendererProvider.Context context) {
@@ -68,12 +67,17 @@ public final class Experiment057BladeRenderer {
         }
 
         @Override
-        public void render(Experiment057BladeEntity entity, float entityYaw, float partialTick,
-                           PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+        public void render(
+                Experiment057BladeEntity entity,
+                float entityYaw,
+                float partialTick,
+                PoseStack poseStack,
+                MultiBufferSource bufferSource,
+                int packedLight) {
             Animatable animatable = this.animatables.computeIfAbsent(entity, Animatable::new);
             EntityModelData data = new EntityModelData();
-            AnimationEvent<Animatable> event = new AnimationEvent<>(animatable, 0.0F, 0.0F, partialTick,
-                false, List.of(data));
+            AnimationEvent<Animatable> event =
+                    new AnimationEvent<>(animatable, 0.0F, 0.0F, partialTick, false, List.of(data));
             AnimationContext<?> context = new AnimationContext<>(entity, animatable, event, data);
             animatable.setCustomAnimations(context, event);
             AnimatedGeoModel model = animatable.getCurrentModel();
@@ -83,15 +87,23 @@ public final class Experiment057BladeRenderer {
 
             // 与投掷物一致：先转向飞行方向，再按俯仰抬头
             poseStack.pushPose();
-            poseStack.mulPose(Axis.YP.rotationDegrees(
-                Mth.lerp(partialTick, entity.yRotO, entity.getYRot()) - 90.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(
-                Mth.lerp(partialTick, entity.xRotO, entity.getXRot())));
+            poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTick, entity.yRotO, entity.getYRot()) - 90.0F));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTick, entity.xRotO, entity.getXRot())));
             this.setCurrentModelRenderCycle(EModelRenderCycle.INITIAL);
-            this.render(model, entity, partialTick,
-                this.getRenderType(entity, partialTick, poseStack, bufferSource, null, packedLight, TEXTURE),
-                poseStack, bufferSource, null, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
-                1.0F, 1.0F, 1.0F, 1.0F);
+            this.render(
+                    model,
+                    entity,
+                    partialTick,
+                    this.getRenderType(entity, partialTick, poseStack, bufferSource, null, packedLight, TEXTURE),
+                    poseStack,
+                    bufferSource,
+                    null,
+                    LightTexture.FULL_BRIGHT,
+                    OverlayTexture.NO_OVERLAY,
+                    1.0F,
+                    1.0F,
+                    1.0F,
+                    1.0F);
             poseStack.popPose();
         }
 
@@ -121,9 +133,13 @@ public final class Experiment057BladeRenderer {
         }
 
         @Override
-        public Color getRenderColor(Experiment057BladeEntity animatable, float partialTick, PoseStack poseStack,
-                                    @Nullable MultiBufferSource bufferSource, @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
-                                    int packedLight) {
+        public Color getRenderColor(
+                Experiment057BladeEntity animatable,
+                float partialTick,
+                PoseStack poseStack,
+                @Nullable MultiBufferSource bufferSource,
+                @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
+                int packedLight) {
             return Color.WHITE;
         }
     }

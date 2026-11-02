@@ -25,18 +25,16 @@ public final class TowerGhastAnimationTests {
         Level level = helper.getLevel();
         TowerGhastEntity ghast = new TowerGhastEntity(ModEntities.TOWER_GHAST.get(), level);
 
-        helper.assertTrue(clipOf(ghast, true).equals("walk") || clipOf(ghast, true).equals("run"),
-            "a healthy moving ghast must use walk or run");
-        helper.assertTrue(clipOf(ghast, false).equals("idle"),
-            "a healthy still ghast must idle");
+        helper.assertTrue(
+                clipOf(ghast, true).equals("walk") || clipOf(ghast, true).equals("run"),
+                "a healthy moving ghast must use walk or run");
+        helper.assertTrue(clipOf(ghast, false).equals("idle"), "a healthy still ghast must idle");
 
         ghast.hurtTime = 5;
-        helper.assertTrue(clipOf(ghast, true).equals("attacked"),
-            "a hurt ghast must use attacked even while moving");
+        helper.assertTrue(clipOf(ghast, true).equals("attacked"), "a hurt ghast must use attacked even while moving");
 
         ghast.setHealth(0.0F);
-        helper.assertTrue(clipOf(ghast, true).equals("death"),
-            "a dying ghast must use death even while hurt");
+        helper.assertTrue(clipOf(ghast, true).equals("death"), "a dying ghast must use death even while hurt");
         helper.succeed();
     }
 
@@ -57,12 +55,10 @@ public final class TowerGhastAnimationTests {
     private static void checkRoaming(GameTestHelper helper, YsmPackUser ghast) {
         ghast.setRoaming("hat", 1);
         ghast.setRoaming("cloth", 2);
-        helper.assertTrue("hat=1.0;cloth=2.0".equals(ghast.roamingBlob()),
-            "开关应累积：" + ghast.roamingBlob());
+        helper.assertTrue("hat=1.0;cloth=2.0".equals(ghast.roamingBlob()), "开关应累积：" + ghast.roamingBlob());
         helper.assertTrue(ghast.roamingSeq() == 2, "每次修改都要递增序号");
         ghast.setRoaming("hat", 0);
-        helper.assertTrue("hat=0.0;cloth=2.0".equals(ghast.roamingBlob()),
-            "同名键应覆盖：" + ghast.roamingBlob());
+        helper.assertTrue("hat=0.0;cloth=2.0".equals(ghast.roamingBlob()), "同名键应覆盖：" + ghast.roamingBlob());
     }
 
     private static String clipOf(TowerGhastEntity ghast, boolean moving) {

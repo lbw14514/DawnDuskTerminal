@@ -59,9 +59,7 @@ public final class ChronoTemperature {
     public static final double POLAR_TEMPERATURE = 2.0D;
 
     /** 分带断点，与 {@link #BAND_TEMPERATURE} 一一对应 */
-    private static final double[] BREAKPOINTS = {
-        POLAR_NIGHT, NIGHT_ZONE, COLD_ZONE, TROPIC_ZONE, DAY_ZONE, POLAR_DAY
-    };
+    private static final double[] BREAKPOINTS = {POLAR_NIGHT, NIGHT_ZONE, COLD_ZONE, TROPIC_ZONE, DAY_ZONE, POLAR_DAY};
 
     /**
      * 断点处的温度，取自原版气候表的温度档边界
@@ -69,9 +67,7 @@ public final class ChronoTemperature {
      * <p>{@code -1.00 ~ -0.45} 冻结档（雪原 冰川），{@code -0.45 ~ -0.15} 寒带，{@code -0.15 ~ 0.20} 温带，
      * {@code 0.20 ~ 0.55} 热带，{@code 0.55 ~ 1.00} 热档（昼区）
      */
-    private static final double[] BAND_TEMPERATURE = {
-        -1.0D, -0.45D, -0.15D, 0.20D, 0.55D, 1.0D
-    };
+    private static final double[] BAND_TEMPERATURE = {-1.0D, -0.45D, -0.15D, 0.20D, 0.55D, 1.0D};
 
     /** 噪声在映射之后叠加的比例：只负责让分带边界弯折，不改变每一带对应的温度档 */
     public static final double SPREAD = 0.08D;
@@ -235,9 +231,10 @@ public final class ChronoTemperature {
         // smoothstep，而不是线性插值：线性插值的格线会在交界上留下能看出来的十字
         double sx = tx * tx * (3.0D - 2.0D * tx);
         double sz = tz * tz * (3.0D - 2.0D * tz);
-        return Mth.lerp(sz,
-            Mth.lerp(sx, lattice(x0, z0, salt), lattice(x0 + 1L, z0, salt)),
-            Mth.lerp(sx, lattice(x0, z0 + 1L, salt), lattice(x0 + 1L, z0 + 1L, salt)));
+        return Mth.lerp(
+                sz,
+                Mth.lerp(sx, lattice(x0, z0, salt), lattice(x0 + 1L, z0, salt)),
+                Mth.lerp(sx, lattice(x0, z0 + 1L, salt), lattice(x0 + 1L, z0 + 1L, salt)));
     }
 
     /** 格点上的伪随机值，落在 {@code [-1, 1)}；变异来自 SplitMix64 的收尾三步 */

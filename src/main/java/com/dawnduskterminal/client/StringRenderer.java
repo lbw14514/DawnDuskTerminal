@@ -13,6 +13,8 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -20,9 +22,6 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 「弦」的客户端接线
@@ -61,8 +60,7 @@ public final class StringRenderer {
      */
     private static final ResourceLocation ANIMATIONS = DawnDuskTerminal.id("animations/string.animation.json");
 
-    private StringRenderer() {
-    }
+    private StringRenderer() {}
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.STRING.get(), Renderer::new);
@@ -75,22 +73,24 @@ public final class StringRenderer {
      * 不挂光图（{@code NO_LIGHTMAP}）、写掩码保留默认的 {@code COLOR_DEPTH_WRITE}
      */
     private static RenderType glowRenderType(ResourceLocation texture) {
-        return GLOW_TYPES.computeIfAbsent(texture, location -> RenderType.create(
-            "ddt_string_glow/" + location,
-            DefaultVertexFormat.NEW_ENTITY,
-            VertexFormat.Mode.QUADS,
-            1536,
-            true,
-            true,
-            RenderType.CompositeState.builder()
-                .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
-                .setTextureState(new RenderStateShard.TextureStateShard(location, false, false))
-                .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-                .setCullState(RenderStateShard.NO_CULL)
-                .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
-                .setLightmapState(RenderStateShard.NO_LIGHTMAP)
-                .setOverlayState(RenderStateShard.OVERLAY)
-                .createCompositeState(true)));
+        return GLOW_TYPES.computeIfAbsent(
+                texture,
+                location -> RenderType.create(
+                        "ddt_string_glow/" + location,
+                        DefaultVertexFormat.NEW_ENTITY,
+                        VertexFormat.Mode.QUADS,
+                        1536,
+                        true,
+                        true,
+                        RenderType.CompositeState.builder()
+                                .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                                .setTextureState(new RenderStateShard.TextureStateShard(location, false, false))
+                                .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                                .setCullState(RenderStateShard.NO_CULL)
+                                .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+                                .setLightmapState(RenderStateShard.NO_LIGHTMAP)
+                                .setOverlayState(RenderStateShard.OVERLAY)
+                                .createCompositeState(true)));
     }
 
     private static final class Renderer extends YsmEntityRenderer<StringEntity, Animatable> {
@@ -108,16 +108,25 @@ public final class StringRenderer {
          * 因此这里换成「当前帧」的动态贴图，UV 的 0..1 才正好覆盖一帧
          */
         @Override
-        public RenderType getRenderType(StringEntity animatable, float partialTick, PoseStack poseStack,
-                                        @Nullable MultiBufferSource bufferSource, @Nullable VertexConsumer buffer,
-                                        int packedLight, ResourceLocation texture) {
+        public RenderType getRenderType(
+                StringEntity animatable,
+                float partialTick,
+                PoseStack poseStack,
+                @Nullable MultiBufferSource bufferSource,
+                @Nullable VertexConsumer buffer,
+                int packedLight,
+                ResourceLocation texture) {
             return glowRenderType(AnimatedStripTexture.frameOf(texture));
         }
 
         @Override
-        public Color getRenderColor(StringEntity animatable, float partialTick, PoseStack poseStack,
-                                    @Nullable MultiBufferSource bufferSource, @Nullable VertexConsumer buffer,
-                                    int packedLight) {
+        public Color getRenderColor(
+                StringEntity animatable,
+                float partialTick,
+                PoseStack poseStack,
+                @Nullable MultiBufferSource bufferSource,
+                @Nullable VertexConsumer buffer,
+                int packedLight) {
             return Color.WHITE;
         }
     }

@@ -25,17 +25,20 @@ public final class CreativeTabTests {
     public static void experimentTabSitsRightAfterMainTab(GameTestHelper helper) {
         CreativeModeTab main = ModCreativeTabs.MAIN.get();
         CreativeModeTab experiment = ModCreativeTabs.EXPERIMENT_ITEMS.get();
-        helper.assertTrue(experiment.tabsBefore.contains(DawnDuskTerminal.id("main")),
-            "experiment_items must declare dawnduskterminal:main as a tab before it, got " + experiment.tabsBefore);
+        helper.assertTrue(
+                experiment.tabsBefore.contains(DawnDuskTerminal.id("main")),
+                "experiment_items must declare dawnduskterminal:main as a tab before it, got " + experiment.tabsBefore);
 
         List<CreativeModeTab> sorted = CreativeModeTabRegistry.getSortedCreativeModeTabs();
         int mainIndex = sorted.indexOf(main);
         int experimentIndex = sorted.indexOf(experiment);
-        helper.assertTrue(mainIndex >= 0 && experimentIndex >= 0,
-            "both tabs must appear in the sorted tab list, main=" + mainIndex + " experiment=" + experimentIndex);
-        helper.assertTrue(experimentIndex == mainIndex + 1,
-            "experiment_items must sit right after main, got " + mainIndex + " and " + experimentIndex
-                + " in " + sorted.stream().map(CreativeModeTabRegistry::getName).toList());
+        helper.assertTrue(
+                mainIndex >= 0 && experimentIndex >= 0,
+                "both tabs must appear in the sorted tab list, main=" + mainIndex + " experiment=" + experimentIndex);
+        helper.assertTrue(
+                experimentIndex == mainIndex + 1,
+                "experiment_items must sit right after main, got " + mainIndex + " and " + experimentIndex + " in "
+                        + sorted.stream().map(CreativeModeTabRegistry::getName).toList());
         helper.succeed();
     }
 

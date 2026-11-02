@@ -13,20 +13,20 @@ import java.nio.charset.StandardCharsets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import twilightforest.init.TFBlocks;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import twilightforest.init.TFBlocks;
 
 /**
  * 试验物品 076 的规格：占位号让出、物品是那个方块的 {@link BlockItem}、方块挂了一个空方块实体当渲染落点、
@@ -52,11 +52,13 @@ public final class Experiment076Tests {
 
     @GameTest(template = "ddt_empty")
     public static void blockReplacesThePlaceholder(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(76),
-            "number 76 must not be a placeholder anymore, it has a block now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(76),
+                "number 76 must not be a placeholder anymore, it has a block now");
         Item item = ModItems.EXPERIMENT_076.get();
-        helper.assertTrue(item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_076.get(),
-            SUBJECT + " must be the item form of its own block, got " + item);
+        helper.assertTrue(
+                item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_076.get(),
+                SUBJECT + " must be the item form of its own block, got " + item);
         helper.succeed();
     }
 
@@ -73,14 +75,15 @@ public final class Experiment076Tests {
 
         BlockEntity blockEntity = level.getBlockEntity(pos);
         helper.assertTrue(blockEntity != null, SUBJECT + " must carry a block entity, otherwise nothing can draw it");
-        helper.assertTrue(blockEntity.getType() == ModBlockEntities.EXPERIMENT_076.get(),
-            "the block entity must be the one registered for " + SUBJECT + ", got " + blockEntity.getType());
+        helper.assertTrue(
+                blockEntity.getType() == ModBlockEntities.EXPERIMENT_076.get(),
+                "the block entity must be the one registered for " + SUBJECT + ", got " + blockEntity.getType());
 
         // 外观每 tick 现算，不靠 ticker；服务端这边更不能有东西要跑
         BlockState state = ModBlocks.EXPERIMENT_076.get().defaultBlockState();
-        helper.assertTrue(ModBlocks.EXPERIMENT_076.get().getTicker(level, state,
-                ModBlockEntities.EXPERIMENT_076.get()) == null,
-            "the appearance is computed in the renderer, neither side needs a ticker");
+        helper.assertTrue(
+                ModBlocks.EXPERIMENT_076.get().getTicker(level, state, ModBlockEntities.EXPERIMENT_076.get()) == null,
+                "the appearance is computed in the renderer, neither side needs a ticker");
 
         // 挖掉它一定会起一场反应，那是全局的：清场并掐掉，别让它跑到后面的测试里去
         helper.setBlock(SUBJECT_POS, Blocks.AIR);
@@ -98,40 +101,57 @@ public final class Experiment076Tests {
     public static void assetsMatchTheBlock(GameTestHelper helper) {
         JsonObject states = readJson(helper, "/assets/dawnduskterminal/blockstates/experiment_076.json");
         JsonObject variants = states.getAsJsonObject("variants");
-        helper.assertTrue(variants.size() == 1,
-            SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
-        helper.assertTrue(variants.getAsJsonObject("").get("model").getAsString()
-                .equals("dawnduskterminal:block/experiment_076"),
-            "the only variant must point at block/experiment_076, got " + variants.getAsJsonObject(""));
+        helper.assertTrue(
+                variants.size() == 1,
+                SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
+        helper.assertTrue(
+                variants.getAsJsonObject("").get("model").getAsString().equals("dawnduskterminal:block/experiment_076"),
+                "the only variant must point at block/experiment_076, got " + variants.getAsJsonObject(""));
 
         JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/block/experiment_076.json");
-        helper.assertTrue(model.get("parent").getAsString().equals("minecraft:block/cube_all"),
-            "block/experiment_076 must stay a plain cube_all, it is the fallback layer, got " + model.get("parent"));
-        helper.assertTrue(model.getAsJsonObject("textures").get("all").getAsString()
-                .equals("minecraft:block/netherrack"),
-            "the fallback layer must be one of the four candidates, got " + model.getAsJsonObject("textures"));
+        helper.assertTrue(
+                model.get("parent").getAsString().equals("minecraft:block/cube_all"),
+                "block/experiment_076 must stay a plain cube_all, it is the fallback layer, got "
+                        + model.get("parent"));
+        helper.assertTrue(
+                model.getAsJsonObject("textures").get("all").getAsString().equals("minecraft:block/netherrack"),
+                "the fallback layer must be one of the four candidates, got " + model.getAsJsonObject("textures"));
 
         JsonObject item = readJson(helper, "/assets/dawnduskterminal/models/item/experiment_076.json");
-        helper.assertTrue(item.get("parent").getAsString().equals("minecraft:builtin/entity"),
-            "the item must go through the custom renderer, a baked model cannot change its texture every tick, got "
-                + item.get("parent"));
-        helper.assertTrue(item.get("gui_light").getAsString().equals("side"),
-            "an item that is a cube needs side lighting in the inventory, got " + item.get("gui_light"));
+        helper.assertTrue(
+                item.get("parent").getAsString().equals("minecraft:builtin/entity"),
+                "the item must go through the custom renderer, a baked model cannot change its texture every tick, got "
+                        + item.get("parent"));
+        helper.assertTrue(
+                item.get("gui_light").getAsString().equals("side"),
+                "an item that is a cube needs side lighting in the inventory, got " + item.get("gui_light"));
         JsonObject display = item.getAsJsonObject("display");
-        for (String context : new String[] {"gui", "ground", "fixed", "thirdperson_righthand",
-                "firstperson_righthand", "firstperson_lefthand"}) {
-            helper.assertTrue(display.has(context),
-                "builtin/entity models carry no transforms of their own, the block poses must be written out, missing "
-                    + context);
+        for (String context : new String[] {
+            "gui", "ground", "fixed", "thirdperson_righthand", "firstperson_righthand", "firstperson_lefthand"
+        }) {
+            helper.assertTrue(
+                    display.has(context),
+                    "builtin/entity models carry no transforms of their own, the block poses must be written out, missing "
+                            + context);
         }
 
         JsonObject loot = readJson(helper, "/data/dawnduskterminal/loot_table/blocks/experiment_076.json");
-        helper.assertTrue(loot.getAsJsonArray("pools").get(0).getAsJsonObject().getAsJsonArray("entries")
-                .get(0).getAsJsonObject().get("name").getAsString().equals(SUBJECT),
-            "the block must drop itself, got " + loot.getAsJsonArray("pools").get(0));
+        helper.assertTrue(
+                loot.getAsJsonArray("pools")
+                        .get(0)
+                        .getAsJsonObject()
+                        .getAsJsonArray("entries")
+                        .get(0)
+                        .getAsJsonObject()
+                        .get("name")
+                        .getAsString()
+                        .equals(SUBJECT),
+                "the block must drop itself, got "
+                        + loot.getAsJsonArray("pools").get(0));
 
-        helper.assertTrue(ModBlocks.EXPERIMENT_076.get().defaultBlockState().is(BlockTags.MINEABLE_WITH_PICKAXE),
-            SUBJECT + " must be in #minecraft:mineable/pickaxe");
+        helper.assertTrue(
+                ModBlocks.EXPERIMENT_076.get().defaultBlockState().is(BlockTags.MINEABLE_WITH_PICKAXE),
+                SUBJECT + " must be in #minecraft:mineable/pickaxe");
         helper.succeed();
     }
 
@@ -148,8 +168,9 @@ public final class Experiment076Tests {
         ServerLevel level = helper.getLevel();
         // 0 参的那个 getLightEmission 被 NeoForge 标了废弃，用带 level/pos 的版本
         int emission = state.getLightEmission(level, pos);
-        helper.assertTrue(emission == 15,
-            SUBJECT + " must be a light source, so its own faces are lit wherever it stands, got " + emission);
+        helper.assertTrue(
+                emission == 15,
+                SUBJECT + " must be a light source, so its own faces are lit wherever it stands, got " + emission);
         helper.succeed();
     }
 
@@ -175,9 +196,10 @@ public final class Experiment076Tests {
         // 一：不是挖掉的，不起反应
         helper.setBlock(REACTION_POS, ModBlocks.EXPERIMENT_076.get());
         helper.setBlock(REACTION_POS, Blocks.AIR);
-        helper.assertTrue(Experiment076Reaction.activeCount() == 0,
-            "only mining may start the reaction, replacing the block must not, got "
-                + Experiment076Reaction.activeCount());
+        helper.assertTrue(
+                Experiment076Reaction.activeCount() == 0,
+                "only mining may start the reaction, replacing the block must not, got "
+                        + Experiment076Reaction.activeCount());
 
         // 二：玩家挖。服务端就是先调 playerWillDestroy，再把方块移除
         helper.setBlock(REACTION_POS, ModBlocks.EXPERIMENT_076.get());
@@ -185,20 +207,23 @@ public final class Experiment076Tests {
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         state.getBlock().playerWillDestroy(level, pos, state, player);
         helper.setBlock(REACTION_POS, Blocks.AIR);
-        helper.assertTrue(Experiment076Reaction.activeCount() == 1,
-            "mining " + SUBJECT + " must start the reactor reaction, got " + Experiment076Reaction.activeCount());
+        helper.assertTrue(
+                Experiment076Reaction.activeCount() == 1,
+                "mining " + SUBJECT + " must start the reactor reaction, got " + Experiment076Reaction.activeCount());
 
         for (int tick = 0; tick < 5; tick++) {
             Experiment076Reaction.tickAll();
         }
-        helper.assertTrue(count(level, pos, 1, TFBlocks.FAKE_GOLD.get(), TFBlocks.FAKE_DIAMOND.get()) == 0,
-            "the fake gold and fake diamond blocks are the stage we skip, none may appear around the block");
+        helper.assertTrue(
+                count(level, pos, 1, TFBlocks.FAKE_GOLD.get(), TFBlocks.FAKE_DIAMOND.get()) == 0,
+                "the fake gold and fake diamond blocks are the stage we skip, none may appear around the block");
 
         for (int tick = 5; tick < 120; tick++) {
             Experiment076Reaction.tickAll();
         }
-        helper.assertTrue(count(level, pos, 1, TFBlocks.REACTOR_DEBRIS.get()) > 0,
-            "after the collapse starts the shell must be filled with twilightforest:reactor_debris");
+        helper.assertTrue(
+                count(level, pos, 1, TFBlocks.REACTOR_DEBRIS.get()) > 0,
+                "after the collapse starts the shell must be filled with twilightforest:reactor_debris");
 
         Experiment076Reaction.clear();
         clearCube(level, pos, 2);
@@ -208,8 +233,8 @@ public final class Experiment076Tests {
     /** 数一数以 {@code centre} 为心、半径 {@code radius} 的立方里，方块是 {@code blocks} 之一的几个 */
     private static int count(ServerLevel level, BlockPos centre, int radius, Block... blocks) {
         int found = 0;
-        for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-radius, -radius, -radius),
-                centre.offset(radius, radius, radius))) {
+        for (BlockPos pos : BlockPos.betweenClosed(
+                centre.offset(-radius, -radius, -radius), centre.offset(radius, radius, radius))) {
             Block state = level.getBlockState(pos).getBlock();
             for (Block candidate : blocks) {
                 if (state == candidate) {
@@ -223,8 +248,8 @@ public final class Experiment076Tests {
 
     /** 把一个立方清成空气，别把块留给后面的测试 */
     private static void clearCube(ServerLevel level, BlockPos centre, int radius) {
-        for (BlockPos pos : BlockPos.betweenClosed(centre.offset(-radius, -radius, -radius),
-                centre.offset(radius, radius, radius))) {
+        for (BlockPos pos : BlockPos.betweenClosed(
+                centre.offset(-radius, -radius, -radius), centre.offset(radius, radius, radius))) {
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
         }
     }
@@ -234,7 +259,7 @@ public final class Experiment076Tests {
         try (InputStream stream = Experiment076Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read " + resource + ": " + e);
             return new JsonObject();

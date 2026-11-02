@@ -23,8 +23,8 @@ public final class GhastVoice {
         if (ghast.isSilent()) {
             return;
         }
-        ghast.level().playSound(null, ghast.getX(), ghast.getY(), ghast.getZ(),
-            sound, SoundSource.HOSTILE, VOLUME, 1.0F);
+        ghast.level()
+                .playSound(null, ghast.getX(), ghast.getY(), ghast.getZ(), sound, SoundSource.HOSTILE, VOLUME, 1.0F);
     }
 
     private GhastVoice() {}

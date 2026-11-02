@@ -1,18 +1,17 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
-import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.client.animation.YsmNoise;
-import net.minecraft.util.Mth;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.geckolib3.core.processor.IBone;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoModel;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.minecraft.util.Mth;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
  * 「弦」的两个源动画片段全部由 YSM 的状态查询构成，转换器只能把它们压成 0，于是这里按原式重算
@@ -60,6 +59,7 @@ public final class StringPose {
     private static final int[] SPOKE_SEEDS = {37, 114, 53, 71, 89, 131, 173, 211, 251, 293, 337, 383};
     /** 小型与大型的立方体高度，模型里没有这两个骨骼的立方体时才用这个兜底 */
     private static final float SMALL_SEGMENT_LENGTH = 12.2459F;
+
     private static final float LARGE_SEGMENT_LENGTH = 20.7055F;
     /** 一个方块对应的模型单位数：几何里的 {@code size}、骨骼枢轴与位置都用这个刻度 */
     private static final float MODEL_UNITS_PER_BLOCK = 16.0F;
@@ -71,6 +71,7 @@ public final class StringPose {
 
     /** 本帧复用的中间对象，渲染线程私有 */
     private final Quaternionf rootRotation = new Quaternionf();
+
     private final Quaternionf spokeRotation = new Quaternionf();
     private final Vector3f locator = new Vector3f();
 
@@ -93,7 +94,8 @@ public final class StringPose {
         double rootYDeg = -30.0D * YsmNoise.perlin(ROOT_SEED, life, 1.0D, 2.0D);
         double rootZDeg = 60.0D * life;
         GeoBoneRotation.set(layout.root, rootXDeg, rootYDeg, rootZDeg);
-        this.rootRotation.rotationZYX(layout.root.getRotationZ(), layout.root.getRotationY(), layout.root.getRotationX());
+        this.rootRotation.rotationZYX(
+                layout.root.getRotationZ(), layout.root.getRotationY(), layout.root.getRotationX());
 
         for (int i = 0; i < layout.count; i++) {
             IBone spoke = layout.spokes[i];
@@ -117,10 +119,11 @@ public final class StringPose {
             spoke.setScaleZ((float) scale);
 
             this.spokeRotation.rotationZYX(spoke.getRotationZ(), spoke.getRotationY(), spoke.getRotationX());
-            this.locator.set(0.0F, layout.locatorPivotY, 0.0F)
-                .mul((float) scale)
-                .rotate(this.spokeRotation)
-                .rotate(this.rootRotation);
+            this.locator
+                    .set(0.0F, layout.locatorPivotY, 0.0F)
+                    .mul((float) scale)
+                    .rotate(this.spokeRotation)
+                    .rotate(this.rootRotation);
             layout.locatorX[i] = this.locator.x;
             layout.locatorY[i] = this.locator.y;
             layout.locatorZ[i] = this.locator.z;
@@ -218,9 +221,17 @@ public final class StringPose {
         private final float[] locatorY;
         private final float[] locatorZ;
 
-        private Layout(IBone sentinel, IBone root, IBone[] spokes, IBone[] segments,
-                       IBone[] bodies, int count, boolean large, float locatorPivotY,
-                       float nominalLength, double zAmplitude) {
+        private Layout(
+                IBone sentinel,
+                IBone root,
+                IBone[] spokes,
+                IBone[] segments,
+                IBone[] bodies,
+                int count,
+                boolean large,
+                float locatorPivotY,
+                float nominalLength,
+                double zAmplitude) {
             this.sentinel = sentinel;
             this.root = root;
             this.spokes = spokes;
@@ -258,14 +269,24 @@ public final class StringPose {
                 complete &= spokes[i] != null && segments[i] != null && bodies[i] != null;
             }
             if (!complete) {
-                DawnDuskTerminal.LOGGER.warn(
-                    "DawnDuskTerminal 弦的模型缺少 root/spoke/segiment 骨骼，姿态层不会生效");
-                return new Layout(sentinel, root, new IBone[0], new IBone[0], new IBone[0], 0,
-                    false, 16.0F, SMALL_SEGMENT_LENGTH, 15.0D);
+                DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal 弦的模型缺少 root/spoke/segiment 骨骼，姿态层不会生效");
+                return new Layout(
+                        sentinel,
+                        root,
+                        new IBone[0],
+                        new IBone[0],
+                        new IBone[0],
+                        0,
+                        false,
+                        16.0F,
+                        SMALL_SEGMENT_LENGTH,
+                        15.0D);
             }
 
             IBone locator = processor.get("segimentlocator1");
-            float pivotY = locator instanceof AnimatedGeoBone animated ? animated.geoBone().pivot().y : (large ? 40.0F : 16.0F);
+            float pivotY = locator instanceof AnimatedGeoBone animated
+                    ? animated.geoBone().pivot().y
+                    : (large ? 40.0F : 16.0F);
             float nominalLength = large ? LARGE_SEGMENT_LENGTH : SMALL_SEGMENT_LENGTH;
             IBone firstBody = bodies[0];
             if (firstBody instanceof AnimatedGeoBone animatedBody) {
@@ -279,8 +300,8 @@ public final class StringPose {
             }
             // 大型的 Z 轴摆动幅度是 10 度，小型是 15 度，见源文件两个 parallel1
             double zAmplitude = large ? 10.0D : 15.0D;
-            return new Layout(sentinel, root, spokes, segments, bodies, count, large, pivotY,
-                nominalLength, zAmplitude);
+            return new Layout(
+                    sentinel, root, spokes, segments, bodies, count, large, pivotY, nominalLength, zAmplitude);
         }
     }
 }

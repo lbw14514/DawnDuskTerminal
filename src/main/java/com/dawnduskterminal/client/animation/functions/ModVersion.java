@@ -16,8 +16,10 @@ public class ModVersion implements Function {
             return null;
         }
 
-        return ModList.get().getModContainerById(modId)
-                .map(modContainer -> MavenVersionTranslator.artifactVersionToString((modContainer.getModInfo().getVersion())))
+        return ModList.get()
+                .getModContainerById(modId)
+                .map(modContainer -> MavenVersionTranslator.artifactVersionToString(
+                        (modContainer.getModInfo().getVersion())))
                 .orElse(null);
     }
 

@@ -40,8 +40,8 @@ public class ScarletMolybdArmorItem extends ArmorItem {
 
     /** 源文件那张 64×64 的穿戴贴图，内外两层共用 */
     @Override
-    public ResourceLocation getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot,
-                                            ArmorMaterial.Layer layer, boolean innerModel) {
+    public ResourceLocation getArmorTexture(
+            ItemStack stack, Entity entity, EquipmentSlot slot, ArmorMaterial.Layer layer, boolean innerModel) {
         return ARMOR_TEXTURE;
     }
 
@@ -65,8 +65,8 @@ public class ScarletMolybdArmorItem extends ArmorItem {
 
     /** 四个槽位都是本套部件才算穿齐 */
     public static boolean hasFullSet(Player player) {
-        for (EquipmentSlot slot : new EquipmentSlot[] {
-            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+        for (EquipmentSlot slot :
+                new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
             if (!(player.getItemBySlot(slot).getItem() instanceof ScarletMolybdArmorItem)) {
                 return false;
             }

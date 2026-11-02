@@ -20,12 +20,14 @@ public class EffectLevel extends ContextFunction<Entity> {
 
     @Override
     protected Object eval(ExecutionContext<IContext<Entity>> context, ArgumentCollection arguments) {
-        ResourceLocation effectId = MolangUtils.parseResourceLocation(context.entity(), arguments.getAsString(context, 0));
+        ResourceLocation effectId =
+                MolangUtils.parseResourceLocation(context.entity(), arguments.getAsString(context, 0));
         if (effectId == null) {
             return null;
         }
 
-        Holder.Reference<MobEffect> effect = BuiltInRegistries.MOB_EFFECT.getHolder(effectId).orElse(null);
+        Holder.Reference<MobEffect> effect =
+                BuiltInRegistries.MOB_EFFECT.getHolder(effectId).orElse(null);
         if (effect == null) {
             return 0;
         }

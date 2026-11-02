@@ -34,8 +34,8 @@ public abstract class CraftingMenuMixin {
     @Inject(method = "stillValid(Lnet/minecraft/world/entity/player/Player;)Z", at = @At("HEAD"), cancellable = true)
     private void ddt$stillValidForCraftingTables(Player player, CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(this.access.evaluate(
-            (level, pos) -> level.getBlockState(pos).is(ModBlocks.CRAFTING_TABLES)
-                && player.canInteractWithBlock(pos, 4.0),
-            true));
+                (level, pos) ->
+                        level.getBlockState(pos).is(ModBlocks.CRAFTING_TABLES) && player.canInteractWithBlock(pos, 4.0),
+                true));
     }
 }

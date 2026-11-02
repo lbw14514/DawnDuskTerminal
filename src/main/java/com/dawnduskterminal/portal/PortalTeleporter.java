@@ -5,6 +5,8 @@ import com.dawnduskterminal.registry.ModAttachments;
 import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModDimensions;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -19,9 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * 暮色森林式的即时传送。碰到传送门流体的第一个 tick 就直传另一维度（没有搜寻蓄力 没有冷却 没有中毒），
  * 到达时播原版下界传送门音效
@@ -33,6 +32,7 @@ public final class PortalTeleporter {
      * 只限区块数挡不住单块很慢的情况 再加一层软时间预算 超时就铺兜底平台
      */
     private static final long LANDING_SEARCH_BUDGET_NANOS = 8_000_000L;
+
     private static final long ARRIVAL_SEARCH_BUDGET_NANOS = 4_000_000L;
     public static final int LANDING_SEARCH_RADIUS = 320;
     public static final int LANDING_MIN_Y = 0;
@@ -46,8 +46,8 @@ public final class PortalTeleporter {
         }
         boolean entering = !current.dimension().equals(ModDimensions.CHRONO);
         ServerLevel target = entering
-            ? current.getServer().getLevel(ModDimensions.CHRONO)
-            : current.getServer().overworld();
+                ? current.getServer().getLevel(ModDimensions.CHRONO)
+                : current.getServer().overworld();
         if (target == null) {
             return;
         }
@@ -63,12 +63,14 @@ public final class PortalTeleporter {
             }
         } else if (entity instanceof Player player) {
             PortalState state = player.getData(ModAttachments.PORTAL_STATE);
-            if (state.hasReturn() && state.returnDim().equals(target.dimension().location().toString())) {
+            if (state.hasReturn()
+                    && state.returnDim().equals(target.dimension().location().toString())) {
                 landing = findSafeLanding(target, state.x(), state.z(), Mth.floor(state.y()));
             }
         }
         entity.teleportTo(target, landing.x, landing.y, landing.z, Set.of(), entity.getYRot(), entity.getXRot());
-        target.playSound(null, landing.x, landing.y, landing.z, SoundEvents.PORTAL_TRAVEL, SoundSource.PLAYERS, 1.0F, 1.0F);
+        target.playSound(
+                null, landing.x, landing.y, landing.z, SoundEvents.PORTAL_TRAVEL, SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     public static Vec3 findSafeLanding(ServerLevel level, double originX, double originZ, int originY) {
@@ -100,8 +102,11 @@ public final class PortalTeleporter {
                     }
                     Vec3 found = probe(level, loaded, baseX + dx, baseZ + dz, originY);
                     if (found != null) {
-                        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal landing found at {} {} after {} chunks",
-                            (int) found.x, (int) found.y, loaded.size());
+                        DawnDuskTerminal.LOGGER.info(
+                                "DawnDuskTerminal landing found at {} {} after {} chunks",
+                                (int) found.x,
+                                (int) found.y,
+                                loaded.size());
                         return found;
                     }
                 }
@@ -161,9 +166,15 @@ public final class PortalTeleporter {
                 if (dx * dx + dz * dz > radius * radius) {
                     continue;
                 }
-                level.setBlockAndUpdate(center.offset(dx, -1, dz), ModTerrainBlocks.ROSY_GRASS.get().defaultBlockState());
-                level.setBlockAndUpdate(center.offset(dx, -2, dz), ModTerrainBlocks.ROSY_DIRT.get().defaultBlockState());
-                level.setBlockAndUpdate(center.offset(dx, -3, dz), ModTerrainBlocks.CANOPY_STONE.get().defaultBlockState());
+                level.setBlockAndUpdate(
+                        center.offset(dx, -1, dz),
+                        ModTerrainBlocks.ROSY_GRASS.get().defaultBlockState());
+                level.setBlockAndUpdate(
+                        center.offset(dx, -2, dz),
+                        ModTerrainBlocks.ROSY_DIRT.get().defaultBlockState());
+                level.setBlockAndUpdate(
+                        center.offset(dx, -3, dz),
+                        ModTerrainBlocks.CANOPY_STONE.get().defaultBlockState());
             }
         }
         for (int dy = 0; dy <= 4; dy++) {
@@ -220,7 +231,9 @@ public final class PortalTeleporter {
                     }
                     BlockPos feet = new BlockPos(x, ground + 1, z);
                     if (!level.getBlockState(feet).getFluidState().isEmpty()
-                        || !level.getBlockState(feet.above()).getFluidState().isEmpty()) {
+                            || !level.getBlockState(feet.above())
+                                    .getFluidState()
+                                    .isEmpty()) {
                         continue;
                     }
                     chosenX = x;

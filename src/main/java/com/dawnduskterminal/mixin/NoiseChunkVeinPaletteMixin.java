@@ -34,10 +34,17 @@ public abstract class NoiseChunkVeinPaletteMixin {
     private NoiseChunk.BlockStateFiller blockStateRule;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void ddt$paletteVeinFillers(int cellCountXZ, RandomState randomState, int blockX, int blockZ,
-                                        NoiseSettings noiseSettings, DensityFunctions.BeardifierOrMarker beardifier,
-                                        NoiseGeneratorSettings settings, Aquifer.FluidPicker fluidPicker,
-                                        Blender blender, CallbackInfo ci) {
+    private void ddt$paletteVeinFillers(
+            int cellCountXZ,
+            RandomState randomState,
+            int blockX,
+            int blockZ,
+            NoiseSettings noiseSettings,
+            DensityFunctions.BeardifierOrMarker beardifier,
+            NoiseGeneratorSettings settings,
+            Aquifer.FluidPicker fluidPicker,
+            Blender blender,
+            CallbackInfo ci) {
         if (!ChronoDimensionProbe.isChrono(settings)) {
             return;
         }

@@ -63,28 +63,36 @@ public final class Experiment069Tests {
 
     @GameTest(template = "ddt_empty", batch = "ddt069_registration")
     public static void blockReplacesThePlaceholder(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(69),
-            "number 69 must not be a placeholder anymore, it has a block now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(69),
+                "number 69 must not be a placeholder anymore, it has a block now");
         Item item = ModItems.EXPERIMENT_069.get();
-        helper.assertTrue(item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_069.get(),
-            SUBJECT + " must be the item form of its own block, got " + item);
+        helper.assertTrue(
+                item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_069.get(),
+                SUBJECT + " must be the item form of its own block, got " + item);
         // 方块物品的名字取自方块，所以语言文件的键是 block.dawnduskterminal.experiment_069
-        helper.assertTrue(item.getDescriptionId().equals("block.dawnduskterminal.experiment_069"),
-            "a block item must take its name from the block, got " + item.getDescriptionId());
+        helper.assertTrue(
+                item.getDescriptionId().equals("block.dawnduskterminal.experiment_069"),
+                "a block item must take its name from the block, got " + item.getDescriptionId());
 
         BlockState state = ModBlocks.EXPERIMENT_069.get().defaultBlockState();
-        helper.assertTrue(state.getProperties().isEmpty(),
-            SUBJECT + " must carry no state, it works as soon as it is placed, got " + state.getProperties());
-        helper.assertTrue(state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)) == 15,
-            SUBJECT + " must emit 15 light levels, it is its own light source and carries no glow layer, got "
-                + state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)));
-        helper.assertTrue(state.is(BlockTags.MINEABLE_WITH_PICKAXE),
-            SUBJECT + " must stay in #minecraft:mineable/pickaxe, otherwise a pickaxe cannot drop it");
-        helper.assertTrue(BuiltInRegistries.BLOCK_ENTITY_TYPE.containsKey(DawnDuskTerminal.id("experiment_069")),
-            "dawnduskterminal:experiment_069 must be registered as a block entity type, the field needs one");
+        helper.assertTrue(
+                state.getProperties().isEmpty(),
+                SUBJECT + " must carry no state, it works as soon as it is placed, got " + state.getProperties());
+        helper.assertTrue(
+                state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)) == 15,
+                SUBJECT + " must emit 15 light levels, it is its own light source and carries no glow layer, got "
+                        + state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)));
+        helper.assertTrue(
+                state.is(BlockTags.MINEABLE_WITH_PICKAXE),
+                SUBJECT + " must stay in #minecraft:mineable/pickaxe, otherwise a pickaxe cannot drop it");
+        helper.assertTrue(
+                BuiltInRegistries.BLOCK_ENTITY_TYPE.containsKey(DawnDuskTerminal.id("experiment_069")),
+                "dawnduskterminal:experiment_069 must be registered as a block entity type, the field needs one");
         // 场的大小就写在这里：17×17×17，中心那一格往每个方向各 8 格
-        helper.assertTrue(CubeField.SIZE == 17 && CubeField.RADIUS == 8,
-            "the field must stay 17x17x17, got " + CubeField.SIZE + " (radius " + CubeField.RADIUS + ")");
+        helper.assertTrue(
+                CubeField.SIZE == 17 && CubeField.RADIUS == 8,
+                "the field must stay 17x17x17, got " + CubeField.SIZE + " (radius " + CubeField.RADIUS + ")");
         helper.succeed();
     }
 
@@ -103,17 +111,20 @@ public final class Experiment069Tests {
         BlockPos lampOutside = helper.absolutePos(CENTRE.offset(OUTSIDE_X, 0, 0));
         level.setBlockAndUpdate(lampInside, Blocks.REDSTONE_LAMP.defaultBlockState());
         level.setBlockAndUpdate(lampOutside, Blocks.REDSTONE_LAMP.defaultBlockState());
-        helper.assertFalse(level.getBlockState(lampInside).getValue(RedstoneLampBlock.LIT),
-            "a freshly placed redstone lamp starts unlit");
+        helper.assertFalse(
+                level.getBlockState(lampInside).getValue(RedstoneLampBlock.LIT),
+                "a freshly placed redstone lamp starts unlit");
 
         // 红石块贴上灯的一侧：这一步会广播邻居更新
         level.setBlockAndUpdate(lampInside.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
         level.setBlockAndUpdate(lampOutside.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
 
-        helper.assertFalse(level.getBlockState(lampInside).getValue(RedstoneLampBlock.LIT),
-            "a lamp inside the field must not receive the neighbor update, it has power next to it but must stay unlit");
-        helper.assertTrue(level.getBlockState(lampOutside).getValue(RedstoneLampBlock.LIT),
-            "a lamp outside the field must light up like vanilla, otherwise the check above proves nothing");
+        helper.assertFalse(
+                level.getBlockState(lampInside).getValue(RedstoneLampBlock.LIT),
+                "a lamp inside the field must not receive the neighbor update, it has power next to it but must stay unlit");
+        helper.assertTrue(
+                level.getBlockState(lampOutside).getValue(RedstoneLampBlock.LIT),
+                "a lamp outside the field must light up like vanilla, otherwise the check above proves nothing");
         discardMachine(level, helper.absolutePos(CENTRE));
         helper.succeed();
     }
@@ -132,19 +143,23 @@ public final class Experiment069Tests {
         BlockPos fenceOutside = helper.absolutePos(CENTRE.offset(OUTSIDE_X, 0, 2));
         level.setBlockAndUpdate(fenceInside, Blocks.OAK_FENCE.defaultBlockState());
         level.setBlockAndUpdate(fenceOutside, Blocks.OAK_FENCE.defaultBlockState());
-        helper.assertFalse(level.getBlockState(fenceInside).getValue(FenceBlock.SOUTH),
-            "the fence is placed before anything stands next to it, it must not connect yet");
-        helper.assertFalse(level.getBlockState(fenceOutside).getValue(FenceBlock.SOUTH),
-            "the control fence is placed before anything stands next to it, it must not connect yet");
+        helper.assertFalse(
+                level.getBlockState(fenceInside).getValue(FenceBlock.SOUTH),
+                "the fence is placed before anything stands next to it, it must not connect yet");
+        helper.assertFalse(
+                level.getBlockState(fenceOutside).getValue(FenceBlock.SOUTH),
+                "the control fence is placed before anything stands next to it, it must not connect yet");
 
         // 各放一块石头在南边：这一步会给栅栏排一条形状更新
         level.setBlockAndUpdate(fenceInside.south(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(fenceOutside.south(), Blocks.STONE.defaultBlockState());
 
-        helper.assertFalse(level.getBlockState(fenceInside).getValue(FenceBlock.SOUTH),
-            "the fence inside the field must not reshape, its shape update was suppressed");
-        helper.assertTrue(level.getBlockState(fenceOutside).getValue(FenceBlock.SOUTH),
-            "the fence outside the field must connect to the stone like vanilla, otherwise the check above proves nothing");
+        helper.assertFalse(
+                level.getBlockState(fenceInside).getValue(FenceBlock.SOUTH),
+                "the fence inside the field must not reshape, its shape update was suppressed");
+        helper.assertTrue(
+                level.getBlockState(fenceOutside).getValue(FenceBlock.SOUTH),
+                "the fence outside the field must connect to the stone like vanilla, otherwise the check above proves nothing");
         discardMachine(level, helper.absolutePos(CENTRE));
         helper.succeed();
     }
@@ -163,16 +178,20 @@ public final class Experiment069Tests {
         BlockPos sandOutside = helper.absolutePos(CENTRE.offset(OUTSIDE_X, 0, 2));
         level.setBlockAndUpdate(sandInside, Blocks.SAND.defaultBlockState());
         level.setBlockAndUpdate(sandOutside, Blocks.SAND.defaultBlockState());
-        helper.assertTrue(level.getBlockTicks().hasScheduledTick(sandInside, Blocks.SAND),
-            "placing sand must schedule its own falling tick, otherwise this test proves nothing");
-        helper.assertTrue(level.getBlockTicks().hasScheduledTick(sandOutside, Blocks.SAND),
-            "placing sand outside the field must schedule its falling tick too");
+        helper.assertTrue(
+                level.getBlockTicks().hasScheduledTick(sandInside, Blocks.SAND),
+                "placing sand must schedule its own falling tick, otherwise this test proves nothing");
+        helper.assertTrue(
+                level.getBlockTicks().hasScheduledTick(sandOutside, Blocks.SAND),
+                "placing sand outside the field must schedule its falling tick too");
 
         helper.runAfterDelay(8, () -> {
-            helper.assertTrue(level.getBlockState(sandInside).is(Blocks.SAND),
-                "sand inside the field must not fall, its scheduled tick was suppressed");
-            helper.assertTrue(level.getBlockState(sandOutside).isAir(),
-                "sand outside the field must fall like vanilla, otherwise the check above proves nothing");
+            helper.assertTrue(
+                    level.getBlockState(sandInside).is(Blocks.SAND),
+                    "sand inside the field must not fall, its scheduled tick was suppressed");
+            helper.assertTrue(
+                    level.getBlockState(sandOutside).isAir(),
+                    "sand outside the field must fall like vanilla, otherwise the check above proves nothing");
             discardMachine(level, helper.absolutePos(CENTRE));
             helper.succeed();
         });
@@ -207,23 +226,26 @@ public final class Experiment069Tests {
         BlockState ice = level.getBlockState(iceOutside);
         int threshold = 11 - ice.getLightBlock(level, iceOutside);
         boolean lit = level.getBrightness(LightLayer.BLOCK, iceInside) > threshold
-            && level.getBrightness(LightLayer.BLOCK, iceOutside) > threshold;
+                && level.getBrightness(LightLayer.BLOCK, iceOutside) > threshold;
         if (!lit && attempt < MAX_LIGHT_POLL_TICKS) {
             helper.runAfterDelay(1, () -> whenIceIsLit(helper, iceInside, iceOutside, attempt + 1));
             return;
         }
-        helper.assertTrue(lit,
-            "the light engine never lit both ice blocks (threshold " + threshold + ", inside "
-                + level.getBrightness(LightLayer.BLOCK, iceInside) + ", outside "
-                + level.getBrightness(LightLayer.BLOCK, iceOutside) + ")");
+        helper.assertTrue(
+                lit,
+                "the light engine never lit both ice blocks (threshold " + threshold + ", inside "
+                        + level.getBrightness(LightLayer.BLOCK, iceInside) + ", outside "
+                        + level.getBrightness(LightLayer.BLOCK, iceOutside) + ")");
 
         level.getBlockState(iceInside).randomTick(level, iceInside, level.getRandom());
-        helper.assertTrue(level.getBlockState(iceInside).is(Blocks.ICE),
-            "ice inside the field must not melt, its random tick was suppressed");
+        helper.assertTrue(
+                level.getBlockState(iceInside).is(Blocks.ICE),
+                "ice inside the field must not melt, its random tick was suppressed");
 
         level.getBlockState(iceOutside).randomTick(level, iceOutside, level.getRandom());
-        helper.assertTrue(level.getBlockState(iceOutside).is(Blocks.WATER),
-            "ice outside the field must melt under the same light, otherwise the check above proves nothing");
+        helper.assertTrue(
+                level.getBlockState(iceOutside).is(Blocks.WATER),
+                "ice outside the field must melt under the same light, otherwise the check above proves nothing");
         discardMachine(level, helper.absolutePos(CENTRE));
         helper.succeed();
     }
@@ -246,18 +268,21 @@ public final class Experiment069Tests {
         level.removeBlock(waterInside.below(), false);
         level.removeBlock(waterOutside.below(), false);
 
-        helper.assertTrue(Experiment069Field.suppressed(level, waterInside),
-            "the machine must already cover its own field in the same tick it was placed");
-        helper.assertFalse(Experiment069Field.suppressed(level, waterOutside),
-            "the control water must sit outside every field");
+        helper.assertTrue(
+                Experiment069Field.suppressed(level, waterInside),
+                "the machine must already cover its own field in the same tick it was placed");
+        helper.assertFalse(
+                Experiment069Field.suppressed(level, waterOutside), "the control water must sit outside every field");
 
         level.getFluidState(waterInside).tick(level, waterInside);
         level.getFluidState(waterOutside).tick(level, waterOutside);
 
-        helper.assertTrue(level.getFluidState(waterInside.below()).isEmpty(),
-            "water inside the field must not flow down, its fluid tick was suppressed");
-        helper.assertTrue(!level.getFluidState(waterOutside.below()).isEmpty(),
-            "water outside the field must flow down like vanilla, otherwise the check above proves nothing");
+        helper.assertTrue(
+                level.getFluidState(waterInside.below()).isEmpty(),
+                "water inside the field must not flow down, its fluid tick was suppressed");
+        helper.assertTrue(
+                !level.getFluidState(waterOutside.below()).isEmpty(),
+                "water outside the field must flow down like vanilla, otherwise the check above proves nothing");
         discardMachine(level, helper.absolutePos(CENTRE));
         helper.succeed();
     }
@@ -274,13 +299,15 @@ public final class Experiment069Tests {
         BlockPos lamp = helper.absolutePos(CENTRE.offset(2, 0, 0));
         level.setBlockAndUpdate(lamp, Blocks.REDSTONE_LAMP.defaultBlockState());
         level.setBlockAndUpdate(lamp.east(), Blocks.REDSTONE_BLOCK.defaultBlockState());
-        helper.assertFalse(level.getBlockState(lamp).getValue(RedstoneLampBlock.LIT),
-            "the field must already work in the same tick the block was placed");
+        helper.assertFalse(
+                level.getBlockState(lamp).getValue(RedstoneLampBlock.LIT),
+                "the field must already work in the same tick the block was placed");
 
         level.setBlockAndUpdate(centre, Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(lamp.west(), Blocks.REDSTONE_BLOCK.defaultBlockState());
-        helper.assertTrue(level.getBlockState(lamp).getValue(RedstoneLampBlock.LIT),
-            "breaking the block must turn the field off, the next neighbor update has to land again");
+        helper.assertTrue(
+                level.getBlockState(lamp).getValue(RedstoneLampBlock.LIT),
+                "breaking the block must turn the field off, the next neighbor update has to land again");
         helper.succeed();
     }
 
@@ -294,30 +321,45 @@ public final class Experiment069Tests {
     public static void assetsMatchTheBlock(GameTestHelper helper) {
         JsonObject states = readJson(helper, "/assets/dawnduskterminal/blockstates/experiment_069.json");
         JsonObject variants = states.getAsJsonObject("variants");
-        helper.assertTrue(variants.size() == 1,
-            SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
-        helper.assertTrue(variants.getAsJsonObject("").get("model").getAsString()
-                .equals("dawnduskterminal:block/experiment_069"),
-            "the only variant must point at block/experiment_069, got " + variants.getAsJsonObject(""));
+        helper.assertTrue(
+                variants.size() == 1,
+                SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
+        helper.assertTrue(
+                variants.getAsJsonObject("").get("model").getAsString().equals("dawnduskterminal:block/experiment_069"),
+                "the only variant must point at block/experiment_069, got " + variants.getAsJsonObject(""));
 
         JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/block/experiment_069.json");
-        helper.assertTrue(model.get("parent").getAsString().equals("minecraft:block/cube_all"),
-            "block/experiment_069 must stay a plain cube_all model, got " + model.get("parent"));
+        helper.assertTrue(
+                model.get("parent").getAsString().equals("minecraft:block/cube_all"),
+                "block/experiment_069 must stay a plain cube_all model, got " + model.get("parent"));
         JsonObject textures = model.getAsJsonObject("textures");
-        helper.assertTrue(textures.entrySet().size() == 1
-                && textures.get("all").getAsString().equals("dawnduskterminal:block/experiment_069"),
-            "the block is a light source, one texture is enough, got " + textures);
-        helper.assertFalse(model.has("elements"),
-            "one texture needs no hand written elements, the cube comes from cube_all, got " + model.get("elements"));
+        helper.assertTrue(
+                textures.entrySet().size() == 1
+                        && textures.get("all").getAsString().equals("dawnduskterminal:block/experiment_069"),
+                "the block is a light source, one texture is enough, got " + textures);
+        helper.assertFalse(
+                model.has("elements"),
+                "one texture needs no hand written elements, the cube comes from cube_all, got "
+                        + model.get("elements"));
 
         JsonObject item = readJson(helper, "/assets/dawnduskterminal/models/item/experiment_069.json");
-        helper.assertTrue(item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_069"),
-            "the item model must point at the block model, got " + item.get("parent"));
+        helper.assertTrue(
+                item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_069"),
+                "the item model must point at the block model, got " + item.get("parent"));
 
         JsonObject loot = readJson(helper, "/data/dawnduskterminal/loot_table/blocks/experiment_069.json");
-        helper.assertTrue(loot.getAsJsonArray("pools").get(0).getAsJsonObject().getAsJsonArray("entries")
-                .get(0).getAsJsonObject().get("name").getAsString().equals(SUBJECT),
-            "the block must drop itself, got " + loot.getAsJsonArray("pools").get(0));
+        helper.assertTrue(
+                loot.getAsJsonArray("pools")
+                        .get(0)
+                        .getAsJsonObject()
+                        .getAsJsonArray("entries")
+                        .get(0)
+                        .getAsJsonObject()
+                        .get("name")
+                        .getAsString()
+                        .equals(SUBJECT),
+                "the block must drop itself, got "
+                        + loot.getAsJsonArray("pools").get(0));
 
         for (String texture : new String[] {"experiment_069"}) {
             String path = "/assets/dawnduskterminal/textures/block/" + texture + ".png";
@@ -340,10 +382,13 @@ public final class Experiment069Tests {
      */
     @GameTest(template = "ddt_empty", batch = "ddt069_frame")
     public static void theFieldFrameIsDrawnOnTheClientOnly(GameTestHelper helper) {
-        helper.assertTrue(CubeFieldMarker.halfExtent() == CubeField.RADIUS + 0.5D,
-            "the frame must sit on the outer face of the outermost field blocks, got " + CubeFieldMarker.halfExtent());
-        helper.assertTrue(CubeFieldMarker.outlineCount() == 12,
-            "the anti-builder traces twelve outlines, got " + CubeFieldMarker.outlineCount());
+        helper.assertTrue(
+                CubeFieldMarker.halfExtent() == CubeField.RADIUS + 0.5D,
+                "the frame must sit on the outer face of the outermost field blocks, got "
+                        + CubeFieldMarker.halfExtent());
+        helper.assertTrue(
+                CubeFieldMarker.outlineCount() == 12,
+                "the anti-builder traces twelve outlines, got " + CubeFieldMarker.outlineCount());
 
         BlockPos centre = helper.absolutePos(CENTRE);
         double low = -CubeField.RADIUS;
@@ -359,9 +404,10 @@ public final class Experiment069Tests {
                 double y = edge[end * 3 + 1] - centre.getY();
                 double z = edge[end * 3 + 2] - centre.getZ();
                 for (double axis : new double[] {x, y, z}) {
-                    helper.assertTrue(axis == low || axis == high,
-                        "every end of every edge must sit on the field boundary (" + low + " or " + high
-                            + "), outline " + outline + " has " + axis);
+                    helper.assertTrue(
+                            axis == low || axis == high,
+                            "every end of every edge must sit on the field boundary (" + low + " or " + high
+                                    + "), outline " + outline + " has " + axis);
                 }
             }
             int differing = 0;
@@ -370,8 +416,8 @@ public final class Experiment069Tests {
                     differing++;
                 }
             }
-            helper.assertTrue(differing == 1, "outline " + outline + " must be an edge, it varies along "
-                + differing + " axes");
+            helper.assertTrue(
+                    differing == 1, "outline " + outline + " must be an edge, it varies along " + differing + " axes");
             if (edge[4] != edge[1]) {
                 vertical++;
             } else if (edge[1] - centre.getY() == high) {
@@ -380,14 +426,18 @@ public final class Experiment069Tests {
                 bottom++;
             }
         }
-        helper.assertTrue(top == 4 && bottom == 4 && vertical == 4,
-            "twelve outlines split into four on top, four on the bottom and four vertical, got "
-                + top + " / " + bottom + " / " + vertical);
+        helper.assertTrue(
+                top == 4 && bottom == 4 && vertical == 4,
+                "twelve outlines split into four on top, four on the bottom and four vertical, got " + top + " / "
+                        + bottom + " / " + vertical);
 
         BlockState state = ModBlocks.EXPERIMENT_069.get().defaultBlockState();
-        helper.assertTrue(ModBlocks.EXPERIMENT_069.get().getTicker(helper.getLevel(), state,
-                ModBlockEntities.EXPERIMENT_069.get()) == null,
-            "the field frame is drawn on the client only, the server must get no ticker at all");
+        helper.assertTrue(
+                ModBlocks.EXPERIMENT_069
+                                .get()
+                                .getTicker(helper.getLevel(), state, ModBlockEntities.EXPERIMENT_069.get())
+                        == null,
+                "the field frame is drawn on the client only, the server must get no ticker at all");
         helper.succeed();
     }
 
@@ -406,7 +456,7 @@ public final class Experiment069Tests {
         try (InputStream stream = Experiment069Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read " + resource + ": " + e);
             return new JsonObject();

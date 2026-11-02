@@ -2,6 +2,13 @@ package com.dawnduskterminal.portal;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.registry.ModBlocks;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -10,26 +17,18 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
 public final class PortalShape {
     public static final int MIN_WATER = 4;
     public static final int MAX_WATER = 64;
 
     public static final TagKey<Block> PORTAL_FLUID_TAG =
-        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/fluid"));
+            TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/fluid"));
 
     public static final TagKey<Block> PORTAL_EDGE_TAG =
-        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/edge"));
+            TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/edge"));
 
     public static final TagKey<Block> PORTAL_DECO_TAG =
-        TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/decoration"));
+            TagKey.create(Registries.BLOCK, DawnDuskTerminal.id("portal/decoration"));
 
     private final List<BlockPos> waterBlocks;
     private final List<BlockPos> frameBlocks;

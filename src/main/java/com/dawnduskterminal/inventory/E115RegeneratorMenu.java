@@ -36,11 +36,13 @@ public class E115RegeneratorMenu extends AbstractContainerMenu {
 
     /** 玩家背包的 36 格紧跟在机器那一格后面 */
     public static final int INVENTORY_START = SLOT_COUNT;
+
     public static final int INVENTORY_END = INVENTORY_START + 27;
     public static final int HOTBAR_END = INVENTORY_END + 9;
 
     /** 产物格：原版 3x3 的正中那一格（62 + 18, 17 + 18） */
     public static final int OUTPUT_X = 80;
+
     public static final int OUTPUT_Y = 35;
 
     public static final int INVENTORY_X = 8;
@@ -51,8 +53,8 @@ public class E115RegeneratorMenu extends AbstractContainerMenu {
     protected final Level level;
 
     /** 客户端用：服务端把方块坐标写在开界面的包里，这里按坐标把方块实体找回来 */
-    public static E115RegeneratorMenu fromNetwork(int containerId, Inventory inventory,
-                                                  RegistryFriendlyByteBuf buffer) {
+    public static E115RegeneratorMenu fromNetwork(
+            int containerId, Inventory inventory, RegistryFriendlyByteBuf buffer) {
         BlockPos pos = buffer.readBlockPos();
         if (inventory.player.level().getBlockEntity(pos) instanceof E115RegeneratorBlockEntity entity) {
             return new E115RegeneratorMenu(containerId, inventory, entity);
@@ -71,8 +73,7 @@ public class E115RegeneratorMenu extends AbstractContainerMenu {
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(inventory, col + row * 9 + 9,
-                    INVENTORY_X + col * 18, INVENTORY_Y + row * 18));
+                this.addSlot(new Slot(inventory, col + row * 9 + 9, INVENTORY_X + col * 18, INVENTORY_Y + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {

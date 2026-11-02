@@ -78,17 +78,19 @@ final class Experiment076Cube {
             float v = corner <= 1 ? v1 : v0;
             // 属性顺序照暮色森林反应堆碎片那一份：位置 贴图 光图 叠加层 法线 颜色
             buffer.addVertex(matrix, xyz[0], xyz[1], xyz[2])
-                .setUv(u, v)
-                .setLight(LIGHT)
-                .setOverlay(overlay)
-                .setNormal(face.getStepX(), face.getStepY(), face.getStepZ())
-                .setColor(1.0F, 1.0F, 1.0F, 1.0F);
+                    .setUv(u, v)
+                    .setLight(LIGHT)
+                    .setOverlay(overlay)
+                    .setNormal(face.getStepX(), face.getStepY(), face.getStepZ())
+                    .setColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
 
     /** 图集里的贴图。每帧现取，换资源包之后不用清任何缓存 */
     private static TextureAtlasSprite sprite(ResourceLocation id) {
-        return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(id);
+        return Minecraft.getInstance()
+                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                .apply(id);
     }
 
     /** splitmix64 的收尾混合：把 tick 与坐标搅散，低两位拿来四选一 */

@@ -3,13 +3,6 @@ package com.dawnduskterminal.compat;
 import com.dawnduskterminal.DawnDuskTerminal;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.Util;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
-import net.minecraft.world.level.biome.FeatureSorter;
-import net.minecraft.world.level.levelgen.placement.PlacedFeature;
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,15 +13,20 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import net.minecraft.Util;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
+import net.minecraft.world.level.biome.FeatureSorter;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public final class FeatureOrderCompat {
     private static final Comparator<FeatureData> ORDER =
-        Comparator.comparingInt(FeatureData::step).thenComparingInt(FeatureData::featureIndex);
+            Comparator.comparingInt(FeatureData::step).thenComparingInt(FeatureData::featureIndex);
 
     private FeatureOrderCompat() {}
 
-    private record FeatureData(int featureIndex, int step, PlacedFeature feature) {
-    }
+    private record FeatureData(int featureIndex, int step, PlacedFeature feature) {}
 
     public static <T> List<FeatureSorter.StepFeatureData> buildFeaturesPerStep(
             List<T> biomes, Function<T, List<HolderSet<PlacedFeature>>> features) {
@@ -124,8 +122,9 @@ public final class FeatureOrderCompat {
 
         if (broken > 0) {
             DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal relaxed {} feature order cycle(s) across {} feature entries, biome families were mixed",
-                broken, order.size());
+                    "DawnDuskTerminal relaxed {} feature order cycle(s) across {} feature entries, biome families were mixed",
+                    broken,
+                    order.size());
         }
         return order;
     }

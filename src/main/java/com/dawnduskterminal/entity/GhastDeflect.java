@@ -48,8 +48,8 @@ public final class GhastDeflect {
         }
 
         fireball.setOwner(ghast);
-        Vec3 spawn = ghast.position().add(0.0D, ghast.getBbHeight() * 0.5D, 0.0D)
-            .add(direction.scale(origin));
+        Vec3 spawn =
+                ghast.position().add(0.0D, ghast.getBbHeight() * 0.5D, 0.0D).add(direction.scale(origin));
         fireball.setPos(spawn.x, spawn.y, spawn.z);
         fireball.setDeltaMovement(direction.scale(Math.max(incoming.length(), MIN_SPEED)));
         fireball.hasImpulse = true;
@@ -61,8 +61,7 @@ public final class GhastDeflect {
      * @param handler 只在服务端调用，收到的火球已经不会再撞上这只生物
      */
     public static <T extends Entity> void handleImpact(
-        ProjectileImpactEvent event, Class<T> type, BiConsumer<T, LargeFireball> handler
-    ) {
+            ProjectileImpactEvent event, Class<T> type, BiConsumer<T, LargeFireball> handler) {
         if (!(event.getProjectile() instanceof LargeFireball fireball)) {
             return;
         }

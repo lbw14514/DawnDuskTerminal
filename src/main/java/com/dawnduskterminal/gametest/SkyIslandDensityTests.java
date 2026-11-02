@@ -20,15 +20,16 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class SkyIslandDensityTests {
     private static final ResourceKey<NoiseGeneratorSettings> CHRONO =
-        ResourceKey.create(Registries.NOISE_SETTINGS, DawnDuskTerminal.id("chrono"));
+            ResourceKey.create(Registries.NOISE_SETTINGS, DawnDuskTerminal.id("chrono"));
 
     @GameTest(template = "ddt_empty")
     public static void densityFunctionsAreResolved(GameTestHelper helper) {
         remember(helper);
 
-        helper.assertTrue(SkyIslandDensity.ready(),
-            "the island predicate must resolve " + SkyIslandDensity.SKY_ISLAND + " and "
-                + SkyIslandDensity.BASE_3D_NOISE);
+        helper.assertTrue(
+                SkyIslandDensity.ready(),
+                "the island predicate must resolve " + SkyIslandDensity.SKY_ISLAND + " and "
+                        + SkyIslandDensity.BASE_3D_NOISE);
         helper.succeed();
     }
 
@@ -38,8 +39,9 @@ public final class SkyIslandDensityTests {
 
         for (int x = -64; x <= 64; x += 16) {
             for (int z = -64; z <= 64; z += 16) {
-                helper.assertTrue(!SkyIslandDensity.isIsland(x, -50, z),
-                    "solid ground at y -50 must never be an island, failed at " + x + "," + z);
+                helper.assertTrue(
+                        !SkyIslandDensity.isIsland(x, -50, z),
+                        "solid ground at y -50 must never be an island, failed at " + x + "," + z);
             }
         }
         helper.succeed();
@@ -48,10 +50,10 @@ public final class SkyIslandDensityTests {
     /** 用真实的晨昏线设置建一个带种子的 {@code RandomState}，跟世界生成走的同一条路 */
     private static void remember(GameTestHelper helper) {
         var access = helper.getLevel().getServer().registryAccess();
-        NoiseGeneratorSettings settings = access.registryOrThrow(Registries.NOISE_SETTINGS)
-            .getOrThrow(CHRONO);
+        NoiseGeneratorSettings settings =
+                access.registryOrThrow(Registries.NOISE_SETTINGS).getOrThrow(CHRONO);
         SkyIslandDensity.remember(
-            RandomState.create(settings, access.lookupOrThrow(Registries.NOISE), 0x5EED5EEDL), settings);
+                RandomState.create(settings, access.lookupOrThrow(Registries.NOISE), 0x5EED5EEDL), settings);
     }
 
     @GameTest(template = "ddt_empty")
@@ -73,18 +75,21 @@ public final class SkyIslandDensityTests {
                     islandColumns++;
                 }
                 for (int y = 136; y < 140; y++) {
-                    helper.assertTrue(!SkyIslandDensity.isIsland(x, y, z),
-                        "no island material may sit below the band, failed at " + x + "," + y + "," + z);
+                    helper.assertTrue(
+                            !SkyIslandDensity.isIsland(x, y, z),
+                            "no island material may sit below the band, failed at " + x + "," + y + "," + z);
                 }
             }
         }
         double coverage = (double) islandColumns / columns;
 
-        helper.assertTrue(islandColumns > 0,
-            "the y 140~310 band must hold island material somewhere near spawn, found none");
+        helper.assertTrue(
+                islandColumns > 0, "the y 140~310 band must hold island material somewhere near spawn, found none");
         // 实测约 7%，给到 12% 只是挡住"整片大陆"这种回归
-        helper.assertTrue(coverage < 0.12D,
-            "islands must stay islands, not a continent: " + Math.round(coverage * 100.0D) + "% of sampled columns");
+        helper.assertTrue(
+                coverage < 0.12D,
+                "islands must stay islands, not a continent: " + Math.round(coverage * 100.0D)
+                        + "% of sampled columns");
         helper.succeed();
     }
 }

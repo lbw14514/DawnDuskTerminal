@@ -62,7 +62,8 @@ import net.minecraft.world.phys.Vec3;
  * {@link Experiment004Menu} 的产物格调 {@link #awardExperience}，方块被敲掉时按
  * {@link #popExperienceIntoWorld} 撒在方块中心
  */
-public class Experiment004BlockEntity extends BaseContainerBlockEntity implements WorldlyContainer, StackedContentsCompatible {
+public class Experiment004BlockEntity extends BaseContainerBlockEntity
+        implements WorldlyContainer, StackedContentsCompatible {
     public static final int INPUT_SLOT = 0;
     public static final int FUEL_SLOT = 1;
     public static final int RESULT_SLOT = 2;
@@ -109,11 +110,12 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
         @Override
         public int get(int index) {
             return switch (index) {
-                // 数据槽在网络上按 short 同步，超过 Short.MAX_VALUE 的燃料按比例缩一下，原版熔炉也这么处理
+                    // 数据槽在网络上按 short 同步，超过 Short.MAX_VALUE 的燃料按比例缩一下，原版熔炉也这么处理
                 case DATA_LIT_TIME -> Experiment004BlockEntity.this.litDuration > Short.MAX_VALUE
-                    ? Mth.floor((double) Experiment004BlockEntity.this.litTime
-                        / (double) Experiment004BlockEntity.this.litDuration * Short.MAX_VALUE)
-                    : Experiment004BlockEntity.this.litTime;
+                        ? Mth.floor((double) Experiment004BlockEntity.this.litTime
+                                / (double) Experiment004BlockEntity.this.litDuration
+                                * Short.MAX_VALUE)
+                        : Experiment004BlockEntity.this.litTime;
                 case DATA_LIT_DURATION -> Math.min(Experiment004BlockEntity.this.litDuration, Short.MAX_VALUE);
                 case DATA_COOK_PROGRESS -> Experiment004BlockEntity.this.cookProgress;
                 case DATA_COOK_TOTAL -> Experiment004BlockEntity.this.cookTotal;
@@ -128,8 +130,7 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
                 case DATA_LIT_DURATION -> Experiment004BlockEntity.this.litDuration = value;
                 case DATA_COOK_PROGRESS -> Experiment004BlockEntity.this.cookProgress = value;
                 case DATA_COOK_TOTAL -> Experiment004BlockEntity.this.cookTotal = value;
-                default -> {
-                }
+                default -> {}
             }
         }
 
@@ -229,9 +230,8 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
         }
         this.cachedManager = manager;
         this.cachedRecipeInput = input.copy();
-        this.cachedRecipe = manager
-            .getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(input), this.level)
-            .orElse(null);
+        this.cachedRecipe = manager.getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(input), this.level)
+                .orElse(null);
         return this.cachedRecipe;
     }
 
@@ -318,8 +318,11 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
         for (Object2IntMap.Entry<ResourceLocation> entry : this.recipesUsed.object2IntEntrySet()) {
             this.level.getRecipeManager().byKey(entry.getKey()).ifPresent(holder -> {
                 awarded.add(holder);
-                createExperience(player.serverLevel(), player.position(), entry.getIntValue(),
-                    ((AbstractCookingRecipe) holder.value()).getExperience());
+                createExperience(
+                        player.serverLevel(),
+                        player.position(),
+                        entry.getIntValue(),
+                        ((AbstractCookingRecipe) holder.value()).getExperience());
             });
         }
         player.awardRecipes(awarded);
@@ -332,9 +335,10 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
     /** 方块被敲掉时把还没结算的经验撒在方块中心，与原版熔炉拆掉时一样 */
     public void popExperienceIntoWorld(ServerLevel level, Vec3 pos) {
         for (Object2IntMap.Entry<ResourceLocation> entry : this.recipesUsed.object2IntEntrySet()) {
-            level.getRecipeManager().byKey(entry.getKey()).ifPresent(holder ->
-                createExperience(level, pos, entry.getIntValue(),
-                    ((AbstractCookingRecipe) holder.value()).getExperience()));
+            level.getRecipeManager()
+                    .byKey(entry.getKey())
+                    .ifPresent(holder -> createExperience(
+                            level, pos, entry.getIntValue(), ((AbstractCookingRecipe) holder.value()).getExperience()));
         }
         this.recipesUsed.clear();
     }
@@ -364,8 +368,7 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return side != Direction.DOWN || slot != FUEL_SLOT
-            || stack.is(Items.WATER_BUCKET) || stack.is(Items.BUCKET);
+        return side != Direction.DOWN || slot != FUEL_SLOT || stack.is(Items.WATER_BUCKET) || stack.is(Items.BUCKET);
     }
 
     @Override
@@ -375,8 +378,7 @@ public class Experiment004BlockEntity extends BaseContainerBlockEntity implement
         }
         if (slot == FUEL_SLOT) {
             ItemStack stored = this.items.get(FUEL_SLOT);
-            return stack.getBurnTime(RecipeType.SMELTING) > 0
-                || stack.is(Items.BUCKET) && !stored.is(Items.BUCKET);
+            return stack.getBurnTime(RecipeType.SMELTING) > 0 || stack.is(Items.BUCKET) && !stored.is(Items.BUCKET);
         }
         return slot == INPUT_SLOT;
     }

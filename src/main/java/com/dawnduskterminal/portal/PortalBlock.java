@@ -5,7 +5,6 @@ import com.dawnduskterminal.registry.ModEffects;
 import com.dawnduskterminal.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -31,8 +30,11 @@ public class PortalBlock extends LiquidBlock {
     }
 
     @Override
-    protected void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level,
-            BlockPos pos, net.minecraft.util.RandomSource random) {
+    protected void randomTick(
+            BlockState state,
+            net.minecraft.server.level.ServerLevel level,
+            BlockPos pos,
+            net.minecraft.util.RandomSource random) {
         if (com.dawnduskterminal.portal.PortalShape.countNeighbors(level, pos) == 0) {
             level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
         }
@@ -50,8 +52,8 @@ public class PortalBlock extends LiquidBlock {
         }
         if (entity instanceof LivingEntity living) {
             boolean teleports = living instanceof Player
-                ? !living.hasEffect(ModEffects.STABILITY)
-                : living.hasEffect(ModEffects.STABILITY);
+                    ? !living.hasEffect(ModEffects.STABILITY)
+                    : living.hasEffect(ModEffects.STABILITY);
             if (teleports) {
                 // 完整门与游泳豁免原来只在 PortalTrigger 里，但没有调用方；不接上的话
                 // 单格传送门流体和游泳状态也会直接过门
@@ -62,9 +64,15 @@ public class PortalBlock extends LiquidBlock {
                 living.setPortalCooldown(REENTRY_GUARD_TICKS);
             } else if (living.tickCount % 40 == 0
                     && living.hurt(living.damageSources().source(ModDamageTypes.STABILITY), 2.0F)) {
-                level.playSound(null, living.getX(), living.getY(), living.getZ(),
-                    com.dawnduskterminal.registry.ModSounds.PORTAL_HURT.get(), living.getSoundSource(),
-                    1.0F, 0.8F + living.getRandom().nextFloat() * 0.4F);
+                level.playSound(
+                        null,
+                        living.getX(),
+                        living.getY(),
+                        living.getZ(),
+                        com.dawnduskterminal.registry.ModSounds.PORTAL_HURT.get(),
+                        living.getSoundSource(),
+                        1.0F,
+                        0.8F + living.getRandom().nextFloat() * 0.4F);
             }
             return;
         }
@@ -97,8 +105,13 @@ public class PortalBlock extends LiquidBlock {
         }
         causeLightning(serverLevel, pos);
         emitParticles(serverLevel, pos);
-        serverLevel.playSound(null, pos, com.dawnduskterminal.registry.ModSounds.PORTAL_OPEN.get(),
-            net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+        serverLevel.playSound(
+                null,
+                pos,
+                com.dawnduskterminal.registry.ModSounds.PORTAL_OPEN.get(),
+                net.minecraft.sounds.SoundSource.BLOCKS,
+                1.0F,
+                1.0F);
     }
 
     private static void causeLightning(ServerLevel level, BlockPos pos) {
@@ -119,7 +132,7 @@ public class PortalBlock extends LiquidBlock {
 
     private static void awardGate(net.minecraft.server.level.ServerPlayer player) {
         net.minecraft.advancements.AdvancementHolder holder =
-            player.server.getAdvancements().get(com.dawnduskterminal.DawnDuskTerminal.id("build_gate"));
+                player.server.getAdvancements().get(com.dawnduskterminal.DawnDuskTerminal.id("build_gate"));
         if (holder != null) {
             player.getAdvancements().award(holder, "built");
         }

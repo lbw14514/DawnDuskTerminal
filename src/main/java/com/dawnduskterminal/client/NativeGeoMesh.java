@@ -3,11 +3,10 @@ package com.dawnduskterminal.client;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoBone;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoMesh;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoModel;
-import org.joml.Vector3f;
-
 import java.lang.ref.Cleaner;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import org.joml.Vector3f;
 
 /**
  * 把模型摊平成 native 内核认识的 piece
@@ -41,8 +40,8 @@ public final class NativeGeoMesh {
 
     private boolean closed;
 
-    private NativeGeoMesh(GeoModel model, long handle, int[] offsets, int[] counts,
-                          Map<GeoMesh, int[]> pieces, int vertexCount) {
+    private NativeGeoMesh(
+            GeoModel model, long handle, int[] offsets, int[] counts, Map<GeoMesh, int[]> pieces, int vertexCount) {
         this.model = model;
         this.offsets = offsets;
         this.counts = counts;
@@ -72,12 +71,17 @@ public final class NativeGeoMesh {
         }
 
         long handle = NativeMesh.createMesh(vertices.toArray(), offsets.toArray(), counts.toArray(), flags.toArray());
-        return new NativeGeoMesh(model, handle, offsets.toArray(), counts.toArray(), pieces,
-            vertices.size / NativeMesh.VERTEX_FLOATS);
+        return new NativeGeoMesh(
+                model, handle, offsets.toArray(), counts.toArray(), pieces, vertices.size / NativeMesh.VERTEX_FLOATS);
     }
 
-    private static void collectBone(GeoBone bone, FloatList vertices, IntList offsets, IntList counts,
-                                    IntList flags, Map<GeoMesh, int[]> pieces) {
+    private static void collectBone(
+            GeoBone bone,
+            FloatList vertices,
+            IntList offsets,
+            IntList counts,
+            IntList flags,
+            Map<GeoMesh, int[]> pieces) {
         GeoMesh mesh = bone.cubes();
         if (mesh != null && mesh.getCubeCount() > 0 && !pieces.containsKey(mesh)) {
             int[] pieceIds = new int[mesh.getCubeCount()];
@@ -174,8 +178,8 @@ public final class NativeGeoMesh {
         addVertex(vertices, x, y, z, normal.x, normal.y, normal.z, u, v);
     }
 
-    private static void addVertex(FloatList vertices, float x, float y, float z,
-                                  float nx, float ny, float nz, float u, float v) {
+    private static void addVertex(
+            FloatList vertices, float x, float y, float z, float nx, float ny, float nz, float u, float v) {
         vertices.add(x);
         vertices.add(y);
         vertices.add(z);

@@ -2,10 +2,9 @@ package com.dawnduskterminal.client.animation;
 
 import com.dawnduskterminal.geckolib3.file.AnimationFile;
 import com.dawnduskterminal.geckolib3.resource.GeckoLibCache;
-import net.minecraft.resources.ResourceLocation;
-
 import java.util.List;
 import java.util.Map;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * 一个 YSM 模型包解析后的索引
@@ -20,10 +19,16 @@ import java.util.Map;
  * @param extraAnimations {@code properties.extra_animation}：按钮键到片段名，宿主手动触发用
  * @param roamingOptions  {@code properties.extra_animation_buttons}：外观开关（衣物、表情、体型、形态）
  */
-public record YsmPack(ResourceLocation id, Map<String, ResourceLocation> models,
-                      Map<String, ResourceLocation> animations, Map<String, ResourceLocation> textures,
-                      String defaultTexture, float heightScale, float widthScale,
-                      Map<String, String> extraAnimations, List<RoamingOption> roamingOptions) {
+public record YsmPack(
+        ResourceLocation id,
+        Map<String, ResourceLocation> models,
+        Map<String, ResourceLocation> animations,
+        Map<String, ResourceLocation> textures,
+        String defaultTexture,
+        float heightScale,
+        float widthScale,
+        Map<String, String> extraAnimations,
+        List<RoamingOption> roamingOptions) {
 
     /**
      * 模型包声明的一个外观开关
@@ -99,8 +104,8 @@ public record YsmPack(ResourceLocation id, Map<String, ResourceLocation> models,
             return selected;
         }
         return files.entrySet().stream()
-            .min(Map.Entry.comparingByKey())
-            .map(Map.Entry::getValue)
-            .orElse(null);
+                .min(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .orElse(null);
     }
 }

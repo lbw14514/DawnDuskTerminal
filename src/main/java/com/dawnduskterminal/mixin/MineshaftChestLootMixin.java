@@ -20,16 +20,17 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  */
 @Mixin(MineshaftPieces.MineShaftCorridor.class)
 public abstract class MineshaftChestLootMixin {
-    private static final ResourceKey<LootTable> CHRONO_MINESHAFT = ResourceKey.create(
-        Registries.LOOT_TABLE, DawnDuskTerminal.id("chests/chrono_mineshaft"));
+    private static final ResourceKey<LootTable> CHRONO_MINESHAFT =
+            ResourceKey.create(Registries.LOOT_TABLE, DawnDuskTerminal.id("chests/chrono_mineshaft"));
 
     @Redirect(
-        method = "createChest(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/util/RandomSource;IIILnet/minecraft/resources/ResourceKey;)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/entity/vehicle/MinecartChest;setLootTable(Lnet/minecraft/resources/ResourceKey;J)V"
-        )
-    )
+            method =
+                    "createChest(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/util/RandomSource;IIILnet/minecraft/resources/ResourceKey;)Z",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/world/entity/vehicle/MinecartChest;setLootTable(Lnet/minecraft/resources/ResourceKey;J)V"))
     private void ddt$redirectMineshaftLoot(MinecartChest minecart, ResourceKey<LootTable> key, long seed) {
         if (ModDimensions.CHRONO.equals(minecart.level().dimension())) {
             key = CHRONO_MINESHAFT;

@@ -58,29 +58,36 @@ public final class Experiment065Tests {
 
     @GameTest(template = "ddt_empty")
     public static void blockReplacesThePlaceholder(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(65),
-            "number 65 must not be a placeholder anymore, it has a block now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(65),
+                "number 65 must not be a placeholder anymore, it has a block now");
         Item item = ModItems.EXPERIMENT_065.get();
-        helper.assertTrue(item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_065.get(),
-            SUBJECT + " must be the item form of its own block, got " + item);
+        helper.assertTrue(
+                item instanceof BlockItem blockItem && blockItem.getBlock() == ModBlocks.EXPERIMENT_065.get(),
+                SUBJECT + " must be the item form of its own block, got " + item);
         // 方块物品的名字取自方块，所以语言文件的键是 block.dawnduskterminal.experiment_065
-        helper.assertTrue(item.getDescriptionId().equals("block.dawnduskterminal.experiment_065"),
-            "a block item must take its name from the block, got " + item.getDescriptionId());
+        helper.assertTrue(
+                item.getDescriptionId().equals("block.dawnduskterminal.experiment_065"),
+                "a block item must take its name from the block, got " + item.getDescriptionId());
 
         BlockState state = ModBlocks.EXPERIMENT_065.get().defaultBlockState();
-        helper.assertTrue(state.getProperties().isEmpty(),
-            SUBJECT + " must carry no state, it works as soon as it is placed, got " + state.getProperties());
-        helper.assertTrue(state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)) == 15,
-            SUBJECT + " must emit 15 light levels, it is its own light source and carries no glow layer, got "
-                + state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)));
-        helper.assertTrue(state.is(BlockTags.MINEABLE_WITH_PICKAXE),
-            SUBJECT + " must stay in #minecraft:mineable/pickaxe, otherwise a pickaxe cannot drop it");
-        helper.assertTrue(BuiltInRegistries.BLOCK_ENTITY_TYPE.containsKey(DawnDuskTerminal.id("experiment_065")),
-            "dawnduskterminal:experiment_065 must be registered as a block entity type, the field needs one");
+        helper.assertTrue(
+                state.getProperties().isEmpty(),
+                SUBJECT + " must carry no state, it works as soon as it is placed, got " + state.getProperties());
+        helper.assertTrue(
+                state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)) == 15,
+                SUBJECT + " must emit 15 light levels, it is its own light source and carries no glow layer, got "
+                        + state.getLightEmission(helper.getLevel(), helper.absolutePos(CENTRE)));
+        helper.assertTrue(
+                state.is(BlockTags.MINEABLE_WITH_PICKAXE),
+                SUBJECT + " must stay in #minecraft:mineable/pickaxe, otherwise a pickaxe cannot drop it");
+        helper.assertTrue(
+                BuiltInRegistries.BLOCK_ENTITY_TYPE.containsKey(DawnDuskTerminal.id("experiment_065")),
+                "dawnduskterminal:experiment_065 must be registered as a block entity type, the field needs one");
         // 场的大小就写在这里：17×17×17，中心那一格往每个方向各 8 格
-        helper.assertTrue(CubeField.SIZE == 17 && CubeField.RADIUS == 8,
-            "the field must stay 17x17x17, got " + CubeField.SIZE
-                + " (radius " + CubeField.RADIUS + ")");
+        helper.assertTrue(
+                CubeField.SIZE == 17 && CubeField.RADIUS == 8,
+                "the field must stay 17x17x17, got " + CubeField.SIZE + " (radius " + CubeField.RADIUS + ")");
         helper.succeed();
     }
 
@@ -97,16 +104,20 @@ public final class Experiment065Tests {
 
         Pig attacker = spawn(helper, CENTRE.offset(2, 0, 0));
         Pig victimInside = spawn(helper, CENTRE.west(2));
-        helper.assertFalse(victimInside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-            "an attack made from inside the field must not land, on a victim inside it");
-        helper.assertTrue(victimInside.getHealth() == PIG_HEALTH,
-            "a cancelled hit must leave the health alone, the pig has " + victimInside.getHealth());
+        helper.assertFalse(
+                victimInside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                "an attack made from inside the field must not land, on a victim inside it");
+        helper.assertTrue(
+                victimInside.getHealth() == PIG_HEALTH,
+                "a cancelled hit must leave the health alone, the pig has " + victimInside.getHealth());
 
         Pig victimOutside = spawn(helper, CENTRE.east(11));
-        helper.assertFalse(victimOutside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-            "an attack made from inside the field must not land, on a victim outside it either");
-        helper.assertTrue(victimOutside.getHealth() == PIG_HEALTH,
-            "a cancelled hit must leave the health alone, the pig has " + victimOutside.getHealth());
+        helper.assertFalse(
+                victimOutside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                "an attack made from inside the field must not land, on a victim outside it either");
+        helper.assertTrue(
+                victimOutside.getHealth() == PIG_HEALTH,
+                "a cancelled hit must leave the health alone, the pig has " + victimOutside.getHealth());
         helper.succeed();
     }
 
@@ -118,10 +129,12 @@ public final class Experiment065Tests {
 
         Pig attacker = spawn(helper, CENTRE.east(9));
         Pig victim = spawn(helper, VICTIM);
-        helper.assertTrue(victim.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-            "an attack made from outside the field must land, the field only nullifies what is made inside it");
-        helper.assertTrue(Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
-            "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
+        helper.assertTrue(
+                victim.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                "an attack made from outside the field must land, the field only nullifies what is made inside it");
+        helper.assertTrue(
+                Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
+                "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
         helper.succeed();
     }
 
@@ -137,22 +150,21 @@ public final class Experiment065Tests {
             int dx = axes[axis][0];
             int dy = axes[axis][1];
             int dz = axes[axis][2];
-            BlockPos edge = CENTRE.offset(dx * CubeField.RADIUS, dy * CubeField.RADIUS,
-                dz * CubeField.RADIUS);
-            BlockPos beyond = CENTRE.offset(dx * (CubeField.RADIUS + 1),
-                dy * (CubeField.RADIUS + 1), dz * (CubeField.RADIUS + 1));
+            BlockPos edge = CENTRE.offset(dx * CubeField.RADIUS, dy * CubeField.RADIUS, dz * CubeField.RADIUS);
+            BlockPos beyond = CENTRE.offset(
+                    dx * (CubeField.RADIUS + 1), dy * (CubeField.RADIUS + 1), dz * (CubeField.RADIUS + 1));
 
             Pig victimOnEdge = spawn(helper, VICTIM);
             helper.assertFalse(
-                victimOnEdge.hurt(level.damageSources().mobAttack(spawn(helper, edge)), STRIKE_DAMAGE),
-                "the field is " + CubeField.SIZE + " blocks wide, " + names[axis]
-                    + " = " + CubeField.RADIUS + " must still be inside it");
+                    victimOnEdge.hurt(level.damageSources().mobAttack(spawn(helper, edge)), STRIKE_DAMAGE),
+                    "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = " + CubeField.RADIUS
+                            + " must still be inside it");
 
             Pig victimBeyond = spawn(helper, VICTIM);
             helper.assertTrue(
-                victimBeyond.hurt(level.damageSources().mobAttack(spawn(helper, beyond)), STRIKE_DAMAGE),
-                "the field is " + CubeField.SIZE + " blocks wide, " + names[axis]
-                    + " = " + (CubeField.RADIUS + 1) + " must already be outside it");
+                    victimBeyond.hurt(level.damageSources().mobAttack(spawn(helper, beyond)), STRIKE_DAMAGE),
+                    "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = " + (CubeField.RADIUS + 1)
+                            + " must already be outside it");
         }
         helper.succeed();
     }
@@ -168,10 +180,12 @@ public final class Experiment065Tests {
         placeField(level, helper.absolutePos(CENTRE));
 
         Pig victim = spawn(helper, VICTIM);
-        helper.assertTrue(victim.hurt(level.damageSources().cactus(), STRIKE_DAMAGE),
-            "damage without a source entity must not be stopped by the field");
-        helper.assertTrue(Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
-            "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
+        helper.assertTrue(
+                victim.hurt(level.damageSources().cactus(), STRIKE_DAMAGE),
+                "damage without a source entity must not be stopped by the field");
+        helper.assertTrue(
+                Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
+                "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
         helper.succeed();
     }
 
@@ -187,15 +201,17 @@ public final class Experiment065Tests {
         Arrow inside = helper.spawn(EntityType.ARROW, CENTRE.offset(2, 0, 0));
         Pig shooterInside = spawn(helper, CENTRE.west(1));
         Pig victimOutside = spawn(helper, CENTRE.east(11));
-        helper.assertFalse(victimOutside.hurt(level.damageSources().arrow(inside, shooterInside), STRIKE_DAMAGE),
-            "an arrow sitting inside the field must not deal damage, wherever it is aimed");
+        helper.assertFalse(
+                victimOutside.hurt(level.damageSources().arrow(inside, shooterInside), STRIKE_DAMAGE),
+                "an arrow sitting inside the field must not deal damage, wherever it is aimed");
 
         Arrow outside = helper.spawn(EntityType.ARROW, CENTRE.east(11));
         Pig shooterAlsoInside = spawn(helper, CENTRE.west(2));
         Pig victimAlsoOutside = spawn(helper, CENTRE.east(10));
-        helper.assertTrue(victimAlsoOutside.hurt(level.damageSources().arrow(outside, shooterAlsoInside), STRIKE_DAMAGE),
-            "an arrow outside the field must land even when the shooter stands inside it, "
-                + "the judgement is the projectile's own position");
+        helper.assertTrue(
+                victimAlsoOutside.hurt(level.damageSources().arrow(outside, shooterAlsoInside), STRIKE_DAMAGE),
+                "an arrow outside the field must land even when the shooter stands inside it, "
+                        + "the judgement is the projectile's own position");
         helper.succeed();
     }
 
@@ -209,15 +225,17 @@ public final class Experiment065Tests {
         placeField(level, centre);
 
         Pig victimOnField = spawn(helper, VICTIM);
-        helper.assertFalse(victimOnField.hurt(level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))),
-                STRIKE_DAMAGE),
-            "the field must already work in the same tick the block was placed");
+        helper.assertFalse(
+                victimOnField.hurt(
+                        level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
+                "the field must already work in the same tick the block was placed");
 
         level.setBlockAndUpdate(centre, Blocks.AIR.defaultBlockState());
         Pig victimAfterBreak = spawn(helper, VICTIM);
-        helper.assertTrue(victimAfterBreak.hurt(
-                level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
-            "breaking the block must turn the field off");
+        helper.assertTrue(
+                victimAfterBreak.hurt(
+                        level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
+                "breaking the block must turn the field off");
         helper.succeed();
     }
 
@@ -231,30 +249,45 @@ public final class Experiment065Tests {
     public static void assetsMatchTheBlock(GameTestHelper helper) {
         JsonObject states = readJson(helper, "/assets/dawnduskterminal/blockstates/experiment_065.json");
         JsonObject variants = states.getAsJsonObject("variants");
-        helper.assertTrue(variants.size() == 1,
-            SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
-        helper.assertTrue(variants.getAsJsonObject("").get("model").getAsString()
-                .equals("dawnduskterminal:block/experiment_065"),
-            "the only variant must point at block/experiment_065, got " + variants.getAsJsonObject(""));
+        helper.assertTrue(
+                variants.size() == 1,
+                SUBJECT + " has no state, its blockstates file must carry exactly one variant, got " + variants.size());
+        helper.assertTrue(
+                variants.getAsJsonObject("").get("model").getAsString().equals("dawnduskterminal:block/experiment_065"),
+                "the only variant must point at block/experiment_065, got " + variants.getAsJsonObject(""));
 
         JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/block/experiment_065.json");
-        helper.assertTrue(model.get("parent").getAsString().equals("minecraft:block/cube_all"),
-            "block/experiment_065 must stay a plain cube_all model, got " + model.get("parent"));
+        helper.assertTrue(
+                model.get("parent").getAsString().equals("minecraft:block/cube_all"),
+                "block/experiment_065 must stay a plain cube_all model, got " + model.get("parent"));
         JsonObject textures = model.getAsJsonObject("textures");
-        helper.assertTrue(textures.entrySet().size() == 1
-                && textures.get("all").getAsString().equals("dawnduskterminal:block/experiment_065"),
-            "the block is a light source, one texture is enough, got " + textures);
-        helper.assertFalse(model.has("elements"),
-            "one texture needs no hand written elements, the cube comes from cube_all, got " + model.get("elements"));
+        helper.assertTrue(
+                textures.entrySet().size() == 1
+                        && textures.get("all").getAsString().equals("dawnduskterminal:block/experiment_065"),
+                "the block is a light source, one texture is enough, got " + textures);
+        helper.assertFalse(
+                model.has("elements"),
+                "one texture needs no hand written elements, the cube comes from cube_all, got "
+                        + model.get("elements"));
 
         JsonObject item = readJson(helper, "/assets/dawnduskterminal/models/item/experiment_065.json");
-        helper.assertTrue(item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_065"),
-            "the item model must point at the block model, got " + item.get("parent"));
+        helper.assertTrue(
+                item.get("parent").getAsString().equals("dawnduskterminal:block/experiment_065"),
+                "the item model must point at the block model, got " + item.get("parent"));
 
         JsonObject loot = readJson(helper, "/data/dawnduskterminal/loot_table/blocks/experiment_065.json");
-        helper.assertTrue(loot.getAsJsonArray("pools").get(0).getAsJsonObject().getAsJsonArray("entries")
-                .get(0).getAsJsonObject().get("name").getAsString().equals(SUBJECT),
-            "the block must drop itself, got " + loot.getAsJsonArray("pools").get(0));
+        helper.assertTrue(
+                loot.getAsJsonArray("pools")
+                        .get(0)
+                        .getAsJsonObject()
+                        .getAsJsonArray("entries")
+                        .get(0)
+                        .getAsJsonObject()
+                        .get("name")
+                        .getAsString()
+                        .equals(SUBJECT),
+                "the block must drop itself, got "
+                        + loot.getAsJsonArray("pools").get(0));
 
         for (String texture : new String[] {"experiment_065"}) {
             String path = "/assets/dawnduskterminal/textures/block/" + texture + ".png";
@@ -267,9 +300,12 @@ public final class Experiment065Tests {
 
         // 场的范围由立方框粒子画：服务端一颗都不发，所以服务端那颗 ticker 必须是空的
         BlockState state = ModBlocks.EXPERIMENT_065.get().defaultBlockState();
-        helper.assertTrue(ModBlocks.EXPERIMENT_065.get().getTicker(helper.getLevel(), state,
-                ModBlockEntities.EXPERIMENT_065.get()) == null,
-            "the field frame is drawn on the client only, the server must get no ticker at all");
+        helper.assertTrue(
+                ModBlocks.EXPERIMENT_065
+                                .get()
+                                .getTicker(helper.getLevel(), state, ModBlockEntities.EXPERIMENT_065.get())
+                        == null,
+                "the field frame is drawn on the client only, the server must get no ticker at all");
         helper.succeed();
     }
 
@@ -287,7 +323,7 @@ public final class Experiment065Tests {
         try (InputStream stream = Experiment065Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException e) {
             helper.assertTrue(false, "failed to read " + resource + ": " + e);
             return new JsonObject();

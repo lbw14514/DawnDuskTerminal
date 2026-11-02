@@ -4,6 +4,9 @@ import com.dawnduskterminal.registry.ModDamageTypes;
 import com.dawnduskterminal.registry.ModParticles;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.MapCodec;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,10 +30,6 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 砷铅铁火焰：试验物品 052 炸出来的那种火
@@ -68,17 +67,17 @@ public class CarminiteFireBlock extends BaseFireBlock {
 
     /** 四个侧面与顶面：哪一面贴着实心块，就画哪一面的板子 */
     public static final BooleanProperty NORTH = PipeBlock.NORTH;
+
     public static final BooleanProperty EAST = PipeBlock.EAST;
     public static final BooleanProperty SOUTH = PipeBlock.SOUTH;
     public static final BooleanProperty WEST = PipeBlock.WEST;
     public static final BooleanProperty UP = PipeBlock.UP;
 
     /** 方向到状态属性的映射，与 {@code FireBlock} 一样把 {@code DOWN} 剔掉 */
-    private static final Map<Direction, BooleanProperty> PROPERTY_BY_DIRECTION = PipeBlock.PROPERTY_BY_DIRECTION
-        .entrySet()
-        .stream()
-        .filter(entry -> entry.getKey() != Direction.DOWN)
-        .collect(Util.toMap());
+    private static final Map<Direction, BooleanProperty> PROPERTY_BY_DIRECTION =
+            PipeBlock.PROPERTY_BY_DIRECTION.entrySet().stream()
+                    .filter(entry -> entry.getKey() != Direction.DOWN)
+                    .collect(Util.toMap());
 
     private static final VoxelShape UP_AABB = Block.box(0.0D, 15.0D, 0.0D, 16.0D, 16.0D, 16.0D);
     private static final VoxelShape WEST_AABB = Block.box(0.0D, 0.0D, 0.0D, 1.0D, 16.0D, 16.0D);
@@ -94,6 +93,7 @@ public class CarminiteFireBlock extends BaseFireBlock {
 
     /** 老化计划刻的基准间隔，与原版 {@code FireBlock#getFireTickDelay} 一致 */
     private static final int TICK_DELAY_BASE = 30;
+
     private static final int TICK_DELAY_JITTER = 10;
 
     /** 每次 {@code animateTick} 撒几颗余烬，与先前提到的「原版火焰每次三颗烟」同量 */
@@ -103,17 +103,18 @@ public class CarminiteFireBlock extends BaseFireBlock {
 
     public CarminiteFireBlock(Properties properties) {
         super(properties, DAMAGE);
-        this.registerDefaultState(this.stateDefinition.any()
-            .setValue(AGE, 0)
-            .setValue(NORTH, false)
-            .setValue(EAST, false)
-            .setValue(SOUTH, false)
-            .setValue(WEST, false)
-            .setValue(UP, false));
+        this.registerDefaultState(this.stateDefinition
+                .any()
+                .setValue(AGE, 0)
+                .setValue(NORTH, false)
+                .setValue(EAST, false)
+                .setValue(SOUTH, false)
+                .setValue(WEST, false)
+                .setValue(UP, false));
         // 形状只看五个朝向，AGE 不参与，所以按 AGE=0 的那一批预先算好，与 FireBlock 的做法一致
         this.shapesCache = ImmutableMap.copyOf(this.stateDefinition.getPossibleStates().stream()
-            .filter(state -> state.getValue(AGE) == 0)
-            .collect(Collectors.toMap(Function.identity(), CarminiteFireBlock::calculateShape)));
+                .filter(state -> state.getValue(AGE) == 0)
+                .collect(Collectors.toMap(Function.identity(), CarminiteFireBlock::calculateShape)));
     }
 
     /**
@@ -243,8 +244,10 @@ public class CarminiteFireBlock extends BaseFireBlock {
         BlockPos below = pos.below();
         boolean fireSource = level.getBlockState(below).isFireSource(level, below, Direction.UP);
         int age = state.getValue(AGE);
-        if (!fireSource && level.isRaining() && isNearRain(level, pos)
-            && random.nextFloat() < 0.2F + (float) age * 0.03F) {
+        if (!fireSource
+                && level.isRaining()
+                && isNearRain(level, pos)
+                && random.nextFloat() < 0.2F + (float) age * 0.03F) {
             level.removeBlock(pos, false);
             return;
         }
@@ -254,7 +257,7 @@ public class CarminiteFireBlock extends BaseFireBlock {
             level.setBlock(pos, state, Block.UPDATE_CLIENTS);
         }
         if (!fireSource
-            && (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP) || age > EXTINGUISH_AGE)) {
+                && (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP) || age > EXTINGUISH_AGE)) {
             level.removeBlock(pos, false);
         }
     }
@@ -266,10 +269,10 @@ public class CarminiteFireBlock extends BaseFireBlock {
     /** 与原版 {@code FireBlock#isNearRain} 一样，看这一格与四周有没有在下雨 */
     private static boolean isNearRain(ServerLevel level, BlockPos pos) {
         return level.isRainingAt(pos)
-            || level.isRainingAt(pos.west())
-            || level.isRainingAt(pos.east())
-            || level.isRainingAt(pos.north())
-            || level.isRainingAt(pos.south());
+                || level.isRainingAt(pos.west())
+                || level.isRainingAt(pos.east())
+                || level.isRainingAt(pos.north())
+                || level.isRainingAt(pos.south());
     }
 
     @Override
@@ -279,11 +282,16 @@ public class CarminiteFireBlock extends BaseFireBlock {
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor level,
-                                     BlockPos currentPos, BlockPos facingPos) {
+    protected BlockState updateShape(
+            BlockState state,
+            Direction facing,
+            BlockState facingState,
+            LevelAccessor level,
+            BlockPos currentPos,
+            BlockPos facingPos) {
         return state.canSurvive(level, currentPos)
-            ? sideState(level, currentPos, state.getValue(AGE))
-            : Blocks.AIR.defaultBlockState();
+                ? sideState(level, currentPos, state.getValue(AGE))
+                : Blocks.AIR.defaultBlockState();
     }
 
     /** 落下来那一下按周围的情况摆，五面各自判一次 */
@@ -305,15 +313,16 @@ public class CarminiteFireBlock extends BaseFireBlock {
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         for (int i = 0; i < EMBER_PARTICLES; i++) {
-            level.addParticle(ModParticles.CARMINITE_EMBER.get(),
-                pos.getX() + 0.15D + random.nextDouble() * 0.7D,
-                pos.getY() + 0.1D + random.nextDouble() * 0.5D,
-                pos.getZ() + 0.15D + random.nextDouble() * 0.7D,
-                (random.nextDouble() - 0.5D) * 0.02D,
-                // 竖直速度与原版红石粒子那一档（原版构造会把总分速度归一到 0.4 上下、再抬 0.1），
-                // 之前按 0.01~0.03 给，飘得几乎看不出往上
-                0.2D + random.nextDouble() * 0.05D,
-                (random.nextDouble() - 0.5D) * 0.02D);
+            level.addParticle(
+                    ModParticles.CARMINITE_EMBER.get(),
+                    pos.getX() + 0.15D + random.nextDouble() * 0.7D,
+                    pos.getY() + 0.1D + random.nextDouble() * 0.5D,
+                    pos.getZ() + 0.15D + random.nextDouble() * 0.7D,
+                    (random.nextDouble() - 0.5D) * 0.02D,
+                    // 竖直速度与原版红石粒子那一档（原版构造会把总分速度归一到 0.4 上下、再抬 0.1），
+                    // 之前按 0.01~0.03 给，飘得几乎看不出往上
+                    0.2D + random.nextDouble() * 0.05D,
+                    (random.nextDouble() - 0.5D) * 0.02D);
         }
     }
 }

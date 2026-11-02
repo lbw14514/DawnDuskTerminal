@@ -1,5 +1,7 @@
 package com.dawnduskterminal.client;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -8,9 +10,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 把暮色森林的树叶染色搬到晨昏线维度的群系副本上
@@ -57,9 +56,9 @@ public final class ChronoFoliageColors {
             return null;
         }
         ResourceKey<Biome> key = level.registryAccess()
-            .registryOrThrow(Registries.BIOME)
-            .getResourceKey(biome)
-            .orElse(null);
+                .registryOrThrow(Registries.BIOME)
+                .getResourceKey(biome)
+                .orElse(null);
         if (key != null) {
             KEY_CACHE.put(biome, key);
         }
@@ -98,12 +97,8 @@ public final class ChronoFoliageColors {
         int num3 = (int) (seed >> 21 & 3L);
         int centerX = 8 + num0 - num1;
         int centerZ = 8 + num2 - num3;
-        int ccz = regionZ >= 0
-            ? (regionZ * 16 + centerZ - 8) * 16 + 8
-            : (regionZ * 16 + (16 - centerZ) - 8) * 16 + 9;
-        int ccx = regionX >= 0
-            ? (regionX * 16 + centerX - 8) * 16 + 8
-            : (regionX * 16 + (16 - centerX) - 8) * 16 + 9;
+        int ccz = regionZ >= 0 ? (regionZ * 16 + centerZ - 8) * 16 + 8 : (regionZ * 16 + (16 - centerZ) - 8) * 16 + 9;
+        int ccx = regionX >= 0 ? (regionX * 16 + centerX - 8) * 16 + 8 : (regionX * 16 + (16 - centerX) - 8) * 16 + 9;
         return new BlockPos(ccx, 0, ccz);
     }
 }

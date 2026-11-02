@@ -46,9 +46,10 @@ public final class DdtConfig {
      * 所以配置还没加载时读到的与 {@link #safe} 的兜底一致
      */
     private static volatile double maxDistanceCache = MAX_DISTANCE_DEFAULT;
+
     private static volatile SkyLightConfig skyLightCache = new SkyLightConfig(
-        SKY_LIGHT_BY_DISTANCE_DEFAULT, SKY_LIGHT_DAY_DEFAULT,
-        SKY_LIGHT_CENTER_DEFAULT, SKY_LIGHT_NIGHT_DEFAULT);
+            SKY_LIGHT_BY_DISTANCE_DEFAULT, SKY_LIGHT_DAY_DEFAULT,
+            SKY_LIGHT_CENTER_DEFAULT, SKY_LIGHT_NIGHT_DEFAULT);
 
     /**
      * 天光参数的一次性快照
@@ -62,42 +63,46 @@ public final class DdtConfig {
 
         b.push("lighting");
         SUN_ANGLE_MAX = b.comment("max sun height angle in degrees")
-            .defineInRange("sun_angle_max", SUN_ANGLE_MAX_DEFAULT, 0.0D, 90.0D);
+                .defineInRange("sun_angle_max", SUN_ANGLE_MAX_DEFAULT, 0.0D, 90.0D);
         SKY_LIGHT_BY_DISTANCE = b.comment("let sky light fall off across the terminator instead of being 15 everywhere")
-            .define("sky_light_by_distance", SKY_LIGHT_BY_DISTANCE_DEFAULT);
+                .define("sky_light_by_distance", SKY_LIGHT_BY_DISTANCE_DEFAULT);
         SKY_LIGHT_DAY = b.comment("sky light at the full day side")
-            .defineInRange("sky_light_day", SKY_LIGHT_DAY_DEFAULT, 0, 15);
+                .defineInRange("sky_light_day", SKY_LIGHT_DAY_DEFAULT, 0, 15);
         SKY_LIGHT_CENTER = b.comment("sky light on the terminator itself")
-            .defineInRange("sky_light_center", SKY_LIGHT_CENTER_DEFAULT, 0, 15);
+                .defineInRange("sky_light_center", SKY_LIGHT_CENTER_DEFAULT, 0, 15);
         SKY_LIGHT_NIGHT = b.comment("sky light at the full night side, 8 and below lets monsters spawn")
-            .defineInRange("sky_light_night", SKY_LIGHT_NIGHT_DEFAULT, 0, 15);
+                .defineInRange("sky_light_night", SKY_LIGHT_NIGHT_DEFAULT, 0, 15);
         b.pop();
 
         b.push("chrono_line");
         MAX_DISTANCE = b.comment("distance in blocks at which the sun reaches its max angle")
-            .defineInRange("max_distance", MAX_DISTANCE_DEFAULT, 16.0D, 1000000.0D);
-        NORMAL_OVERRIDE = b.comment("pin the terminator normal, format x,z, empty means pick a random direction per world")
-            .define("normal_override", NORMAL_OVERRIDE_DEFAULT);
+                .defineInRange("max_distance", MAX_DISTANCE_DEFAULT, 16.0D, 1000000.0D);
+        NORMAL_OVERRIDE = b.comment(
+                        "pin the terminator normal, format x,z, empty means pick a random direction per world")
+                .define("normal_override", NORMAL_OVERRIDE_DEFAULT);
         b.pop();
 
         b.push("portal");
         PORTAL_COOLDOWN_TICKS = b.comment("ticks before the player can be teleported again")
-            .defineInRange("cooldown_ticks", PORTAL_COOLDOWN_TICKS_DEFAULT, 0, 72000);
+                .defineInRange("cooldown_ticks", PORTAL_COOLDOWN_TICKS_DEFAULT, 0, 72000);
         ENTITY_DEBUFF = b.comment("non player entities get the portal sickness effect")
-            .define("entity_debuff", ENTITY_DEBUFF_DEFAULT);
+                .define("entity_debuff", ENTITY_DEBUFF_DEFAULT);
         b.pop();
 
         b.push("compat");
-        TOLERATE_FEATURE_CYCLES = b.comment("replace the vanilla feature sorter with a cycle tolerant one, required when both vanilla and modded biomes are used in one dimension")
-            .define("tolerate_feature_cycles", TOLERATE_FEATURE_CYCLES_DEFAULT);
+        TOLERATE_FEATURE_CYCLES = b.comment(
+                        "replace the vanilla feature sorter with a cycle tolerant one, required when both vanilla and modded biomes are used in one dimension")
+                .define("tolerate_feature_cycles", TOLERATE_FEATURE_CYCLES_DEFAULT);
         b.pop();
 
         b.push("render");
-        NATIVE_MESH = b.comment("use the bundled native mesh kernel, disable it to force the GeckoLib Java renderer if a native crash is suspected")
-            .define("native_mesh", NATIVE_MESH_DEFAULT);
-        RIBBON_SPEED = b.comment("time scale of the ysm.first_order / ysm.second_order bone physics (cloth, hair, tentacles)",
-                "1.0 matches Yes Steve Model; lower values make the cloth swing slower and softer")
-            .defineInRange("ribbon_speed", RIBBON_SPEED_DEFAULT, 0.2D, 3.0D);
+        NATIVE_MESH = b.comment(
+                        "use the bundled native mesh kernel, disable it to force the GeckoLib Java renderer if a native crash is suspected")
+                .define("native_mesh", NATIVE_MESH_DEFAULT);
+        RIBBON_SPEED = b.comment(
+                        "time scale of the ysm.first_order / ysm.second_order bone physics (cloth, hair, tentacles)",
+                        "1.0 matches Yes Steve Model; lower values make the cloth swing slower and softer")
+                .defineInRange("ribbon_speed", RIBBON_SPEED_DEFAULT, 0.2D, 3.0D);
         b.pop();
 
         SPEC = b.build();
@@ -150,10 +155,10 @@ public final class DdtConfig {
      */
     public static void refreshCache() {
         skyLightCache = new SkyLightConfig(
-            safe(SKY_LIGHT_BY_DISTANCE, SKY_LIGHT_BY_DISTANCE_DEFAULT),
-            safe(SKY_LIGHT_DAY, SKY_LIGHT_DAY_DEFAULT),
-            safe(SKY_LIGHT_CENTER, SKY_LIGHT_CENTER_DEFAULT),
-            safe(SKY_LIGHT_NIGHT, SKY_LIGHT_NIGHT_DEFAULT));
+                safe(SKY_LIGHT_BY_DISTANCE, SKY_LIGHT_BY_DISTANCE_DEFAULT),
+                safe(SKY_LIGHT_DAY, SKY_LIGHT_DAY_DEFAULT),
+                safe(SKY_LIGHT_CENTER, SKY_LIGHT_CENTER_DEFAULT),
+                safe(SKY_LIGHT_NIGHT, SKY_LIGHT_NIGHT_DEFAULT));
         maxDistanceCache = safe(MAX_DISTANCE, MAX_DISTANCE_DEFAULT);
     }
 

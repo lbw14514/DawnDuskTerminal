@@ -29,22 +29,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererSkyAlignMixin {
     private static final String RENDER_SKY =
-        "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V";
+            "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V";
 
     @Inject(
-        method = RENDER_SKY,
-        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", ordinal = 0,
-            shift = At.Shift.AFTER)
-    )
+            method = RENDER_SKY,
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V",
+                            ordinal = 0,
+                            shift = At.Shift.AFTER))
     private void ddt$alignSunsetGlow(CallbackInfo ci, @Local PoseStack poseStack) {
         ddt$yawToLineNormal(poseStack);
     }
 
     @Inject(
-        method = RENDER_SKY,
-        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", ordinal = 1,
-            shift = At.Shift.AFTER)
-    )
+            method = RENDER_SKY,
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V",
+                            ordinal = 1,
+                            shift = At.Shift.AFTER))
     private void ddt$alignSunAndMoon(CallbackInfo ci, @Local PoseStack poseStack) {
         ddt$yawToLineNormal(poseStack);
     }

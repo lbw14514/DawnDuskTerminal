@@ -55,19 +55,23 @@ public class CarminiteFieldEntity extends Entity {
     private static final float DAMAGE_PER_POWER = 2.0F;
     /** 火矢：点燃秒数与每 tick 的岩浆粒子数 */
     private static final int FIRE_SECONDS = 10;
+
     private static final int FIRE_PARTICLES = 5;
     /** 冲击：缓慢持续时间与等级换算，冲击 I 是缓慢 II */
     private static final int PUNCH_DURATION = 10;
     /** 伤害圆柱的水平半径与竖直半高 */
     private static final double RADIUS = 4.0D;
+
     private static final double HALF_HEIGHT = 1.5D;
     /** 边缘粒子的半径与个数 */
     private static final double RING_RADIUS = 2.5D;
+
     private static final int RING_POINTS = 12;
 
     /** 伤害归因用。不写进存档：读档后丢归因不影响手感 */
     @Nullable
     private LivingEntity owner;
+
     private int power;
     private int fire;
     private int punch;
@@ -82,8 +86,8 @@ public class CarminiteFieldEntity extends Entity {
     }
 
     /** 在命中点上方一格生成，位置与源 mod 一致 */
-    public static void spawn(Level level, double x, double y, double z, @Nullable LivingEntity owner,
-                             int power, int fire, int punch) {
+    public static void spawn(
+            Level level, double x, double y, double z, @Nullable LivingEntity owner, int power, int fire, int punch) {
         CarminiteFieldEntity field = new CarminiteFieldEntity(ModEntities.CARMINITE_FIELD.get(), level);
         field.setPos(x, y, z);
         field.owner = owner;
@@ -131,16 +135,16 @@ public class CarminiteFieldEntity extends Entity {
                 target.igniteForSeconds(FIRE_SECONDS);
             }
             if (this.punch > 0) {
-                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, PUNCH_DURATION,
-                    this.punch * 2 - 1));
+                target.addEffect(
+                        new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, PUNCH_DURATION, this.punch * 2 - 1));
             }
         }
     }
 
     private void spawnFireParticles() {
         if (this.level() instanceof ServerLevel server) {
-            server.sendParticles(ParticleTypes.LAVA,
-                this.getX(), this.getY(), this.getZ(), FIRE_PARTICLES, 2.0D, 0.0D, 2.0D, 1.0D);
+            server.sendParticles(
+                    ParticleTypes.LAVA, this.getX(), this.getY(), this.getZ(), FIRE_PARTICLES, 2.0D, 0.0D, 2.0D, 1.0D);
         }
     }
 
@@ -157,19 +161,20 @@ public class CarminiteFieldEntity extends Entity {
     private void spawnRing() {
         for (int i = 0; i < RING_POINTS; i++) {
             double angle = Mth.TWO_PI * i / RING_POINTS;
-            this.level().addParticle(ModParticles.CARMINITE_EFFECT.get(),
-                this.getX() + Math.cos(angle) * RING_RADIUS + (this.random.nextDouble() - 0.5D) * 0.6D,
-                this.getY(),
-                this.getZ() + Math.sin(angle) * RING_RADIUS + (this.random.nextDouble() - 0.5D) * 0.6D,
-                0.7D * (this.random.nextDouble() - 0.5D),
-                0.2D * this.random.nextDouble(),
-                0.7D * (this.random.nextDouble() - 0.5D));
+            this.level()
+                    .addParticle(
+                            ModParticles.CARMINITE_EFFECT.get(),
+                            this.getX() + Math.cos(angle) * RING_RADIUS + (this.random.nextDouble() - 0.5D) * 0.6D,
+                            this.getY(),
+                            this.getZ() + Math.sin(angle) * RING_RADIUS + (this.random.nextDouble() - 0.5D) * 0.6D,
+                            0.7D * (this.random.nextDouble() - 0.5D),
+                            0.2D * this.random.nextDouble(),
+                            0.7D * (this.random.nextDouble() - 0.5D));
         }
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-    }
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
     @Override
     protected void readAdditionalSaveData(CompoundTag compound) {

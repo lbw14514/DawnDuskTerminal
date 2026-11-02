@@ -34,18 +34,24 @@ import net.neoforged.neoforge.event.EventHooks;
 public class Experiment004Menu extends AbstractFurnaceMenu {
     /** 产物格坐标：与原版 {@code AbstractFurnaceMenu} 里的 (116, 35) 一致，换槽位时位置不能动 */
     public static final int RESULT_X = 116;
+
     public static final int RESULT_Y = 35;
 
     /** 客户端用：原版 {@code AbstractFurnaceMenu} 会给一份空容器与四个数据槽，内容随后同步下来 */
     public Experiment004Menu(int containerId, Inventory inventory) {
-        super(ModMenus.EXPERIMENT_004.get(), RecipeType.SMELTING, RecipeBookType.FURNACE,
-            containerId, inventory);
+        super(ModMenus.EXPERIMENT_004.get(), RecipeType.SMELTING, RecipeBookType.FURNACE, containerId, inventory);
     }
 
     /** 服务端用：方块实体自己当容器与数据源 */
     public Experiment004Menu(int containerId, Inventory inventory, Experiment004BlockEntity entity) {
-        super(ModMenus.EXPERIMENT_004.get(), RecipeType.SMELTING, RecipeBookType.FURNACE,
-            containerId, inventory, entity, entity.dataAccess());
+        super(
+                ModMenus.EXPERIMENT_004.get(),
+                RecipeType.SMELTING,
+                RecipeBookType.FURNACE,
+                containerId,
+                inventory,
+                entity,
+                entity.dataAccess());
         this.slots.set(RESULT_SLOT, new ResultSlot(inventory.player, entity, RESULT_SLOT, RESULT_X, RESULT_Y));
     }
 
@@ -94,7 +100,7 @@ public class Experiment004Menu extends AbstractFurnaceMenu {
         protected void checkTakeAchievements(ItemStack stack) {
             stack.onCraftedBy(this.player.level(), this.player, this.removeCount);
             if (this.player instanceof ServerPlayer serverPlayer
-                && this.container instanceof Experiment004BlockEntity entity) {
+                    && this.container instanceof Experiment004BlockEntity entity) {
                 entity.awardExperience(serverPlayer);
             }
             this.removeCount = 0;

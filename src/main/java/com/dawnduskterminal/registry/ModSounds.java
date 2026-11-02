@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import java.util.List;
 import javax.annotation.Nullable;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
@@ -8,54 +9,42 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.List;
-
 public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS =
-        DeferredRegister.create(Registries.SOUND_EVENT, DawnDuskTerminal.MOD_ID);
+            DeferredRegister.create(Registries.SOUND_EVENT, DawnDuskTerminal.MOD_ID);
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_OPEN =
-        register("portal_open");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_OPEN = register("portal_open");
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_ENTER =
-        register("portal_enter");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_ENTER = register("portal_enter");
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_EXIT =
-        register("portal_exit");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_EXIT = register("portal_exit");
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> CHRONO_AMBIENT =
-        register("chrono_ambient");
+    public static final DeferredHolder<SoundEvent, SoundEvent> CHRONO_AMBIENT = register("chrono_ambient");
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_HURT =
-        register("portal_hurt");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PORTAL_HURT = register("portal_hurt");
 
     /** 反应权杖发射 */
     public static final DeferredHolder<SoundEvent, SoundEvent> CARMINITE_STAFF_SHOOT =
-        register("carminite_staff_shoot");
+            register("carminite_staff_shoot");
 
     /** 弹体命中后炸开的反应场，也用作弹体命中地面的声音 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> CARMINITE_FIELD =
-        register("carminite_field");
+    public static final DeferredHolder<SoundEvent, SoundEvent> CARMINITE_FIELD = register("carminite_field");
 
     /**
      * 高塔恶魂的待机语音，7 条随机取一条
      *
      * <p>变体放在 {@code sounds.json} 的同一个事件里由原版随机挑，所以这里只要注册一个事件
      */
-    public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_AMBIENT =
-        register("tower_ghast_ambient");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_AMBIENT = register("tower_ghast_ambient");
 
     /** 高塔恶魂的受击语音，5 条随机取一条 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_HURT =
-        register("tower_ghast_hurt");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TOWER_GHAST_HURT = register("tower_ghast_hurt");
 
     /** 「弦」的常驻音，3 条随机取一条 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_AMBIENT =
-        register("string_ambient");
+    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_AMBIENT = register("string_ambient");
 
     /** 「弦」的受伤与死亡音，3 条随机取一条 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_HIT =
-        register("string_hit");
+    public static final DeferredHolder<SoundEvent, SoundEvent> STRING_HIT = register("string_hit");
 
     /**
      * 恶魂通用语音：模型包 {@code sounds/} 下那一套 7 条 moan、5 条 scream，加上
@@ -66,13 +55,12 @@ public final class ModSounds {
      * 同一事件的多个文件交由原版随机挑选
      */
     public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_AMBIENT =
-        register("ghast_universal_ambient");
+            register("ghast_universal_ambient");
 
-    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_HURT =
-        register("ghast_universal_hurt");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_HURT = register("ghast_universal_hurt");
 
     public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_DEATH =
-        register("ghast_universal_death");
+            register("ghast_universal_death");
 
     /**
      * 蓄力与喷吐
@@ -82,18 +70,18 @@ public final class ModSounds {
      * {@code GhastFruityEntity.GhastShootFireballGoal}
      */
     public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_CHARGE =
-        register("ghast_universal_charge");
+            register("ghast_universal_charge");
 
     public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_SHOOT =
-        register("ghast_universal_shoot");
+            register("ghast_universal_shoot");
 
     /** 把砸在自己身上的火球拨开时的那一声 */
     public static final DeferredHolder<SoundEvent, SoundEvent> GHAST_UNIVERSAL_DEFLECT =
-        register("ghast_universal_deflect");
+            register("ghast_universal_deflect");
 
     /** 试验物品 052 收到红石信号、点火那一下 */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_IGNITE =
-        register("experiment_052_ignite");
+            register("experiment_052_ignite");
 
     /**
      * 试验物品 052 的爆炸
@@ -101,19 +89,18 @@ public final class ModSounds {
      * <p>主爆炸走 {@code ServerLevel#explode} 的音效参数，只有这一个事件；碎片那次小爆炸是静音的
      */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_EXPLODE =
-        register("experiment_052_explode");
+            register("experiment_052_explode");
 
     /** 试验物品 055 充能期间循环的那支 */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_CHARGE =
-        register("experiment_055_charge");
+            register("experiment_055_charge");
 
     /** 试验物品 055 充满那一下，只放一遍 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_FULL =
-        register("experiment_055_full");
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_FULL = register("experiment_055_full");
 
     /** 试验物品 055 充满之后循环的那支盖革声 */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_GEIGER =
-        register("experiment_055_geiger");
+            register("experiment_055_geiger");
 
     /**
      * 试验物品 095 循环播放的那组曲子，一个下标一支
@@ -128,17 +115,19 @@ public final class ModSounds {
      * 与 095 的伤害半径同一个数
      */
     public static final List<DeferredHolder<SoundEvent, SoundEvent>> REQUIEM_TRACKS = List.of(
-        register("requiem/bgmm3"),
-        register("requiem/flower"),
-        register("requiem/extendash"),
-        register("requiem/requiem"),
-        register("requiem/sirius"),
-        register("requiem/nanana"));
+            register("requiem/bgmm3"),
+            register("requiem/flower"),
+            register("requiem/extendash"),
+            register("requiem/requiem"),
+            register("requiem/sirius"),
+            register("requiem/nanana"));
 
     /** 下标越界时返回 {@code null}，让客户端干脆不出声，不抛异常 */
     @Nullable
     public static SoundEvent requiemTrack(int index) {
-        return index < 0 || index >= REQUIEM_TRACKS.size() ? null : REQUIEM_TRACKS.get(index).get();
+        return index < 0 || index >= REQUIEM_TRACKS.size()
+                ? null
+                : REQUIEM_TRACKS.get(index).get();
     }
 
     /** 一支曲子都没有时 {@code nextInt} 会抛异常，所以这边留个口子 */

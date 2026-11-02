@@ -1,18 +1,18 @@
 package com.dawnduskterminal.world;
 
+import com.dawnduskterminal.config.DdtConfig;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.dawnduskterminal.config.DdtConfig;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
 public record ChronoLine(double originX, double originZ, double normalX, double normalZ) {
     public static final Codec<ChronoLine> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-        Codec.DOUBLE.fieldOf("origin_x").forGetter(ChronoLine::originX),
-        Codec.DOUBLE.fieldOf("origin_z").forGetter(ChronoLine::originZ),
-        Codec.DOUBLE.fieldOf("normal_x").forGetter(ChronoLine::normalX),
-        Codec.DOUBLE.fieldOf("normal_z").forGetter(ChronoLine::normalZ)
-    ).apply(inst, ChronoLine::new));
+                    Codec.DOUBLE.fieldOf("origin_x").forGetter(ChronoLine::originX),
+                    Codec.DOUBLE.fieldOf("origin_z").forGetter(ChronoLine::originZ),
+                    Codec.DOUBLE.fieldOf("normal_x").forGetter(ChronoLine::normalX),
+                    Codec.DOUBLE.fieldOf("normal_z").forGetter(ChronoLine::normalZ))
+            .apply(inst, ChronoLine::new));
 
     public static ChronoLine create(RandomSource random) {
         String override = DdtConfig.lineNormalOverride();

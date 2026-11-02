@@ -30,8 +30,10 @@ public abstract class LightEngineSkyLightMixin {
      */
     @Unique
     private boolean ddt$chronoResolved;
+
     @Unique
     private boolean ddt$chrono;
+
     @Unique
     private Level ddt$cachedLevel;
 
@@ -39,8 +41,7 @@ public abstract class LightEngineSkyLightMixin {
     private void ddt$resolveChrono() {
         this.ddt$chronoResolved = true;
         this.ddt$cachedLevel = this.chunkSource.getLevel() instanceof Level level ? level : null;
-        this.ddt$chrono = this.ddt$cachedLevel != null
-            && this.ddt$cachedLevel.dimension() == ModDimensions.CHRONO;
+        this.ddt$chrono = this.ddt$cachedLevel != null && this.ddt$cachedLevel.dimension() == ModDimensions.CHRONO;
     }
 
     @Unique

@@ -5,6 +5,8 @@ import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.registry.ModSounds;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -25,9 +27,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * 砷铅铁反应权杖发射的弹体
@@ -56,6 +55,7 @@ public class CarminiteBallEntity extends AbstractArrow implements ItemSupplier {
      * 一颗弹分裂上千颗会把服务端刻直接拖死，所以这里按原版上限截断
      */
     private static final int MAX_POWER = 5;
+
     private static final int MAX_FLAME = 1;
     private static final int MAX_PUNCH = 2;
     private static final int MAX_MULTISHOT = 1;
@@ -78,8 +78,12 @@ public class CarminiteBallEntity extends AbstractArrow implements ItemSupplier {
     public CarminiteBallEntity(Level level, LivingEntity owner, @Nullable ItemStack firedFromWeapon) {
         // 第四个参数是父类要写进 NBT 的「拾取物」栈，不能传空栈：AbstractArrow#addAdditionalSaveData 用
         // ItemStack.CODEC 写它，空栈会直接抛 Cannot encode empty ItemStack，存档时整只弹体丢掉
-        super(ModEntities.CARMINITE_BALL.get(), owner, level,
-            new ItemStack(ModItems.CARMINITE_BALL.get()), firedFromWeapon);
+        super(
+                ModEntities.CARMINITE_BALL.get(),
+                owner,
+                level,
+                new ItemStack(ModItems.CARMINITE_BALL.get()),
+                firedFromWeapon);
         this.pickup = Pickup.DISALLOWED;
         this.setBaseDamage(BASE_DAMAGE);
         this.setSoundEvent(ModSounds.CARMINITE_FIELD.get());
@@ -119,7 +123,8 @@ public class CarminiteBallEntity extends AbstractArrow implements ItemSupplier {
             double y = this.getY() + PARTICLE_Y_OFFSET;
             this.level().addParticle(ModParticles.CARMINITE_TRACE.get(), this.getX(), y, this.getZ(), 0.0D, 0.0D, 0.0D);
             if (this.level().getGameTime() % BALL_PARTICLE_PERIOD == 0L) {
-                this.level().addParticle(ModParticles.CARMINITE_BALL.get(), this.getX(), y, this.getZ(), 0.0D, 0.0D, 0.0D);
+                this.level()
+                        .addParticle(ModParticles.CARMINITE_BALL.get(), this.getX(), y, this.getZ(), 0.0D, 0.0D, 0.0D);
             }
         }
     }
@@ -171,16 +176,36 @@ public class CarminiteBallEntity extends AbstractArrow implements ItemSupplier {
         Level level = this.level();
         LivingEntity owner = this.getOwner() instanceof LivingEntity living ? living : null;
         if (level instanceof ServerLevel server) {
-            server.sendParticles(ModParticles.CARMINITE_BALL.get(),
-                this.getX(), this.getY() + PARTICLE_Y_OFFSET, this.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            server.sendParticles(
+                    ModParticles.CARMINITE_BALL.get(),
+                    this.getX(),
+                    this.getY() + PARTICLE_Y_OFFSET,
+                    this.getZ(),
+                    1,
+                    0.0D,
+                    0.0D,
+                    0.0D,
+                    0.0D);
         }
-        CarminiteFieldEntity.spawn(level, this.getX(), this.getY() + 1.0D, this.getZ(), owner,
-            this.enchantment(Enchantments.POWER, MAX_POWER),
-            this.enchantment(Enchantments.FLAME, MAX_FLAME),
-            this.enchantment(Enchantments.PUNCH, MAX_PUNCH));
+        CarminiteFieldEntity.spawn(
+                level,
+                this.getX(),
+                this.getY() + 1.0D,
+                this.getZ(),
+                owner,
+                this.enchantment(Enchantments.POWER, MAX_POWER),
+                this.enchantment(Enchantments.FLAME, MAX_FLAME),
+                this.enchantment(Enchantments.PUNCH, MAX_PUNCH));
         this.spawnSplitBalls(hitEntity instanceof LivingEntity living ? living : owner);
-        level.playSound(null, this.getX(), this.getY(), this.getZ(),
-            ModSounds.CARMINITE_FIELD.get(), SoundSource.NEUTRAL, 1.5F, 1.0F);
+        level.playSound(
+                null,
+                this.getX(),
+                this.getY(),
+                this.getZ(),
+                ModSounds.CARMINITE_FIELD.get(),
+                SoundSource.NEUTRAL,
+                1.5F,
+                1.0F);
         if (discard) {
             this.discard();
         }
@@ -198,9 +223,12 @@ public class CarminiteBallEntity extends AbstractArrow implements ItemSupplier {
             split.setPos(this.getX(), this.getY() + 1.0D, this.getZ());
             split.setBaseDamage(SPLIT_BASE_DAMAGE);
             split.setSilent(true);
-            split.shoot(Mth.nextDouble(this.random, -1.0D, 1.0D),
-                Mth.nextDouble(this.random, 0.0D, 1.0D),
-                Mth.nextDouble(this.random, -1.0D, 1.0D), SPLIT_SPEED, 0.0F);
+            split.shoot(
+                    Mth.nextDouble(this.random, -1.0D, 1.0D),
+                    Mth.nextDouble(this.random, 0.0D, 1.0D),
+                    Mth.nextDouble(this.random, -1.0D, 1.0D),
+                    SPLIT_SPEED,
+                    0.0F);
             this.level().addFreshEntity(split);
         }
     }

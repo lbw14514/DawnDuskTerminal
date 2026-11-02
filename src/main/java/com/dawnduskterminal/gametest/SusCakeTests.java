@@ -19,7 +19,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import twilightforest.init.TFItems;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -44,6 +43,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import twilightforest.init.TFItems;
 
 /**
  * 七种可疑蛋糕（{@code sus_<口味>_cake}）的规格
@@ -73,7 +73,7 @@ public final class SusCakeTests {
 
     /** 六条配方的第一条原料都是暮色森林的 115，注册名从注册项反查 */
     private static final String EXPERIMENT_115 =
-        BuiltInRegistries.ITEM.getKey(TFItems.EXPERIMENT_115.get()).toString();
+            BuiltInRegistries.ITEM.getKey(TFItems.EXPERIMENT_115.get()).toString();
 
     /**
      * 有配方的那六种：无序配方的原料，第一条都是暮色森林的试验物品 115
@@ -82,13 +82,18 @@ public final class SusCakeTests {
      * 红丝绒暂无配方，所以不在这张表里
      */
     private static final Map<String, List<String>> RECIPE_INGREDIENTS = Map.of(
-        BLOODORANGE, List.of(EXPERIMENT_115, "dawnduskterminal:experiment_008"),
-        CHEESE, List.of(EXPERIMENT_115, "minecraft:milk_bucket"),
-        "sus_cherrycheese_cake", List.of(EXPERIMENT_115, "minecraft:milk_bucket",
-            "minecraft:sweet_berries"),
-        LAMINGTON, List.of(EXPERIMENT_115, "minecraft:cocoa_beans", "minecraft:bone_meal"),
-        PAVLOVA, List.of(EXPERIMENT_115, "minecraft:egg"),
-        PINEAPPLE, List.of(EXPERIMENT_115, "minecraft:cactus"));
+            BLOODORANGE,
+            List.of(EXPERIMENT_115, "dawnduskterminal:experiment_008"),
+            CHEESE,
+            List.of(EXPERIMENT_115, "minecraft:milk_bucket"),
+            "sus_cherrycheese_cake",
+            List.of(EXPERIMENT_115, "minecraft:milk_bucket", "minecraft:sweet_berries"),
+            LAMINGTON,
+            List.of(EXPERIMENT_115, "minecraft:cocoa_beans", "minecraft:bone_meal"),
+            PAVLOVA,
+            List.of(EXPERIMENT_115, "minecraft:egg"),
+            PINEAPPLE,
+            List.of(EXPERIMENT_115, "minecraft:cactus"));
 
     @GameTest(template = "ddt_empty")
     public static void everyFlavourFeedsItsOwnServing(GameTestHelper helper) {
@@ -97,25 +102,30 @@ public final class SusCakeTests {
         Map<String, Item> items = new LinkedHashMap<>();
         ModItems.susCakes().forEach((id, holder) -> items.put(id, holder.get()));
 
-        helper.assertTrue(blocks.size() == SUS_CAKE_COUNT,
-            "there must be " + SUS_CAKE_COUNT + " sus cakes, got " + blocks.keySet());
-        helper.assertTrue(blocks.keySet().equals(items.keySet()),
-            "blocks and items must use the same ids, got " + blocks.keySet() + " vs " + items.keySet());
+        helper.assertTrue(
+                blocks.size() == SUS_CAKE_COUNT,
+                "there must be " + SUS_CAKE_COUNT + " sus cakes, got " + blocks.keySet());
+        helper.assertTrue(
+                blocks.keySet().equals(items.keySet()),
+                "blocks and items must use the same ids, got " + blocks.keySet() + " vs " + items.keySet());
 
         items.forEach((id, item) -> {
             helper.assertTrue(item instanceof BlockItem, id + " must be placeable, but it is not a BlockItem");
-            helper.assertTrue(((BlockItem) item).getBlock() == blocks.get(id),
-                id + " must place " + id + ", got " + ((BlockItem) item).getBlock());
+            helper.assertTrue(
+                    ((BlockItem) item).getBlock() == blocks.get(id),
+                    id + " must place " + id + ", got " + ((BlockItem) item).getBlock());
 
             FoodProperties food = new ItemStack(item).get(DataComponents.FOOD);
             helper.assertTrue(food != null, id + " must be edible, but it carries no food component");
             boolean eight = id.equals(BLOODORANGE) || id.equals(REDVELVET);
             int nutrition = eight ? EIGHT_NUTRITION : NUTRITION;
             float saturation = eight ? 8.0F : 4.0F;
-            helper.assertTrue(food.nutrition() == nutrition,
-                id + " must feed " + nutrition + " hunger per slice, got " + food.nutrition());
-            helper.assertTrue(Math.abs(food.saturation() - saturation) < 1.0E-4F,
-                id + " must feed " + saturation + " saturation per slice, got " + food.saturation());
+            helper.assertTrue(
+                    food.nutrition() == nutrition,
+                    id + " must feed " + nutrition + " hunger per slice, got " + food.nutrition());
+            helper.assertTrue(
+                    Math.abs(food.saturation() - saturation) < 1.0E-4F,
+                    id + " must feed " + saturation + " saturation per slice, got " + food.saturation());
         });
         helper.succeed();
     }
@@ -125,16 +135,20 @@ public final class SusCakeTests {
         ModBlocks.susCakes().forEach((id, block) -> {
             BlockState placed = block.get().defaultBlockState();
             // 115 的默认态就是 7：摆一次只放一片
-            helper.assertTrue(placed.getValue(SusCakeBlock.BITES_TAKEN) == 7,
-                "a placed " + id + " must be the single last slice like experiment_115, got omnomnom="
-                    + placed.getValue(SusCakeBlock.BITES_TAKEN));
-            helper.assertTrue(SusCakeBlock.BITES_TAKEN.getName().equals("omnomnom"),
-                "the bites property must keep 115's name omnomnom, got " + SusCakeBlock.BITES_TAKEN.getName());
-            helper.assertTrue(SusCakeBlock.BITES_TAKEN.getPossibleValues().size() == 8,
-                "omnomnom must run 0..7, got " + SusCakeBlock.BITES_TAKEN.getPossibleValues());
+            helper.assertTrue(
+                    placed.getValue(SusCakeBlock.BITES_TAKEN) == 7,
+                    "a placed " + id + " must be the single last slice like experiment_115, got omnomnom="
+                            + placed.getValue(SusCakeBlock.BITES_TAKEN));
+            helper.assertTrue(
+                    SusCakeBlock.BITES_TAKEN.getName().equals("omnomnom"),
+                    "the bites property must keep 115's name omnomnom, got " + SusCakeBlock.BITES_TAKEN.getName());
+            helper.assertTrue(
+                    SusCakeBlock.BITES_TAKEN.getPossibleValues().size() == 8,
+                    "omnomnom must run 0..7, got " + SusCakeBlock.BITES_TAKEN.getPossibleValues());
             // 没有 regenerate 那种第二个状态：这一版不需要撒红石粉
-            helper.assertTrue(placed.getProperties().size() == 1,
-                id + " must carry omnomnom and nothing else, got " + placed.getProperties());
+            helper.assertTrue(
+                    placed.getProperties().size() == 1,
+                    id + " must carry omnomnom and nothing else, got " + placed.getProperties());
             helper.assertTrue(placed.isRandomlyTicking(), id + " must tick randomly, that is how it regrows");
         });
         helper.succeed();
@@ -148,38 +162,41 @@ public final class SusCakeTests {
         BlockHitResult hit = hitOn(pos);
         Block lamingtonCake = ModBlocks.susCakes().get(LAMINGTON).get();
 
-        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 3));
+        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 3));
         ItemStack lamington = new ItemStack(ModItems.susCakes().get(LAMINGTON).get());
-        ItemInteractionResult added = level.getBlockState(pos)
-            .useItemOn(lamington, level, player, InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(added.consumesAction(),
-            "right clicking a bitten sus_lamington_cake with another one must add a slice, got " + added);
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 2,
-            "one cake must add exactly one slice, omnomnom should be 2, got "
-                + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        ItemInteractionResult added =
+                level.getBlockState(pos).useItemOn(lamington, level, player, InteractionHand.MAIN_HAND, hit);
+        helper.assertTrue(
+                added.consumesAction(),
+                "right clicking a bitten sus_lamington_cake with another one must add a slice, got " + added);
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 2,
+                "one cake must add exactly one slice, omnomnom should be 2, got "
+                        + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
         helper.assertTrue(lamington.isEmpty(), "adding a slice must consume the item");
 
         // 别的口味补不上
-        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 3));
+        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 3));
         ItemStack cheese = new ItemStack(ModItems.susCakes().get(CHEESE).get());
-        ItemInteractionResult refused = level.getBlockState(pos)
-            .useItemOn(cheese, level, player, InteractionHand.MAIN_HAND, hit);
+        ItemInteractionResult refused =
+                level.getBlockState(pos).useItemOn(cheese, level, player, InteractionHand.MAIN_HAND, hit);
         helper.assertFalse(refused.consumesAction(), "another flavour must not refill this cake, got " + refused);
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 3,
-            "the refused flavour must leave the bites alone, got "
-                + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 3,
+                "the refused flavour must leave the bites alone, got "
+                        + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
         helper.assertTrue(cheese.getCount() == 1, "the refused cake must stay in hand");
 
         // 满的那块再点不给补
-        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 0));
+        level.setBlockAndUpdate(pos, lamingtonCake.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0));
         ItemInteractionResult full = level.getBlockState(pos)
-            .useItemOn(new ItemStack(ModItems.susCakes().get(LAMINGTON).get()), level, player,
-                InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(full == ItemInteractionResult.FAIL,
-            "a full cake must refuse another slice, got " + full);
+                .useItemOn(
+                        new ItemStack(ModItems.susCakes().get(LAMINGTON).get()),
+                        level,
+                        player,
+                        InteractionHand.MAIN_HAND,
+                        hit);
+        helper.assertTrue(full == ItemInteractionResult.FAIL, "a full cake must refuse another slice, got " + full);
         helper.succeed();
     }
 
@@ -194,24 +211,26 @@ public final class SusCakeTests {
         Item pineapple = ModItems.susCakes().get(PINEAPPLE).get();
 
         // 吃到一半也能取，一次取回一片：3 -> 4
-        level.setBlockAndUpdate(pos, pineappleCake.defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 3));
+        level.setBlockAndUpdate(pos, pineappleCake.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 3));
         ItemInteractionResult taken = level.getBlockState(pos)
-            .useItemOn(new ItemStack(Items.STICK), level, player, InteractionHand.MAIN_HAND, hit);
+                .useItemOn(new ItemStack(Items.STICK), level, player, InteractionHand.MAIN_HAND, hit);
         helper.assertTrue(taken.consumesAction(), "sneak right clicking must take a slice back, got " + taken);
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 4,
-            "taking a slice must move omnomnom from 3 to 4, got "
-                + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
-        helper.assertTrue(player.getInventory().contains(new ItemStack(pineapple)),
-            "taking a slice must hand back one cake item");
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 4,
+                "taking a slice must move omnomnom from 3 to 4, got "
+                        + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                player.getInventory().contains(new ItemStack(pineapple)),
+                "taking a slice must hand back one cake item");
 
         // 只剩 1 片时整块取走
         level.setBlockAndUpdate(pos, pineappleCake.defaultBlockState());
         ItemInteractionResult last = level.getBlockState(pos)
-            .useItemOn(new ItemStack(Items.STICK), level, player, InteractionHand.MAIN_HAND, hit);
+                .useItemOn(new ItemStack(Items.STICK), level, player, InteractionHand.MAIN_HAND, hit);
         helper.assertTrue(last.consumesAction(), "taking the last slice must report success, got " + last);
-        helper.assertTrue(level.getBlockState(pos).isAir(),
-            "taking the last slice must clear the block, got " + level.getBlockState(pos));
+        helper.assertTrue(
+                level.getBlockState(pos).isAir(),
+                "taking the last slice must clear the block, got " + level.getBlockState(pos));
         helper.succeed();
     }
 
@@ -219,8 +238,8 @@ public final class SusCakeTests {
     public static void eatingASliceFeedsItsServing(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(1, 1, 1));
-        BlockState full = ModBlocks.susCakes().get(CHEESE).get().defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 0);
+        BlockState full =
+                ModBlocks.susCakes().get(CHEESE).get().defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0);
         level.setBlockAndUpdate(pos, full);
 
         Player eater = mockPlayerAt(helper, pos);
@@ -229,36 +248,45 @@ public final class SusCakeTests {
 
         InteractionResult eaten = level.getBlockState(pos).useWithoutItem(level, eater, hitOn(pos));
         helper.assertTrue(eaten.consumesAction(), "an empty hand right click must eat a slice, got " + eaten);
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 1,
-            "one bite must move omnomnom from 0 to 1, got "
-                + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
-        helper.assertTrue(eater.getFoodData().getFoodLevel() == 10 + NUTRITION,
-            "one slice must be " + NUTRITION + " nutrition, food level is "
-                + eater.getFoodData().getFoodLevel());
-        helper.assertTrue(Math.abs(eater.getFoodData().getSaturationLevel() - 4.0F) < 1.0E-4F,
-            "one slice must add 4.0 saturation, got " + eater.getFoodData().getSaturationLevel());
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 1,
+                "one bite must move omnomnom from 0 to 1, got "
+                        + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                eater.getFoodData().getFoodLevel() == 10 + NUTRITION,
+                "one slice must be " + NUTRITION + " nutrition, food level is "
+                        + eater.getFoodData().getFoodLevel());
+        helper.assertTrue(
+                Math.abs(eater.getFoodData().getSaturationLevel() - 4.0F) < 1.0E-4F,
+                "one slice must add 4.0 saturation, got " + eater.getFoodData().getSaturationLevel());
 
         // 血橙那一块是配方单独指定的 8 点饥饿、8 点饱和度
-        level.setBlockAndUpdate(pos, ModBlocks.susCakes().get(BLOODORANGE).get().defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 0));
+        level.setBlockAndUpdate(
+                pos,
+                ModBlocks.susCakes().get(BLOODORANGE).get().defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0));
         eater.getFoodData().setFoodLevel(10);
         eater.getFoodData().setSaturation(0.0F);
         InteractionResult bloodorange = level.getBlockState(pos).useWithoutItem(level, eater, hitOn(pos));
-        helper.assertTrue(bloodorange.consumesAction(),
-            "an empty hand right click must eat a blood orange slice, got " + bloodorange);
-        helper.assertTrue(eater.getFoodData().getFoodLevel() == 10 + EIGHT_NUTRITION,
-            "a blood orange slice must be " + EIGHT_NUTRITION + " nutrition, food level is "
-                + eater.getFoodData().getFoodLevel());
-        helper.assertTrue(Math.abs(eater.getFoodData().getSaturationLevel() - 8.0F) < 1.0E-4F,
-            "a blood orange slice must add 8.0 saturation, got " + eater.getFoodData().getSaturationLevel());
+        helper.assertTrue(
+                bloodorange.consumesAction(),
+                "an empty hand right click must eat a blood orange slice, got " + bloodorange);
+        helper.assertTrue(
+                eater.getFoodData().getFoodLevel() == 10 + EIGHT_NUTRITION,
+                "a blood orange slice must be " + EIGHT_NUTRITION + " nutrition, food level is "
+                        + eater.getFoodData().getFoodLevel());
+        helper.assertTrue(
+                Math.abs(eater.getFoodData().getSaturationLevel() - 8.0F) < 1.0E-4F,
+                "a blood orange slice must add 8.0 saturation, got "
+                        + eater.getFoodData().getSaturationLevel());
 
         // 最后一片吃完方块消失
         level.setBlockAndUpdate(pos, full.setValue(SusCakeBlock.BITES_TAKEN, 7));
         eater.getFoodData().setFoodLevel(10);
         InteractionResult last = level.getBlockState(pos).useWithoutItem(level, eater, hitOn(pos));
         helper.assertTrue(last.consumesAction(), "eating the last slice must report success, got " + last);
-        helper.assertTrue(level.getBlockState(pos).isAir(),
-            "eating the last slice must clear the block, got " + level.getBlockState(pos));
+        helper.assertTrue(
+                level.getBlockState(pos).isAir(),
+                "eating the last slice must clear the block, got " + level.getBlockState(pos));
         helper.succeed();
     }
 
@@ -273,25 +301,30 @@ public final class SusCakeTests {
         RECIPE_INGREDIENTS.forEach((id, expected) -> {
             ResourceLocation recipeId = DawnDuskTerminal.id(id);
             RecipeHolder<?> holder = manager.byKey(recipeId).orElse(null);
-            helper.assertTrue(holder != null,
-                "recipe " + recipeId + " must be loaded, it is the shapeless one of " + id);
-            helper.assertTrue(holder.value() instanceof ShapelessRecipe,
-                "recipe " + recipeId + " must be shapeless, got " + holder.value().getType());
+            helper.assertTrue(
+                    holder != null, "recipe " + recipeId + " must be loaded, it is the shapeless one of " + id);
+            helper.assertTrue(
+                    holder.value() instanceof ShapelessRecipe,
+                    "recipe " + recipeId + " must be shapeless, got "
+                            + holder.value().getType());
 
             ItemStack result = holder.value().getResultItem(helper.getLevel().registryAccess());
-            helper.assertTrue(result.is(ModItems.susCakes().get(id).get()),
-                "recipe " + recipeId + " must produce " + id + ", got " + result);
-            helper.assertTrue(result.getCount() == 1,
-                "recipe " + recipeId + " must produce one cake, got " + result.getCount());
+            helper.assertTrue(
+                    result.is(ModItems.susCakes().get(id).get()),
+                    "recipe " + recipeId + " must produce " + id + ", got " + result);
+            helper.assertTrue(
+                    result.getCount() == 1, "recipe " + recipeId + " must produce one cake, got " + result.getCount());
 
             List<Ingredient> ingredients = holder.value().getIngredients();
-            helper.assertTrue(ingredients.size() == expected.size(),
-                "recipe " + recipeId + " must take " + expected.size() + " ingredients, got " + ingredients.size());
+            helper.assertTrue(
+                    ingredients.size() == expected.size(),
+                    "recipe " + recipeId + " must take " + expected.size() + " ingredients, got " + ingredients.size());
             for (String ingredientId : expected) {
                 ItemStack stack = foreignItem(ingredientId);
                 helper.assertTrue(!stack.isEmpty(), "ingredient id " + ingredientId + " must resolve to an item");
-                helper.assertTrue(ingredients.stream().anyMatch(ingredient -> ingredient.test(stack)),
-                    "recipe " + recipeId + " must accept " + ingredientId);
+                helper.assertTrue(
+                        ingredients.stream().anyMatch(ingredient -> ingredient.test(stack)),
+                        "recipe " + recipeId + " must accept " + ingredientId);
             }
         });
         helper.succeed();
@@ -305,15 +338,17 @@ public final class SusCakeTests {
 
         level.setBlockAndUpdate(pos, block.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 5));
         level.getBlockState(pos).randomTick(level, pos, level.getRandom());
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 4,
-            "one random tick must put one slice back, omnomnom should be 4, got "
-                + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 4,
+                "one random tick must put one slice back, omnomnom should be 4, got "
+                        + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
 
         // 满片时随机刻什么都不做
         level.setBlockAndUpdate(pos, block.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0));
         level.getBlockState(pos).randomTick(level, pos, level.getRandom());
-        helper.assertTrue(level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 0,
-            "a full cake must stay full, got " + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN) == 0,
+                "a full cake must stay full, got " + level.getBlockState(pos).getValue(SusCakeBlock.BITES_TAKEN));
         helper.succeed();
     }
 
@@ -321,14 +356,16 @@ public final class SusCakeTests {
     public static void comparatorReadsRemainingSlicesAndNeverEmitsRedstone(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(1, 1, 1));
-        BlockState full = ModBlocks.susCakes().get(PINEAPPLE).get().defaultBlockState()
-            .setValue(SusCakeBlock.BITES_TAKEN, 0);
+        BlockState full =
+                ModBlocks.susCakes().get(PINEAPPLE).get().defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0);
         helper.assertTrue(full.hasAnalogOutputSignal(), "a sus cake must drive a comparator");
-        helper.assertTrue(full.getAnalogOutputSignal(level, pos) == 8,
-            "a full sus cake must read 8 on a comparator, got " + full.getAnalogOutputSignal(level, pos));
-        helper.assertTrue(full.setValue(SusCakeBlock.BITES_TAKEN, 7).getAnalogOutputSignal(level, pos) == 1,
-            "the last slice must read 1 on a comparator, got "
-                + full.setValue(SusCakeBlock.BITES_TAKEN, 7).getAnalogOutputSignal(level, pos));
+        helper.assertTrue(
+                full.getAnalogOutputSignal(level, pos) == 8,
+                "a full sus cake must read 8 on a comparator, got " + full.getAnalogOutputSignal(level, pos));
+        helper.assertTrue(
+                full.setValue(SusCakeBlock.BITES_TAKEN, 7).getAnalogOutputSignal(level, pos) == 1,
+                "the last slice must read 1 on a comparator, got "
+                        + full.setValue(SusCakeBlock.BITES_TAKEN, 7).getAnalogOutputSignal(level, pos));
         helper.assertFalse(full.isSignalSource(), "a sus cake must not emit redstone, there is no regenerate state");
         helper.succeed();
     }
@@ -344,31 +381,39 @@ public final class SusCakeTests {
     public static void experiment107IsAWholeRedVelvetCake(GameTestHelper helper) {
         Item item = ModItems.EXPERIMENT_107.get();
         Block redVelvet = ModBlocks.susCakes().get(REDVELVET).get();
-        helper.assertTrue(item instanceof SusCakeItem,
-            "dawnduskterminal:experiment_107 must be a " + SusCakeItem.class.getSimpleName() + ", got "
-                + item.getClass().getSimpleName());
-        helper.assertTrue(((BlockItem) item).getBlock() == redVelvet,
-            "dawnduskterminal:experiment_107 must place " + REDVELVET + ", got "
-                + ((BlockItem) item).getBlock());
+        helper.assertTrue(
+                item instanceof SusCakeItem,
+                "dawnduskterminal:experiment_107 must be a " + SusCakeItem.class.getSimpleName() + ", got "
+                        + item.getClass().getSimpleName());
+        helper.assertTrue(
+                ((BlockItem) item).getBlock() == redVelvet,
+                "dawnduskterminal:experiment_107 must place " + REDVELVET + ", got " + ((BlockItem) item).getBlock());
 
         ItemStack stack = new ItemStack(item);
-        helper.assertTrue(stack.getMaxStackSize() == 64,
-            "dawnduskterminal:experiment_107 must stack to 64, got " + stack.getMaxStackSize());
-        helper.assertTrue(stack.get(DataComponents.FOOD) == null,
-            "a block item must not be edible in hand, got " + stack.get(DataComponents.FOOD));
-        helper.assertTrue(item.getDescriptionId().equals("item.dawnduskterminal.experiment_107"),
-            "the whole cake must be named through its own key, got " + item.getDescriptionId());
-        helper.assertFalse(item.getDescriptionId().equals(redVelvet.getDescriptionId()),
-            "the whole cake must not share the slice item's name, both resolve to " + redVelvet.getDescriptionId());
+        helper.assertTrue(
+                stack.getMaxStackSize() == 64,
+                "dawnduskterminal:experiment_107 must stack to 64, got " + stack.getMaxStackSize());
+        helper.assertTrue(
+                stack.get(DataComponents.FOOD) == null,
+                "a block item must not be edible in hand, got " + stack.get(DataComponents.FOOD));
+        helper.assertTrue(
+                item.getDescriptionId().equals("item.dawnduskterminal.experiment_107"),
+                "the whole cake must be named through its own key, got " + item.getDescriptionId());
+        helper.assertFalse(
+                item.getDescriptionId().equals(redVelvet.getDescriptionId()),
+                "the whole cake must not share the slice item's name, both resolve to " + redVelvet.getDescriptionId());
         // 一块方块两件物品：方块对外的物品必须仍是那件一片的，否则补片与取片都会换成整块那件
-        helper.assertTrue(redVelvet.asItem() == ModItems.susCakes().get(REDVELVET).get(),
-            "the block's own item must stay the slice item, got " + redVelvet.asItem().getDescriptionId()
-                + " (Item.BY_BLOCK is a put, a second BlockItem for the same block would win it)");
+        helper.assertTrue(
+                redVelvet.asItem() == ModItems.susCakes().get(REDVELVET).get(),
+                "the block's own item must stay the slice item, got "
+                        + redVelvet.asItem().getDescriptionId()
+                        + " (Item.BY_BLOCK is a put, a second BlockItem for the same block would win it)");
 
         for (String lang : new String[] {"en_us", "zh_cn"}) {
             JsonObject words = readJson(helper, "/assets/dawnduskterminal/lang/" + lang + ".json");
-            helper.assertTrue(words.has("item.dawnduskterminal.experiment_107"),
-                lang + " must name the whole cake, otherwise the tab shows a raw key");
+            helper.assertTrue(
+                    words.has("item.dawnduskterminal.experiment_107"),
+                    lang + " must name the whole cake, otherwise the tab shows a raw key");
         }
         helper.succeed();
     }
@@ -384,29 +429,39 @@ public final class SusCakeTests {
 
         Block redVelvet = ModBlocks.susCakes().get(REDVELVET).get();
         BlockState full = redVelvet.defaultBlockState().setValue(SusCakeBlock.BITES_TAKEN, 0);
-        helper.assertTrue(level.getBlockState(ground).is(Blocks.STONE),
-            "sanity: the ground " + ground + " must be stone, got " + level.getBlockState(ground));
-        helper.assertTrue(level.getBlockState(target).canBeReplaced(),
-            "sanity: " + target + " must be replaceable, got " + level.getBlockState(target));
-        helper.assertTrue(full.canSurvive(level, target),
-            "sanity: a full cake must be able to sit above " + level.getBlockState(ground) + ", not above "
-                + level.getBlockState(target.below()));
+        helper.assertTrue(
+                level.getBlockState(ground).is(Blocks.STONE),
+                "sanity: the ground " + ground + " must be stone, got " + level.getBlockState(ground));
+        helper.assertTrue(
+                level.getBlockState(target).canBeReplaced(),
+                "sanity: " + target + " must be replaceable, got " + level.getBlockState(target));
+        helper.assertTrue(
+                full.canSurvive(level, target),
+                "sanity: a full cake must be able to sit above " + level.getBlockState(ground) + ", not above "
+                        + level.getBlockState(target.below()));
 
         Player placer = mockPlayerAt(helper, target);
         ItemStack stack = new ItemStack(ModItems.EXPERIMENT_107.get());
         placer.setItemInHand(InteractionHand.MAIN_HAND, stack);
-        BlockPlaceContext context = new BlockPlaceContext(placer, InteractionHand.MAIN_HAND, stack,
-            new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false));
+        BlockPlaceContext context = new BlockPlaceContext(
+                placer,
+                InteractionHand.MAIN_HAND,
+                stack,
+                new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false));
         InteractionResult placed = ModItems.EXPERIMENT_107.get().place(context);
 
-        helper.assertTrue(placed.consumesAction(), "placing the whole cake must succeed, got " + placed
-            + " (clicked " + ground + " = " + level.getBlockState(ground)
-            + ", target " + target + " = " + level.getBlockState(target) + ")");
-        helper.assertTrue(level.getBlockState(target).is(redVelvet),
-            "the whole cake must place " + REDVELVET + ", got " + level.getBlockState(target));
-        helper.assertTrue(level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN) == 0,
-            "the whole cake must land as the full 8 slices, omnomnom should be 0, got "
-                + level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN));
+        helper.assertTrue(
+                placed.consumesAction(),
+                "placing the whole cake must succeed, got " + placed
+                        + " (clicked " + ground + " = " + level.getBlockState(ground)
+                        + ", target " + target + " = " + level.getBlockState(target) + ")");
+        helper.assertTrue(
+                level.getBlockState(target).is(redVelvet),
+                "the whole cake must place " + REDVELVET + ", got " + level.getBlockState(target));
+        helper.assertTrue(
+                level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN) == 0,
+                "the whole cake must land as the full 8 slices, omnomnom should be 0, got "
+                        + level.getBlockState(target).getValue(SusCakeBlock.BITES_TAKEN));
         helper.succeed();
     }
 
@@ -431,7 +486,7 @@ public final class SusCakeTests {
         try (InputStream stream = SusCakeTests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException problem) {
             throw new AssertionError("reading " + resource + " failed", problem);
         }

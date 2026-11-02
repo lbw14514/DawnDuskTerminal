@@ -27,33 +27,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@code HumanoidArmorLayer} 画完本体之后再叠一次同样的几何，贴图换成
  * {@code textures/entities/experiment_armor_glow.png}，并且用满亮的光照值，于是暗处也看得见
  */
-
 public abstract class ExperimentArmorGlowMixin {
-    private static final String RENDER_ARMOR_PIECE = "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V";
+    private static final String RENDER_ARMOR_PIECE =
+            "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V";
 
     @Inject(
-        method = {"renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V"},
-        at = {@At("TAIL")}
-    )
+            method = {
+                "renderArmorPiece(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;ILnet/minecraft/client/model/HumanoidModel;FFFFFF)V"
+            },
+            at = {@At("TAIL")})
     private void ddt$renderGlowLayer(
-        PoseStack poseStack,
-        MultiBufferSource bufferSource,
-        LivingEntity entity,
-        EquipmentSlot slot,
-        int packedLight,
-        HumanoidModel<?> model,
-        float limbSwing,
-        float limbSwingAmount,
-        float partialTick,
-        float ageInTicks,
-        float netHeadYaw,
-        float headPitch,
-        CallbackInfo ci
-    ) {
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            LivingEntity entity,
+            EquipmentSlot slot,
+            int packedLight,
+            HumanoidModel<?> model,
+            float limbSwing,
+            float limbSwingAmount,
+            float partialTick,
+            float ageInTicks,
+            float netHeadYaw,
+            float headPitch,
+            CallbackInfo ci) {
         ItemStack stack = entity.getItemBySlot(slot);
         if (stack.getItem() instanceof ExperimentArmorItem) {
             Model glow = IClientItemExtensions.of(stack).getGenericArmorModel(entity, stack, slot, model);
-            VertexConsumer consumer = bufferSource.getBuffer(RenderType.armorCutoutNoCull(ExperimentArmorModel.GLOW_TEXTURE));
+            VertexConsumer consumer =
+                    bufferSource.getBuffer(RenderType.armorCutoutNoCull(ExperimentArmorModel.GLOW_TEXTURE));
             glow.renderToBuffer(poseStack, consumer, 15728880, OverlayTexture.NO_OVERLAY);
         }
     }

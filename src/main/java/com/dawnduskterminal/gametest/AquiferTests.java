@@ -24,8 +24,8 @@ public final class AquiferTests {
     private static final ResourceLocation CHRONO = ResourceLocation.fromNamespaceAndPath("dawnduskterminal", "chrono");
 
     private static NoiseGeneratorSettings chronoSettings(GameTestHelper helper) {
-        Registry<NoiseGeneratorSettings> registry = helper.getLevel().getServer().registryAccess()
-            .registryOrThrow(Registries.NOISE_SETTINGS);
+        Registry<NoiseGeneratorSettings> registry =
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE_SETTINGS);
         NoiseGeneratorSettings settings = registry.get(CHRONO);
         helper.assertTrue(settings != null, "noise settings " + CHRONO + " missing");
         return settings;
@@ -35,10 +35,12 @@ public final class AquiferTests {
     @GameTest(template = "ddt_empty")
     public static void terrainAndFluidUseTheModPalette(GameTestHelper helper) {
         NoiseGeneratorSettings settings = chronoSettings(helper);
-        helper.assertTrue(settings.defaultBlock().is(ModTerrainBlocks.CANOPY_STONE.get()),
-            "the chrono terrain must be generated as canopy_stone, got " + settings.defaultBlock());
-        helper.assertTrue(settings.defaultFluid().is(ModBlocks.PORTAL_FLUID.get()),
-            "aquifers and oceans must be generated as portal_fluid, got " + settings.defaultFluid());
+        helper.assertTrue(
+                settings.defaultBlock().is(ModTerrainBlocks.CANOPY_STONE.get()),
+                "the chrono terrain must be generated as canopy_stone, got " + settings.defaultBlock());
+        helper.assertTrue(
+                settings.defaultFluid().is(ModBlocks.PORTAL_FLUID.get()),
+                "aquifers and oceans must be generated as portal_fluid, got " + settings.defaultFluid());
         helper.succeed();
     }
 
@@ -46,17 +48,20 @@ public final class AquiferTests {
     public static void aquifersAreEnabledLikeVanilla(GameTestHelper helper) {
         NoiseGeneratorSettings settings = chronoSettings(helper);
         helper.assertTrue(settings.aquifersEnabled(), "chrono must keep aquifers enabled");
-        helper.assertTrue(settings.seaLevel() == VANILLA_SEA_LEVEL,
-            "sea level must match the vanilla overworld value " + VANILLA_SEA_LEVEL + ", got " + settings.seaLevel());
+        helper.assertTrue(
+                settings.seaLevel() == VANILLA_SEA_LEVEL,
+                "sea level must match the vanilla overworld value " + VANILLA_SEA_LEVEL + ", got "
+                        + settings.seaLevel());
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void oreVeinsAreEnabledLikeVanilla(GameTestHelper helper) {
         NoiseGeneratorSettings settings = chronoSettings(helper);
-        helper.assertTrue(settings.oreVeinsEnabled(),
-            "the port keeps vanilla ore veins; the old hand-rolled terrain disabled them to hide the "
-                + "granite/andesite they blended with canopy_stone, which no longer applies");
+        helper.assertTrue(
+                settings.oreVeinsEnabled(),
+                "the port keeps vanilla ore veins; the old hand-rolled terrain disabled them to hide the "
+                        + "granite/andesite they blended with canopy_stone, which no longer applies");
         helper.succeed();
     }
 }

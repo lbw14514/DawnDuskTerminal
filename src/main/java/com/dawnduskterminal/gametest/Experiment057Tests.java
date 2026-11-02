@@ -80,29 +80,33 @@ public final class Experiment057Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void itemIsAnEightOnePointSixBlade(GameTestHelper helper) {
-        helper.assertFalse(ModExperimentItems.placeholders().containsKey(57),
-            "number 57 must not be a placeholder anymore, it has a real item now");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(57),
+                "number 57 must not be a placeholder anymore, it has a real item now");
         Item item = ModExperimentItems.EXPERIMENT_057.get();
         ItemStack stack = new ItemStack(item);
-        helper.assertTrue(item instanceof Experiment057Item,
-            "dawnduskterminal:experiment_057 must be an " + Experiment057Item.class.getSimpleName()
-                + ", got " + item.getClass().getSimpleName());
+        helper.assertTrue(
+                item instanceof Experiment057Item,
+                "dawnduskterminal:experiment_057 must be an " + Experiment057Item.class.getSimpleName() + ", got "
+                        + item.getClass().getSimpleName());
         ExperimentItemTests.assertMeleeSpec(helper, item, 8.0D, 1.6D);
         // 提示里的「8 攻击伤害 / 1.6 攻击速度」靠修饰符 ID 认出来：原版只对这两个 ID 显示最终值，
         // 换成自定义 ID 就会退化成「+7 攻击伤害 / -2.4 攻击速度」
         for (var entry : stack.getAttributeModifiers().modifiers()) {
             ResourceLocation id = entry.modifier().id();
-            helper.assertTrue(id.equals(ResourceLocation.withDefaultNamespace("base_attack_damage"))
-                    || id.equals(ResourceLocation.withDefaultNamespace("base_attack_speed")),
-                "the melee modifiers must use the vanilla base ids so the tooltip prints the panel"
-                    + " values, got " + id);
+            helper.assertTrue(
+                    id.equals(ResourceLocation.withDefaultNamespace("base_attack_damage"))
+                            || id.equals(ResourceLocation.withDefaultNamespace("base_attack_speed")),
+                    "the melee modifiers must use the vanilla base ids so the tooltip prints the panel"
+                            + " values, got " + id);
         }
-        helper.assertTrue(stack.getMaxDamage() == Experiment057Item.DURABILITY,
-            "dawnduskterminal:experiment_057 must have " + Experiment057Item.DURABILITY
-                + " uses, got " + stack.getMaxDamage());
-        helper.assertTrue(stack.getMaxStackSize() == 1,
-            "dawnduskterminal:experiment_057 is damageable, it must not stack, got "
-                + stack.getMaxStackSize());
+        helper.assertTrue(
+                stack.getMaxDamage() == Experiment057Item.DURABILITY,
+                "dawnduskterminal:experiment_057 must have " + Experiment057Item.DURABILITY + " uses, got "
+                        + stack.getMaxDamage());
+        helper.assertTrue(
+                stack.getMaxStackSize() == 1,
+                "dawnduskterminal:experiment_057 is damageable, it must not stack, got " + stack.getMaxStackSize());
         helper.succeed();
     }
 
@@ -117,23 +121,33 @@ public final class Experiment057Tests {
     @GameTest(template = "ddt_empty")
     public static void itemAcceptsMeleeEnchantments(GameTestHelper helper) {
         ItemStack blade = new ItemStack(ModExperimentItems.EXPERIMENT_057.get());
-        helper.assertTrue(blade.is(ItemTags.SWORDS),
-            "experiment_057 must sit in #minecraft:swords, otherwise no melee enchantment reaches it");
-        helper.assertTrue(blade.getEnchantmentValue() > 0,
-            "experiment_057 must report a positive enchantment value, got "
-                + blade.getEnchantmentValue());
+        helper.assertTrue(
+                blade.is(ItemTags.SWORDS),
+                "experiment_057 must sit in #minecraft:swords, otherwise no melee enchantment reaches it");
+        helper.assertTrue(
+                blade.getEnchantmentValue() > 0,
+                "experiment_057 must report a positive enchantment value, got " + blade.getEnchantmentValue());
 
         var enchantments = helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
-        for (ResourceKey<Enchantment> key : List.of(Enchantments.SHARPNESS, Enchantments.SMITE,
-            Enchantments.BANE_OF_ARTHROPODS, Enchantments.KNOCKBACK, Enchantments.FIRE_ASPECT,
-            Enchantments.LOOTING, Enchantments.SWEEPING_EDGE, Enchantments.UNBREAKING,
-            Enchantments.MENDING)) {
-            helper.assertTrue(blade.supportsEnchantment(enchantments.getHolderOrThrow(key)),
-                "experiment_057 must accept " + key.location());
+        for (ResourceKey<Enchantment> key : List.of(
+                Enchantments.SHARPNESS,
+                Enchantments.SMITE,
+                Enchantments.BANE_OF_ARTHROPODS,
+                Enchantments.KNOCKBACK,
+                Enchantments.FIRE_ASPECT,
+                Enchantments.LOOTING,
+                Enchantments.SWEEPING_EDGE,
+                Enchantments.UNBREAKING,
+                Enchantments.MENDING)) {
+            helper.assertTrue(
+                    blade.supportsEnchantment(enchantments.getHolderOrThrow(key)),
+                    "experiment_057 must accept " + key.location());
         }
-        helper.assertFalse(EnchantmentHelper.getAvailableEnchantmentResults(30, blade,
-                enchantments.holders().map(holder -> (Holder<Enchantment>) holder)).isEmpty(),
-            "the enchanting table must offer something for experiment_057 at level 30");
+        helper.assertFalse(
+                EnchantmentHelper.getAvailableEnchantmentResults(
+                                30, blade, enchantments.holders().map(holder -> (Holder<Enchantment>) holder))
+                        .isEmpty(),
+                "the enchanting table must offer something for experiment_057 at level 30");
         helper.succeed();
     }
 
@@ -145,25 +159,32 @@ public final class Experiment057Tests {
         ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
 
         InteractionResultHolder<ItemStack> first = stack.use(level, player, InteractionHand.MAIN_HAND);
-        helper.assertTrue(first.getResult().consumesAction(),
-            "right clicking dawnduskterminal:experiment_057 must consume the click, got " + first.getResult());
-        helper.assertTrue(stack.getDamageValue() == 1,
-            "one shot must cost one durability, got " + stack.getDamageValue());
-        helper.assertTrue(player.getCooldowns().isOnCooldown(ModExperimentItems.EXPERIMENT_057.get()),
-            "one shot must put the item on cooldown");
-        helper.assertTrue(blades(helper).size() == 1,
-            "one shot must spawn exactly one blade, got " + blades(helper).size());
-        helper.assertTrue(Experiment057Item.COOLDOWN_TICKS == 40,
-            "the cooldown must be 2 seconds (40 ticks), got "
-                + Experiment057Item.COOLDOWN_TICKS);
+        helper.assertTrue(
+                first.getResult().consumesAction(),
+                "right clicking dawnduskterminal:experiment_057 must consume the click, got " + first.getResult());
+        helper.assertTrue(
+                stack.getDamageValue() == 1, "one shot must cost one durability, got " + stack.getDamageValue());
+        helper.assertTrue(
+                player.getCooldowns().isOnCooldown(ModExperimentItems.EXPERIMENT_057.get()),
+                "one shot must put the item on cooldown");
+        helper.assertTrue(
+                blades(helper).size() == 1,
+                "one shot must spawn exactly one blade, got " + blades(helper).size());
+        helper.assertTrue(
+                Experiment057Item.COOLDOWN_TICKS == 40,
+                "the cooldown must be 2 seconds (40 ticks), got " + Experiment057Item.COOLDOWN_TICKS);
 
         InteractionResultHolder<ItemStack> second = stack.use(level, player, InteractionHand.MAIN_HAND);
-        helper.assertFalse(second.getResult().consumesAction(),
-            "the second click inside the cooldown must be ignored, got " + second.getResult());
-        helper.assertTrue(stack.getDamageValue() == 1,
-            "an ignored click must not cost durability, got " + stack.getDamageValue());
-        helper.assertTrue(blades(helper).size() == 1,
-            "an ignored click must not spawn a second blade, got " + blades(helper).size());
+        helper.assertFalse(
+                second.getResult().consumesAction(),
+                "the second click inside the cooldown must be ignored, got " + second.getResult());
+        helper.assertTrue(
+                stack.getDamageValue() == 1,
+                "an ignored click must not cost durability, got " + stack.getDamageValue());
+        helper.assertTrue(
+                blades(helper).size() == 1,
+                "an ignored click must not spawn a second blade, got "
+                        + blades(helper).size());
         blades(helper).forEach(Experiment057BladeEntity::discard);
         helper.succeed();
     }
@@ -184,16 +205,18 @@ public final class Experiment057Tests {
             Experiment057BladeEntity blade = Experiment057BladeEntity.launch(level, player);
             Vec3 motion = blade.getDeltaMovement();
             double speed = motion.length();
-            helper.assertTrue(speed >= 1.2D - 1.0E-6D && speed <= 1.8D + 1.0E-6D,
-                "the random launch speed must stay within 1.2..1.8, got " + speed);
+            helper.assertTrue(
+                    speed >= 1.2D - 1.0E-6D && speed <= 1.8D + 1.0E-6D,
+                    "the random launch speed must stay within 1.2..1.8, got " + speed);
             double dot = motion.normalize().dot(look);
-            helper.assertTrue(dot >= minDot - 1.0E-6D,
-                "the launch must point in front of the launcher, at most "
-                    + Experiment057BladeEntity.MAX_DEVIATION_DEGREES + " degrees off the look, got "
-                    + Math.toDegrees(Math.acos(Mth.clamp(dot, -1.0D, 1.0D))) + " degrees");
+            helper.assertTrue(
+                    dot >= minDot - 1.0E-6D,
+                    "the launch must point in front of the launcher, at most "
+                            + Experiment057BladeEntity.MAX_DEVIATION_DEGREES + " degrees off the look, got "
+                            + Math.toDegrees(Math.acos(Mth.clamp(dot, -1.0D, 1.0D))) + " degrees");
             helper.assertTrue(blade.isNoGravity(), "the blade must not fall");
-            helper.assertTrue(blade.getGravity() == 0.0D,
-                "the blade must report zero gravity, got " + blade.getGravity());
+            helper.assertTrue(
+                    blade.getGravity() == 0.0D, "the blade must report zero gravity, got " + blade.getGravity());
             blade.discard();
         }
         helper.succeed();
@@ -214,11 +237,10 @@ public final class Experiment057Tests {
         player.setOldPosAndRot();
         Vec3 line = player.getViewVector(1.0F).normalize();
 
-        Experiment057BladeEntity blade = new Experiment057BladeEntity(
-            ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
+        Experiment057BladeEntity blade =
+                new Experiment057BladeEntity(ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
         blade.setOwner(player);
-        Vec3 start = player.getEyePosition().add(0.0D, 10.0D, 0.0D)
-            .add(3.0D, 0.0D, 0.0D);
+        Vec3 start = player.getEyePosition().add(0.0D, 10.0D, 0.0D).add(3.0D, 0.0D, 0.0D);
         blade.setPos(start.x, start.y, start.z);
         blade.setDeltaMovement(line.scale(1.5D));
         helper.getLevel().addFreshEntity(blade);
@@ -229,12 +251,13 @@ public final class Experiment057Tests {
         }
         double after = lateralDistance(blade, player, line);
         helper.assertFalse(blade.isRemoved(), "nothing in the way, the blade must still be flying");
-        helper.assertTrue(after < before * 0.5D,
-            "the blade must be pulled onto the sight line, lateral offset went from " + before
-                + " to " + after);
-        helper.assertTrue(blade.getDeltaMovement().normalize().dot(line) > 0.5D,
-            "the blade must still fly along the line, got direction "
-                + blade.getDeltaMovement().normalize());
+        helper.assertTrue(
+                after < before * 0.5D,
+                "the blade must be pulled onto the sight line, lateral offset went from " + before + " to " + after);
+        helper.assertTrue(
+                blade.getDeltaMovement().normalize().dot(line) > 0.5D,
+                "the blade must still fly along the line, got direction "
+                        + blade.getDeltaMovement().normalize());
         blade.discard();
         helper.succeed();
     }
@@ -249,8 +272,8 @@ public final class Experiment057Tests {
     @GameTest(template = "ddt_empty")
     public static void bladeExpiresAfterEightSeconds(GameTestHelper helper) {
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        Experiment057BladeEntity blade = new Experiment057BladeEntity(
-            ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
+        Experiment057BladeEntity blade =
+                new Experiment057BladeEntity(ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
         blade.setPos(origin.getX() + 1.5D, origin.getY() + 3.5D, origin.getZ() + 1.5D);
         blade.setDeltaMovement(Vec3.ZERO);
         helper.getLevel().addFreshEntity(blade);
@@ -258,12 +281,14 @@ public final class Experiment057Tests {
         for (int tick = 0; tick < Experiment057BladeEntity.LIFETIME_TICKS; tick++) {
             blade.tick();
         }
-        helper.assertFalse(blade.isRemoved(),
-            "the blade must live for " + Experiment057BladeEntity.LIFETIME_TICKS + " ticks, it died early");
+        helper.assertFalse(
+                blade.isRemoved(),
+                "the blade must live for " + Experiment057BladeEntity.LIFETIME_TICKS + " ticks, it died early");
         blade.tick();
-        helper.assertTrue(blade.isRemoved(),
-            "the blade must be gone after " + (Experiment057BladeEntity.LIFETIME_TICKS + 1)
-                + " ticks, it is still here");
+        helper.assertTrue(
+                blade.isRemoved(),
+                "the blade must be gone after " + (Experiment057BladeEntity.LIFETIME_TICKS + 1)
+                        + " ticks, it is still here");
         helper.succeed();
     }
 
@@ -276,8 +301,8 @@ public final class Experiment057Tests {
     public static void bladeBouncesOffBlocksWithoutDying(GameTestHelper helper) {
         helper.setBlock(new BlockPos(2, 1, 1), Blocks.STONE);
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        Experiment057BladeEntity blade = new Experiment057BladeEntity(
-            ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
+        Experiment057BladeEntity blade =
+                new Experiment057BladeEntity(ModEntities.EXPERIMENT_057_BLADE.get(), helper.getLevel());
         blade.setPos(origin.getX() + 1.5D, origin.getY() + 1.5D, origin.getZ() + 1.5D);
         blade.setDeltaMovement(1.5D, 0.0D, 0.0D);
         helper.getLevel().addFreshEntity(blade);
@@ -288,10 +313,10 @@ public final class Experiment057Tests {
                 break;
             }
         }
-        helper.assertFalse(blade.isRemoved(),
-            "a block hit must not remove the blade, it is supposed to bounce");
-        helper.assertTrue(blade.getDeltaMovement().x < 0.0D,
-            "an elastic hit on the WEST face must flip the x velocity, got " + blade.getDeltaMovement());
+        helper.assertFalse(blade.isRemoved(), "a block hit must not remove the blade, it is supposed to bounce");
+        helper.assertTrue(
+                blade.getDeltaMovement().x < 0.0D,
+                "an elastic hit on the WEST face must flip the x velocity, got " + blade.getDeltaMovement());
         blade.discard();
         helper.setBlock(new BlockPos(2, 1, 1), Blocks.AIR);
         helper.succeed();
@@ -307,31 +332,34 @@ public final class Experiment057Tests {
     public static void bladeHitsForCritDamageAndStacksWhenFalling(GameTestHelper helper) {
         Player player = plainPlayer(helper);
         player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(ATTACK_DAMAGE);
-        helper.assertFalse(Experiment057BladeEntity.isFalling(player),
-            "a mock player with no fall distance must not count as falling");
+        helper.assertFalse(
+                Experiment057BladeEntity.isFalling(player),
+                "a mock player with no fall distance must not count as falling");
 
         Zombie grounded = helper.spawn(EntityType.ZOMBIE, 1, 1, 4);
         float first = hitOnce(helper, player, grounded);
-        helper.assertTrue(Math.abs(first - ATTACK_DAMAGE * 1.5F) < 1.0E-4F,
-            "a blade hit must deal 1.5 x " + ATTACK_DAMAGE + " = " + (ATTACK_DAMAGE * 1.5F)
-                + ", got " + first);
+        helper.assertTrue(
+                Math.abs(first - ATTACK_DAMAGE * 1.5F) < 1.0E-4F,
+                "a blade hit must deal 1.5 x " + ATTACK_DAMAGE + " = " + (ATTACK_DAMAGE * 1.5F) + ", got " + first);
 
         // 第二只：把发射者按在「正在下落」那一档上，倍率叠成 2.25
         player.fallDistance = 3.0F;
-        helper.assertTrue(Experiment057BladeEntity.isFalling(player),
-            "fallDistance > 0 with no ground contact must count as falling");
+        helper.assertTrue(
+                Experiment057BladeEntity.isFalling(player),
+                "fallDistance > 0 with no ground contact must count as falling");
         Zombie whileFalling = helper.spawn(EntityType.ZOMBIE, 1, 1, 8);
         float stacked = hitOnce(helper, player, whileFalling);
-        helper.assertTrue(Math.abs(stacked - ATTACK_DAMAGE * 1.5F * 1.5F) < 1.0E-4F,
-            "a hit while the launcher is falling must deal 1.5 x 1.5 x " + ATTACK_DAMAGE + " = "
-                + (ATTACK_DAMAGE * 1.5F * 1.5F) + ", got " + stacked);
+        helper.assertTrue(
+                Math.abs(stacked - ATTACK_DAMAGE * 1.5F * 1.5F) < 1.0E-4F,
+                "a hit while the launcher is falling must deal 1.5 x 1.5 x " + ATTACK_DAMAGE + " = "
+                        + (ATTACK_DAMAGE * 1.5F * 1.5F) + ", got " + stacked);
 
-        helper.assertTrue(Experiment057BladeEntity.critMultiplier(false) == 1.5F,
-            "the plain crit multiplier must be 1.5, got "
-                + Experiment057BladeEntity.critMultiplier(false));
-        helper.assertTrue(Experiment057BladeEntity.critMultiplier(true) == 2.25F,
-            "the falling crit multiplier must stack to 2.25, got "
-                + Experiment057BladeEntity.critMultiplier(true));
+        helper.assertTrue(
+                Experiment057BladeEntity.critMultiplier(false) == 1.5F,
+                "the plain crit multiplier must be 1.5, got " + Experiment057BladeEntity.critMultiplier(false));
+        helper.assertTrue(
+                Experiment057BladeEntity.critMultiplier(true) == 2.25F,
+                "the falling crit multiplier must stack to 2.25, got " + Experiment057BladeEntity.critMultiplier(true));
         grounded.discard();
         whileFalling.discard();
         helper.succeed();
@@ -357,19 +385,20 @@ public final class Experiment057Tests {
         aimAt(blade, target);
         Vec3 incoming = blade.getDeltaMovement().normalize();
         blade.tick();
-        helper.assertTrue(blade.getAge() == 1 + Experiment057BladeEntity.HIT_LIFETIME_COST_TICKS,
-            "a hit must cost " + Experiment057BladeEntity.HIT_LIFETIME_COST_TICKS
-                + " ticks on top of the tick itself, got " + blade.getAge());
+        helper.assertTrue(
+                blade.getAge() == 1 + Experiment057BladeEntity.HIT_LIFETIME_COST_TICKS,
+                "a hit must cost " + Experiment057BladeEntity.HIT_LIFETIME_COST_TICKS
+                        + " ticks on top of the tick itself, got " + blade.getAge());
         helper.assertFalse(blade.isRemoved(), "one hit must not finish an 8 second blade");
         double dot = blade.getDeltaMovement().normalize().dot(incoming);
-        helper.assertTrue(dot < -0.99D,
-            "a hit must send the blade straight back along its own path, dot with the incoming"
-                + " heading is " + dot);
+        helper.assertTrue(
+                dot < -0.99D,
+                "a hit must send the blade straight back along its own path, dot with the incoming" + " heading is "
+                        + dot);
 
         aimAt(blade, target);
         blade.tick();
-        helper.assertTrue(blade.isRemoved(),
-            "the second hit must burn the remaining lifetime, age=" + blade.getAge());
+        helper.assertTrue(blade.isRemoved(), "the second hit must burn the remaining lifetime, age=" + blade.getAge());
         target.discard();
         helper.succeed();
     }
@@ -386,14 +415,18 @@ public final class Experiment057Tests {
         Player player = plainPlayer(helper);
         player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(ATTACK_DAMAGE);
         ItemStack weapon = new ItemStack(ModExperimentItems.EXPERIMENT_057.get());
-        weapon.enchant(helper.getLevel().registryAccess().registryOrThrow(Registries.ENCHANTMENT)
-            .getHolderOrThrow(Enchantments.SHARPNESS), 5);
+        weapon.enchant(
+                helper.getLevel()
+                        .registryAccess()
+                        .registryOrThrow(Registries.ENCHANTMENT)
+                        .getHolderOrThrow(Enchantments.SHARPNESS),
+                5);
         player.setItemInHand(InteractionHand.MAIN_HAND, weapon);
 
         Zombie target = helper.spawn(EntityType.ZOMBIE, 1, 1, 4);
         float dealt = hitOnce(helper, player, target, 200.0F);
-        helper.assertTrue(Math.abs(dealt - 15.0F) < 1.0E-4F,
-            "a Sharpness V blade must crit for 8 x 1.5 + 3 = 15, got " + dealt);
+        helper.assertTrue(
+                Math.abs(dealt - 15.0F) < 1.0E-4F, "a Sharpness V blade must crit for 8 x 1.5 + 3 = 15, got " + dealt);
         target.discard();
         helper.succeed();
     }
@@ -410,14 +443,14 @@ public final class Experiment057Tests {
         player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(8.0D);
         Zombie first = helper.spawn(EntityType.ZOMBIE, 1, 1, 4);
         float plain = hitOnce(helper, player, first, 200.0F);
-        helper.assertTrue(Math.abs(plain - 12.0F) < 1.0E-4F,
-            "8 points of attack damage must crit for 12, got " + plain);
+        helper.assertTrue(
+                Math.abs(plain - 12.0F) < 1.0E-4F, "8 points of attack damage must crit for 12, got " + plain);
 
         player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(20.0D);
         Zombie second = helper.spawn(EntityType.ZOMBIE, 1, 1, 8);
         float stronger = hitOnce(helper, player, second, 200.0F);
-        helper.assertTrue(Math.abs(stronger - 30.0F) < 1.0E-4F,
-            "20 points of attack damage must crit for 30, got " + stronger);
+        helper.assertTrue(
+                Math.abs(stronger - 30.0F) < 1.0E-4F, "20 points of attack damage must crit for 30, got " + stronger);
 
         first.discard();
         second.discard();
@@ -451,9 +484,9 @@ public final class Experiment057Tests {
         float dealt = health - target.getHealth();
         if (dealt <= 0.0F) {
             helper.fail("the blade never hit: blade=" + blade.position() + " motion="
-                + blade.getDeltaMovement() + " removed=" + blade.isRemoved()
-                + " owner=" + blade.getOwner() + " target=" + target.position()
-                + " targetHealth=" + target.getHealth());
+                    + blade.getDeltaMovement() + " removed=" + blade.isRemoved()
+                    + " owner=" + blade.getOwner() + " target=" + target.position()
+                    + " targetHealth=" + target.getHealth());
         }
         blade.discard();
         return dealt;
@@ -491,15 +524,14 @@ public final class Experiment057Tests {
     /** 场地里现存的飞刃 */
     private static List<Experiment057BladeEntity> blades(GameTestHelper helper) {
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        return helper.getLevel().getEntitiesOfClass(Experiment057BladeEntity.class,
-            new AABB(origin).inflate(SEARCH_RADIUS));
+        return helper.getLevel()
+                .getEntitiesOfClass(Experiment057BladeEntity.class, new AABB(origin).inflate(SEARCH_RADIUS));
     }
 
     /** 一个站在模板原点、朝 +Z（yaw 0）、手里拿着 057 的替身玩家 */
     private static Player aimPlayer(GameTestHelper helper) {
         Player player = plainPlayer(helper);
-        player.setItemInHand(InteractionHand.MAIN_HAND,
-            new ItemStack(ModExperimentItems.EXPERIMENT_057.get()));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModExperimentItems.EXPERIMENT_057.get()));
         return player;
     }
 
@@ -520,34 +552,41 @@ public final class Experiment057Tests {
     @GameTest(template = "ddt_empty")
     public static void bladeResourcesArePinned(GameTestHelper helper) {
         JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/item/experiment_057.json");
-        helper.assertTrue(model.get("parent").getAsString().equals("minecraft:item/generated"),
-            "item/experiment_057 must stay on minecraft:item/generated, got " + model.get("parent"));
-        helper.assertTrue(model.getAsJsonObject("textures").get("layer0").getAsString()
-                .equals("dawnduskterminal:item/experiment_057"),
-            "item/experiment_057 must read its own texture, got " + model.getAsJsonObject("textures"));
+        helper.assertTrue(
+                model.get("parent").getAsString().equals("minecraft:item/generated"),
+                "item/experiment_057 must stay on minecraft:item/generated, got " + model.get("parent"));
+        helper.assertTrue(
+                model.getAsJsonObject("textures")
+                        .get("layer0")
+                        .getAsString()
+                        .equals("dawnduskterminal:item/experiment_057"),
+                "item/experiment_057 must read its own texture, got " + model.getAsJsonObject("textures"));
 
         for (String resource : List.of(
-            "/assets/dawnduskterminal/textures/item/experiment_057.png",
-            "/assets/dawnduskterminal/geo/e_57_blade.geo.json",
-            "/assets/dawnduskterminal/animations/e_57_blade.animation.json",
-            "/assets/dawnduskterminal/textures/entity/e_57_blade.png")) {
-            helper.assertTrue(Experiment057Tests.class.getResource(resource) != null,
-                resource + " must ship inside the mod resources");
+                "/assets/dawnduskterminal/textures/item/experiment_057.png",
+                "/assets/dawnduskterminal/geo/e_57_blade.geo.json",
+                "/assets/dawnduskterminal/animations/e_57_blade.animation.json",
+                "/assets/dawnduskterminal/textures/entity/e_57_blade.png")) {
+            helper.assertTrue(
+                    Experiment057Tests.class.getResource(resource) != null,
+                    resource + " must ship inside the mod resources");
         }
 
-        JsonObject animation = readJson(helper,
-            "/assets/dawnduskterminal/animations/e_57_blade.animation.json");
-        JsonObject bones = animation.getAsJsonObject("animations").getAsJsonObject("parallel0")
-            .getAsJsonObject("bones");
-        helper.assertTrue(bones.has("spin1") && bones.has("spin2"),
-            "the source clip parallel0 must turn both plate bones, got " + bones.keySet());
+        JsonObject animation = readJson(helper, "/assets/dawnduskterminal/animations/e_57_blade.animation.json");
+        JsonObject bones = animation
+                .getAsJsonObject("animations")
+                .getAsJsonObject("parallel0")
+                .getAsJsonObject("bones");
+        helper.assertTrue(
+                bones.has("spin1") && bones.has("spin2"),
+                "the source clip parallel0 must turn both plate bones, got " + bones.keySet());
 
         for (String lang : new String[] {"en_us", "zh_cn"}) {
             JsonObject words = readJson(helper, "/assets/dawnduskterminal/lang/" + lang + ".json");
-            helper.assertTrue(words.has("item.dawnduskterminal.experiment_057"),
-                lang + " must name experiment_057");
-            helper.assertTrue(words.has("item.dawnduskterminal.experiment_057.desc"),
-                lang + " must carry the tooltip line of experiment_057");
+            helper.assertTrue(words.has("item.dawnduskterminal.experiment_057"), lang + " must name experiment_057");
+            helper.assertTrue(
+                    words.has("item.dawnduskterminal.experiment_057.desc"),
+                    lang + " must carry the tooltip line of experiment_057");
         }
         helper.succeed();
     }
@@ -557,7 +596,7 @@ public final class Experiment057Tests {
         try (InputStream stream = Experiment057Tests.class.getResourceAsStream(resource)) {
             helper.assertTrue(stream != null, resource + " must ship inside the mod resources");
             return JsonParser.parseString(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
-                .getAsJsonObject();
+                    .getAsJsonObject();
         } catch (IOException problem) {
             throw new AssertionError("reading " + resource + " failed", problem);
         }

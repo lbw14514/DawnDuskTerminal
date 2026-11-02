@@ -2,15 +2,14 @@ package com.dawnduskterminal.portal;
 
 import com.dawnduskterminal.registry.ModAttachments;
 import com.dawnduskterminal.registry.ModBlocks;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 public final class PortalBuilder {
     private PortalBuilder() {}
@@ -54,7 +53,9 @@ public final class PortalBuilder {
 
     public static void rememberOrigin(net.minecraft.world.entity.player.Player player) {
         PortalState state = player.getData(ModAttachments.PORTAL_STATE);
-        player.setData(ModAttachments.PORTAL_STATE, state.withReturn(
-            player.level().dimension().location().toString(), player.getX(), player.getY(), player.getZ()));
+        player.setData(
+                ModAttachments.PORTAL_STATE,
+                state.withReturn(
+                        player.level().dimension().location().toString(), player.getX(), player.getY(), player.getZ()));
     }
 }

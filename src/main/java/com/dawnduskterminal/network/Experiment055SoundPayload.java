@@ -30,13 +30,15 @@ public record Experiment055SoundPayload(int casterId, int mode) implements Custo
     public static final int MODE_GEIGER = 2;
 
     public static final CustomPacketPayload.Type<Experiment055SoundPayload> TYPE =
-        new CustomPacketPayload.Type<>(DawnDuskTerminal.id("experiment_055_sound"));
+            new CustomPacketPayload.Type<>(DawnDuskTerminal.id("experiment_055_sound"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, Experiment055SoundPayload> STREAM_CODEC =
-        StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, Experiment055SoundPayload::casterId,
-            ByteBufCodecs.VAR_INT, Experiment055SoundPayload::mode,
-            Experiment055SoundPayload::new);
+            StreamCodec.composite(
+                    ByteBufCodecs.VAR_INT,
+                    Experiment055SoundPayload::casterId,
+                    ByteBufCodecs.VAR_INT,
+                    Experiment055SoundPayload::mode,
+                    Experiment055SoundPayload::new);
 
     @Override
     public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {

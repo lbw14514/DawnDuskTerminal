@@ -19,12 +19,14 @@ public class LineParamTrigger extends SimpleCriterionTrigger<LineParamTrigger.Tr
     }
 
     public record TriggerInstance(Optional<ContextAwarePredicate> player, double min, double max)
-        implements SimpleCriterionTrigger.SimpleInstance {
+            implements SimpleCriterionTrigger.SimpleInstance {
         public static final Codec<TriggerInstance> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-            EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(TriggerInstance::player),
-            Codec.DOUBLE.optionalFieldOf("min", -1.0D).forGetter(TriggerInstance::min),
-            Codec.DOUBLE.optionalFieldOf("max", 1.0D).forGetter(TriggerInstance::max)
-        ).apply(inst, TriggerInstance::new));
+                        EntityPredicate.ADVANCEMENT_CODEC
+                                .optionalFieldOf("player")
+                                .forGetter(TriggerInstance::player),
+                        Codec.DOUBLE.optionalFieldOf("min", -1.0D).forGetter(TriggerInstance::min),
+                        Codec.DOUBLE.optionalFieldOf("max", 1.0D).forGetter(TriggerInstance::max))
+                .apply(inst, TriggerInstance::new));
 
         public boolean matches(double param) {
             return param >= this.min && param <= this.max;

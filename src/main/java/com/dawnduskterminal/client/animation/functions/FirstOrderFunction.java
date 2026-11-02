@@ -1,6 +1,5 @@
 package com.dawnduskterminal.client.animation.functions;
 
-
 import com.dawnduskterminal.client.animation.functions.physics.FirstOrder;
 import com.dawnduskterminal.client.animation.functions.physics.IPhysics;
 import com.dawnduskterminal.geckolib3.core.molang.context.IContext;

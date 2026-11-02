@@ -66,8 +66,7 @@ public final class GhastFruityPopulation {
      * <p>不用 {@code level.getWorldBounds()} 之类的接口，是因为实体管理器本来就不会返回加载区段之外的实体，
      * 这个盒子只是给查询划定一个足够大的范围
      */
-    private static final AABB WORLD_BOUNDS =
-        new AABB(-3.0E7D, -3.0E7D, -3.0E7D, 3.0E7D, 3.0E7D, 3.0E7D);
+    private static final AABB WORLD_BOUNDS = new AABB(-3.0E7D, -3.0E7D, -3.0E7D, 3.0E7D, 3.0E7D, 3.0E7D);
 
     private GhastFruityPopulation() {}
 }

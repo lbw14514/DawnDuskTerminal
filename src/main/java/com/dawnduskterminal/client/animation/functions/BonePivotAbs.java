@@ -8,11 +8,10 @@ import com.dawnduskterminal.geckolib3.core.processor.IBone;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
 import com.dawnduskterminal.geckolib3.geo.render.built.GeoBone;
 import com.dawnduskterminal.molang.runtime.ExecutionContext;
-import net.minecraft.world.entity.Entity;
-import org.joml.Vector3f;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.entity.Entity;
+import org.joml.Vector3f;
 
 /**
  * {@code ysm.bone_pivot_abs(骨骼名)}：骨骼当前的绝对 pivot，Bedrock 坐标
@@ -88,7 +87,8 @@ public class BonePivotAbs extends EntityFunction {
         return new double[] {
             -Math.toDegrees(bone.getRotationX()),
             -Math.toDegrees(bone.getRotationY()),
-            Math.toDegrees(bone.getRotationZ())};
+            Math.toDegrees(bone.getRotationZ())
+        };
     }
 
     private static void add(double[] target, double[] value) {
@@ -108,7 +108,8 @@ public class BonePivotAbs extends EntityFunction {
         return new double[] {
             (cz * cy) * vector[0] + (cz * sy * sx - sz * cx) * vector[1] + (cz * sy * cx + sz * sx) * vector[2],
             (sz * cy) * vector[0] + (sz * sy * sx + cz * cx) * vector[1] + (sz * sy * cx - cz * sx) * vector[2],
-            (-sy) * vector[0] + (cy * sx) * vector[1] + (cy * cx) * vector[2]};
+            (-sy) * vector[0] + (cy * sx) * vector[1] + (cy * cx) * vector[2]
+        };
     }
 
     private static final class PivotStruct extends Vec3fStruct {

@@ -1,6 +1,23 @@
 plugins {
     id 'java-library'
     id 'net.neoforged.moddev'
+    id 'com.diffplug.spotless' version '7.0.2'
+}
+
+// 格式化规范：palantir-java-format 是 google-java-format 的 4 空格分支，与本仓库现有风格最接近
+// geckolib3 与 molang 是来自 TouhouLittleMaid 的上游代码，不参与格式化
+// 否则将来与上游对拍时满屏都是排版差异 见 docs/ysm.md
+// spotlessCheck 由插件自动挂到 check 上 因此 ./gradlew build 会拒绝未格式化的代码
+spotless {
+    java {
+        target 'src/main/java/**/*.java', 'src/test/java/**/*.java'
+        targetExclude 'src/main/java/com/dawnduskterminal/geckolib3/**',
+            'src/main/java/com/dawnduskterminal/molang/**'
+        palantirJavaFormat('2.50.0')
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 version = mod_version

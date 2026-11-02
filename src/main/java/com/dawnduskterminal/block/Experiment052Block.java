@@ -66,8 +66,8 @@ public class Experiment052Block extends Block {
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block fromBlock, BlockPos fromPos,
-                                   boolean movedByPiston) {
+    protected void neighborChanged(
+            BlockState state, Level level, BlockPos pos, Block fromBlock, BlockPos fromPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, fromBlock, fromPos, movedByPiston);
         if (level.isClientSide) {
             return;

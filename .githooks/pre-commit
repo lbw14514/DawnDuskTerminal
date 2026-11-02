@@ -1,0 +1,15 @@
+#!/bin/sh
+# 提交前自动格式化暂存区里的 Java 源码
+# 一次性安装：git config core.hooksPath .githooks
+# 格式化规则与 CI 一致，都由 spotless 提供，见 build.gradle
+# 临时绕过：git commit --no-verify
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+[ -n "$staged" ] || exit 0
+
+./gradlew -q spotlessApply
+# spotlessApply 会改写工作区的文件，把改动重新放回暂存区
+printf '%s\n' "$staged" | while IFS= read -r file; do
+    git add -- "$file"
+done

@@ -2,12 +2,11 @@ package com.dawnduskterminal.client.animation.functions;
 
 import com.dawnduskterminal.client.animation.struct.Vec3fStruct;
 import com.dawnduskterminal.geckolib3.core.molang.context.IContext;
+import com.dawnduskterminal.geckolib3.core.molang.function.entity.EntityFunction;
 import com.dawnduskterminal.geckolib3.core.processor.AnimationProcessor;
 import com.dawnduskterminal.geckolib3.geo.animated.AnimatedGeoBone;
-import com.dawnduskterminal.geckolib3.core.molang.function.entity.EntityFunction;
 import com.dawnduskterminal.molang.runtime.ExecutionContext;
 import net.minecraft.world.entity.Entity;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * {@code ysm.bone_rot(骨骼名)}：骨骼的旋转，度数，X 与 Y 取反
@@ -31,8 +30,10 @@ public final class BoneRotation extends EntityFunction {
         if (!(processor.getBone(name) instanceof AnimatedGeoBone bone)) {
             return null;
         }
-        return new RotationStruct(-Math.toDegrees(bone.getRotationX()),
-            -Math.toDegrees(bone.getRotationY()), Math.toDegrees(bone.getRotationZ()));
+        return new RotationStruct(
+                -Math.toDegrees(bone.getRotationX()),
+                -Math.toDegrees(bone.getRotationY()),
+                Math.toDegrees(bone.getRotationZ()));
     }
 
     @Override

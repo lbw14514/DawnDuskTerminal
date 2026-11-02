@@ -65,8 +65,8 @@ public class E115RegeneratorBlockEntity extends BaseContainerBlockEntity impleme
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, E115RegeneratorBlockEntity entity) {
         if (!E115RegeneratorBlock.isSidePowered(level, pos)
-            || !E115RegeneratorBlock.hasSprinkledFullSource(level, pos)
-            || !entity.canAcceptSlice()) {
+                || !E115RegeneratorBlock.hasSprinkledFullSource(level, pos)
+                || !entity.canAcceptSlice()) {
             return;
         }
         if (level.getRandom().nextInt(RANDOM_TICK_VOLUME) >= RANDOM_TICK_STEPS) {
@@ -85,8 +85,8 @@ public class E115RegeneratorBlockEntity extends BaseContainerBlockEntity impleme
         }
         ItemStack slice = E115RegeneratorBlock.newSourceStack();
         return !slice.isEmpty()
-            && ItemStack.isSameItemSameComponents(stored, slice)
-            && stored.getCount() < stored.getMaxStackSize();
+                && ItemStack.isSameItemSameComponents(stored, slice)
+                && stored.getCount() < stored.getMaxStackSize();
     }
 
     /** 产一份：并进产物格 */

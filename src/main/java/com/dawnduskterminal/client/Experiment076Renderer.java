@@ -31,8 +31,13 @@ public final class Experiment076Renderer implements BlockEntityRenderer<Experime
     public Experiment076Renderer(BlockEntityRendererProvider.Context context) {}
 
     @Override
-    public void render(Experiment076BlockEntity blockEntity, float partialTick, PoseStack poseStack,
-                       MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    public void render(
+            Experiment076BlockEntity blockEntity,
+            float partialTick,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            int packedOverlay) {
         Level level = blockEntity.getLevel();
         if (level == null) {
             return;

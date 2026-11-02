@@ -26,10 +26,21 @@ public final class CarminiteParticle extends TextureSheetParticle {
     private final int ticksPerFrame;
     private final float spinSpeed;
 
-    private CarminiteParticle(ClientLevel level, double x, double y, double z,
-                              double vx, double vy, double vz, SpriteSet sprites,
-                              float sizeMultiplier, int lifetime, float gravity,
-                              int frames, int ticksPerFrame, float spinSpeed) {
+    private CarminiteParticle(
+            ClientLevel level,
+            double x,
+            double y,
+            double z,
+            double vx,
+            double vy,
+            double vz,
+            SpriteSet sprites,
+            float sizeMultiplier,
+            int lifetime,
+            float gravity,
+            int frames,
+            int ticksPerFrame,
+            float spinSpeed) {
         super(level, x, y, z);
         this.sprites = sprites;
         // 父类的字段初始化已经给了 0.1..0.2 的随机值，源 mod 就是在这个值上乘倍率
@@ -49,22 +60,19 @@ public final class CarminiteParticle extends TextureSheetParticle {
     /** 飞行中的弹体，本身不动，只在原地转 */
     public static ParticleProvider<SimpleParticleType> ballProvider(SpriteSet sprites) {
         return (type, level, x, y, z, vx, vy, vz) ->
-            new CarminiteParticle(level, x, y, z, 0.0D, 0.0D, 0.0D, sprites,
-                9.0F, 16, 0.0F, 8, 2, 0.3F);
+                new CarminiteParticle(level, x, y, z, 0.0D, 0.0D, 0.0D, sprites, 9.0F, 16, 0.0F, 8, 2, 0.3F);
     }
 
     /** 拖尾，负重力让它慢慢上飘，4 帧循环 79 tick */
     public static ParticleProvider<SimpleParticleType> traceProvider(SpriteSet sprites) {
         return (type, level, x, y, z, vx, vy, vz) ->
-            new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites,
-                3.0F, 79, -0.005F, 4, 20, 0.0F);
+                new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites, 3.0F, 79, -0.005F, 4, 20, 0.0F);
     }
 
     /** 反应场，继承传入的向外速度，15 tick 的 8 帧淡出（帧间隔 2，照源 mod 的节奏，别动） */
     public static ParticleProvider<SimpleParticleType> effectProvider(SpriteSet sprites) {
         return (type, level, x, y, z, vx, vy, vz) ->
-            new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites,
-                6.0F, 15, -0.05F, 8, 2, 0.3F);
+                new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites, 6.0F, 15, -0.05F, 8, 2, 0.3F);
     }
 
     /**
@@ -75,8 +83,7 @@ public final class CarminiteParticle extends TextureSheetParticle {
      */
     public static ParticleProvider<SimpleParticleType> blastProvider(SpriteSet sprites) {
         return (type, level, x, y, z, vx, vy, vz) ->
-            new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites,
-                6.0F, 20, -0.03F, 8, 3, 0.3F);
+                new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites, 6.0F, 20, -0.03F, 8, 3, 0.3F);
     }
 
     @Override

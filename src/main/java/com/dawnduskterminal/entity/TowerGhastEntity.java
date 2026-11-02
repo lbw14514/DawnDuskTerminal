@@ -1,12 +1,12 @@
 package com.dawnduskterminal.entity;
 
 import com.dawnduskterminal.registry.ModSounds;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
@@ -19,7 +19,6 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-
 
 /**
  * 高塔恶魂：模型、贴图与动画都来自为 Yes Steve Model 制作的那套 Bedrock 文件
@@ -44,20 +43,22 @@ import net.minecraft.world.level.Level;
 public class TowerGhastEntity extends PathfinderMob implements YsmPackUser {
     /** 手动动作的按钮键，见模型包 {@code ysm.json} 的 {@code properties.extra_animation} */
     private static final EntityDataAccessor<String> DATA_ACTION =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
     /** 动作的序号：同一个键连按两次也要重新播，所以客户端按序号变化触发 */
     private static final EntityDataAccessor<Integer> DATA_ACTION_SEQ =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
     /** 外观开关，形如 {@code hat=1;cloth=2}；空串表示全部保持模型包默认（0） */
     private static final EntityDataAccessor<String> DATA_ROAMING =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
+
     private static final EntityDataAccessor<Integer> DATA_ROAMING_SEQ =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
     /** 模型包 id，空串表示用默认包 */
     private static final EntityDataAccessor<String> DATA_PACK =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.STRING);
+
     private static final EntityDataAccessor<Integer> DATA_PACK_SEQ =
-        SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
+            SynchedEntityData.defineId(TowerGhastEntity.class, EntityDataSerializers.INT);
 
     public TowerGhastEntity(EntityType<? extends TowerGhastEntity> type, Level level) {
         super(type, level);
@@ -139,10 +140,10 @@ public class TowerGhastEntity extends PathfinderMob implements YsmPackUser {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
-            .add(Attributes.MAX_HEALTH, 20.0D)
-            .add(Attributes.MOVEMENT_SPEED, 0.23D)
-            .add(Attributes.FOLLOW_RANGE, 16.0D)
-            .add(Attributes.STEP_HEIGHT, 0.6D);
+                .add(Attributes.MAX_HEALTH, 20.0D)
+                .add(Attributes.MOVEMENT_SPEED, 0.23D)
+                .add(Attributes.FOLLOW_RANGE, 16.0D)
+                .add(Attributes.STEP_HEIGHT, 0.6D);
     }
 
     @Override

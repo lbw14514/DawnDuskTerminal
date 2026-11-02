@@ -18,7 +18,7 @@ import net.minecraft.world.entity.decoration.PaintingVariant;
 public final class ModPaintingVariants {
     /** 3 格宽 2 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_1.png */
     public static final ResourceKey<PaintingVariant> GHAST_1 =
-        ResourceKey.create(Registries.PAINTING_VARIANT, DawnDuskTerminal.id("painting_ghast_1"));
+            ResourceKey.create(Registries.PAINTING_VARIANT, DawnDuskTerminal.id("painting_ghast_1"));
 
     /** 服务端与客户端都能调：变体跟着数据包同步，两边查同一张表 */
     public static Holder<PaintingVariant> holder(RegistryAccess registries) {

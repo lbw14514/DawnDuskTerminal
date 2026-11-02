@@ -52,8 +52,8 @@ public class Experiment114Item extends BlockItem {
         if (player != null && !player.isShiftKeyDown()) {
             InteractionResult result = this.place(new BlockPlaceContext(context));
             return !result.consumesAction() && context.getItemInHand().get(DataComponents.FOOD) != null
-                ? this.use(context.getLevel(), player, context.getHand()).getResult()
-                : result;
+                    ? this.use(context.getLevel(), player, context.getHand()).getResult()
+                    : result;
         }
         return InteractionResult.PASS;
     }

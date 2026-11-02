@@ -54,8 +54,7 @@ public final class GhastElitePopulation {
     }
 
     /** 与 {@link GhastFruityPopulation} 同一个盒子：实体管理器只遍历加载中的区段 */
-    private static final AABB WORLD_BOUNDS =
-        new AABB(-3.0E7D, -3.0E7D, -3.0E7D, 3.0E7D, 3.0E7D, 3.0E7D);
+    private static final AABB WORLD_BOUNDS = new AABB(-3.0E7D, -3.0E7D, -3.0E7D, 3.0E7D, 3.0E7D, 3.0E7D);
 
     private GhastElitePopulation() {}
 }

@@ -36,6 +36,7 @@ public final class Experiment055SoundInstance extends EntityBoundSoundInstance {
      */
     @Nullable
     private final Runnable onNearEnd;
+
     private int age;
     private boolean handedOver;
 
@@ -66,8 +67,9 @@ public final class Experiment055SoundInstance extends EntityBoundSoundInstance {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || this.caster.isRemoved()
-            || minecraft.player.distanceToSqr(this.caster) > CUTOFF * CUTOFF) {
+        if (minecraft.player == null
+                || this.caster.isRemoved()
+                || minecraft.player.distanceToSqr(this.caster) > CUTOFF * CUTOFF) {
             this.stop();
             return;
         }

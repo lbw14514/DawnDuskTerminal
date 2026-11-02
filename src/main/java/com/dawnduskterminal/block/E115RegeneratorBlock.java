@@ -17,13 +17,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import twilightforest.init.TFItems;
-import twilightforest.init.TFBlocks;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -32,6 +30,8 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.BlockHitResult;
+import twilightforest.init.TFBlocks;
+import twilightforest.init.TFItems;
 
 /**
  * 试验物品 115 再生机：顶上摆一块撒过红石粉的完整试验物品 115，侧面来红石信号时，
@@ -75,9 +75,7 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
     public static final String SOURCE_REGENERATE_PROPERTY = "regenerate";
 
     /** 侧面四个方向。顶面故意不在里面，理由见类注释 */
-    private static final Direction[] SIDES = {
-        Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
-    };
+    private static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
 
     /** 引子方块，第一次判定时按 ID 取一次就缓存下来 */
     @Nullable
@@ -110,10 +108,12 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
     /** 只有服务端刻：骰子与产出都在服务端算 */
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
-                                                                  BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.E_115_REGENERATOR.get(),
-            E115RegeneratorBlockEntity::serverTick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide
+                ? null
+                : createTickerHelper(
+                        type, ModBlockEntities.E_115_REGENERATOR.get(), E115RegeneratorBlockEntity::serverTick);
     }
 
     /**
@@ -125,8 +125,14 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
      * 别的物品照默认走，空手点照常开界面
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
-                                              Player player, InteractionHand hand, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(
+            ItemStack stack,
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            BlockHitResult hit) {
         if (stack.is(sourceItem())) {
             return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         }
@@ -135,8 +141,8 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
 
     /** 空手右键开界面，写法与 051 相同：坐标由方块实体的 {@code writeClientSideData} 带给客户端 */
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -159,13 +165,14 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
             return;
         }
         BlockPos above = pos.above();
-        level.addParticle(ModParticles.CARMINITE_EMBER.get(),
-            above.getX() + random.nextDouble(),
-            above.getY() + random.nextDouble(),
-            above.getZ() + random.nextDouble(),
-            (random.nextDouble() - 0.5D) * 0.02D,
-            0.2D + random.nextDouble() * 0.05D,
-            (random.nextDouble() - 0.5D) * 0.02D);
+        level.addParticle(
+                ModParticles.CARMINITE_EMBER.get(),
+                above.getX() + random.nextDouble(),
+                above.getY() + random.nextDouble(),
+                above.getZ() + random.nextDouble(),
+                (random.nextDouble() - 0.5D) * 0.02D,
+                0.2D + random.nextDouble() * 0.05D,
+                (random.nextDouble() - 0.5D) * 0.02D);
     }
 
     /** 敲掉时把格子里攒下的 115 撒出来，方块本体掉自己走战利品表 */
@@ -227,13 +234,11 @@ public class E115RegeneratorBlock extends BaseEntityBlock {
             if (property instanceof IntegerProperty integer && integer.getName().equals(SOURCE_BITES_PROPERTY)) {
                 bites = integer;
             } else if (property instanceof BooleanProperty bool
-                && bool.getName().equals(SOURCE_REGENERATE_PROPERTY)) {
+                    && bool.getName().equals(SOURCE_REGENERATE_PROPERTY)) {
                 regenerate = bool;
             }
         }
-        return bites != null && regenerate != null
-            && above.getValue(bites) == 0
-            && above.getValue(regenerate);
+        return bites != null && regenerate != null && above.getValue(bites) == 0 && above.getValue(regenerate);
     }
 
     /**

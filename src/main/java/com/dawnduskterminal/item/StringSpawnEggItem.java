@@ -1,6 +1,7 @@
 package com.dawnduskterminal.item;
 
 import com.dawnduskterminal.entity.StringEntity;
+import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.dispenser.BlockSource;
@@ -25,8 +26,6 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Supplier;
-
 /**
  * 「弦」的刷怪蛋：只肯放在传送门流体边上
  *
@@ -43,8 +42,11 @@ import java.util.function.Supplier;
  * <p>判定统一走 {@link StringEntity#canSpawnAt}：落点那一格是传送门流体，或者它正下方是
  */
 public final class StringSpawnEggItem extends DeferredSpawnEggItem {
-    public StringSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type, int backgroundColor,
-                              int highlightColor, Properties properties) {
+    public StringSpawnEggItem(
+            Supplier<? extends EntityType<? extends Mob>> type,
+            int backgroundColor,
+            int highlightColor,
+            Properties properties) {
         super(type, backgroundColor, highlightColor, properties);
     }
 
@@ -62,8 +64,7 @@ public final class StringSpawnEggItem extends DeferredSpawnEggItem {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         BlockHitResult hit = getPlayerPOVHitResult(level, player, ClipContext.Fluid.SOURCE_ONLY);
-        if (hit.getType() == HitResult.Type.BLOCK
-            && !StringEntity.canSpawnAt(level, hit.getBlockPos())) {
+        if (hit.getType() == HitResult.Type.BLOCK && !StringEntity.canSpawnAt(level, hit.getBlockPos())) {
             return InteractionResultHolder.fail(stack);
         }
         return super.use(level, player, hand);
@@ -85,16 +86,14 @@ public final class StringSpawnEggItem extends DeferredSpawnEggItem {
     }
 
     /** 与 {@link DeferredSpawnEggItem} 里那份默认行为一致，只是落点先过一遍判定 */
-    private static void spawnFromDispenser(BlockSource source, ItemStack stack, BlockPos target,
-                                           Direction face) {
+    private static void spawnFromDispenser(BlockSource source, ItemStack stack, BlockPos target, Direction face) {
         EntityType<?> type = ((SpawnEggItem) stack.getItem()).getType(stack);
-        if (type.spawn(source.level(), stack, null, target, MobSpawnType.DISPENSER,
-            face != Direction.UP, false) == null) {
+        if (type.spawn(source.level(), stack, null, target, MobSpawnType.DISPENSER, face != Direction.UP, false)
+                == null) {
             return;
         }
         stack.shrink(1);
-        source.level().gameEvent(GameEvent.ENTITY_PLACE, source.pos(),
-            GameEvent.Context.of(source.state()));
+        source.level().gameEvent(GameEvent.ENTITY_PLACE, source.pos(), GameEvent.Context.of(source.state()));
     }
 
     /** 原版 {@link SpawnEggItem#useOn} 算落点的规则 */

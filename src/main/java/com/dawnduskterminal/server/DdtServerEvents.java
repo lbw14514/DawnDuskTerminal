@@ -6,24 +6,24 @@ import com.dawnduskterminal.item.FireJetProcess;
 import com.dawnduskterminal.item.GhastTrapProcess;
 import com.dawnduskterminal.item.RequiemProcess;
 import com.dawnduskterminal.network.ChronoLinePayload;
-import com.dawnduskterminal.registry.ModFluids;
-import com.dawnduskterminal.registry.ModItems;
-import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.portal.PortalBlock;
 import com.dawnduskterminal.portal.PortalTrigger;
 import com.dawnduskterminal.progression.BossProgressTracker;
+import com.dawnduskterminal.registry.ModFluids;
+import com.dawnduskterminal.registry.ModItems;
+import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.structure.StructureExclusions;
 import com.dawnduskterminal.world.ChronoLineState;
 import com.dawnduskterminal.world.Experiment065Field;
 import com.dawnduskterminal.world.Experiment069Field;
 import com.dawnduskterminal.world.Experiment076Reaction;
 import com.dawnduskterminal.world.StringSpawner;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -41,6 +41,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -53,8 +54,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
-
-import java.util.List;
 
 public final class DdtServerEvents {
     private static final double ITEM_SCAN_RADIUS = 12.0D;
@@ -69,7 +68,8 @@ public final class DdtServerEvents {
         if (!event.getLeft().is(ModItems.CARMINITE_MOLYBDENUM_REACTOR_STAFF.get())) {
             return;
         }
-        for (Holder<Enchantment> enchantment : EnchantmentHelper.getEnchantmentsForCrafting(event.getRight()).keySet()) {
+        for (Holder<Enchantment> enchantment :
+                EnchantmentHelper.getEnchantmentsForCrafting(event.getRight()).keySet()) {
             if (enchantment.is(Enchantments.INFINITY)) {
                 event.setCanceled(true);
                 return;
@@ -80,16 +80,21 @@ public final class DdtServerEvents {
     public static void onServerStarted(ServerStartedEvent event) {
         ServerLevel overworld = event.getServer().overworld();
         if (overworld == null) {
-            DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal overworld is not available, the chrono line stays at its fallback value");
+            DawnDuskTerminal.LOGGER.warn(
+                    "DawnDuskTerminal overworld is not available, the chrono line stays at its fallback value");
             return;
         }
         ChronoLineState state = ChronoLineState.get(overworld);
         ChronoLineState.setServerLine(state.line());
-        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal chrono line origin=({}, {}) normal=({}, {})",
-            state.line().originX(), state.line().originZ(), state.line().normalX(), state.line().normalZ());
+        DawnDuskTerminal.LOGGER.info(
+                "DawnDuskTerminal chrono line origin=({}, {}) normal=({}, {})",
+                state.line().originX(),
+                state.line().originZ(),
+                state.line().normalX(),
+                state.line().normalZ());
         if (net.neoforged.fml.ModList.get().isLoaded("c2me")) {
             DawnDuskTerminal.LOGGER.info(
-                "DawnDuskTerminal c2me is active (bundled; external copies are deduplicated by JarJar)");
+                    "DawnDuskTerminal c2me is active (bundled; external copies are deduplicated by JarJar)");
         }
 
         Registry<Structure> structures = event.getServer().registryAccess().registryOrThrow(Registries.STRUCTURE);
@@ -161,10 +166,11 @@ public final class DdtServerEvents {
     }
 
     private static void scanFuelItems(ServerPlayer player) {
-        List<ItemEntity> items = player.level().getEntitiesOfClass(
-            ItemEntity.class,
-            player.getBoundingBox().inflate(ITEM_SCAN_RADIUS),
-            item -> PortalBlock.isCatalyst(item.getItem()));
+        List<ItemEntity> items = player.level()
+                .getEntitiesOfClass(
+                        ItemEntity.class,
+                        player.getBoundingBox().inflate(ITEM_SCAN_RADIUS),
+                        item -> PortalBlock.isCatalyst(item.getItem()));
         for (ItemEntity item : items) {
             BlockPos pos = item.blockPosition();
             if (item.level().getBlockState(pos).is(Blocks.WATER)) {
@@ -204,8 +210,8 @@ public final class DdtServerEvents {
         BlockPos pos = hit.getBlockPos();
         FluidState fluidState = level.getFluidState(pos);
         if (!fluidState.isSource()
-            || (fluidState.getType() != ModFluids.PORTAL_FLUID.get()
-                && fluidState.getType() != ModScorchingTwilight.SOURCE.get())) {
+                || (fluidState.getType() != ModFluids.PORTAL_FLUID.get()
+                        && fluidState.getType() != ModScorchingTwilight.SOURCE.get())) {
             return;
         }
         event.setCanceled(true);

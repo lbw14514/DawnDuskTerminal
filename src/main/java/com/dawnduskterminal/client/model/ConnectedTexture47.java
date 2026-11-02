@@ -22,12 +22,12 @@ public final class ConnectedTexture47 {
 
     /** 面序号（0 到 5）对应的面内 [右, 上] 方向，与 Create 的 buildContext 一致 */
     private static final Direction[][] HV = {
-        { Direction.EAST, Direction.SOUTH },   // DOWN
-        { Direction.EAST, Direction.NORTH },   // UP
-        { Direction.WEST, Direction.UP },      // NORTH
-        { Direction.EAST, Direction.UP },      // SOUTH
-        { Direction.SOUTH, Direction.UP },     // WEST
-        { Direction.NORTH, Direction.UP },     // EAST
+        {Direction.EAST, Direction.SOUTH}, // DOWN
+        {Direction.EAST, Direction.NORTH}, // UP
+        {Direction.WEST, Direction.UP}, // NORTH
+        {Direction.EAST, Direction.UP}, // SOUTH
+        {Direction.SOUTH, Direction.UP}, // WEST
+        {Direction.NORTH, Direction.UP}, // EAST
     };
 
     private ConnectedTexture47() {}
@@ -104,8 +104,10 @@ public final class ConnectedTexture47 {
         }
 
         if (borders == 2) {
-            if ((up && left && topLeft) || (down && left && bottomLeft) || (up && right && topRight)
-                || (down && right && bottomRight)) {
+            if ((up && left && topLeft)
+                    || (down && left && bottomLeft)
+                    || (up && right && topRight)
+                    || (down && right && bottomRight)) {
                 tileX += 3;
             }
         }
@@ -124,12 +126,13 @@ public final class ConnectedTexture47 {
         };
     }
 
-    private static boolean connects(BlockAndTintGetter level, BlockPos pos, Predicate<BlockState> connects, Direction d) {
+    private static boolean connects(
+            BlockAndTintGetter level, BlockPos pos, Predicate<BlockState> connects, Direction d) {
         return connects.test(level.getBlockState(pos.relative(d)));
     }
 
-    private static boolean connects(BlockAndTintGetter level, BlockPos pos, Predicate<BlockState> connects, Direction d1,
-            Direction d2) {
+    private static boolean connects(
+            BlockAndTintGetter level, BlockPos pos, Predicate<BlockState> connects, Direction d1, Direction d2) {
         int dx = d1.getStepX() + d2.getStepX();
         int dy = d1.getStepY() + d2.getStepY();
         int dz = d1.getStepZ() + d2.getStepZ();

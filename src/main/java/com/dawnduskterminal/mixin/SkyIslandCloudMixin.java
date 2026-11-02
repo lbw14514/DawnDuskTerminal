@@ -24,10 +24,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChunkGenerator.class)
 public abstract class SkyIslandCloudMixin {
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
-    private void ddt$cloudSkyIslands(WorldGenLevel level, ChunkAccess chunk, StructureManager structures,
-                                         CallbackInfo ci) {
+    private void ddt$cloudSkyIslands(
+            WorldGenLevel level, ChunkAccess chunk, StructureManager structures, CallbackInfo ci) {
         if ((Object) this instanceof NoiseBasedChunkGenerator generator
-            && ChronoDimensionProbe.isChrono(generator.generatorSettings().value())) {
+                && ChronoDimensionProbe.isChrono(generator.generatorSettings().value())) {
             SkyIslandClouds.process(level, chunk);
         }
     }

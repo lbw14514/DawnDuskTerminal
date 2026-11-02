@@ -54,7 +54,8 @@ public abstract class GameTestChunkWaitMixin {
         }
         this.chunksLoaded = true;
         DawnDuskTerminal.LOGGER.warn(
-            "DawnDuskTerminal game test {} waited {} ms for its chunks to enter entity ticking, running it anyway",
-            self.getTestName(), now - this.ddt$firstTickMillis);
+                "DawnDuskTerminal game test {} waited {} ms for its chunks to enter entity ticking, running it anyway",
+                self.getTestName(),
+                now - this.ddt$firstTickMillis);
     }
 }

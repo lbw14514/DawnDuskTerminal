@@ -45,6 +45,7 @@ public class Experiment051Menu extends AbstractContainerMenu {
 
     /** 玩家背包的 36 格紧跟在机器那 11 格后面 */
     public static final int INVENTORY_START = SLOT_COUNT;
+
     public static final int INVENTORY_END = INVENTORY_START + 27;
     public static final int HOTBAR_END = INVENTORY_END + 9;
 
@@ -62,10 +63,12 @@ public class Experiment051Menu extends AbstractContainerMenu {
 
     /** 火焰 sprite 的左上角，14x14 */
     public static final int FLAME_X = 24;
+
     public static final int FLAME_Y = 36;
 
     /** 箭头 sprite 的左上角，24x16 */
     public static final int ARROW_X = 47;
+
     public static final int ARROW_Y = 34;
 
     private final Container container;
@@ -83,8 +86,11 @@ public class Experiment051Menu extends AbstractContainerMenu {
             return new Experiment051Menu(containerId, inventory, entity, entity.dataAccess());
         }
         // 区块没加载之类的情况：给一份假容器，界面照样开得起来，只是没有内容
-        return new Experiment051Menu(containerId, inventory,
-            new SimpleContainer(SLOT_COUNT), new SimpleContainerData(Experiment051BlockEntity.DATA_COUNT));
+        return new Experiment051Menu(
+                containerId,
+                inventory,
+                new SimpleContainer(SLOT_COUNT),
+                new SimpleContainerData(Experiment051BlockEntity.DATA_COUNT));
     }
 
     public Experiment051Menu(int containerId, Inventory inventory, Container container, ContainerData data) {
@@ -99,17 +105,17 @@ public class Experiment051Menu extends AbstractContainerMenu {
         this.addSlot(new MachineSlot(container, FUEL_SLOT, FUEL_X, FUEL_Y));
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new OutputSlot(container,
-                    OUTPUT_FIRST + row * 3 + col,
-                    OUTPUT_X + col * OUTPUT_STRIDE,
-                    OUTPUT_Y + row * OUTPUT_STRIDE));
+                this.addSlot(new OutputSlot(
+                        container,
+                        OUTPUT_FIRST + row * 3 + col,
+                        OUTPUT_X + col * OUTPUT_STRIDE,
+                        OUTPUT_Y + row * OUTPUT_STRIDE));
             }
         }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(inventory, col + row * 9 + 9,
-                    INVENTORY_X + col * 18, INVENTORY_Y + row * 18));
+                this.addSlot(new Slot(inventory, col + row * 9 + 9, INVENTORY_X + col * 18, INVENTORY_Y + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
@@ -145,7 +151,7 @@ public class Experiment051Menu extends AbstractContainerMenu {
         } else {
             // 背包 → 原料，塞不进再试燃料
             if (!this.moveItemStackTo(stack, INPUT_SLOT, INPUT_SLOT + 1, false)
-                && !this.moveItemStackTo(stack, FUEL_SLOT, FUEL_SLOT + 1, false)) {
+                    && !this.moveItemStackTo(stack, FUEL_SLOT, FUEL_SLOT + 1, false)) {
                 // 两格都不收，就在背包里上下换行
                 if (index < INVENTORY_END) {
                     if (!this.moveItemStackTo(stack, INVENTORY_END, HOTBAR_END, false)) {

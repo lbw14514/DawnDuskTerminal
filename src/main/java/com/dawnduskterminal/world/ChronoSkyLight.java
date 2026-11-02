@@ -13,9 +13,8 @@ public final class ChronoSkyLight {
         }
         double param = line.param(x, z);
         double center = config.center();
-        double value = param >= 0.0D
-            ? center + (config.day() - center) * param
-            : center + (center - config.night()) * param;
+        double value =
+                param >= 0.0D ? center + (config.day() - center) * param : center + (center - config.night()) * param;
         return Mth.clamp((int) Math.round(value), 0, 15);
     }
 }

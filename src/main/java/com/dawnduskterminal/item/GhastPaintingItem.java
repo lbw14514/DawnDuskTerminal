@@ -40,8 +40,7 @@ public class GhastPaintingItem extends Item {
         }
 
         Level level = context.getLevel();
-        GhastPaintingEntity painting = new GhastPaintingEntity(
-            ModEntities.GHAST_PAINTING_1.get(), level, anchor, face);
+        GhastPaintingEntity painting = new GhastPaintingEntity(ModEntities.GHAST_PAINTING_1.get(), level, anchor, face);
         if (!painting.survives()) {
             return InteractionResult.CONSUME;
         }

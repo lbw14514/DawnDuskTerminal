@@ -25,7 +25,7 @@ public final class ChronoDimensionProbe {
 
     public static boolean isChrono(Structure.GenerationContext context) {
         return context.chunkGenerator() instanceof NoiseBasedChunkGenerator generator
-            && isChrono(generator.generatorSettings().value());
+                && isChrono(generator.generatorSettings().value());
     }
 
     /** 晨昏线维度的全局流体选择器只会吐出这两种流体，别的流体一律是原版维度 */

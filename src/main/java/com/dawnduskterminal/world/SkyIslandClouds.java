@@ -6,7 +6,6 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.WorldGenLevel;
@@ -38,7 +37,7 @@ import net.minecraft.world.level.levelgen.synth.ImprovedNoise;
 public final class SkyIslandClouds {
     /** 薄云，见暮色森林 {@code TFBlocks.WISPY_CLOUD} */
     public static final ResourceLocation WISPY_CLOUD =
-        ResourceLocation.fromNamespaceAndPath("twilightforest", "wispy_cloud");
+            ResourceLocation.fromNamespaceAndPath("twilightforest", "wispy_cloud");
 
     /** 空的密度梯度从 y 140 起才可能为正，再低就是地面 */
     public static final int ISLAND_MIN_TOP_Y = 140;
@@ -105,9 +104,20 @@ public final class SkyIslandClouds {
             return;
         }
 
-        decorate(level, (x, y, z, set) -> level.setBlock(new BlockPos(x, y, z), set, Block.UPDATE_CLIENTS),
-            originX, originZ, tops, state, SkyIslandDensity::isIsland, level.getSeed(),
-            ISLAND_MIN_TOP_Y, maxBuildY, scanFloorY, level.getMinBuildHeight(), maxBuildY);
+        decorate(
+                level,
+                (x, y, z, set) -> level.setBlock(new BlockPos(x, y, z), set, Block.UPDATE_CLIENTS),
+                originX,
+                originZ,
+                tops,
+                state,
+                SkyIslandDensity::isIsland,
+                level.getSeed(),
+                ISLAND_MIN_TOP_Y,
+                maxBuildY,
+                scanFloorY,
+                level.getMinBuildHeight(),
+                maxBuildY);
     }
 
     /**
@@ -119,9 +129,20 @@ public final class SkyIslandClouds {
      * @param probe 空岛判据；测试里换成固定答案，生产里是 {@link SkyIslandDensity}
      * @return 写入的云方块数
      */
-    public static int decorate(BlockGetter reader, BlockSetter setter, int originX, int originZ,
-                               int[] topY, BlockState cloudState, IslandProbe probe, long seed,
-                               int minTopY, int maxTopY, int scanFloorY, int minBuildY, int maxBuildY) {
+    public static int decorate(
+            BlockGetter reader,
+            BlockSetter setter,
+            int originX,
+            int originZ,
+            int[] topY,
+            BlockState cloudState,
+            IslandProbe probe,
+            long seed,
+            int minTopY,
+            int maxTopY,
+            int scanFloorY,
+            int minBuildY,
+            int maxBuildY) {
         if (topY.length != COLUMNS) {
             throw new IllegalArgumentException("topY must hold " + COLUMNS + " entries");
         }
@@ -197,8 +218,18 @@ public final class SkyIslandClouds {
                     done[index] = true;
                 }
             }
-            placed += veilComponent(reader, setter, cloudState, field, members,
-                bottoms, thickness, originX, originZ, minBuildY, maxBuildY);
+            placed += veilComponent(
+                    reader,
+                    setter,
+                    cloudState,
+                    field,
+                    members,
+                    bottoms,
+                    thickness,
+                    originX,
+                    originZ,
+                    minBuildY,
+                    maxBuildY);
         }
         return placed;
     }
@@ -210,10 +241,18 @@ public final class SkyIslandClouds {
      *
      * @return 写入的方块数
      */
-    private static int veilComponent(BlockGetter reader, BlockSetter setter, BlockState cloudState,
-                                     ImprovedNoise field, List<Integer> members,
-                                     int[] bottoms, int[] thickness, int originX, int originZ,
-                                     int minBuildY, int maxBuildY) {
+    private static int veilComponent(
+            BlockGetter reader,
+            BlockSetter setter,
+            BlockState cloudState,
+            ImprovedNoise field,
+            List<Integer> members,
+            int[] bottoms,
+            int[] thickness,
+            int originX,
+            int originZ,
+            int minBuildY,
+            int maxBuildY) {
         int placed = 0;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int index : members) {
@@ -313,7 +352,7 @@ public final class SkyIslandClouds {
         if (block == Blocks.AIR) {
             cloudMissing = true;
             DawnDuskTerminal.LOGGER.warn(
-                "DawnDuskTerminal could not find {}, thin sky islands will keep their terrain", WISPY_CLOUD);
+                    "DawnDuskTerminal could not find {}, thin sky islands will keep their terrain", WISPY_CLOUD);
             return null;
         }
         cloud = state = block.defaultBlockState();

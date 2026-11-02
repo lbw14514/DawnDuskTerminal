@@ -1,16 +1,15 @@
 package com.dawnduskterminal.structure;
 
 import com.dawnduskterminal.DawnDuskTerminal;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.levelgen.structure.Structure;
-import twilightforest.init.TFStructures;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import twilightforest.init.TFStructures;
 
 /**
  * 晨昏线维度的结构表，也是「允许生成哪些结构」的唯一出处
@@ -29,10 +28,8 @@ public final class StructureExclusions {
     private static final Map<String, ResourceLocation> UNMAPPED = new LinkedHashMap<>();
 
     /** 暮色森林的地标。它们不是注册的结构，靠暮色森林自己的群系标签摆放，这里只做记录 */
-    private static final List<String> LANDMARKS = List.of(
-        "黑曜石柱", "圆石阵", "水井", "地基遗迹", "德鲁伊小屋",
-        "石笋", "空心树墩", "树丛遗迹", "墓地"
-    );
+    private static final List<String> LANDMARKS =
+            List.of("黑曜石柱", "圆石阵", "水井", "地基遗迹", "德鲁伊小屋", "石笋", "空心树墩", "树丛遗迹", "墓地");
 
     static {
         ALLOWED.put("废弃传送门", ResourceLocation.withDefaultNamespace("ruined_portal"));
@@ -69,19 +66,25 @@ public final class StructureExclusions {
     public static void validate(Registry<Structure> structures) {
         report(structures, "allow-list", ALLOWED);
         report(structures, "unmapped", UNMAPPED);
-        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal landmark table has {} entries, landmarks are not registered structures, they follow the twilightforest biome tags",
-            LANDMARKS.size());
+        DawnDuskTerminal.LOGGER.info(
+                "DawnDuskTerminal landmark table has {} entries, landmarks are not registered structures, they follow the twilightforest biome tags",
+                LANDMARKS.size());
     }
 
     private static void report(Registry<Structure> structures, String group, Map<String, ResourceLocation> table) {
         int missing = 0;
         for (Map.Entry<String, ResourceLocation> entry : table.entrySet()) {
             if (!structures.containsKey(entry.getValue())) {
-                DawnDuskTerminal.LOGGER.warn("DawnDuskTerminal structure table {} {} is not registered", group, entry.getValue());
+                DawnDuskTerminal.LOGGER.warn(
+                        "DawnDuskTerminal structure table {} {} is not registered", group, entry.getValue());
                 missing++;
             }
         }
-        DawnDuskTerminal.LOGGER.info("DawnDuskTerminal structure table {} has {} entries {} resolvable", group, table.size(), table.size() - missing);
+        DawnDuskTerminal.LOGGER.info(
+                "DawnDuskTerminal structure table {} has {} entries {} resolvable",
+                group,
+                table.size(),
+                table.size() - missing);
     }
 
     public static boolean isAllowed(ResourceLocation id) {

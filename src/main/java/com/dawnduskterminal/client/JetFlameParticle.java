@@ -16,7 +16,6 @@ import net.minecraft.world.phys.Vec3;
  * 初速来自 {@link com.dawnduskterminal.particle.JetFlameParticleOptions}：原版粒子包只能给客户端现摇随机速度，
  * 想要「同一拍、同一条线」就必须把方向塞进粒子选项里一起发，这是 043 另开一套粒子类型的原因
  */
-
 public final class JetFlameParticle extends TextureSheetParticle {
     private static final float SIZE_MULTIPLIER = 5.0F;
     private final float flameScale;
@@ -31,13 +30,14 @@ public final class JetFlameParticle extends TextureSheetParticle {
         this.rCol = 1.0F;
         this.gCol = 1.0F;
         this.bCol = 1.0F;
-        this.lifetime = (int)(8.0 / (this.random.nextDouble() * 0.8 + 0.2)) + 4;
+        this.lifetime = (int) (8.0 / (this.random.nextDouble() * 0.8 + 0.2)) + 4;
         this.hasPhysics = false;
         this.setSprite(sprites.get(this.random));
     }
 
     public static ParticleProvider<JetFlameParticleOptions> provider(SpriteSet sprites) {
-        return (options, level, x, y, z, vx, vy, vz) -> new JetFlameParticle(level, x, y, z, options.velocity(), sprites);
+        return (options, level, x, y, z, vx, vy, vz) ->
+                new JetFlameParticle(level, x, y, z, options.velocity(), sprites);
     }
 
     public ParticleRenderType getRenderType() {
@@ -45,12 +45,12 @@ public final class JetFlameParticle extends TextureSheetParticle {
     }
 
     public float getQuadSize(float partialTick) {
-        float t = ((float)this.age + partialTick) / (float)this.lifetime;
+        float t = ((float) this.age + partialTick) / (float) this.lifetime;
         return this.flameScale * (1.0F - t * t * 0.5F);
     }
 
     public int getLightColor(float partialTick) {
-        float t = ((float)this.age + partialTick) / (float)this.lifetime;
+        float t = ((float) this.age + partialTick) / (float) this.lifetime;
         if (t < 0.0F) {
             t = 0.0F;
         }
@@ -62,7 +62,7 @@ public final class JetFlameParticle extends TextureSheetParticle {
         int packed = super.getLightColor(partialTick);
         int block = packed & 0xFF;
         int sky = packed >> 16 & 0xFF;
-        block += (int)(t * 15.0F * 16.0F);
+        block += (int) (t * 15.0F * 16.0F);
         if (block > 240) {
             block = 240;
         }

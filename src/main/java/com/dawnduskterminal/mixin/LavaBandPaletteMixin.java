@@ -25,13 +25,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class LavaBandPaletteMixin {
     @Inject(method = "createFluidPicker", at = @At("HEAD"), cancellable = true)
-    private static void ddt$paletteLavaBand(NoiseGeneratorSettings settings,
-                                            CallbackInfoReturnable<Aquifer.FluidPicker> cir) {
+    private static void ddt$paletteLavaBand(
+            NoiseGeneratorSettings settings, CallbackInfoReturnable<Aquifer.FluidPicker> cir) {
         if (!ChronoDimensionProbe.isChrono(settings)) {
             return;
         }
-        Aquifer.FluidStatus lava = new Aquifer.FluidStatus(-54,
-            ModScorchingTwilight.BLOCK.get().defaultBlockState());
+        Aquifer.FluidStatus lava =
+                new Aquifer.FluidStatus(-54, ModScorchingTwilight.BLOCK.get().defaultBlockState());
         int seaLevel = settings.seaLevel();
         Aquifer.FluidStatus fluid = new Aquifer.FluidStatus(seaLevel, settings.defaultFluid());
         cir.setReturnValue((x, y, z) -> y < Math.min(-54, seaLevel) ? lava : fluid);

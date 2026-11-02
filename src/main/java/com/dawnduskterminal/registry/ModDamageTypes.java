@@ -12,15 +12,15 @@ import net.minecraft.world.damagesource.DamageType;
 public final class ModDamageTypes {
     /** 「热情的暮光」(enthu_fluid) 的接触伤害，每次 6 点，自定义死亡信息 */
     public static final ResourceKey<DamageType> ENTHU_FLUID =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("enthu_fluid"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("enthu_fluid"));
 
     /** 「稳定」(stability) 的接触伤害，待在传送门流体里每 2 秒 2 点 */
     public static final ResourceKey<DamageType> STABILITY =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("stability"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("stability"));
 
     /** 反应权杖弹体的范围伤害，死在里面的玩家有专属死亡信息 */
     public static final ResourceKey<DamageType> CARMINITE_FIELD =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("carminite_field"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("carminite_field"));
 
     /**
      * 试验物品 043 的喷火伤害：火焰伤害、不击退，标签在 {@code data/minecraft/tags/damage_type/} 下的
@@ -28,7 +28,7 @@ public final class ModDamageTypes {
      * {@code twilightforest:fire_jet} 同一套
      */
     public static final ResourceKey<DamageType> EXPERIMENT_043 =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_043"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_043"));
 
     /**
      * 试验物品 055 那个外泄的场造成的伤害，玩家死在里面就成了甜菜汤
@@ -42,7 +42,7 @@ public final class ModDamageTypes {
      * <p>死亡信息见 {@code death.attack.experiment_055}：「… 变成了甜菜汤」
      */
     public static final ResourceKey<DamageType> EXPERIMENT_055 =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_055"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_055"));
 
     /**
      * 试验物品 066 那本恶魂陷阱书的持续伤害，每一下 7 点
@@ -54,7 +54,7 @@ public final class ModDamageTypes {
      * 自动排成每 0.5 秒一下——无敌帧就是这个场的节拍，绕过去反而是错的。也不进 {@code is_fire}，它不是火
      */
     public static final ResourceKey<DamageType> EXPERIMENT_066 =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_066"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_066"));
 
     /**
      * 试验物品 095（镇魂曲）按住右键时对 32 格内除使用者以外的活物造成的那点伤害，
@@ -70,7 +70,7 @@ public final class ModDamageTypes {
      * <p>死亡信息见 {@code death.attack.experiment_095}：「… 得到安眠」
      */
     public static final ResourceKey<DamageType> EXPERIMENT_095 =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_095"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_095"));
 
     /**
      * 砷铅铁火焰的接触伤害，每次 2 点，自定义死亡信息
@@ -80,7 +80,7 @@ public final class ModDamageTypes {
      * 「火焰免疫」挡住，烈焰人那一类就烧不着了。砷铅铁火焰要能烧穿火焰免疫，所以按独立的伤害类型算
      */
     public static final ResourceKey<DamageType> CARMINITE_FIRE =
-        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("carminite_fire"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("carminite_fire"));
 
     private ModDamageTypes() {}
 }

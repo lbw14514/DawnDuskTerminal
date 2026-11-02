@@ -42,13 +42,13 @@ public final class TranslucentFaceCullingTests {
 
     @GameTest(template = "ddt_empty")
     public static void translucentCanopyCullsTheFaceBetweenTwoOfItself(GameTestHelper helper) {
-        for (Block canopy : new Block[] {
-                ModTerrainBlocks.FROZEN_CANOPY.get(), ModTerrainBlocks.FRAGILE_CANOPY.get()}) {
+        for (Block canopy : new Block[] {ModTerrainBlocks.FROZEN_CANOPY.get(), ModTerrainBlocks.FRAGILE_CANOPY.get()}) {
             helper.setBlock(A, canopy);
             helper.setBlock(B, canopy);
-            helper.assertFalse(faceOfARendered(helper),
-                "two adjacent " + canopy.getName().getString()
-                    + " must cull the face they share, otherwise the inside of a canopy volume shows as a lattice");
+            helper.assertFalse(
+                    faceOfARendered(helper),
+                    "two adjacent " + canopy.getName().getString()
+                            + " must cull the face they share, otherwise the inside of a canopy volume shows as a lattice");
         }
         helper.succeed();
     }
@@ -68,8 +68,8 @@ public final class TranslucentFaceCullingTests {
         // 朝向半透明方块的那个不透明面必须保留，否则它背后的墙会透出一个洞
         helper.setBlock(A, Blocks.STONE);
         helper.setBlock(B, ModTerrainBlocks.FROZEN_CANOPY.get());
-        helper.assertTrue(faceOfARendered(helper),
-            "the stone face pointing into a translucent canopy block must be drawn");
+        helper.assertTrue(
+                faceOfARendered(helper), "the stone face pointing into a translucent canopy block must be drawn");
         helper.succeed();
     }
 
@@ -77,8 +77,9 @@ public final class TranslucentFaceCullingTests {
     public static void differentBlocksAreNotCulledAgainstEachOther(GameTestHelper helper) {
         helper.setBlock(A, ModTerrainBlocks.FROZEN_CANOPY.get());
         helper.setBlock(B, ModTerrainBlocks.FRAGILE_CANOPY.get());
-        helper.assertTrue(faceOfARendered(helper),
-            "the two canopy blocks are different blocks; vanilla culls a block only against itself, so this face stays");
+        helper.assertTrue(
+                faceOfARendered(helper),
+                "the two canopy blocks are different blocks; vanilla culls a block only against itself, so this face stays");
         helper.succeed();
     }
 
@@ -93,8 +94,8 @@ public final class TranslucentFaceCullingTests {
         // WEST 是 B 贴着 A 的那个面。该方法在「这个流体面不该被渲染」时返回 true，而 A 携带同一种流体，
         // 所以两个方块会像水一样剔除它们之间的液面
         helper.assertTrue(
-            level.getBlockState(b).shouldHideAdjacentFluidFace(A_TO_B.getOpposite(), level.getFluidState(a)),
-            "two portal fluid blocks must hide the fluid surface between them, exactly like water does");
+                level.getBlockState(b).shouldHideAdjacentFluidFace(A_TO_B.getOpposite(), level.getFluidState(a)),
+                "two portal fluid blocks must hide the fluid surface between them, exactly like water does");
         // 最后别留下任何还会持续 tick（因而不断弄脏测试世界）的东西
         helper.setBlock(A, Blocks.AIR);
         helper.setBlock(B, Blocks.AIR);

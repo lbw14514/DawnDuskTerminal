@@ -1,6 +1,5 @@
 package com.dawnduskterminal.gametest;
 
-import com.dawnduskterminal.registry.ModDimensions;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
 import com.dawnduskterminal.world.ChronoLine;
 import com.dawnduskterminal.world.ChronoLineState;
@@ -11,7 +10,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.MapCodec;
-import net.minecraft.resources.RegistryOps;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -20,12 +23,9 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import twilightforest.init.TFBlocks;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import java.io.BufferedReader;
-import java.io.IOException;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
@@ -45,10 +45,7 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import twilightforest.init.TFBlocks;
 
 /**
  * 晨昏线维度自己拥有地形与群系：噪声设置直接指向模组方块，群系是忠实副本且特征表也铺同样的方块。
@@ -63,7 +60,7 @@ public final class WorldgenTests {
     private static final String MOD_ID = "dawnduskterminal";
     private static final ResourceLocation CHRONO = ResourceLocation.fromNamespaceAndPath(MOD_ID, "chrono");
     private static final TagKey<Biome> HOLLOW_TREE_BIOMES =
-        TagKey.create(Registries.BIOME, ResourceLocation.parse("twilightforest:valid_hollow_tree_biomes"));
+            TagKey.create(Registries.BIOME, ResourceLocation.parse("twilightforest:valid_hollow_tree_biomes"));
 
     /** 移植后的主世界噪声路由需要的所有密度函数 */
     private static final String[] PORTED_DENSITY_FUNCTIONS = {
@@ -90,28 +87,61 @@ public final class WorldgenTests {
 
     /** 那些密度函数读取的、与种子相关的噪声参数 */
     private static final String[] PORTED_NOISE_PARAMETERS = {
-        "continentalness", "erosion", "ridge", "temperature", "vegetation", "jagged", "offset",
-        "surface", "surface_swamp", "calcite", "gravel", "powder_snow", "ice", "packed_ice",
-        "cave_cheese", "cave_layer", "cave_entrance", "spaghetti_2d", "spaghetti_roughness",
-        "noodle", "pillar", "ore_vein_a", "ore_vein_b", "ore_veininess", "ore_gap",
-        "aquifer_barrier", "aquifer_fluid_level_floodedness", "aquifer_fluid_level_spread", "aquifer_lava",
+        "continentalness",
+        "erosion",
+        "ridge",
+        "temperature",
+        "vegetation",
+        "jagged",
+        "offset",
+        "surface",
+        "surface_swamp",
+        "calcite",
+        "gravel",
+        "powder_snow",
+        "ice",
+        "packed_ice",
+        "cave_cheese",
+        "cave_layer",
+        "cave_entrance",
+        "spaghetti_2d",
+        "spaghetti_roughness",
+        "noodle",
+        "pillar",
+        "ore_vein_a",
+        "ore_vein_b",
+        "ore_veininess",
+        "ore_gap",
+        "aquifer_barrier",
+        "aquifer_fluid_level_floodedness",
+        "aquifer_fluid_level_spread",
+        "aquifer_lava",
     };
 
     /** 维度必须有副本的主世界群系抽样 */
     /** 自建群系，没有同名原版副本，只查模组侧注册 */
-    private static final String[] OWN_BIOMES = {
-        "floatrees", "white_land", "blue_desert", "polar_dawn", "polar_dusk"
-    };
+    private static final String[] OWN_BIOMES = {"floatrees", "white_land", "blue_desert", "polar_dawn", "polar_dusk"};
 
     private static final String[] COPIED_BIOMES = {
-        "plains", "sunflower_plains", "ocean", "deep_ocean", "frozen_ocean", "forest",
-        "taiga", "jungle", "swamp", "mushroom_fields", "stony_peaks", "deep_dark", "lush_caves",
+        "plains",
+        "sunflower_plains",
+        "ocean",
+        "deep_ocean",
+        "frozen_ocean",
+        "forest",
+        "taiga",
+        "jungle",
+        "swamp",
+        "mushroom_fields",
+        "stony_peaks",
+        "deep_dark",
+        "lush_caves",
         "dripstone_caves",
     };
 
     private static NoiseGeneratorSettings chronoSettings(GameTestHelper helper) {
-        Registry<NoiseGeneratorSettings> registry = helper.getLevel().getServer().registryAccess()
-            .registryOrThrow(Registries.NOISE_SETTINGS);
+        Registry<NoiseGeneratorSettings> registry =
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE_SETTINGS);
         NoiseGeneratorSettings settings = registry.get(CHRONO);
         helper.assertTrue(settings != null, "noise settings " + CHRONO + " missing");
         return settings;
@@ -140,32 +170,36 @@ public final class WorldgenTests {
         var access = helper.getLevel().getServer().registryAccess();
         Registry<DimensionType> types = access.registryOrThrow(Registries.DIMENSION_TYPE);
         helper.assertTrue(types.containsKey(CHRONO), "chrono dimension type must be registered");
-        helper.assertTrue(access.registryOrThrow(Registries.NOISE_SETTINGS).containsKey(CHRONO),
-            "chrono noise settings must be registered");
+        helper.assertTrue(
+                access.registryOrThrow(Registries.NOISE_SETTINGS).containsKey(CHRONO),
+                "chrono noise settings must be registered");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void portedDensityFunctionsAreRegistered(GameTestHelper helper) {
         Registry<DensityFunction> registry =
-            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.DENSITY_FUNCTION);
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.DENSITY_FUNCTION);
         for (String id : PORTED_DENSITY_FUNCTIONS) {
-            helper.assertTrue(registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, id)),
-                "ported density function missing: " + id);
+            helper.assertTrue(
+                    registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, id)),
+                    "ported density function missing: " + id);
         }
         // 移植是复制而不是替换：原版原件必须仍然完好
-        helper.assertTrue(registry.containsKey(ResourceLocation.withDefaultNamespace("overworld/sloped_cheese")),
-            "vanilla overworld/sloped_cheese must stay registered");
+        helper.assertTrue(
+                registry.containsKey(ResourceLocation.withDefaultNamespace("overworld/sloped_cheese")),
+                "vanilla overworld/sloped_cheese must stay registered");
         helper.succeed();
     }
 
     @GameTest(template = "ddt_empty")
     public static void portedNoiseParametersAreRegistered(GameTestHelper helper) {
         Registry<NormalNoise.NoiseParameters> registry =
-            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE);
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE);
         for (String id : PORTED_NOISE_PARAMETERS) {
-            helper.assertTrue(registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, id)),
-                "ported noise parameter missing: " + id);
+            helper.assertTrue(
+                    registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, id)),
+                    "ported noise parameter missing: " + id);
         }
         helper.succeed();
     }
@@ -184,14 +218,16 @@ public final class WorldgenTests {
     @GameTest(template = "ddt_empty")
     public static void temperatureNoiseRunsAtTheBandScale(GameTestHelper helper) {
         Registry<NormalNoise.NoiseParameters> registry =
-            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE);
-        NormalNoise.NoiseParameters params = registry.getOrThrow(ResourceKey.create(Registries.NOISE,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "temperature")));
-        helper.assertTrue(params.firstOctave() == -7,
-            "the chrono temperature noise must stay at firstOctave -7 (512 / 128 block wavelengths); "
-                + "the vanilla -10 only wanders over kilometres, got " + params.firstOctave());
-        helper.assertTrue(params.amplitudes().size() == 6 && params.amplitudes().getDouble(0) == 1.5D,
-            "the amplitude fingerprint is still vanilla's, only the frequency was retuned");
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE);
+        NormalNoise.NoiseParameters params = registry.getOrThrow(
+                ResourceKey.create(Registries.NOISE, ResourceLocation.fromNamespaceAndPath(MOD_ID, "temperature")));
+        helper.assertTrue(
+                params.firstOctave() == -7,
+                "the chrono temperature noise must stay at firstOctave -7 (512 / 128 block wavelengths); "
+                        + "the vanilla -10 only wanders over kilometres, got " + params.firstOctave());
+        helper.assertTrue(
+                params.amplitudes().size() == 6 && params.amplitudes().getDouble(0) == 1.5D,
+                "the amplitude fingerprint is still vanilla's, only the frequency was retuned");
         helper.succeed();
     }
 
@@ -225,9 +261,10 @@ public final class WorldgenTests {
         }
         helper.assertTrue(!keys.isEmpty(), "the chrono router must read at least one noise parameter");
         for (ResourceLocation key : keys) {
-            helper.assertTrue(MOD_ID.equals(key.getNamespace()),
-                "router noise " + key + " is still in the vanilla namespace, so its field would be "
-                    + "identical to the Overworld's instead of seed-derived");
+            helper.assertTrue(
+                    MOD_ID.equals(key.getNamespace()),
+                    "router noise " + key + " is still in the vanilla namespace, so its field would be "
+                            + "identical to the Overworld's instead of seed-derived");
         }
         helper.succeed();
     }
@@ -236,14 +273,17 @@ public final class WorldgenTests {
     public static void paletteBiomeCopiesAreRegistered(GameTestHelper helper) {
         Registry<Biome> biomes = helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.BIOME);
         for (String name : COPIED_BIOMES) {
-            helper.assertTrue(biomes.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, name)),
-                "chrono biome copy missing: " + name);
-            helper.assertTrue(biomes.containsKey(ResourceLocation.withDefaultNamespace(name)),
-                "the vanilla biome must stay untouched next to its copy: " + name);
+            helper.assertTrue(
+                    biomes.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, name)),
+                    "chrono biome copy missing: " + name);
+            helper.assertTrue(
+                    biomes.containsKey(ResourceLocation.withDefaultNamespace(name)),
+                    "the vanilla biome must stay untouched next to its copy: " + name);
         }
         for (String name : OWN_BIOMES) {
-            helper.assertTrue(biomes.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, name)),
-                "self-made chrono biome missing: " + name);
+            helper.assertTrue(
+                    biomes.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, name)),
+                    "self-made chrono biome missing: " + name);
         }
         helper.succeed();
     }
@@ -264,8 +304,9 @@ public final class WorldgenTests {
             }
         }
         helper.assertTrue(!featureIds.isEmpty(), "the biome copy must keep its feature list");
-        helper.assertTrue(featureIds.stream().anyMatch(id -> MOD_ID.equals(id.getNamespace())),
-            "the biome copy must place our own features, found " + featureIds);
+        helper.assertTrue(
+                featureIds.stream().anyMatch(id -> MOD_ID.equals(id.getNamespace())),
+                "the biome copy must place our own features, found " + featureIds);
         helper.succeed();
     }
 
@@ -280,14 +321,20 @@ public final class WorldgenTests {
         HolderSet.Named<Biome> valid = biomes.getTag(HOLLOW_TREE_BIOMES).orElse(null);
         helper.assertTrue(valid != null, HOLLOW_TREE_BIOMES.location() + " must resolve");
         for (String name : new String[] {
-                "forest", "birch_forest", "old_growth_birch_forest", "flower_forest", "dark_forest",
-                "mushroom_fields", "savanna"}) {
-            ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME,
-                ResourceLocation.fromNamespaceAndPath(MOD_ID, name));
+            "forest",
+            "birch_forest",
+            "old_growth_birch_forest",
+            "flower_forest",
+            "dark_forest",
+            "mushroom_fields",
+            "savanna"
+        }) {
+            ResourceKey<Biome> key =
+                    ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, name));
             Holder<Biome> biome = biomes.getHolder(key).orElse(null);
             helper.assertTrue(biome != null, "chrono biome copy missing: " + name);
-            helper.assertTrue(valid.contains(biome),
-                MOD_ID + ":" + name + " must be in " + HOLLOW_TREE_BIOMES.location());
+            helper.assertTrue(
+                    valid.contains(biome), MOD_ID + ":" + name + " must be in " + HOLLOW_TREE_BIOMES.location());
         }
         helper.succeed();
     }
@@ -300,16 +347,21 @@ public final class WorldgenTests {
     @GameTest(template = "ddt_empty")
     public static void twilightOakSaplingSurvivesOnRosyGround(GameTestHelper helper) {
         for (Block ground : new Block[] {ModTerrainBlocks.ROSY_GRASS.get(), ModTerrainBlocks.ROSY_DIRT.get()}) {
-            helper.assertTrue(ground.defaultBlockState().is(BlockTags.DIRT),
-                ground.getName().getString() + " must stay in the #minecraft:dirt tag the sapling checks");
+            helper.assertTrue(
+                    ground.defaultBlockState().is(BlockTags.DIRT),
+                    ground.getName().getString() + " must stay in the #minecraft:dirt tag the sapling checks");
         }
         Block sapling = TFBlocks.TWILIGHT_OAK_SAPLING.get();
-        helper.assertTrue(sapling != Blocks.AIR,
-            "twilightforest:twilight_oak_sapling must be registered, Twilight Forest is a required dependency");
+        helper.assertTrue(
+                sapling != Blocks.AIR,
+                "twilightforest:twilight_oak_sapling must be registered, Twilight Forest is a required dependency");
         BlockPos groundPos = new BlockPos(1, 1, 1);
         helper.setBlock(groundPos, ModTerrainBlocks.ROSY_GRASS.get());
-        helper.assertTrue(sapling.defaultBlockState().canSurvive(helper.getLevel(), helper.absolutePos(groundPos).above()),
-            "the sapling must accept rosy grass as ground, otherwise no twilight oak can be placed on the chrono surface");
+        helper.assertTrue(
+                sapling.defaultBlockState()
+                        .canSurvive(
+                                helper.getLevel(), helper.absolutePos(groundPos).above()),
+                "the sapling must accept rosy grass as ground, otherwise no twilight oak can be placed on the chrono surface");
         helper.succeed();
     }
 
@@ -327,8 +379,7 @@ public final class WorldgenTests {
                     holder.unwrapKey().ifPresent(key -> featureIds.add(key.location()));
                 }
             }
-            helper.assertTrue(featureIds.contains(largeOak),
-                MOD_ID + ":" + name + " must keep requesting " + largeOak);
+            helper.assertTrue(featureIds.contains(largeOak), MOD_ID + ":" + name + " must keep requesting " + largeOak);
         }
         helper.succeed();
     }
@@ -336,9 +387,10 @@ public final class WorldgenTests {
     @GameTest(template = "ddt_empty")
     public static void paletteBiomeSourceIsRegistered(GameTestHelper helper) {
         Registry<MapCodec<? extends BiomeSource>> registry =
-            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.BIOME_SOURCE);
-        helper.assertTrue(registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette")),
-            "the chrono biome source type must be registered");
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.BIOME_SOURCE);
+        helper.assertTrue(
+                registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette")),
+                "the chrono biome source type must be registered");
         helper.succeed();
     }
 
@@ -352,33 +404,41 @@ public final class WorldgenTests {
         var access = helper.getLevel().getServer().registryAccess();
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(MOD_ID, "dimension/chrono.json");
         JsonObject dimension;
-        try (BufferedReader reader = helper.getLevel().getServer().getResourceManager()
-            .getResource(id).orElseThrow().openAsReader()) {
+        try (BufferedReader reader = helper.getLevel()
+                .getServer()
+                .getResourceManager()
+                .getResource(id)
+                .orElseThrow()
+                .openAsReader()) {
             dimension = JsonParser.parseReader(reader).getAsJsonObject();
         } catch (IOException e) {
             throw new AssertionError("cannot read " + id, e);
         }
         BiomeSource source = BiomeSource.CODEC
-            .parse(RegistryOps.create(JsonOps.INSTANCE, access),
-                dimension.getAsJsonObject("generator").getAsJsonObject("biome_source"))
-            .getOrThrow();
-        helper.assertTrue(source instanceof PaletteBiomeSource,
-            "chrono must use the palette biome source, got " + source);
+                .parse(
+                        RegistryOps.create(JsonOps.INSTANCE, access),
+                        dimension.getAsJsonObject("generator").getAsJsonObject("biome_source"))
+                .getOrThrow();
+        helper.assertTrue(
+                source instanceof PaletteBiomeSource, "chrono must use the palette biome source, got " + source);
         PaletteBiomeSource chrono = (PaletteBiomeSource) source;
-        helper.assertTrue(chrono.preset().is(ResourceKey.create(
-                Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST,
-                ResourceLocation.withDefaultNamespace("overworld"))),
-            "the palette source must read the vanilla overworld parameter list");
-        helper.assertTrue(chrono.extra().size() == 3,
-            "the dimension JSON must declare the two polar cells, got " + chrono.extra().size());
+        helper.assertTrue(
+                chrono.preset()
+                        .is(ResourceKey.create(
+                                Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST,
+                                ResourceLocation.withDefaultNamespace("overworld"))),
+                "the palette source must read the vanilla overworld parameter list");
+        helper.assertTrue(
+                chrono.extra().size() == 3,
+                "the dimension JSON must declare the two polar cells, got "
+                        + chrono.extra().size());
         List<ResourceKey<Biome>> possible = chrono.possibleBiomes().stream()
-            .map(holder -> holder.unwrapKey().orElseThrow())
-            .toList();
+                .map(holder -> holder.unwrapKey().orElseThrow())
+                .toList();
         for (String path : new String[] {"polar_dawn", "polar_dusk"}) {
-            ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME,
-                ResourceLocation.fromNamespaceAndPath(MOD_ID, path));
-            helper.assertTrue(possible.contains(key),
-                "the extra biome must be reported as possible, missing " + path);
+            ResourceKey<Biome> key =
+                    ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, path));
+            helper.assertTrue(possible.contains(key), "the extra biome must be reported as possible, missing " + path);
         }
         helper.succeed();
     }
@@ -387,34 +447,41 @@ public final class WorldgenTests {
     @GameTest(template = "ddt_empty")
     public static void configuredFeaturesAreRegistered(GameTestHelper helper) {
         Registry<ConfiguredFeature<?, ?>> registry =
-            helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
-        helper.assertTrue(registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, "ore_granite")),
-            "the palette copy of the granite ore feature must be registered");
-        helper.assertTrue(registry.containsKey(ResourceLocation.withDefaultNamespace("ore_granite")),
-            "the vanilla granite ore feature must stay registered for the overworld");
+                helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
+        helper.assertTrue(
+                registry.containsKey(ResourceLocation.fromNamespaceAndPath(MOD_ID, "ore_granite")),
+                "the palette copy of the granite ore feature must be registered");
+        helper.assertTrue(
+                registry.containsKey(ResourceLocation.withDefaultNamespace("ore_granite")),
+                "the vanilla granite ore feature must stay registered for the overworld");
         helper.succeed();
     }
 
     /** 原版大矿脉在 {@code OreVeinifier} 里写死填充物；这里验的是替换结果 */
     @GameTest(template = "ddt_empty")
     public static void veinFillersUseThePalette(GameTestHelper helper) {
-        helper.assertTrue(ChronoVeinPalette.remap(Blocks.GRANITE.defaultBlockState())
-                .is(ModTerrainBlocks.OCHRE.get()),
-            "the copper vein filler (granite) must become ochre");
-        helper.assertTrue(ChronoVeinPalette.remap(Blocks.TUFF.defaultBlockState())
-                .is(ModTerrainBlocks.TWILIGHT_STONE.get()),
-            "the iron vein filler (tuff) must become twilight_stone");
-        helper.assertTrue(ChronoVeinPalette.remap(Blocks.STONE.defaultBlockState()).is(Blocks.STONE),
-            "unrelated blocks must pass through untouched");
+        helper.assertTrue(
+                ChronoVeinPalette.remap(Blocks.GRANITE.defaultBlockState()).is(ModTerrainBlocks.OCHRE.get()),
+                "the copper vein filler (granite) must become ochre");
+        helper.assertTrue(
+                ChronoVeinPalette.remap(Blocks.TUFF.defaultBlockState()).is(ModTerrainBlocks.TWILIGHT_STONE.get()),
+                "the iron vein filler (tuff) must become twilight_stone");
+        helper.assertTrue(
+                ChronoVeinPalette.remap(Blocks.STONE.defaultBlockState()).is(Blocks.STONE),
+                "unrelated blocks must pass through untouched");
         // 区块方块规则用 null 表示「保留默认方块」，这是最常见的情况
-        helper.assertTrue(ChronoVeinPalette.remap(null) == null,
-            "a null block state must pass through: it means 'leave the default block here'");
+        helper.assertTrue(
+                ChronoVeinPalette.remap(null) == null,
+                "a null block state must pass through: it means 'leave the default block here'");
         // 包装器必须把这个 null 透传，而不是对它 NPE，那正是当初让区块生成卡死的 bug
-        helper.assertTrue(ChronoVeinPalette.wrap(context -> null).calculate(null) == null,
-            "the wrapped rule must forward a null result untouched");
-        helper.assertTrue(ChronoVeinPalette.wrap(context -> Blocks.GRANITE.defaultBlockState())
-                .calculate(null).is(ModTerrainBlocks.OCHRE.get()),
-            "the wrapped rule must still remap a real vein filler");
+        helper.assertTrue(
+                ChronoVeinPalette.wrap(context -> null).calculate(null) == null,
+                "the wrapped rule must forward a null result untouched");
+        helper.assertTrue(
+                ChronoVeinPalette.wrap(context -> Blocks.GRANITE.defaultBlockState())
+                        .calculate(null)
+                        .is(ModTerrainBlocks.OCHRE.get()),
+                "the wrapped rule must still remap a real vein filler");
         helper.succeed();
     }
 
@@ -427,13 +494,15 @@ public final class WorldgenTests {
         var access = helper.getLevel().getServer().registryAccess();
         Registry<Biome> biomes = access.registryOrThrow(Registries.BIOME);
         Registry<MultiNoiseBiomeSourceParameterList> presets =
-            access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
+                access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
         Holder<MultiNoiseBiomeSourceParameterList> overworld = presets.getHolderOrThrow(ResourceKey.create(
-            Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST, ResourceLocation.withDefaultNamespace("overworld")));
-        HolderSet<Biome> palette = biomes.getTag(TagKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes"))).orElseThrow();
-        helper.assertTrue(palette.size() > 40,
-            "the palette tag must resolve to the biome copies, got " + palette.size());
+                Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST,
+                ResourceLocation.withDefaultNamespace("overworld")));
+        HolderSet<Biome> palette = biomes.getTag(TagKey.create(
+                        Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes")))
+                .orElseThrow();
+        helper.assertTrue(
+                palette.size() > 40, "the palette tag must resolve to the biome copies, got " + palette.size());
 
         BiomeSource delegate = MultiNoiseBiomeSource.createFromPreset(overworld);
         PaletteBiomeSource source = new PaletteBiomeSource(overworld, palette);
@@ -450,12 +519,13 @@ public final class WorldgenTests {
                     for (double continentalness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
                         for (double erosion : new double[] {-1.0D, 0.0D, 1.0D}) {
                             for (double weirdness : new double[] {-1.0D, -0.5D, 0.0D, 0.5D, 1.0D}) {
-                                Climate.Sampler sampler = constantSampler(0.0D, humidity,
-                                    continentalness, erosion, weirdness);
+                                Climate.Sampler sampler =
+                                        constantSampler(0.0D, humidity, continentalness, erosion, weirdness);
                                 Holder<Biome> got = source.getNoiseBiome(quartX, 16, 0, sampler);
                                 sampled++;
-                                ResourceLocation key =
-                                    got.unwrapKey().map(ResourceKey::location).orElse(null);
+                                ResourceLocation key = got.unwrapKey()
+                                        .map(ResourceKey::location)
+                                        .orElse(null);
                                 if (key == null || !MOD_ID.equals(key.getNamespace())) {
                                     leaked.add(key);
                                 }
@@ -464,14 +534,14 @@ public final class WorldgenTests {
                     }
                 }
             }
-            helper.assertTrue(leaked.isEmpty(),
-                "these biomes were not substituted out of " + sampled + " samples: " + leaked);
+            helper.assertTrue(
+                    leaked.isEmpty(), "these biomes were not substituted out of " + sampled + " samples: " + leaked);
 
             // 昼区：温度被钉在热档，气候表报出的原版沙漠换成白地
-            ResourceKey<Biome> vanillaDesert = ResourceKey.create(Registries.BIOME,
-                ResourceLocation.withDefaultNamespace("desert"));
-            ResourceKey<Biome> whiteLand = ResourceKey.create(Registries.BIOME,
-                ResourceLocation.fromNamespaceAndPath(MOD_ID, "white_land"));
+            ResourceKey<Biome> vanillaDesert =
+                    ResourceKey.create(Registries.BIOME, ResourceLocation.withDefaultNamespace("desert"));
+            ResourceKey<Biome> whiteLand =
+                    ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "white_land"));
             // param 0.7 映射到 0.775，正好在原版热档 0.55 ~ 1.00 中间
             int hotQuartX = QuartPos.fromBlock(3500);
             int desertSamples = 0;
@@ -479,16 +549,19 @@ public final class WorldgenTests {
                 for (double continentalness : new double[] {0.3D, 1.0D}) {
                     for (double erosion : new double[] {-1.0D, 0.0D, 1.0D}) {
                         for (double weirdness : new double[] {-1.0D, -0.5D, 0.5D, 1.0D}) {
-                            Climate.Sampler sampler = constantSampler(0.775D, humidity,
-                                continentalness, erosion, weirdness);
+                            Climate.Sampler sampler =
+                                    constantSampler(0.775D, humidity, continentalness, erosion, weirdness);
                             if (!delegate.getNoiseBiome(0, 16, 0, sampler).is(vanillaDesert)) {
                                 continue;
                             }
                             desertSamples++;
                             Holder<Biome> got = source.getNoiseBiome(hotQuartX, 16, 0, sampler);
-                            helper.assertTrue(got.is(whiteLand),
-                                "vanilla desert must become the white land copy, got "
-                                    + got.unwrapKey().map(ResourceKey::location).orElse(null));
+                            helper.assertTrue(
+                                    got.is(whiteLand),
+                                    "vanilla desert must become the white land copy, got "
+                                            + got.unwrapKey()
+                                                    .map(ResourceKey::location)
+                                                    .orElse(null));
                         }
                     }
                 }
@@ -502,56 +575,70 @@ public final class WorldgenTests {
 
         // 分带映射：六个断点把 param 切七段，每段端点必须落在原版温度档的边界上，
         // 否则某一带会跨档，带里就冒出别的带的群系（比如热带刷出针叶林）
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.POLAR_NIGHT) == -1.0D,
-            "-0.8 must map to the frozen band floor");
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.NIGHT_ZONE) == -0.45D,
-            "-0.6 must map to the frozen band ceiling, which is where the night zone starts");
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.COLD_ZONE) == -0.15D,
-            "-0.3 must map to the cold band ceiling, which is where the temperate band starts");
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.TROPIC_ZONE) == 0.20D,
-            "0.3 must map to the temperate band ceiling, which is where the tropic band starts");
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.DAY_ZONE) == 0.55D,
-            "0.6 must map to the tropic band ceiling, which is where the day zone starts");
-        helper.assertTrue(ChronoTemperature.bandTemperature(ChronoTemperature.POLAR_DAY) == 1.0D,
-            "0.8 must map to the hot band ceiling");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.POLAR_NIGHT) == -1.0D,
+                "-0.8 must map to the frozen band floor");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.NIGHT_ZONE) == -0.45D,
+                "-0.6 must map to the frozen band ceiling, which is where the night zone starts");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.COLD_ZONE) == -0.15D,
+                "-0.3 must map to the cold band ceiling, which is where the temperate band starts");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.TROPIC_ZONE) == 0.20D,
+                "0.3 must map to the temperate band ceiling, which is where the tropic band starts");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.DAY_ZONE) == 0.55D,
+                "0.6 must map to the tropic band ceiling, which is where the day zone starts");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(ChronoTemperature.POLAR_DAY) == 1.0D,
+                "0.8 must map to the hot band ceiling");
         // 极带继续往外推：线端是 POLAR_TEMPERATURE，extra 那几条的跨度就从 ±1 起
-        helper.assertTrue(ChronoTemperature.bandTemperature(1.0D) == ChronoTemperature.POLAR_TEMPERATURE,
-            "param 1.0 must reach the polar day ceiling");
-        helper.assertTrue(ChronoTemperature.bandTemperature(-1.0D) == -ChronoTemperature.POLAR_TEMPERATURE,
-            "param -1.0 must reach the polar night floor");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(1.0D) == ChronoTemperature.POLAR_TEMPERATURE,
+                "param 1.0 must reach the polar day ceiling");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(-1.0D) == -ChronoTemperature.POLAR_TEMPERATURE,
+                "param -1.0 must reach the polar night floor");
         // 带内单调：沿着线走，温度不能反向
         for (double param = -0.79D; param < 0.79D; param += 0.01D) {
-            helper.assertTrue(ChronoTemperature.bandTemperature(param)
-                    <= ChronoTemperature.bandTemperature(param + 0.01D),
-                "the band mapping must be monotonic at param " + param);
+            helper.assertTrue(
+                    ChronoTemperature.bandTemperature(param) <= ChronoTemperature.bandTemperature(param + 0.01D),
+                    "the band mapping must be monotonic at param " + param);
         }
         // 温带带内即使算上噪声也到不了沙漠与雪原的门槛（0.55 / -0.45）。交界抖动与 SPREAD 同时满幅，
         // 所以泄漏的上界是两者之和
         double seamReach = ChronoTemperature.SPREAD + ChronoTemperature.SEAM_DITHER;
         double temperateCeiling = ChronoTemperature.bandTemperature(ChronoTemperature.TROPIC_ZONE);
         double temperateFloor = ChronoTemperature.bandTemperature(ChronoTemperature.COLD_ZONE);
-        helper.assertTrue(temperateCeiling + seamReach < 0.55D,
-            "the temperate band must not reach the desert threshold even with noise, got "
-                + (temperateCeiling + seamReach));
-        helper.assertTrue(temperateFloor - seamReach > -0.45D,
-            "the temperate band must not reach the snowy threshold even with noise, got "
-                + (temperateFloor - seamReach));
+        helper.assertTrue(
+                temperateCeiling + seamReach < 0.55D,
+                "the temperate band must not reach the desert threshold even with noise, got "
+                        + (temperateCeiling + seamReach));
+        helper.assertTrue(
+                temperateFloor - seamReach > -0.45D,
+                "the temperate band must not reach the snowy threshold even with noise, got "
+                        + (temperateFloor - seamReach));
 
         // 交界抖动：断点上满幅，离开 SEAM_WIDTH 归零，带心一点不动
-        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE) == 1.0D,
-            "a breakpoint must get the full seam weight");
-        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE
-                + ChronoTemperature.SEAM_WIDTH) == 0.0D,
-            "the seam weight must be gone one SEAM_WIDTH away from the breakpoint");
-        helper.assertTrue(ChronoTemperature.seamWeight(0.0D) == 0.0D,
-            "the middle of the temperate band must stay free of seam jitter");
-        helper.assertTrue(ChronoTemperature.seamDither(0.0D, 1234.0D, -5678.0D) == 0.0D,
-            "band cores must not be jittered");
+        helper.assertTrue(
+                ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE) == 1.0D,
+                "a breakpoint must get the full seam weight");
+        helper.assertTrue(
+                ChronoTemperature.seamWeight(ChronoTemperature.TROPIC_ZONE + ChronoTemperature.SEAM_WIDTH) == 0.0D,
+                "the seam weight must be gone one SEAM_WIDTH away from the breakpoint");
+        helper.assertTrue(
+                ChronoTemperature.seamWeight(0.0D) == 0.0D,
+                "the middle of the temperate band must stay free of seam jitter");
+        helper.assertTrue(
+                ChronoTemperature.seamDither(0.0D, 1234.0D, -5678.0D) == 0.0D, "band cores must not be jittered");
         // 极带边界（±0.8）也吃抖动，但极带内部即使满幅抖动也必须留在 extra 的 [1, 2]
-        helper.assertTrue(ChronoTemperature.seamWeight(ChronoTemperature.POLAR_DAY) == 1.0D,
-            "the polar seams must be jittered too, otherwise those two lines stay razor sharp");
-        helper.assertTrue(ChronoTemperature.bandTemperature(0.9D) - ChronoTemperature.SEAM_DITHER > 1.0D,
-            "the polar bands must stay inside the extra spans even at full seam jitter");
+        helper.assertTrue(
+                ChronoTemperature.seamWeight(ChronoTemperature.POLAR_DAY) == 1.0D,
+                "the polar seams must be jittered too, otherwise those two lines stay razor sharp");
+        helper.assertTrue(
+                ChronoTemperature.bandTemperature(0.9D) - ChronoTemperature.SEAM_DITHER > 1.0D,
+                "the polar bands must stay inside the extra spans even at full seam jitter");
 
         // 断点两侧都得被推过温标：两侧都有正有负，交界才会两侧群系都出现，而不是一条线
         double min = Double.MAX_VALUE;
@@ -559,21 +646,24 @@ public final class WorldgenTests {
         for (double x = -2000.0D; x <= 2000.0D; x += 37.0D) {
             for (double z = -2000.0D; z <= 2000.0D; z += 37.0D) {
                 double dither = ChronoTemperature.seamDither(ChronoTemperature.TROPIC_ZONE, x, z);
-                helper.assertTrue(Math.abs(dither) <= ChronoTemperature.SEAM_DITHER,
-                    "the seam jitter must stay within SEAM_DITHER, got " + dither);
+                helper.assertTrue(
+                        Math.abs(dither) <= ChronoTemperature.SEAM_DITHER,
+                        "the seam jitter must stay within SEAM_DITHER, got " + dither);
                 min = Math.min(min, dither);
                 max = Math.max(max, dither);
             }
         }
-        helper.assertTrue(max > 0.02D && min < -0.02D,
-            "the seam jitter must push both ways at a breakpoint, got " + min + " ~ " + max);
+        helper.assertTrue(
+                max > 0.02D && min < -0.02D,
+                "the seam jitter must push both ways at a breakpoint, got " + min + " ~ " + max);
 
         // 连续：逐格跳 0.01 以上就会把交界切成格子状断层
         for (double z = -1500.0D; z < 1500.0D; z += 1.0D) {
             double a = ChronoTemperature.seamDither(ChronoTemperature.COLD_ZONE, 300.0D, z);
             double b = ChronoTemperature.seamDither(ChronoTemperature.COLD_ZONE, 300.0D, z + 1.0D);
-            helper.assertTrue(Math.abs(a - b) < 0.01D,
-                "the seam jitter must stay smooth at z " + z + ", got a step of " + Math.abs(a - b));
+            helper.assertTrue(
+                    Math.abs(a - b) < 0.01D,
+                    "the seam jitter must stay smooth at z " + z + ", got a step of " + Math.abs(a - b));
         }
         helper.succeed();
     }
@@ -588,11 +678,13 @@ public final class WorldgenTests {
         var access = helper.getLevel().getServer().registryAccess();
         Registry<Biome> biomes = access.registryOrThrow(Registries.BIOME);
         Registry<MultiNoiseBiomeSourceParameterList> presets =
-            access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
+                access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
         Holder<MultiNoiseBiomeSourceParameterList> overworld = presets.getHolderOrThrow(ResourceKey.create(
-            Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST, ResourceLocation.withDefaultNamespace("overworld")));
-        HolderSet<Biome> palette = biomes.getTag(TagKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes"))).orElseThrow();
+                Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST,
+                ResourceLocation.withDefaultNamespace("overworld")));
+        HolderSet<Biome> palette = biomes.getTag(TagKey.create(
+                        Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes")))
+                .orElseThrow();
         PaletteBiomeSource source = new PaletteBiomeSource(overworld, palette);
 
         ChronoLine previous = ChronoLineState.hasServerLine() ? ChronoLineState.serverLine() : null;
@@ -604,15 +696,18 @@ public final class WorldgenTests {
                     for (double humidity : new double[] {-1.0D, 0.0D, 1.0D}) {
                         for (double weirdness : new double[] {-1.0D, 0.0D, 1.0D}) {
                             // 两次调用各建一个 constant 函数对象，数值一样；缓存必须按数值重置而不是串值
-                            ResourceKey<Biome> first = source.getNoiseBiome(quartX, 16, quartZ,
-                                    constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
-                                .unwrapKey().orElse(null);
-                            ResourceKey<Biome> second = source.getNoiseBiome(quartX, 16, quartZ,
-                                    constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
-                                .unwrapKey().orElse(null);
-                            helper.assertTrue(first != null && first.equals(second),
-                                "sampler identity leaked into the biome choice at quart ("
-                                    + quartX + ", " + quartZ + "): " + first + " vs " + second);
+                            ResourceKey<Biome> first = source.getNoiseBiome(
+                                            quartX, 16, quartZ, constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
+                                    .unwrapKey()
+                                    .orElse(null);
+                            ResourceKey<Biome> second = source.getNoiseBiome(
+                                            quartX, 16, quartZ, constantSampler(0.3D, humidity, 0.0D, 0.0D, weirdness))
+                                    .unwrapKey()
+                                    .orElse(null);
+                            helper.assertTrue(
+                                    first != null && first.equals(second),
+                                    "sampler identity leaked into the biome choice at quart (" + quartX + ", " + quartZ
+                                            + "): " + first + " vs " + second);
                             compared++;
                         }
                     }
@@ -638,54 +733,65 @@ public final class WorldgenTests {
         var access = helper.getLevel().getServer().registryAccess();
         Registry<Biome> biomes = access.registryOrThrow(Registries.BIOME);
         Registry<MultiNoiseBiomeSourceParameterList> presets =
-            access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
+                access.registryOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST);
         Holder<MultiNoiseBiomeSourceParameterList> overworld = presets.getHolderOrThrow(ResourceKey.create(
-            Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST, ResourceLocation.withDefaultNamespace("overworld")));
-        HolderSet<Biome> palette = biomes.getTag(TagKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes"))).orElseThrow();
+                Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST,
+                ResourceLocation.withDefaultNamespace("overworld")));
+        HolderSet<Biome> palette = biomes.getTag(TagKey.create(
+                        Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "palette_biomes")))
+                .orElseThrow();
 
         // 与维度 JSON 里的 extra 同形：极昼一条，极夜按湿度切两条
         Climate.Parameter full = Climate.Parameter.span(-1.0F, 1.0F);
         Climate.Parameter dry = Climate.Parameter.span(-1.0F, -0.35F);
         Climate.Parameter wet = Climate.Parameter.span(-0.35F, 1.0F);
-        ResourceKey<Biome> dawn = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "polar_dawn"));
-        ResourceKey<Biome> dusk = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "polar_dusk"));
-        ResourceKey<Biome> blueDesert = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(MOD_ID, "blue_desert"));
+        ResourceKey<Biome> dawn =
+                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "polar_dawn"));
+        ResourceKey<Biome> dusk =
+                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "polar_dusk"));
+        ResourceKey<Biome> blueDesert =
+                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath(MOD_ID, "blue_desert"));
         // 湿度可调，用来验极夜那两条是按干湿分开的
         java.util.function.Function<Double, Climate.Sampler> sampler = humidity -> new Climate.Sampler(
-            DensityFunctions.constant(0.0D),
-            DensityFunctions.constant(humidity),
-            DensityFunctions.constant(0.0D),
-            DensityFunctions.constant(0.0D),
-            DensityFunctions.constant(0.0D),
-            DensityFunctions.constant(0.0D),
-            List.of());
+                DensityFunctions.constant(0.0D),
+                DensityFunctions.constant(humidity),
+                DensityFunctions.constant(0.0D),
+                DensityFunctions.constant(0.0D),
+                DensityFunctions.constant(0.0D),
+                DensityFunctions.constant(0.0D),
+                List.of());
         List<PaletteBiomeSource.ExtraBiome> extra = List.of(
-            new PaletteBiomeSource.ExtraBiome(Climate.Parameter.span(1.0F, 2.0F), full, full, full, full,
-                biomes.getHolderOrThrow(dawn)),
-            new PaletteBiomeSource.ExtraBiome(Climate.Parameter.span(-2.0F, -1.0F), wet, full, full, full,
-                biomes.getHolderOrThrow(dusk)),
-            new PaletteBiomeSource.ExtraBiome(Climate.Parameter.span(-2.0F, -1.0F), dry, full, full, full,
-                biomes.getHolderOrThrow(blueDesert)));
+                new PaletteBiomeSource.ExtraBiome(
+                        Climate.Parameter.span(1.0F, 2.0F), full, full, full, full, biomes.getHolderOrThrow(dawn)),
+                new PaletteBiomeSource.ExtraBiome(
+                        Climate.Parameter.span(-2.0F, -1.0F), wet, full, full, full, biomes.getHolderOrThrow(dusk)),
+                new PaletteBiomeSource.ExtraBiome(
+                        Climate.Parameter.span(-2.0F, -1.0F),
+                        dry,
+                        full,
+                        full,
+                        full,
+                        biomes.getHolderOrThrow(blueDesert)));
         PaletteBiomeSource source = new PaletteBiomeSource(overworld, palette, extra);
         ChronoLine previous = ChronoLineState.hasServerLine() ? ChronoLineState.serverLine() : null;
         ChronoLineState.setServerLine(ChronoLine.fallback());
         try {
             // 温度包成和区块里一样的分段映射，极带的 ±2 就是这个包装算出来的
             // 25000 quart = 100000 格，param（blockX / maxDistance 5000）在这里被钳到 ±1
-            helper.assertTrue(source.getNoiseBiome(25000, 16, 0, sampler.apply(0.0D)).is(dawn),
-                "param 1.0 must land in the polar day biome");
-            helper.assertTrue(source.getNoiseBiome(-25000, 16, 0, sampler.apply(0.5D)).is(dusk),
-                "the wet half of the polar night must be the polar dusk plains");
-            helper.assertTrue(source.getNoiseBiome(-25000, 16, 0, sampler.apply(-0.7D)).is(blueDesert),
-                "the dry half of the polar night must be the blue sand desert");
+            helper.assertTrue(
+                    source.getNoiseBiome(25000, 16, 0, sampler.apply(0.0D)).is(dawn),
+                    "param 1.0 must land in the polar day biome");
+            helper.assertTrue(
+                    source.getNoiseBiome(-25000, 16, 0, sampler.apply(0.5D)).is(dusk),
+                    "the wet half of the polar night must be the polar dusk plains");
+            helper.assertTrue(
+                    source.getNoiseBiome(-25000, 16, 0, sampler.apply(-0.7D)).is(blueDesert),
+                    "the dry half of the polar night must be the blue sand desert");
             Holder<Biome> middle = source.getNoiseBiome(0, 16, 0, sampler.apply(0.0D));
-            helper.assertTrue(!middle.is(dawn) && !middle.is(dusk) && !middle.is(blueDesert),
-                "param 0 must stay on the vanilla climate table, got "
-                    + middle.unwrapKey().map(ResourceKey::location).orElse(null));
+            helper.assertTrue(
+                    !middle.is(dawn) && !middle.is(dusk) && !middle.is(blueDesert),
+                    "param 0 must stay on the vanilla climate table, got "
+                            + middle.unwrapKey().map(ResourceKey::location).orElse(null));
         } finally {
             if (previous != null) {
                 ChronoLineState.setServerLine(previous);
@@ -694,16 +800,15 @@ public final class WorldgenTests {
         helper.succeed();
     }
 
-    private static Climate.Sampler constantSampler(double temperature, double humidity,
-                                                   double continentalness, double erosion,
-                                                   double weirdness) {
+    private static Climate.Sampler constantSampler(
+            double temperature, double humidity, double continentalness, double erosion, double weirdness) {
         return new Climate.Sampler(
-            DensityFunctions.constant(temperature),
-            DensityFunctions.constant(humidity),
-            DensityFunctions.constant(continentalness),
-            DensityFunctions.constant(erosion),
-            DensityFunctions.constant(0.0D),
-            DensityFunctions.constant(weirdness),
-            List.of());
+                DensityFunctions.constant(temperature),
+                DensityFunctions.constant(humidity),
+                DensityFunctions.constant(continentalness),
+                DensityFunctions.constant(erosion),
+                DensityFunctions.constant(0.0D),
+                DensityFunctions.constant(weirdness),
+                List.of());
     }
 }

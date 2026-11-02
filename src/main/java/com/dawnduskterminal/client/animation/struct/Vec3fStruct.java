@@ -29,8 +29,7 @@ public abstract class Vec3fStruct implements Struct {
     protected abstract float getZ();
 
     @Override
-    public void putProperty(int name, Object value) {
-    }
+    public void putProperty(int name, Object value) {}
 
     @Override
     public String toString() {

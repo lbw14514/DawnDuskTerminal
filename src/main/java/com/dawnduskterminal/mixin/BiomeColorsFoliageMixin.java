@@ -28,7 +28,7 @@ public abstract class BiomeColorsFoliageMixin {
     @Inject(method = "<clinit>", at = @At("TAIL"))
     private static void ddt$wrapFoliageResolver(CallbackInfo ci) {
         ColorResolver original = FOLIAGE_COLOR_RESOLVER;
-        FOLIAGE_COLOR_RESOLVER = (biome, x, z) ->
-            ChronoFoliageColors.resolve(original.getColor(biome, x, z), biome, x, z);
+        FOLIAGE_COLOR_RESOLVER =
+                (biome, x, z) -> ChronoFoliageColors.resolve(original.getColor(biome, x, z), biome, x, z);
     }
 }

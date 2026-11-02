@@ -12,6 +12,8 @@ import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModEntities;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import java.util.EnumMap;
+import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -21,9 +23,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-
-import java.util.EnumMap;
-import java.util.Map;
 
 /**
  * 「恶果」的客户端接线：模型两套几何、三张脸的切换、持块变体手里那块方块
@@ -36,8 +35,7 @@ import java.util.Map;
  * 与语音一样是「恶魂通用」素材，由并行动画控制器循环播放。
  */
 public final class GhastFruityRenderer {
-    private GhastFruityRenderer() {
-    }
+    private GhastFruityRenderer() {}
 
     private static final ResourceLocation MODEL = DawnDuskTerminal.id("geo/ghastfruity.geo.json");
     private static final ResourceLocation MODEL_HELD = DawnDuskTerminal.id("geo/ghastfruity_hasblock.geo.json");
@@ -54,18 +52,25 @@ public final class GhastFruityRenderer {
          * 即体中心前方 1.25 格、脚上方 -0.25 格；顶面朝前，所以整块绕 X 转 -90 度
          */
         private static final double HELD_FORWARD = 1.25D;
+
         private static final double HELD_HEIGHT = -0.25D;
 
         private final Map<GhastFruityEntity.HeldBlock, BlockState> heldStates =
-            new EnumMap<>(GhastFruityEntity.HeldBlock.class);
+                new EnumMap<>(GhastFruityEntity.HeldBlock.class);
 
         private Renderer(EntityRendererProvider.Context context) {
             super(context, Animatable::new);
         }
 
         @Override
-        public void render(GhastFruityEntity entity, Animatable animatable, float entityYaw, float partialTick,
-                           PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+        public void render(
+                GhastFruityEntity entity,
+                Animatable animatable,
+                float entityYaw,
+                float partialTick,
+                PoseStack poseStack,
+                MultiBufferSource bufferSource,
+                int packedLight) {
             super.render(entity, animatable, entityYaw, partialTick, poseStack, bufferSource, packedLight);
             if (!entity.isBlockVariant()) {
                 return;
@@ -90,8 +95,9 @@ public final class GhastFruityRenderer {
             // 方块的顶面朝实体前方
             poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
             poseStack.translate(-0.5D, -0.5D, -0.5D);
-            Minecraft.getInstance().getBlockRenderer().renderSingleBlock(
-                state, poseStack, bufferSource, packedLight, OverlayTexture.NO_OVERLAY);
+            Minecraft.getInstance()
+                    .getBlockRenderer()
+                    .renderSingleBlock(state, poseStack, bufferSource, packedLight, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
         }
 

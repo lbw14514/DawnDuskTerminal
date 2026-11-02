@@ -79,13 +79,26 @@ public abstract class ScorchingTwilightFluid extends FlowingFluid {
                 double x = (double) pos.getX() + random.nextDouble();
                 double y = (double) pos.getY() + 1.0;
                 double z = (double) pos.getZ() + random.nextDouble();
-                level.playLocalSound(x, y, z, SoundEvents.LAVA_POP, SoundSource.BLOCKS,
-                    0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
+                level.playLocalSound(
+                        x,
+                        y,
+                        z,
+                        SoundEvents.LAVA_POP,
+                        SoundSource.BLOCKS,
+                        0.2F + random.nextFloat() * 0.2F,
+                        0.9F + random.nextFloat() * 0.15F,
+                        false);
             }
             if (random.nextInt(200) == 0) {
-                level.playLocalSound((double) pos.getX(), (double) pos.getY(), (double) pos.getZ(),
-                    SoundEvents.LAVA_AMBIENT, SoundSource.BLOCKS,
-                    0.2F + random.nextFloat() * 0.2F, 0.9F + random.nextFloat() * 0.15F, false);
+                level.playLocalSound(
+                        (double) pos.getX(),
+                        (double) pos.getY(),
+                        (double) pos.getZ(),
+                        SoundEvents.LAVA_AMBIENT,
+                        SoundSource.BLOCKS,
+                        0.2F + random.nextFloat() * 0.2F,
+                        0.9F + random.nextFloat() * 0.15F,
+                        false);
             }
         }
     }
@@ -103,8 +116,10 @@ public abstract class ScorchingTwilightFluid extends FlowingFluid {
 
     @Override
     public BlockState createLegacyBlock(FluidState state) {
-        return ModScorchingTwilight.BLOCK.get().defaultBlockState()
-            .setValue(LiquidBlock.LEVEL, Integer.valueOf(getLegacyLevel(state)));
+        return ModScorchingTwilight.BLOCK
+                .get()
+                .defaultBlockState()
+                .setValue(LiquidBlock.LEVEL, Integer.valueOf(getLegacyLevel(state)));
     }
 
     @Override
@@ -118,8 +133,8 @@ public abstract class ScorchingTwilightFluid extends FlowingFluid {
     }
 
     @Override
-    public boolean canBeReplacedWith(FluidState state, BlockGetter level, BlockPos pos, Fluid fluid,
-                                     Direction direction) {
+    public boolean canBeReplacedWith(
+            FluidState state, BlockGetter level, BlockPos pos, Fluid fluid, Direction direction) {
         return state.getHeight(level, pos) >= MIN_LEVEL_CUTOFF && fluid.is(FluidTags.WATER);
     }
 
@@ -131,10 +146,12 @@ public abstract class ScorchingTwilightFluid extends FlowingFluid {
     @Override
     public int getSpreadDelay(Level level, BlockPos pos, FluidState oldState, FluidState newState) {
         int delay = this.getTickDelay(level);
-        if (!oldState.isEmpty() && !newState.isEmpty()
-            && !oldState.getValue(FALLING) && !newState.getValue(FALLING)
-            && newState.getHeight(level, pos) > oldState.getHeight(level, pos)
-            && level.getRandom().nextInt(4) != 0) {
+        if (!oldState.isEmpty()
+                && !newState.isEmpty()
+                && !oldState.getValue(FALLING)
+                && !newState.getValue(FALLING)
+                && newState.getHeight(level, pos) > oldState.getHeight(level, pos)
+                && level.getRandom().nextInt(4) != 0) {
             delay *= 4;
         }
         return delay;
