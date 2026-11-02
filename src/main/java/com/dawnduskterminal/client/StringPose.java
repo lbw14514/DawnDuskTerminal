@@ -61,6 +61,8 @@ public final class StringPose {
     /** 小型与大型的立方体高度，模型里没有这两个骨骼的立方体时才用这个兜底 */
     private static final float SMALL_SEGMENT_LENGTH = 12.2459F;
     private static final float LARGE_SEGMENT_LENGTH = 20.7055F;
+    /** 一个方块对应的模型单位数：几何里的 {@code size}、骨骼枢轴与位置都用这个刻度 */
+    private static final float MODEL_UNITS_PER_BLOCK = 16.0F;
 
     /** 每个实体一份逐 tick 的随机量，渲染帧之间用 partialTick 插值 */
     private final Map<StringEntity, PoseState> states = new WeakHashMap<>();
@@ -269,7 +271,10 @@ public final class StringPose {
             if (firstBody instanceof AnimatedGeoBone animatedBody) {
                 GeoMesh mesh = animatedBody.geoBone().cubes();
                 if (mesh != null && mesh.getCubeCount() > 0 && mesh.dy(0).length() > 0.0F) {
-                    nominalLength = mesh.dy(0).length();
+                    // GeoMesh 的边长单位是格（建表时已除以 16），而本类其余算式（枢轴、位置、弦长）
+                    // 都是模型单位，16 才是一格。这里不乘回 16 的话名义弦长会小十六倍，
+                    // 于是每条边都被拉长十六倍——实测就是「圆环散成一圈长杆」
+                    nominalLength = mesh.dy(0).length() * MODEL_UNITS_PER_BLOCK;
                 }
             }
             // 大型的 Z 轴摆动幅度是 10 度，小型是 15 度，见源文件两个 parallel1

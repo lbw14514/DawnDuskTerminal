@@ -18,7 +18,7 @@ import com.dawnduskterminal.geckolib3.geo.animated.ILocationModel;
 import com.dawnduskterminal.geckolib3.file.AnimationFile;
 import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>不存在于动画文件里的层不注册：注册了也只会每帧打一条「找不到片段」的日志。
  */
-public abstract class YsmAnimatable<M extends Mob> extends AnimatableEntity<M> implements IGeoEntity {
+public abstract class YsmAnimatable<M extends Entity> extends AnimatableEntity<M> implements IGeoEntity {
     private final ResourceLocation model;
     @Nullable
     private final ResourceLocation animationFile;

@@ -30,12 +30,6 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
-import software.bernie.geckolib.animatable.GeoAnimatable;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 /**
  * 试验物品 057 右键打出去的那片飞刃
@@ -68,7 +62,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
  * <p>每 {@value #SWING_PERIOD_TICKS} tick 一声挥砍音效、一颗挥砍粒子，{@value #LIFETIME_TICKS} tick
  * （8 秒，或被命中扣完）之后撒一片红石粒子再消失
  */
-public class Experiment057BladeEntity extends ThrowableProjectile implements GeoAnimatable {
+public class Experiment057BladeEntity extends ThrowableProjectile {
     /** 寿命：8 秒 */
     public static final int LIFETIME_TICKS = 160;
 
@@ -140,11 +134,6 @@ public class Experiment057BladeEntity extends ThrowableProjectile implements Geo
      * 响度就掉到百分之几，等于没声音
      */
     private static final double CRIT_SOUND_GAIN_AT_LAUNCHER = 0.8D;
-
-    /** 模型自带的动画片段：两根 plate 反向转，0.48 秒一圈 */
-    private static final RawAnimation SPIN = RawAnimation.begin().thenLoop("parallel0");
-
-    private final AnimatableInstanceCache animatableCache = GeckoLibUtil.createInstanceCache(this);
 
     /** 发射时定下的速度大小，每 tick 按回它，于是阻力不再让飞刃越飞越慢 */
     private double speed;
@@ -484,24 +473,6 @@ public class Experiment057BladeEntity extends ThrowableProjectile implements Geo
             && !entity.onClimbable()
             && !entity.isInWater()
             && !entity.isPassenger();
-    }
-
-    /** 控制器名字随便取；真正播的片段是源文件里那个 {@code parallel0}（见 {@link #SPIN}） */
-    @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "blade", 0,
-            state -> state.setAndContinue(SPIN)));
-    }
-
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.animatableCache;
-    }
-
-    /** GeckoLib 取动画时间轴用；飞刃的年龄就是实体自己的 tickCount */
-    @Override
-    public double getTick(Object animatable) {
-        return this.tickCount;
     }
 
     @Override
