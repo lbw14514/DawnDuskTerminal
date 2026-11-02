@@ -1,6 +1,7 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.client.animation.AnimatedStripTexture;
 import com.dawnduskterminal.client.animation.YsmAnimatable;
 import com.dawnduskterminal.client.animation.YsmEntityRenderer;
 import com.dawnduskterminal.entity.StringEntity;
@@ -102,11 +103,15 @@ public final class StringRenderer {
             return entity.getRenderScale();
         }
 
+        /**
+         * 贴图是竖向的动画条（16x512 与 32x1024），几何只声明了一帧的高度，
+         * 因此这里换成「当前帧」的动态贴图，UV 的 0..1 才正好覆盖一帧
+         */
         @Override
         public RenderType getRenderType(StringEntity animatable, float partialTick, PoseStack poseStack,
                                         @Nullable MultiBufferSource bufferSource, @Nullable VertexConsumer buffer,
                                         int packedLight, ResourceLocation texture) {
-            return glowRenderType(texture);
+            return glowRenderType(AnimatedStripTexture.frameOf(texture));
         }
 
         @Override

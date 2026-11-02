@@ -30,5 +30,6 @@ public final class YsmEntityReload extends SimplePreparableReloadListener<Void> 
     @Override
     protected void apply(Void unused, ResourceManager manager, ProfilerFiller profiler) {
         YsmPacks.invalidate();
+        AnimatedStripTexture.invalidate();
     }
 }
