@@ -1,11 +1,14 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import javax.annotation.Nullable;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.List;
 
 public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS =
@@ -99,6 +102,49 @@ public final class ModSounds {
      */
     public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_052_EXPLODE =
         register("experiment_052_explode");
+
+    /** 试验物品 055 充能期间循环的那支 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_CHARGE =
+        register("experiment_055_charge");
+
+    /** 试验物品 055 充满那一下，只放一遍 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_FULL =
+        register("experiment_055_full");
+
+    /** 试验物品 055 充满之后循环的那支盖革声 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPERIMENT_055_GEIGER =
+        register("experiment_055_geiger");
+
+    /**
+     * 试验物品 095 循环播放的那组曲子，一个下标一支
+     *
+     * <p>素材整份放在 {@code assets/dawnduskterminal/sounds/requiem/}，事件名与文件名一对一，
+     * 与 {@code ghast_universal/moan1} 那套同一个写法。每次按住右键由服务端摇一个下标，客户端据此挑事件，
+     * 所以这里必须是一张有序的表——下标就是协议里那个整数，顺序不能随手改。往目录里加曲子时三处一起改：
+     * 这张表、{@code sounds.json} 里的一条、以及目录里那个 {@code .ogg}
+     *
+     * <p>{@code sounds.json} 里每一条都写了 {@code stream: true} 与 {@code attenuation_distance: 32}：
+     * 前者让客户端边读边放（单曲十几到二十几秒，整段进内存不值得），后一个把线性衰减的距离定在 32 格，
+     * 与 095 的伤害半径同一个数
+     */
+    public static final List<DeferredHolder<SoundEvent, SoundEvent>> REQUIEM_TRACKS = List.of(
+        register("requiem/bgmm3"),
+        register("requiem/flower"),
+        register("requiem/extendash"),
+        register("requiem/requiem"),
+        register("requiem/sirius"),
+        register("requiem/nanana"));
+
+    /** 下标越界时返回 {@code null}，让客户端干脆不出声，不抛异常 */
+    @Nullable
+    public static SoundEvent requiemTrack(int index) {
+        return index < 0 || index >= REQUIEM_TRACKS.size() ? null : REQUIEM_TRACKS.get(index).get();
+    }
+
+    /** 一支曲子都没有时 {@code nextInt} 会抛异常，所以这边留个口子 */
+    public static int requiemTrackCount() {
+        return REQUIEM_TRACKS.size();
+    }
 
     private ModSounds() {}
 

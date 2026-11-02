@@ -4,6 +4,7 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
+import com.dawnduskterminal.entity.Experiment057BladeEntity;
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastEliteFireball;
 import com.dawnduskterminal.entity.GhastFruityEntity;
@@ -84,6 +85,21 @@ public final class ModEntities {
             .clientTrackingRange(4)
             .updateInterval(1)
             .build("carminite_shrapnel"));
+
+    /**
+     * 试验物品 057 打出去的那片飞刃
+     *
+     * <p>碰撞箱取 0.8x0.8：几何最宽处 24 单位 = 1.5 格，箱子比模型收一圈，免得贴墙时还没碰到就弹开。
+     * updateInterval 1——它每 tick 都被制导拐向发射者的视线，位置包慢一拍就会看出折线
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<Experiment057BladeEntity>>
+        EXPERIMENT_057_BLADE =
+        ENTITIES.register("experiment_057_blade", () -> EntityType.Builder
+            .<Experiment057BladeEntity>of(Experiment057BladeEntity::new, MobCategory.MISC)
+            .sized(0.8F, 0.8F)
+            .clientTrackingRange(4)
+            .updateInterval(1)
+            .build("experiment_057_blade"));
 
     /**
      * 「弦」。碰撞箱的基准值是小型，真正的尺寸由 {@link StringEntity#getDefaultDimensions} 按变种

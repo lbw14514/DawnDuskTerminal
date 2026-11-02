@@ -109,9 +109,9 @@ public final class ModCreativeTabs {
      * <p>全部按序号升序排，靠一张 {@link TreeMap} 排出来，不走手写顺序：001 是方块，004 是照熔炉工作的那台机器，
      * 007 与 017 是那两把近战
      * 伤害 4、攻速 5 的裸武器，008 是那件 5 点饥饿 5 点饱和度的食物，027 是那支画红石点的笔，032/033 是两支长矛，
-     * 036~038 与 040~042 是高塔工具与简单物品（039 号空着），046 是权杖，051 是拆解台那台机器，065 是压出「打不出伤害」的场的机器，
-     * 066 是那本恶魂陷阱书，069 是压出「更新不处理」的场的机器，061/070/074 是三块不明肉块，104 是那个食物，
-     * 107 是整块的红丝绒蛋糕，114 是能吃能摆的那一块，
+     * 036~038 与 040~042 是高塔工具与简单物品（039 号空着），046 是权杖，051 是拆解台那台机器，057 是那把制导飞刃，065 是压出「打不出伤害」的场的机器，
+     * 066 是那本恶魂陷阱书，069 是压出「更新不处理」的场的机器，061/070/074 是三块不明肉块，055 是那个充能的场，095 是那支镇魂曲，
+     * 104 是那个食物，107 是整块的红丝绒蛋糕，114 是能吃能摆的那一块，
      * 其余空号是 {@link ModExperimentItems#placeholders()} 补的占位物品
      *
      * <p>图标用暮色森林的试验物品 115，没装暮色森林时退化成试验物品 046
@@ -153,6 +153,8 @@ public final class ModCreativeTabs {
                 sequence.put(50, ModExperimentItems.EXPERIMENT_050.get());
                 sequence.put(51, ModItems.EXPERIMENT_051.get());
                 sequence.put(52, ModItems.EXPERIMENT_052.get());
+                sequence.put(55, ModExperimentItems.EXPERIMENT_055.get());
+                sequence.put(57, ModExperimentItems.EXPERIMENT_057.get());
                 sequence.put(61, ModExperimentItems.EXPERIMENT_061.get());
                 sequence.put(65, ModItems.EXPERIMENT_065.get());
                 sequence.put(66, ModExperimentItems.EXPERIMENT_066.get());
@@ -160,6 +162,7 @@ public final class ModCreativeTabs {
                 sequence.put(70, ModExperimentItems.EXPERIMENT_070.get());
                 sequence.put(74, ModExperimentItems.EXPERIMENT_074.get());
                 sequence.put(76, ModItems.EXPERIMENT_076.get());
+                sequence.put(95, ModExperimentItems.EXPERIMENT_095.get());
                 sequence.put(104, ModItems.EXPERIMENT_104.get());
                 sequence.put(107, ModItems.EXPERIMENT_107.get());
                 sequence.put(114, ModItems.EXPERIMENT_114.get());

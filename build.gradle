@@ -33,7 +33,10 @@ neoForge {
         gameTestServer {
             type = "gameTestServer"
             gameDirectory = project.file('run/gametest')
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            // 默认跑本模组全部用例（含 057 自己那批挂在 dawnduskterminal057 下的）
+            // 只想跑某一批时：./gradlew runGameTestServer -Pgametest_namespaces=dawnduskterminal057
+            systemProperty 'neoforge.enabledGameTestNamespaces',
+                (project.findProperty('gametest_namespaces') ?: "${mod_id},dawnduskterminal057")
             programArguments.addAll '--nogui'
         }
     }

@@ -5,7 +5,10 @@ import com.dawnduskterminal.item.Experiment020Item;
 import com.dawnduskterminal.item.Experiment027Item;
 import com.dawnduskterminal.item.Experiment043Item;
 import com.dawnduskterminal.item.Experiment045Item;
+import com.dawnduskterminal.item.Experiment055Item;
+import com.dawnduskterminal.item.Experiment057Item;
 import com.dawnduskterminal.item.Experiment066Item;
+import com.dawnduskterminal.item.Experiment095Item;
 import com.dawnduskterminal.item.ExperimentArmorItem;
 import com.dawnduskterminal.item.ThrustSpearItem;
 import com.dawnduskterminal.item.UnknownMeatItem;
@@ -42,7 +45,8 @@ import java.util.TreeMap;
  * 试验物品栏里那批实验品：一台照熔炉工作的机器（试验物品 004）、两把近战武器（试验物品 007、017）、
  * 一件食物（试验物品 008）、一支画红石点的笔（试验物品 027）、两支长矛（试验物品 032、033）、
  * 高塔五件套（试验物品 036~038 与 040、041，039 号留空）与一件简单物品（试验物品 042）、
- * 一本恶魂陷阱书（试验物品 066）、三块不明肉块（试验物品 061、070、074）
+ * 一本恶魂陷阱书（试验物品 066）、三块不明肉块（试验物品 061、070、074）、
+ * 一支镇魂曲（试验物品 095）、一个慢慢充能的外泄的场（试验物品 055）
  *
  * <p>整批试验物品的注册 ID 与显示名都用三位数序列，含已经就是三位的 {@code experiment_001}，
  * 所以这里从 {@code experiment_032} 起步，不是 {@code experiment_32}
@@ -221,6 +225,39 @@ public final class ModExperimentItems {
         () -> new Experiment066Item(new Item.Properties().durability(Experiment066Item.DURABILITY)));
 
     /**
+     * 试验物品 055：按住右键慢慢充能的那个场，充能 5 秒里影响半径从 0 涨到
+     * {@value com.dawnduskterminal.item.BeetrootProcess#MAX_RADIUS} 格、伤害系数涨到
+     * {@value com.dawnduskterminal.item.BeetrootProcess#MAX_DAMAGE_FACTOR}，
+     * 圈内活物每 tick 挨 {@code 系数 × (半径 − 距离)}，充满之后连自己也在掉血；每秒还把半径内的群系
+     * 刷成 {@code dawnduskterminal:old_growth_birch_forest}
+     *
+     * <p>整个过程在 {@link com.dawnduskterminal.item.BeetrootProcess}，挂在服务端 tick 上推进
+     * （与 043、066、095 同一个做法）。{@value Experiment055Item#DURABILITY} 点耐久，每秒扣 1 点，
+     * 从头按到尾 5 分钟
+     */
+    public static final DeferredItem<Experiment055Item> EXPERIMENT_055 = ITEMS.register(
+        "experiment_055",
+        () -> new Experiment055Item(new Item.Properties().durability(Experiment055Item.DURABILITY)));
+
+    /**
+     * 试验物品 057：8 点伤害、攻速 1.6 的刀，单击右键打出一片制导飞刃
+     *
+     * <p>面板值就写在 {@link Experiment057Item#ATTACK_DAMAGE} 与 {@link Experiment057Item#ATTACK_SPEED}，
+     * 属性表由 {@link Experiment057Item#createAttributes()} 把面板值换算成修饰符（减掉玩家底数），
+     * 这里不再出现与面板对不上的数字。64 点耐久，每发扣 1 点、冷却
+     * {@value Experiment057Item#COOLDOWN_TICKS} tick；飞刃本体在
+     * {@link com.dawnduskterminal.entity.Experiment057BladeEntity}
+     *
+     * <p>可损坏的物品默认不可堆叠（{@code MAX_STACK_SIZE} 缺省是 1），这也正是原版
+     * {@code Item#isEnchantable} 认的那一条；附魔值写在 {@link Experiment057Item} 里
+     */
+    public static final DeferredItem<Experiment057Item> EXPERIMENT_057 = ITEMS.register(
+        "experiment_057",
+        () -> new Experiment057Item(new Item.Properties()
+            .durability(Experiment057Item.DURABILITY)
+            .attributes(Experiment057Item.createAttributes())));
+
+    /**
      * 试验物品 045：一面盾，格挡那套整份照抄原版盾（{@link Experiment045Item} 继承 {@code ShieldItem}）
      *
      * <p>耐久与 {@code Items.SHIELD} 同为 336，且同样带上「旗面图案」这个组件的空表：默认没有图案时盾面走
@@ -258,6 +295,21 @@ public final class ModExperimentItems {
     public static final DeferredItem<ThrustSpearItem> EXPERIMENT_033 = ITEMS.register(
         "experiment_033", () -> new ThrustSpearItem(new Item.Properties()));
 
+    /**
+     * 试验物品 095：镇魂曲，按住右键奏一支循环曲、每 0.5 秒甩出一圈音符，32 格内除自己以外的活物
+     * 每 tick 挨一次 {@code 0.5 × (32 - 距离)} 的伤害，按住期间每秒扣 1 点耐久
+     *
+     * <p>整个过程在 {@link com.dawnduskterminal.item.RequiemProcess}：这一段挂在服务端 tick 上推进，
+     * 不写在 {@code onUseTick} 里，因为每次结束都要给客户端发一颗「停止循环音」的包，而松手之外的
+     * 几种结束（换物品、物品碎掉、死亡、换维度）在 {@code onUseTick} 那条路上收不齐
+     *
+     * <p>{@value Experiment095Item#DURABILITY} 点耐久，每次按住扣 1 点、每秒一次，从头按到尾 5 分钟
+     */
+    public static final DeferredItem<Experiment095Item> EXPERIMENT_095 = ITEMS.register(
+        "experiment_095",
+        () -> new Experiment095Item(new Item.Properties().durability(Experiment095Item.DURABILITY)));
+
+
     /** 序号上限：115 及以内 */
     private static final int LAST_NUMBER = 115;
 
@@ -283,7 +335,8 @@ public final class ModExperimentItems {
      * 076 是那个每个面每一刻都在换贴图的异常方块（方块在 {@link ModBlocks#EXPERIMENT_076}、
      * 物品在 {@link ModItems#EXPERIMENT_076}），
      * 036~038 与 040~042 是上面那批工具与简单物品（039 号留空），043 是上面那台喷火器，045 是上面那面盾，
-     * 066 是那本恶魂陷阱书，
+     * 057 是上面那把制导飞刃，066 是那本恶魂陷阱书，095 是上面那支镇魂曲，
+     * 055 是上面那个充能的场，
      * 061/070/074 是上面那三块不明肉块（同一份规格，见 {@link UnknownMeatItem}），
      * 047~050 是上面那套护甲，
      * 046 是砷铅铁钼反应权杖（注册 ID 仍是 {@code carminite_molybdenum_reactor_staff}），
@@ -295,7 +348,7 @@ public final class ModExperimentItems {
      */
     private static final Set<Integer> TAKEN =
         Set.of(1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50,
-            51, 52, 61, 65, 66, 69, 70, 74, 76, 104, 107, 114, 115);
+            51, 52, 55, 57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 

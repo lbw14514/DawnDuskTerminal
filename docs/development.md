@@ -68,6 +68,16 @@ OpenYSM 自带的 GeckoLib 属于分叉版本，包名位于 `org.openysm.geckol
 
 `./gradlew runGameTestServer` 的运行目录为 `run/gametest`。
 
+默认跑本模组全部用例（`neoforge.enabledGameTestNamespaces` 为 `dawnduskterminal,dawnduskterminal057`）。改了哪一件东西就只跑那一批，不必把整模组的用例全跑一遍：
+
+```bash
+./gradlew runGameTestServer -Pgametest_namespaces=dawnduskterminal057
+```
+
+分批的依据是**模板命名空间**：NeoForge 只按这个命名空间过滤用例，没有按方法名过滤的口子。因此把某一批用例的 `@GameTestHolder` 换成自己的命名空间（例如 057 那批用 `dawnduskterminal057`），并把要用的模板结构同名复制一份到 `data/dawnduskterminal057/structure/` 即可；模板只是空结构，复制没有维护成本。
+
+`run/gametest/world` 会在多次运行之间保留，前一版用例摆下的方块、刷出的实体都会留在场地里（`ddt_empty` 模板里一个方块都没有，重新摆一遍模板清不掉它们）。改完世界生成或测试互相打架时，删掉该目录重跑。
+
 首次构建会下载并反编译 Minecraft。
 
 若仅有资源文件发生改动，任务可能报告 UP-TO-DATE，此时须验证 jar 中的实际内容。

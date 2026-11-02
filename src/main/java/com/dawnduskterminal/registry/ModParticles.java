@@ -10,14 +10,16 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * 砷铅铁反应权杖用到的三种粒子、试验物品 027 的红石点，以及试验物品 043 的大火焰
+ * 砷铅铁反应权杖用到的三种粒子、试验物品 027 的红石点、试验物品 043 的大火焰，以及试验物品 095 的音符
  *
  * <p>贴图表与帧序在 {@code assets/dawnduskterminal/particles/particle_carminite_*.json}，
  * 客户端 provider 在 {@link com.dawnduskterminal.client.CarminiteParticle}；
  * 027 的贴图表在 {@code particles/particle_experiment_027.json}，实现在
  * {@link com.dawnduskterminal.client.Experiment027Particle}；043 的贴图表在
  * {@code particles/particle_jet_flame.json}（直接借原版 {@code minecraft:flame}），实现在
- * {@link com.dawnduskterminal.client.JetFlameParticle}
+ * {@link com.dawnduskterminal.client.JetFlameParticle}；095 的音符在
+ * {@code particles/particle_requiem_note.json}（借原版 {@code minecraft:note}），实现在
+ * {@link com.dawnduskterminal.client.RequiemNoteParticle}
  */
 public final class ModParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
@@ -66,6 +68,21 @@ public final class ModParticles {
      */
     public static final DeferredHolder<ParticleType<?>, JetFlameParticleType> JET_FLAME =
         PARTICLE_TYPES.register("particle_jet_flame", JetFlameParticleType::new);
+
+    /**
+     * 试验物品 095 那一圈音符：贴图直接借原版 {@code minecraft:note}，颜色在客户端现摇，
+     * 速度走粒子包自己的初速参数
+     *
+     * <p>不能用原版 {@code ParticleTypes.NOTE}：{@code NoteParticle} 的构造函数把速度整个乘了 0.01，
+     * 横向初速永远是 0，粒子只会原地往上飘，做不出「向四周甩出一圈」。所以另开一种：摩擦 0.9（横向冲出去
+     * 之后还要能扩到 32 格，所以不能像原版音符那样用 0.66）、出生时给一份向上初速、之后每 tick 再往上托一点、
+     * 寿命 40 ± 4 tick、尺寸乘 2。见 {@link com.dawnduskterminal.client.RequiemNoteParticle}
+     *
+     * <p>颜色不进粒子选项：它是纯装饰，每个客户端各自随机一个色相，谁也看不出两边的差别，
+     * 就不用为了一个 {@code float} 再造一套 {@code ParticleType}
+     */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> REQUIEM_NOTE =
+        register("particle_requiem_note");
 
     private ModParticles() {}
 

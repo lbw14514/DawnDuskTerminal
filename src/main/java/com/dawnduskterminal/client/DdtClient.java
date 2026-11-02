@@ -59,6 +59,9 @@ public final class DdtClient {
         NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) -> {
             ChronoFoliageColors.clearCache();
             ChronoLineState.resetClientLine();
+            // 095 与 055 的循环音：断开之后不会再有哪一方来发停止包，不在这里清就会跟着下一次存档一起挂着
+            RequiemSounds.clear();
+            Experiment055Sounds.clear();
         });
         modBus.addListener(DdtClient::onClientSetup);
         modBus.addListener(DdtClient::registerFluidExtensions);
@@ -74,6 +77,7 @@ public final class DdtClient {
         modBus.addListener(StringRenderer::onRegisterRenderers);
         modBus.addListener(GhastFruityRenderer::onRegisterRenderers);
         modBus.addListener(GhastEliteRenderer::onRegisterRenderers);
+        modBus.addListener(Experiment057BladeRenderer::onRegisterRenderers);
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
         modBus.addListener(DdtClient::onRegisterParticleProviders);
         modBus.addListener(DdtClient::registerMenuScreens);
@@ -361,7 +365,7 @@ public final class DdtClient {
         event.registerBlockEntityRenderer(ModBlockEntities.EXPERIMENT_076.get(), Experiment076Renderer::new);
     }
 
-    /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle}；027 的红石点与 043 的大火焰各一支 */
+    /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle}；027 的红石点、043 的大火焰与 095 的音符各一支 */
     private static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.CARMINITE_BALL.get(), CarminiteParticle::ballProvider);
         event.registerSpriteSet(ModParticles.CARMINITE_TRACE.get(), CarminiteParticle::traceProvider);
@@ -372,6 +376,8 @@ public final class DdtClient {
         // 砷铅铁余烬：火焰向上飘的星火与碎片拖的红线，见 CarminiteEmberParticle
         event.registerSpriteSet(ModParticles.CARMINITE_EMBER.get(), CarminiteEmberParticle::provider);
         event.registerSpriteSet(ModParticles.JET_FLAME.get(), JetFlameParticle::provider);
+        // 095 那圈音符：物理照抄原版音符粒子，只是初速是服务端给的，见 RequiemNoteParticle
+        event.registerSpriteSet(ModParticles.REQUIEM_NOTE.get(), RequiemNoteParticle::provider);
     }
 
     private static void registerFluidExtensions(RegisterClientExtensionsEvent event) {

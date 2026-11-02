@@ -53,6 +53,33 @@
       "dawnduskterminal:experiment_052_explode"
     ]
   },
+  "experiment_055_charge": {
+    "subtitle": "subtitles.dawnduskterminal.experiment_055_charge",
+    "sounds": [
+      {
+        "name": "dawnduskterminal:experiment_055_charge",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "experiment_055_full": {
+    "subtitle": "subtitles.dawnduskterminal.experiment_055_full",
+    "sounds": [
+      {
+        "name": "dawnduskterminal:experiment_055_full",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "experiment_055_geiger": {
+    "subtitle": "subtitles.dawnduskterminal.experiment_055_geiger",
+    "sounds": [
+      {
+        "name": "dawnduskterminal:experiment_055_geiger",
+        "attenuation_distance": 32
+      }
+    ]
+  },
   "tower_ghast_ambient": {
     "subtitle": "subtitles.dawnduskterminal.tower_ghast_ambient",
     "sounds": [
@@ -135,6 +162,60 @@
     "subtitle": "subtitles.dawnduskterminal.ghast_universal_deflect",
     "sounds": [
       "dawnduskterminal:ghast_universal/affectionate_scream"
+    ]
+  },
+  "requiem/bgmm3": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/bgmm3",
+        "stream": true,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "requiem/flower": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/flower",
+        "stream": true,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "requiem/extendash": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/extendash",
+        "stream": true,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "requiem/requiem": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/requiem",
+        "stream": true,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "requiem/sirius": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/sirius",
+        "stream": true,
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "requiem/nanana": {
+    "sounds": [
+      {
+        "name": "dawnduskterminal:requiem/nanana",
+        "stream": true,
+        "attenuation_distance": 32
+      }
     ]
   }
 }

@@ -31,6 +31,20 @@ public final class ModDamageTypes {
         ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_043"));
 
     /**
+     * 试验物品 055 那个外泄的场造成的伤害，玩家死在里面就成了甜菜汤
+     *
+     * <p>圈内每一次 {@code 系数 × (半径 − 距离)}、以及充满之后对自己每 tick 1 点，用的都是这一个类型
+     *
+     * <p>只进 {@code data/minecraft/tags/damage_type/} 下的 {@code no_knockback}（不产生击退）；
+     * <b>不进 {@code bypasses_cooldown}</b>：过程每 tick 都调一次 {@code hurt}，节拍由原版无敌帧排成
+     * 每 0.5 秒一下（与 066、095 同一个理由）。也不进 {@code is_fire}，它不是火
+     *
+     * <p>死亡信息见 {@code death.attack.experiment_055}：「… 变成了甜菜汤」
+     */
+    public static final ResourceKey<DamageType> EXPERIMENT_055 =
+        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_055"));
+
+    /**
      * 试验物品 066 那本恶魂陷阱书的持续伤害，每一下 7 点
      *
      * <p>只进 {@code data/minecraft/tags/damage_type/} 下的 {@code no_knockback}：书自己每 tick 把场里的
@@ -41,6 +55,22 @@ public final class ModDamageTypes {
      */
     public static final ResourceKey<DamageType> EXPERIMENT_066 =
         ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_066"));
+
+    /**
+     * 试验物品 095（镇魂曲）按住右键时对 32 格内除使用者以外的活物造成的那点伤害，
+     * 大小是 {@code 0.5 × (32 - 距离)}
+     *
+     * <p>只进 {@code data/minecraft/tags/damage_type/} 下的 {@code no_knockback}：曲子把人送走的时候
+     * 不该把人推走，圈里的生物要留在原地
+     *
+     * <p><b>不进 {@code bypasses_cooldown}</b>：与 066 那本恶魂陷阱书同一个理由——过程每 tick 都调一次
+     * {@code hurt}，原版无敌帧会把连续的施压自动排成每 0.5 秒一下，无敌帧本身就是这里的节拍。也不进
+     * {@code is_fire}，它不是火
+     *
+     * <p>死亡信息见 {@code death.attack.experiment_095}：「… 得到安眠」
+     */
+    public static final ResourceKey<DamageType> EXPERIMENT_095 =
+        ResourceKey.create(Registries.DAMAGE_TYPE, DawnDuskTerminal.id("experiment_095"));
 
     /**
      * 砷铅铁火焰的接触伤害，每次 2 点，自定义死亡信息
