@@ -130,6 +130,17 @@ public final class ModSounds {
                 : REQUIEM_TRACKS.get(index).get();
     }
 
+    /** 试验物品 057 那类发射：血肉之书的发射音 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPOWHEEL_SHOOT = register("expowheel_shoot");
+
+    /**
+     * 血肉之书那片飞轮的持续音
+     *
+     * <p>素材本身 9.98 秒，比弹体 6 秒的寿命长，所以客户端只起一支挂在弹体身上的定位音
+     * （{@code client/ExpowheelSounds}），不循环、也不由服务端播
+     */
+    public static final DeferredHolder<SoundEvent, SoundEvent> EXPOWHEEL_AMBIENT = register("expowheel_ambient");
+
     /** 一支曲子都没有时 {@code nextInt} 会抛异常，所以这边留个口子 */
     public static int requiemTrackCount() {
         return REQUIEM_TRACKS.size();

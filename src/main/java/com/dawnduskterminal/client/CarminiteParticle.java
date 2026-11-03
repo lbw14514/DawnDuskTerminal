@@ -86,6 +86,22 @@ public final class CarminiteParticle extends TextureSheetParticle {
                 new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites, 6.0F, 20, -0.03F, 8, 3, 0.3F);
     }
 
+    /**
+     * 博览轮舞到点那一圈：与 {@link #effectProvider} 同一套贴图与帧序，但把摩擦压到 0.8——
+     * 每 tick 速度掉两成，15 tick 之后只剩百分之三，整环是「甩出去再自己停下来」，
+     * 而不是跟着弹体一并飞走
+     *
+     * <p>摩擦是粒子自己的字段，{@code addParticle} 传不进来，所以这一圈必须有自己的粒子类型
+     */
+    public static ParticleProvider<SimpleParticleType> ringProvider(SpriteSet sprites) {
+        return (type, level, x, y, z, vx, vy, vz) -> {
+            CarminiteParticle particle =
+                    new CarminiteParticle(level, x, y, z, vx, vy, vz, sprites, 6.0F, 15, -0.05F, 8, 2, 0.3F);
+            particle.friction = 0.8F;
+            return particle;
+        };
+    }
+
     @Override
     public void tick() {
         super.tick();

@@ -97,7 +97,8 @@ OpenYSM 自带一份分叉的 GeckoLib，包名在 `org.openysm.geckolib3` 与 `
 
 `./gradlew runGameTestServer` 的运行目录为 `run/gametest`。
 
-默认跑本模组全部用例（`neoforge.enabledGameTestNamespaces` 为 `dawnduskterminal,dawnduskterminal057`）。
+默认跑本模组全部用例。
+`neoforge.enabledGameTestNamespaces` 为 `dawnduskterminal,dawnduskterminal057`。
 改了哪一件东西就只跑那一批，不必把整模组的用例全跑一遍：
 
 ```bash
@@ -106,8 +107,15 @@ OpenYSM 自带一份分叉的 GeckoLib，包名在 `org.openysm.geckolib3` 与 `
 
 分批的依据是**模板命名空间**：NeoForge 只按这个命名空间过滤用例，没有按方法名过滤的口子。
 因此把某一批用例的 `@GameTestHolder` 换成自己的命名空间，例如 057 那批用 `dawnduskterminal057`。
-再把要用的模板结构同名复制一份到 `data/dawnduskterminal057/structure/` 即可；
+再把要用的模板结构同名复制一份到 `data/dawnduskterminal057/structure/` 即可。
+博览轮舞那批用 `dawnduskterminalexpo`，同样是把 `ddt_empty.nbt` 复制一份。
 模板只是空结构，复制没有维护成本。
+
+有两批不进默认名单，要用上面的参数点名跑：
+
+- `dawnduskterminalexpo`（博览轮舞）：它的第 1 档索敌按需求是不限距离的锥，
+  和别的用例同场跑时会被隔壁场地里的僵尸抢走目标，量出来的不是自己的目标；
+- 想单独验某一批新改动时同样点名跑，跑完再跑一次默认的全量。
 
 `run/gametest/world` 会在多次运行之间保留，前一版用例摆下的方块、刷出的实体都会留在场地里。
 `ddt_empty` 模板里一个方块都没有，重新摆一遍模板清不掉它们。

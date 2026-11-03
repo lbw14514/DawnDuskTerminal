@@ -47,6 +47,16 @@ public final class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_BLAST =
             register("particle_carminite_blast");
 
+    /**
+     * 博览轮舞那片飞轮寿命到点那一圈：贴图与 {@link #CARMINITE_EFFECT} 同一套，
+     * 只把摩擦加大到 0.8，让整环自己慢下来
+     *
+     * <p>粒子类型是按摩擦分的——{@code addParticle} 只能给位置与初速，改不了阻尼，
+     * 所以想让这一圈「自己减速」就得另开一种
+     */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> CARMINITE_RING =
+            register("particle_carminite_ring");
+
     /** 试验物品 027 画在方块面上的红石点：静止、半尺寸、60 秒 */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> EXPERIMENT_027 =
             register("particle_experiment_027");

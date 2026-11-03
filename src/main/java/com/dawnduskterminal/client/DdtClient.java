@@ -61,7 +61,11 @@ public final class DdtClient {
             // 095 与 055 的循环音：断开之后不会再有哪一方来发停止包，不在这里清就会跟着下一次存档一起挂着
             RequiemSounds.clear();
             Experiment055Sounds.clear();
+            // 血肉之书的持续音跟着弹体走，断开时弹体已经不在，实例自己也不会再收到 tick
+            ExpowheelSounds.clear();
         });
+        // 弹体进客户端世界时给它在身上挂一支持续音
+        NeoForge.EVENT_BUS.addListener(ExpowheelSounds::onEntityJoin);
         modBus.addListener(DdtClient::onClientSetup);
         modBus.addListener(DdtClient::registerFluidExtensions);
         modBus.addListener(DdtClient::registerItemExtensions);
@@ -77,6 +81,7 @@ public final class DdtClient {
         modBus.addListener(GhastFruityRenderer::onRegisterRenderers);
         modBus.addListener(GhastEliteRenderer::onRegisterRenderers);
         modBus.addListener(Experiment057BladeRenderer::onRegisterRenderers);
+        modBus.addListener(ExpowheelRenderer::onRegisterRenderers);
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
         modBus.addListener(DdtClient::onRegisterParticleProviders);
         modBus.addListener(DdtClient::registerMenuScreens);
@@ -382,6 +387,8 @@ public final class DdtClient {
         event.registerSpriteSet(ModParticles.CARMINITE_EFFECT.get(), CarminiteParticle::effectProvider);
         // 爆炸专用：同一套贴图、更慢的帧序，见 CarminiteParticle#blastProvider
         event.registerSpriteSet(ModParticles.CARMINITE_BLAST.get(), CarminiteParticle::blastProvider);
+        // 博览轮舞到点那一圈：同一套贴图，摩擦压到 0.8 让它自己停下来
+        event.registerSpriteSet(ModParticles.CARMINITE_RING.get(), CarminiteParticle::ringProvider);
         event.registerSpriteSet(ModParticles.EXPERIMENT_027.get(), Experiment027Particle::provider);
         // 砷铅铁余烬：火焰向上飘的星火与碎片拖的红线，见 CarminiteEmberParticle
         event.registerSpriteSet(ModParticles.CARMINITE_EMBER.get(), CarminiteEmberParticle::provider);

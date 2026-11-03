@@ -232,6 +232,7 @@
   "item.dawnduskterminal.experiment_056": "Experiment 056",
   "item.dawnduskterminal.experiment_057": "Experiment 057",
   "item.dawnduskterminal.experiment_057.desc": "Guided Flying Blade",
+  "item.dawnduskterminal.expowheel_fleshbook": "Expo Wheel Dance",
   "item.dawnduskterminal.experiment_058": "Experiment 058",
   "item.dawnduskterminal.experiment_059": "Experiment 059",
   "item.dawnduskterminal.experiment_060": "Experiment 060",
@@ -360,5 +361,7 @@
   "subtitles.dawnduskterminal.ghast_universal_death": "Ghast dies",
   "subtitles.dawnduskterminal.ghast_universal_charge": "Ghast charges",
   "subtitles.dawnduskterminal.ghast_universal_shoot": "Ghast spits a fireball",
-  "subtitles.dawnduskterminal.ghast_universal_deflect": "Ghast bats the fireball aside"
+  "subtitles.dawnduskterminal.ghast_universal_deflect": "Ghast bats the fireball aside",
+  "subtitles.dawnduskterminal.expowheel_shoot": "Fleshbook fires",
+  "subtitles.dawnduskterminal.expowheel_ambient": "Fleshbook whirls"
 }

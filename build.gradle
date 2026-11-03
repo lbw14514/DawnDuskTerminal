@@ -51,7 +51,9 @@ neoForge {
             type = "gameTestServer"
             gameDirectory = project.file('run/gametest')
             // 默认跑本模组全部用例（含 057 自己那批挂在 dawnduskterminal057 下的）
-            // 只想跑某一批时：./gradlew runGameTestServer -Pgametest_namespaces=dawnduskterminal057
+            // 博览轮舞那批（dawnduskterminalexpo）不进默认名单：它的第 1 档索敌不限距离，
+            // 和别的用例同场跑时会被隔壁场地里的僵尸抢走目标，必须单独跑
+            // 只跑某一批时：./gradlew runGameTestServer -Pgametest_namespaces=dawnduskterminalexpo
             systemProperty 'neoforge.enabledGameTestNamespaces',
                 (project.findProperty('gametest_namespaces') ?: "${mod_id},dawnduskterminal057")
             programArguments.addAll '--nogui'

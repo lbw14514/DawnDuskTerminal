@@ -92,6 +92,8 @@ public final class ModCreativeTabs {
                         ModItems.susCakes().values().forEach(cake -> accept(output, cake.get()));
                         accept(output, ModItems.CARMINITE_BALL.get());
                         accept(output, ModItems.STRING.get());
+                        // 血肉之书没有序号，不是试验物品，挂在主栏目
+                        accept(output, ModExperimentItems.EXPOWHEEL_FLESHBOOK.get());
                         // 115 再生机不是有号的试验物品，排在主栏目这一档机器里
                         accept(output, ModItems.E_115_REGENERATOR.get());
                         accept(output, ModItems.TOWER_GHAST_SPAWN_EGG.get());

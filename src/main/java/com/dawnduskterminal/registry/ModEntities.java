@@ -5,6 +5,7 @@ import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
 import com.dawnduskterminal.entity.Experiment057BladeEntity;
+import com.dawnduskterminal.entity.ExpowheelEntity;
 import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastEliteFireball;
 import com.dawnduskterminal.entity.GhastFruityEntity;
@@ -95,6 +96,21 @@ public final class ModEntities {
                     .clientTrackingRange(4)
                     .updateInterval(1)
                     .build("experiment_057_blade"));
+
+    /**
+     * 博览轮舞打出去的那片飞轮（试验物品 057 的加强版）
+     *
+     * <p>碰撞箱 2.0 x 0.5：几何的 {@code visible_bounds_width} 写的就是 4 格、最外圈 {@code ysmGlowIn}
+     * 是 15 单位，摆出来是一片直径两格上下的薄轮子，所以箱子取「宽 2 格、厚半格」的扁盒，与模型的外轮廓
+     * 对得上；0.8 见方的方盒比模型小一半，得等中心点擦到才算命中。updateInterval 1——它每 tick 都被
+     * 索敌或制导拐一次，位置包慢一拍就会看出折线；跟踪范围沿用 057 的 4
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<ExpowheelEntity>> EXPOWHEEL = ENTITIES.register(
+            "expowheel", () -> EntityType.Builder.<ExpowheelEntity>of(ExpowheelEntity::new, MobCategory.MISC)
+                    .sized(2.0F, 0.5F)
+                    .clientTrackingRange(4)
+                    .updateInterval(1)
+                    .build("expowheel"));
 
     /**
      * 「弦」。碰撞箱的基准值是小型，真正的尺寸由 {@link StringEntity#getDefaultDimensions} 按变种

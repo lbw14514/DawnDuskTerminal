@@ -238,6 +238,7 @@
   "item.dawnduskterminal.experiment_056": "试验物品056",
   "item.dawnduskterminal.experiment_057": "试验物品057",
   "item.dawnduskterminal.experiment_057.desc": "回转之书",
+  "item.dawnduskterminal.expowheel_fleshbook": "博览轮舞",
   "item.dawnduskterminal.experiment_058": "试验物品058",
   "item.dawnduskterminal.experiment_059": "试验物品059",
   "item.dawnduskterminal.experiment_060": "试验物品060",
@@ -339,9 +340,9 @@
   "subtitles.dawnduskterminal.carminite_field": "砷铅铁反应场",
   "subtitles.dawnduskterminal.experiment_052_ignite": "试验物品052点火",
   "subtitles.dawnduskterminal.experiment_052_explode": "试验物品052爆炸",
-  "subtitles.dawnduskterminal.experiment_055_charge": "什么东西在充能",
-  "subtitles.dawnduskterminal.experiment_055_full": "充能满了",
-  "subtitles.dawnduskterminal.experiment_055_geiger": "盖革计数器在响",
+  "subtitles.dawnduskterminal.experiment_055_charge": "试验物品055启动",
+  "subtitles.dawnduskterminal.experiment_055_full": "试验物品055充能",
+  "subtitles.dawnduskterminal.experiment_055_geiger": "试验物品055辐射",
   "subtitles.dawnduskterminal.tower_ghast_ambient": "高塔恶魂低语",
   "subtitles.dawnduskterminal.tower_ghast_hurt": "高塔恶魂受击",
   "death.attack.carminite_field": "%1$s 被砷铅铁反应场溶解",
@@ -363,5 +364,7 @@
   "subtitles.dawnduskterminal.ghast_universal_death": "恶魂死去",
   "subtitles.dawnduskterminal.ghast_universal_charge": "恶魂蓄力",
   "subtitles.dawnduskterminal.ghast_universal_shoot": "恶魂喷出火球",
-  "subtitles.dawnduskterminal.ghast_universal_deflect": "恶魂把火球拨开"
+  "subtitles.dawnduskterminal.ghast_universal_deflect": "恶魂把火球拨开",
+  "subtitles.dawnduskterminal.expowheel_shoot": "博览轮舞发射",
+  "subtitles.dawnduskterminal.expowheel_ambient": "博览轮舞回旋"
 }

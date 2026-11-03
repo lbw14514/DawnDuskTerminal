@@ -1,0 +1,76 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"parallel0": {
+			"loop": true,
+			"bones": {
+				"RightMagic": {
+					"rotation": ["math.random(-2,2)", 0, 0],
+					"scale": ["math.random(1.4,1.6)", 1.5, 1.5]
+				},
+				"ysmGlowP8": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ8": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP7": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ7": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP6": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ6": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP5": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ5": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP4": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ4": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP3": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ3": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP2": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ2": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowP": {
+					"rotation": ["360*ysm.perlin_noise(115,query.life_time/3)", 0, 0]
+				},
+				"ysmGlowQ": {
+					"rotation": ["180*query.anim_time", 0, 0],
+					"scale": 1.5
+				},
+				"ysmGlowOut": {
+					"rotation": ["-30*query.anim_time", 0, 0]
+				},
+				"ysmGlowIn": {
+					"rotation": ["720*query.anim_time", 0, 0]
+				}
+			}
+		}
+	}
+}

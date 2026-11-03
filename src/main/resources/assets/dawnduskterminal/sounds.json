@@ -80,6 +80,18 @@
       }
     ]
   },
+  "expowheel_shoot": {
+    "subtitle": "subtitles.dawnduskterminal.expowheel_shoot",
+    "sounds": [
+      "dawnduskterminal:expowheel_shoot"
+    ]
+  },
+  "expowheel_ambient": {
+    "subtitle": "subtitles.dawnduskterminal.expowheel_ambient",
+    "sounds": [
+      "dawnduskterminal:expowheel_ambient"
+    ]
+  },
   "tower_ghast_ambient": {
     "subtitle": "subtitles.dawnduskterminal.tower_ghast_ambient",
     "sounds": [

@@ -10,6 +10,7 @@ import com.dawnduskterminal.item.Experiment057Item;
 import com.dawnduskterminal.item.Experiment066Item;
 import com.dawnduskterminal.item.Experiment095Item;
 import com.dawnduskterminal.item.ExperimentArmorItem;
+import com.dawnduskterminal.item.ExpowheelFleshbookItem;
 import com.dawnduskterminal.item.ThrustSpearItem;
 import com.dawnduskterminal.item.UnknownMeatItem;
 import java.util.Collections;
@@ -45,7 +46,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * 一件食物（试验物品 008）、一支画红石点的笔（试验物品 027）、两支长矛（试验物品 032、033）、
  * 高塔五件套（试验物品 036~038 与 040、041，039 号留空）与一件简单物品（试验物品 042）、
  * 一本恶魂陷阱书（试验物品 066）、三块不明肉块（试验物品 061、070、074）、
- * 一支镇魂曲（试验物品 095）、一个慢慢充能的外泄的场（试验物品 055）
+ * 一支镇魂曲（试验物品 095）、一个慢慢充能的外泄的场（试验物品 055）、
+ * 以及一本血肉之书（试验物品 057 的加强版，注册 ID 不含序号）
  *
  * <p>整批试验物品的注册 ID 与显示名都用三位数序列，含已经就是三位的 {@code experiment_001}，
  * 所以这里从 {@code experiment_032} 起步，不是 {@code experiment_32}
@@ -284,6 +286,18 @@ public final class ModExperimentItems {
             () -> new Experiment057Item(new Item.Properties()
                     .durability(Experiment057Item.DURABILITY)
                     .attributes(Experiment057Item.createAttributes())));
+
+    /**
+     * 血肉之书：试验物品 057 的加强版，右键打出一片会自己找目标的飞轮
+     *
+     * <p>注册 ID 不带序号：它的图标是 {@code expowheel_fleshbook.png}，与 057 那种「试验物品NNN」的
+     * 命名不是一个体系。行为全在 {@link ExpowheelFleshbookItem} 与
+     * {@link com.dawnduskterminal.entity.ExpowheelEntity} 里；这里只给 64 点耐久，
+     * 不再挂 {@code createAttributes()}——近战那一套整个摘掉了
+     */
+    public static final DeferredItem<ExpowheelFleshbookItem> EXPOWHEEL_FLESHBOOK = ITEMS.register(
+            "expowheel_fleshbook",
+            () -> new ExpowheelFleshbookItem(new Item.Properties().durability(ExpowheelFleshbookItem.DURABILITY)));
 
     /**
      * 试验物品 045：一面盾，格挡那套整份照抄原版盾（{@link Experiment045Item} 继承 {@code ShieldItem}）

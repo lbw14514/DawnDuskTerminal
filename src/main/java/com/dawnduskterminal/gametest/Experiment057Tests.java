@@ -501,6 +501,8 @@ public final class Experiment057Tests {
     private static void prepareTarget(GameTestHelper helper, Zombie target, float health) {
         target.setPos(target.getX(), target.getY() + HIT_ALTITUDE, target.getZ());
         target.setNoGravity(true);
+        // 关掉 AI：僵尸会自己走开，四 tick 之后刀就打在空气里了（跑全量时偶发过）
+        target.setNoAi(true);
         BlockPos relative = helper.relativePos(target.blockPosition());
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {

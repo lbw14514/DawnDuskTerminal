@@ -22,5 +22,8 @@ public final class ModNetwork {
         // 055 每 tick 那一条 enchant 射线：只发方向与长度，粒子由客户端自己铺
         registrar.playToClient(
                 Experiment055RayPayload.TYPE, Experiment055RayPayload.STREAM_CODEC, Experiment055RayPayload::handle);
+        // 博览轮舞那片飞轮寿命到点：发位置与当时的速度，客户端照着铺一圈反应场粒子
+        registrar.playToClient(
+                ExpowheelBurstPayload.TYPE, ExpowheelBurstPayload.STREAM_CODEC, ExpowheelBurstPayload::handle);
     }
 }
