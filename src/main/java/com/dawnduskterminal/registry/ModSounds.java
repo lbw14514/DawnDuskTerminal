@@ -27,6 +27,9 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> CARMINITE_STAFF_SHOOT =
             register("carminite_staff_shoot");
 
+    /** 棱镜权杖发射 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> PRISM_STAFF_LASER = register("prism_staff_laser");
+
     /** 弹体命中后炸开的反应场，也用作弹体命中地面的声音 */
     public static final DeferredHolder<SoundEvent, SoundEvent> CARMINITE_FIELD = register("carminite_field");
 

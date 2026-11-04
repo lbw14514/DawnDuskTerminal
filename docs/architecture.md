@@ -1770,10 +1770,13 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 
 ## 装饰画
 
-变体属于数据包注册表，条目位于 `data/dawnduskterminal/painting_variant/painting_ghast_1.json`，尺寸为 3 格宽、2 格高；
-`registry/ModPaintingVariants` 只放置指向它的 `ResourceKey`，尺寸不在 Java 侧重复声明。
+三幅画：`painting_ghast_1`（3 格宽 2 格高）、`painting_ghast_2`（2 格宽 3 格高）与
+`painting_ghast_2_sub`（1 格宽 2 格高）。
+变体属于数据包注册表，条目位于 `data/dawnduskterminal/painting_variant/`；
+`registry/ModPaintingVariants` 只放置指向它们的 `ResourceKey`，并把每一幅与它唯一对应的那件物品绑成一条 `Kind`，
+尺寸不在 Java 侧重复声明。
 
-贴图放置在 `assets/dawnduskterminal/textures/painting/painting_ghast_1.png`。
+贴图放置在 `assets/dawnduskterminal/textures/painting/`。
 原版 `atlases/paintings.json` 只声明了「扫描 `textures/painting` 目录」，该目录源跨命名空间收图。
 因此放入这个位置就会被 `minecraft:paintings` 图集收录，渲染走原版 `PaintingRenderer`，不需要自己写。
 
@@ -1782,14 +1785,16 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 而该图集只声明了 `block/` 与 `item/` 两个目录源，`textures/entity/` 下的图不会被收录，
 模型因此会渲染成紫黑格子（`Missing textures in model ...`）。
 
-`entity/GhastPaintingEntity` 是独立的实体类型，不共用 `minecraft:painting`。
-原版画物品只从 `#minecraft:painting_variant/placeable` 中挑变体，而本模组的变体不进该标签，所以原版物品放不了它；
-该实体又把 `setVariant` 固定为自己的变体，敲碎后掉落的是 `painting_ghast_1` 物品，中键选取得到的也是它。
+`entity/GhastPaintingEntity` 是独立的实体类型，三幅画各占一个，都不共用 `minecraft:painting`。
+实体类型名与变体名相同（`ModEntities#painting`），种类由注册时的 factory lambda 带进构造。
+原版画物品只从 `#minecraft:painting_variant/placeable` 中挑变体，而本模组的变体不进该标签，所以原版物品放不了它们；
+实体又把 `setVariant` 固定为自己的变体，敲碎后掉落的是自己那件物品，中键选取得到的也是它。
 
-`mixin/PaintingVariantGuardMixin` 堵的是手工修改这条旁路：原版画实体上的 `setVariant` 遇到该变体时直接忽略。
+`mixin/PaintingVariantGuardMixin` 堵的是手工修改这条旁路：原版画实体上的 `setVariant`
+遇到这三幅画中任意一幅的变体时直接忽略。
 所以无论用 `/summon` 指定变体，还是改旧存档里的 NBT，都拿不到本模组的画。
 
-`item/GhastPaintingItem` 的摆放流程参照 `HangingEntityItem` 编写，只能放置这一幅画，且没有配方。
+`item/GhastPaintingItem` 的摆放流程参照 `HangingEntityItem` 编写，一件物品只能放置它自己那一幅画，且没有配方。
 
 ## 维度与晨昏线
 

@@ -10,12 +10,14 @@ import com.dawnduskterminal.entity.GhastEliteEntity;
 import com.dawnduskterminal.entity.GhastEliteFireball;
 import com.dawnduskterminal.entity.GhastFruityEntity;
 import com.dawnduskterminal.entity.GhastPaintingEntity;
+import com.dawnduskterminal.entity.LivingArmorEntity;
 import com.dawnduskterminal.entity.StringEntity;
 import com.dawnduskterminal.entity.TowerGhastEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.SpawnPlacementTypes;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
@@ -128,11 +130,6 @@ public final class ModEntities {
                     .build("string"));
 
     /**
-     * 恶魂画 #1。尺寸与 updateInterval 照抄原版画：画不会移动，{@code sized} 只是占位，
-     * 真正的包围盒由 {@link GhastPaintingEntity} 按变体的 3x2 算出来；
-     * updateInterval 拉到 {@link Integer#MAX_VALUE} 是原版的做法，非初始同步不发位置包
-     */
-    /**
      * 「大恶魂」。碰撞箱与恶魂一样取几何里的主立方体 {@code thehead}：128 单位见方，即 8x8x8 格，
      * 眼高取这个立方体的中心（模型 y=64 单位 = 4 格）；触手与腿在箱子外，与恶果的裙摆同理，不参与判定
      *
@@ -155,13 +152,51 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("ghast_elite"));
 
+    /**
+     * 恶魂画：三幅画各占一个实体类型，各自只认自己那一幅变体，见 {@link GhastPaintingEntity}
+     *
+     * <p>尺寸与 updateInterval 照抄原版画：画不会移动，{@code sized} 只是占位，
+     * 真正的包围盒由 {@code Painting#calculateBoundingBox} 按变体在 JSON 里写的宽高算出来
+     * （{@code painting_ghast_1} 是 3x2，{@code painting_ghast_2} 是 2x3，{@code painting_ghast_2_sub} 是 1x2）；
+     * updateInterval 拉到 {@link Integer#MAX_VALUE} 是原版的做法，非初始同步不发位置包
+     */
     public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_1 =
-            ENTITIES.register("painting_ghast_1", () -> EntityType.Builder.<GhastPaintingEntity>of(
-                            GhastPaintingEntity::new, MobCategory.MISC)
-                    .sized(0.5F, 0.5F)
+            painting(ModPaintingVariants.GHAST_1);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_2 =
+            painting(ModPaintingVariants.GHAST_2);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_2_SUB =
+            painting(ModPaintingVariants.GHAST_2_SUB);
+
+    /**
+     * 「活盔甲」。碰撞箱照玩家取 0.6 x 1.8、眼高 1.62：它走起来就是一具玩家尺寸的空盔甲，
+     * 本体不显示外观（见 {@code client/LivingArmorRenderer}），撞得到、打得着靠的都是这个箱子
+     *
+     * <p>不注册自然生成：作者暂时不做自然生成，现在只有刷怪蛋与 {@code /summon} 两条路能放出来，
+     * 所以 {@link #onRegisterSpawnPlacements} 里也没有它
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<LivingArmorEntity>> LIVING_ARMOR =
+            ENTITIES.register("living_armor", () -> EntityType.Builder.of(LivingArmorEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.8F)
+                    .eyeHeight(1.62F)
                     .clientTrackingRange(10)
-                    .updateInterval(Integer.MAX_VALUE)
-                    .build("painting_ghast_1"));
+                    .build("living_armor"));
+
+    /**
+     * 一幅画一个实体类型。注册名直接取变体名（{@code painting_ghast_1} 等），
+     * 种类由 lambda 带进构造，实体与物品、变体三处的配对因此只有一处来源
+     */
+    private static DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> painting(
+            ModPaintingVariants.Kind kind) {
+        String name = kind.variant().location().getPath();
+        return ENTITIES.register(name, () -> EntityType.Builder.<GhastPaintingEntity>of(
+                        (type, level) -> new GhastPaintingEntity(type, level, kind), MobCategory.MISC)
+                .sized(0.5F, 0.5F)
+                .clientTrackingRange(10)
+                .updateInterval(Integer.MAX_VALUE)
+                .build(name));
+    }
 
     private ModEntities() {}
 
@@ -178,6 +213,7 @@ public final class ModEntities {
         event.put(STRING.get(), StringEntity.createAttributes().build());
         event.put(GHASTFRUITY.get(), GhastFruityEntity.createAttributes().build());
         event.put(GHAST_ELITE.get(), GhastEliteEntity.createAttributes().build());
+        event.put(LIVING_ARMOR.get(), LivingArmorEntity.createAttributes().build());
     }
 
     /**
@@ -189,6 +225,11 @@ public final class ModEntities {
      *
      * <p>{@code REPLACE} 只是给新注册的实体类型填表用的：这张表里原本没有 ghastfruity，
      * 事件实现会直接把这条判定放进去，不涉及别的模组
+     *
+     * <p>活盔甲也要一条：它出现在暗森林群系的 {@code spawners} 里，而 NeoForge 启动时会检查
+     * 「刷怪表里有、{@code SpawnPlacements} 里没有」的实体并<b>报 ERROR</b>（不注册就等于放行一切位置）。
+     * 这里给它原版敌对生物那一套（非和平、够暗、脚下方块合法、两格空），
+     * 「只站霞草 / 霞土」那一条另在 {@code DarkForestSpawns} 里按群系否决
      */
     private static void onRegisterSpawnPlacements(RegisterSpawnPlacementsEvent event) {
         event.register(
@@ -202,6 +243,12 @@ public final class ModEntities {
                 SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 GhastEliteEntity::checkGhastEliteSpawnRules,
+                RegisterSpawnPlacementsEvent.Operation.REPLACE);
+        event.register(
+                LIVING_ARMOR.get(),
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Monster::checkMonsterSpawnRules,
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
 }

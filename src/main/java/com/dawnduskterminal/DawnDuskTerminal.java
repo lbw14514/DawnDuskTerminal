@@ -32,6 +32,7 @@ import com.dawnduskterminal.registry.ModTerrainBlocks;
 import com.dawnduskterminal.registry.ModTrunkPlacers;
 import com.dawnduskterminal.server.DdtServerEvents;
 import com.dawnduskterminal.world.CarminiteBlast;
+import com.dawnduskterminal.world.DarkForestSpawns;
 import com.dawnduskterminal.world.Experiment065Field;
 import com.dawnduskterminal.world.FluidReactions;
 import net.minecraft.resources.ResourceLocation;
@@ -102,6 +103,8 @@ public final class DawnDuskTerminal {
         // 恶果接火球：撞击被取消之后火球还活着，改向由实体自己算，见 GhastFruityEntity#onProjectileImpact
         NeoForge.EVENT_BUS.addListener(GhastFruityEntity::onProjectileImpact);
         NeoForge.EVENT_BUS.addListener(GhastEliteEntity::onProjectileImpact);
+        // 暗森林的刷怪：谁能刷出来只由脚下那块方块决定，规则见 DarkForestSpawns
+        NeoForge.EVENT_BUS.addListener(DarkForestSpawns::onPositionCheck);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             DdtClient.init(modBus);

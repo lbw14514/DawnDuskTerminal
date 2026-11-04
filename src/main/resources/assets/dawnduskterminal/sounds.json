@@ -41,6 +41,12 @@
       "dawnduskterminal:carminite_field"
     ]
   },
+  "prism_staff_laser": {
+    "subtitle": "subtitles.dawnduskterminal.prism_staff_laser",
+    "sounds": [
+      "dawnduskterminal:prism_staff_laser"
+    ]
+  },
   "experiment_052_ignite": {
     "subtitle": "subtitles.dawnduskterminal.experiment_052_ignite",
     "sounds": [

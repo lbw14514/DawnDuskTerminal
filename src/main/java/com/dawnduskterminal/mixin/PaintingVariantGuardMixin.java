@@ -18,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {variant:"dawnduskterminal:painting_ghast_1"}}，或者旧存档里已经被改过的原版画。
  * 这里把这种赋值整条吞掉：画留在它原来的变体上，不会变成我们的画
  *
+ * <p>三幅画都拦，判定交给 {@link ModPaintingVariants#isModVariant}
+ *
  * <p>自己的实体不受影响：{@link GhastPaintingEntity} 覆盖了 {@code setVariant}，
  * 它调父类时这里放行
  */
@@ -28,7 +30,7 @@ public abstract class PaintingVariantGuardMixin {
         if ((Object) this instanceof GhastPaintingEntity) {
             return;
         }
-        if (variant.unwrapKey().filter(ModPaintingVariants.GHAST_1::equals).isPresent()) {
+        if (variant.unwrapKey().filter(ModPaintingVariants::isModVariant).isPresent()) {
             ci.cancel();
         }
     }

@@ -2,9 +2,13 @@ package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.particle.JetFlameParticleType;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -93,6 +97,27 @@ public final class ModParticles {
      */
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> REQUIEM_NOTE =
             register("particle_requiem_note");
+
+    /**
+     * 棱镜权杖射线上的一颗光点：带颜色的 {@code SpellParticle}（贴图借原版 {@code effect_7..0}，
+     * 恒满亮），观感照暮色森林黄昏权杖拖尾的 {@code magic_effect}，实现在
+     * {@link com.dawnduskterminal.client.PrismTraceParticle}
+     *
+     * <p>带颜色就不能用 {@link SimpleParticleType}：颜色随每颗粒子现摇，走
+     * {@link ColorParticleOption} 一起发；这个类型因此要自带 codec 与 stream codec
+     */
+    public static final DeferredHolder<ParticleType<?>, ParticleType<ColorParticleOption>> PRISM_TRACE =
+            PARTICLE_TYPES.register("particle_prism_trace", () -> new ParticleType<ColorParticleOption>(false) {
+                @Override
+                public MapCodec<ColorParticleOption> codec() {
+                    return ColorParticleOption.codec(this);
+                }
+
+                @Override
+                public StreamCodec<? super RegistryFriendlyByteBuf, ColorParticleOption> streamCodec() {
+                    return ColorParticleOption.streamCodec(this);
+                }
+            });
 
     private ModParticles() {}
 

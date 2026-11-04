@@ -80,6 +80,7 @@ public final class DdtClient {
         modBus.addListener(StringRenderer::onRegisterRenderers);
         modBus.addListener(GhastFruityRenderer::onRegisterRenderers);
         modBus.addListener(GhastEliteRenderer::onRegisterRenderers);
+        modBus.addListener(LivingArmorRenderer::onRegisterRenderers);
         modBus.addListener(Experiment057BladeRenderer::onRegisterRenderers);
         modBus.addListener(ExpowheelRenderer::onRegisterRenderers);
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
@@ -366,8 +367,8 @@ public final class DdtClient {
      * <p>反应场没有模型，但必须注册渲染器：{@code EntityRenderDispatcher} 对没注册的实体类型
      * 拿到 null 后直接空指针崩客户端
      *
-     * <p>原版画的渲染器认的是 Painting 而不是具体实体类型，3x2 的贴图切分、按面光源着色、背板
-     * 全是它算的，直接复用；它从 PaintingTextureManager（atlas minecraft:paintings）取
+     * <p>原版画的渲染器认的是 Painting 而不是具体实体类型，按变体宽高切分贴图、按面光源着色、背板
+     * 全是它算的，直接复用，三幅恶魂画都挂在它上面；它从 PaintingTextureManager（atlas minecraft:paintings）取
      * asset_id 对应的 sprite，所以贴图必须放 textures/painting/ 下
      */
     private static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -376,6 +377,8 @@ public final class DdtClient {
         // 试验物品 052 的碎片不画贴图，外观只有每 tick 那几颗红石粒子，见 CarminiteShrapnelEntity
         event.registerEntityRenderer(ModEntities.CARMINITE_SHRAPNEL.get(), NoopRenderer::new);
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_1.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_2.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_2_SUB.get(), PaintingRenderer::new);
         // 试验物品 076 的外观整个在这一边：每个面每 tick 抽一张贴图，见 Experiment076Renderer
         event.registerBlockEntityRenderer(ModBlockEntities.EXPERIMENT_076.get(), Experiment076Renderer::new);
     }
@@ -395,6 +398,8 @@ public final class DdtClient {
         event.registerSpriteSet(ModParticles.JET_FLAME.get(), JetFlameParticle::provider);
         // 095 那圈音符：物理照抄原版音符粒子，只是初速是服务端给的，见 RequiemNoteParticle
         event.registerSpriteSet(ModParticles.REQUIEM_NOTE.get(), RequiemNoteParticle::provider);
+        // 棱镜射线上的光点：带颜色、恒满亮的 SpellParticle，见 PrismTraceParticle
+        event.registerSpriteSet(ModParticles.PRISM_TRACE.get(), PrismTraceParticle.Provider::new);
     }
 
     private static void registerFluidExtensions(RegisterClientExtensionsEvent event) {

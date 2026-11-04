@@ -8,6 +8,7 @@ import com.dawnduskterminal.item.CarminiteStaffItem;
 import com.dawnduskterminal.item.Experiment107Item;
 import com.dawnduskterminal.item.Experiment114Item;
 import com.dawnduskterminal.item.GhastPaintingItem;
+import com.dawnduskterminal.item.PrismStaffItem;
 import com.dawnduskterminal.item.ScarletMolybdArmorItem;
 import com.dawnduskterminal.item.StringSpawnEggItem;
 import com.dawnduskterminal.item.SusCakeItem;
@@ -42,9 +43,23 @@ public final class ModItems {
             "snow_queen_trophy",
             new Item.Properties().rarity(Rarity.RARE).fireResistant().stacksTo(1));
 
-    /** 恶魂画 #1 的物品形态。没有配方，也不会跟原版画物品互通，见 {@link GhastPaintingItem} */
-    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_1 =
-            ITEMS.register("painting_ghast_1", () -> new GhastPaintingItem(new Item.Properties()));
+    /** 恶魂画 #1（3x2）的物品形态。没有配方，也不会跟原版画物品互通，见 {@link GhastPaintingItem} */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_1 = ITEMS.register(
+            "painting_ghast_1",
+            () -> new GhastPaintingItem(
+                    new Item.Properties(), ModEntities.GHAST_PAINTING_1, ModPaintingVariants.GHAST_1));
+
+    /** 恶魂画 #2（2x3）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2 = ITEMS.register(
+            "painting_ghast_2",
+            () -> new GhastPaintingItem(
+                    new Item.Properties(), ModEntities.GHAST_PAINTING_2, ModPaintingVariants.GHAST_2));
+
+    /** 恶魂画 #2 的副幅（1x2）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2_SUB = ITEMS.register(
+            "painting_ghast_2_sub",
+            () -> new GhastPaintingItem(
+                    new Item.Properties(), ModEntities.GHAST_PAINTING_2_SUB, ModPaintingVariants.GHAST_2_SUB));
 
     public static final DeferredItem<CanocanItem> CANOCAN =
             ITEMS.register("canocan", () -> new CanocanItem(new Item.Properties()));
@@ -168,10 +183,28 @@ public final class ModItems {
             "ghast_elite_spawn_egg",
             () -> new DeferredSpawnEggItem(ModEntities.GHAST_ELITE, 0x4A0F18, 0xC9C2BD, new Item.Properties()));
 
+    /**
+     * 「活盔甲」的刷怪蛋
+     *
+     * <p>这只生物暂时不自然生成，刷怪蛋是唯一能随手放出它的东西。两层染色取暮色森林骑士金属那身甲
+     * 的甲片灰（{@code 0x6E7377}）与月光白（{@code 0xE8E4D8}）—— 它的默认外观就是一副空着的盔甲
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> LIVING_ARMOR_SPAWN_EGG = ITEMS.register(
+            "living_armor_spawn_egg",
+            () -> new DeferredSpawnEggItem(ModEntities.LIVING_ARMOR, 0x6E7377, 0xE8E4D8, new Item.Properties()));
+
     public static final DeferredItem<CarminiteStaffItem> CARMINITE_MOLYBDENUM_REACTOR_STAFF = ITEMS.register(
             "carminite_molybdenum_reactor_staff",
             () -> new CarminiteStaffItem(
                     new Item.Properties().durability(128).attributes(CarminiteStaffItem.createAttributes())));
+
+    /**
+     * 棱镜权杖：右键一条瞬时射线，打中之后再分叉，见 {@link PrismStaffItem}
+     *
+     * <p>没有近战属性：它的 8 点伤害是射线打的，不是挥出去的那一下
+     */
+    public static final DeferredItem<PrismStaffItem> PRISM_STAFF = ITEMS.register(
+            "prism_staff", () -> new PrismStaffItem(new Item.Properties().durability(PrismStaffItem.DURABILITY)));
 
     // T2 护甲，数值在 ModArmorMaterials 里，四件穿齐时每件自己续生命恢复
     public static final DeferredItem<ScarletMolybdArmorItem> SCARLET_MOLYBD_HELMET =

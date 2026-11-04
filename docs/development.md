@@ -543,16 +543,21 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 ### PaintingTests
 
-`variantIsThreeByTwo` 验证变体为 3x2，贴图指向 `dawnduskterminal:painting_ghast_1`。
+三幅画照同一张表（`PaintingTests.SPECS`）逐条验，新增一幅加一行即可。
 
-`vanillaPaintingItemCannotPlaceIt` 验证该变体不在 `#minecraft:painting_variant/placeable` 中，原版画物品无法选中它。
+`variantsMatchTheirTextures` 验证每幅画的宽高与 JSON 一致，`asset_id` 指向同名的贴图。
 
-`entityIsLockedToItsVariant` 验证本模组的画实体强制使用自己的变体。
+`vanillaPaintingItemCannotPlaceThem` 验证这些变体都不在 `#minecraft:painting_variant/placeable` 中。
+原版画物品因此无法选中它们。
+
+`itemsAreBoundToOnePainting` 验证一件物品只对应一幅画，几件物品两两不同。
+
+`entitiesAreLockedToTheirVariants` 验证本模组的画实体强制使用自己的变体，包围盒取自变体的宽高。
 通过 `setVariant` 写入其他变体也无法替换，中键获取的是该实体自身的物品。
 
-`vanillaPaintingRefusesTheVariant` 验证原版画实体拒绝该变体（`PaintingVariantGuardMixin`）。
+`vanillaPaintingRefusesTheVariants` 验证原版画实体拒绝这些变体（`PaintingVariantGuardMixin`）。
 
-`itemPlacesThePainting` 验证贴着 3x2 的墙放置后，实体类型、朝向、变体与包围盒均正确，物品数量减一。
+`eachItemPlacesItsOwnPainting` 验证贴着墙面放置后，实体类型、朝向、变体与包围盒均正确，物品数量减一；三幅画各放一次。
 
 ## 指令
 
@@ -638,8 +643,10 @@ feature 引用与 `neoforge:remove_features` 的 ID 必须真实存在，否则�
 
 新增物品放置在 `registry/ModItems` 中。
 
-新增画放置在 `data/dawnduskterminal/painting_variant/` 与 `assets/dawnduskterminal/textures/painting/` 中，
-对应的实体与物品见 `entity/GhastPaintingEntity` 与 `item/GhastPaintingItem`。
+新增画放置在 `data/dawnduskterminal/painting_variant/`、`assets/dawnduskterminal/textures/painting/`、
+`assets/dawnduskterminal/textures/item/` 与 `assets/dawnduskterminal/models/item/` 中，
+一幅画对应 `entity/GhastPaintingEntity` 的一个实体类型、`item/GhastPaintingItem` 的一件物品，
+三者的配对写在 `registry/ModPaintingVariants` 的 `Kind` 上，实体与物品都从它取值。
 
 新增流体放置在 `registry/ModFluids` 或 `registry/ModScorchingTwilight` 中。
 

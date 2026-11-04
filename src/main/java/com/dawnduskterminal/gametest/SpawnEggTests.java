@@ -36,6 +36,9 @@ public final class SpawnEggTests {
         helper.assertTrue(
                 spawns(ModItems.GHAST_ELITE_SPAWN_EGG.get(), ModEntities.GHAST_ELITE.get()),
                 "ghast_elite_spawn_egg must spawn dawnduskterminal:ghast_elite and be reachable through SpawnEggItem#byId");
+        helper.assertTrue(
+                spawns(ModItems.LIVING_ARMOR_SPAWN_EGG.get(), ModEntities.LIVING_ARMOR.get()),
+                "living_armor_spawn_egg must spawn dawnduskterminal:living_armor and be reachable through SpawnEggItem#byId");
         helper.succeed();
     }
 

@@ -27,6 +27,8 @@ public final class ModCreativeTabs {
                         accept(output, ModItems.UR_GHAST_TROPHY.get());
                         accept(output, ModItems.SNOW_QUEEN_TROPHY.get());
                         accept(output, ModItems.PAINTING_GHAST_1.get());
+                        accept(output, ModItems.PAINTING_GHAST_2.get());
+                        accept(output, ModItems.PAINTING_GHAST_2_SUB.get());
                         accept(output, ModItems.ENCASED_DUST.get());
                         accept(output, ModItems.CANOCAN.get());
                         accept(output, ModItems.PORTAL_BUCKET.get());
@@ -91,6 +93,7 @@ public final class ModCreativeTabs {
                         // 115 的七种衍生物：一片 6 饥饿 4 饱和（血橙与红丝绒是 8 与 8），摆下来那块不用撒红石粉也会自己补片
                         ModItems.susCakes().values().forEach(cake -> accept(output, cake.get()));
                         accept(output, ModItems.CARMINITE_BALL.get());
+                        accept(output, ModItems.PRISM_STAFF.get());
                         accept(output, ModItems.STRING.get());
                         // 血肉之书没有序号，不是试验物品，挂在主栏目
                         accept(output, ModExperimentItems.EXPOWHEEL_FLESHBOOK.get());
@@ -100,6 +103,7 @@ public final class ModCreativeTabs {
                         accept(output, ModItems.STRING_SPAWN_EGG.get());
                         accept(output, ModItems.GHASTFRUITY_SPAWN_EGG.get());
                         accept(output, ModItems.GHAST_ELITE_SPAWN_EGG.get());
+                        accept(output, ModItems.LIVING_ARMOR_SPAWN_EGG.get());
                         ModEquipment.sets().values().forEach(set -> set.items()
                                 .forEach(item -> accept(output, item.get())));
                     })

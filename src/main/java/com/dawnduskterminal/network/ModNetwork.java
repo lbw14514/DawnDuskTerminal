@@ -25,5 +25,7 @@ public final class ModNetwork {
         // 博览轮舞那片飞轮寿命到点：发位置与当时的速度，客户端照着铺一圈反应场粒子
         registrar.playToClient(
                 ExpowheelBurstPayload.TYPE, ExpowheelBurstPayload.STREAM_CODEC, ExpowheelBurstPayload::handle);
+        // 棱镜权杖那一发：只发起点、主射线终点与各分射线终点，线段上的光点由客户端自己铺
+        registrar.playToClient(PrismBeamPayload.TYPE, PrismBeamPayload.STREAM_CODEC, PrismBeamPayload::handle);
     }
 }
