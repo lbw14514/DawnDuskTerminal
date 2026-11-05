@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.item.Experiment011Item;
 import com.dawnduskterminal.item.Experiment020Item;
 import com.dawnduskterminal.item.Experiment027Item;
 import com.dawnduskterminal.item.Experiment043Item;
@@ -63,6 +64,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModExperimentItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DawnDuskTerminal.MOD_ID);
+
+    /**
+     * 试验物品 011：那只盘子，右键在方块顶面摆下一张会展示东西的薄片
+     *
+     * <p>摆法与三条判定（只能向上、高度按脚下的碰撞箱、放不下就不放）在 {@link Experiment011Item}，
+     * 盘子本身是 {@link com.dawnduskterminal.entity.Experiment011PlateEntity}，外形与贴图在
+     * {@code client/Experiment011PlateRenderer}
+     */
+    public static final DeferredItem<Experiment011Item> EXPERIMENT_011 =
+            ITEMS.register("experiment_011", () -> new Experiment011Item(new Item.Properties()));
 
     /**
      * 试验物品 007：近战伤害 4、攻速 5
@@ -363,6 +374,8 @@ public final class ModExperimentItems {
      *
      * <p>001 是能当合成台用的方块，004 是照熔炉工作的那台机器（方块在
      * {@link ModBlocks#EXPERIMENT_004}、物品在 {@link ModItems#EXPERIMENT_004}），
+     * 011 是那只往下摆盘子的物品，012 是那只一格叠三只的杯子（方块在
+     * {@link ModBlocks#EXPERIMENT_012}、物品在 {@link ModItems#EXPERIMENT_012}），
      * 007 与 017 是上面那两把近战伤害 4、攻速 5 的裸武器，008 是上面那件
      * 5 点饥饿 5 点饱和度的食物，020 是上面那件 20 点饥饿 20 点饱和度、随机给效果的食物，
      * 027 是上面那支画红石点的笔，019 是那丛植物（方块在 {@link ModBlocks#EXPERIMENT_019}、
@@ -389,8 +402,8 @@ public final class ModExperimentItems {
      * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
      */
     private static final Set<Integer> TAKEN = Set.of(
-            1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55, 57, 61,
-            65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
+            1, 4, 7, 8, 11, 12, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55,
+            57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
 
     private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
 

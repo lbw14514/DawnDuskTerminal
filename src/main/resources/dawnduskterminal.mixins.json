@@ -22,7 +22,8 @@
     "BlockStateUpdateSuppressMixin",
     "LevelShapeUpdateSuppressMixin",
     "FluidStateUpdateSuppressMixin",
-    "GhastlingShouldAttackMixin"
+    "GhastlingShouldAttackMixin",
+    "CampCarminiteFireExhaustionMixin"
   ],
   "client": [
     "BiomeColorsFoliageMixin",

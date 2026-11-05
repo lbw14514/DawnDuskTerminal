@@ -1,9 +1,11 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.CampCarminiteFireBlock;
 import com.dawnduskterminal.block.CarminiteFireBlock;
 import com.dawnduskterminal.block.E115RegeneratorBlock;
 import com.dawnduskterminal.block.Experiment004Block;
+import com.dawnduskterminal.block.Experiment012Block;
 import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
 import com.dawnduskterminal.block.Experiment052Block;
@@ -103,6 +105,23 @@ public final class ModBlocks {
                     .strength(2.5F)
                     .sound(SoundType.WOOD)
                     .ignitedByLava());
+
+    /**
+     * 试验物品 012 摆下来的样子：一只杯子，一格最多三只、横着错开摆，行为在 {@link Experiment012Block}
+     *
+     * <p>属性照「能随手拿起来的小物件」那一档：{@code instabreak}（空手一下就掉）、{@code noOcclusion}
+     * （4x6x4 的小模型不该把邻面挡掉）、{@code COLOR_GREEN} 地图色与 {@code STONE} 音效（贴图是海泡菜那种
+     * 青绿色，撞起来像陶器）。掉自身走 {@code data/dawnduskterminal/loot_table/blocks/experiment_012.json}，
+     * 那一份按 {@code cups} 掉 1~3 个
+     */
+    public static final DeferredBlock<Experiment012Block> EXPERIMENT_012 = BLOCKS.registerBlock(
+            "experiment_012",
+            Experiment012Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .noOcclusion()
+                    .instabreak()
+                    .sound(SoundType.STONE));
 
     /**
      * 试验物品 004：照熔炉工作的那一台
@@ -335,6 +354,27 @@ public final class ModBlocks {
                     .sound(SoundType.WOOL)
                     .pushReaction(PushReaction.DESTROY)
                     .noLootTable());
+
+    /**
+     * 红篝火：一团砷铅铁火焰压在一堆红木头上，行为在 {@link CampCarminiteFireBlock}
+     *
+     * <p>属性照原版篝火：两份木头（{@code strength 2.0}）、木头音效、{@code noOcclusion}、{@code ignitedByLava}，
+     * 点着时 15 级光。只加了一条改动：地图色取绯红木那档暗红，与它那堆红木头的贴图对得上
+     *
+     * <p>挖掉掉自己，走 {@code data/dawnduskterminal/loot_table/blocks/campcarminitefire.json}；
+     * 点燃与熄灭靠 {@code #minecraft:campfires} 标签与 {@code SHOVEL_DOUSE}，见那两条标签与方块类
+     */
+    public static final DeferredBlock<CampCarminiteFireBlock> CAMP_CARMINITE_FIRE = BLOCKS.registerBlock(
+            "campcarminitefire",
+            CampCarminiteFireBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.CRIMSON_STEM)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2.0F)
+                    .sound(SoundType.WOOD)
+                    .lightLevel(state -> state.getValue(CampCarminiteFireBlock.LIT) ? 15 : 0)
+                    .noOcclusion()
+                    .ignitedByLava());
 
     private ModBlocks() {}
 

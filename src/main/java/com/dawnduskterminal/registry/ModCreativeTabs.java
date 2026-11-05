@@ -29,6 +29,7 @@ public final class ModCreativeTabs {
                         accept(output, ModItems.PAINTING_GHAST_1.get());
                         accept(output, ModItems.PAINTING_GHAST_2.get());
                         accept(output, ModItems.PAINTING_GHAST_2_SUB.get());
+                        accept(output, ModItems.CAMP_CARMINITE_FIRE.get());
                         accept(output, ModItems.ENCASED_DUST.get());
                         accept(output, ModItems.CANOCAN.get());
                         accept(output, ModItems.PORTAL_BUCKET.get());
@@ -138,6 +139,8 @@ public final class ModCreativeTabs {
                         ModExperimentItems.placeholders().forEach((number, item) -> sequence.put(number, item.get()));
                         sequence.put(7, ModExperimentItems.EXPERIMENT_007.get());
                         sequence.put(8, ModExperimentItems.EXPERIMENT_008.get());
+                        sequence.put(11, ModExperimentItems.EXPERIMENT_011.get());
+                        sequence.put(12, ModItems.EXPERIMENT_012.get());
                         sequence.put(17, ModExperimentItems.EXPERIMENT_017.get());
                         sequence.put(19, ModItems.EXPERIMENT_019.get());
                         sequence.put(20, ModExperimentItems.EXPERIMENT_020.get());

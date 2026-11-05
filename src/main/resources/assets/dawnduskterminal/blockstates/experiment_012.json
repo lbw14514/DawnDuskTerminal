@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "cups=1": {
+      "model": "dawnduskterminal:block/experiment_012_1"
+    },
+    "cups=2": {
+      "model": "dawnduskterminal:block/experiment_012_2"
+    },
+    "cups=3": {
+      "model": "dawnduskterminal:block/experiment_012_3"
+    }
+  }
+}

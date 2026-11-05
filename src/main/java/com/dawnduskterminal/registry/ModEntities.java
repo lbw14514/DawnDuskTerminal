@@ -4,6 +4,7 @@ import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.entity.CarminiteBallEntity;
 import com.dawnduskterminal.entity.CarminiteFieldEntity;
 import com.dawnduskterminal.entity.CarminiteShrapnelEntity;
+import com.dawnduskterminal.entity.Experiment011PlateEntity;
 import com.dawnduskterminal.entity.Experiment057BladeEntity;
 import com.dawnduskterminal.entity.ExpowheelEntity;
 import com.dawnduskterminal.entity.GhastEliteEntity;
@@ -251,4 +252,20 @@ public final class ModEntities {
                 Monster::checkMonsterSpawnRules,
                 RegisterSpawnPlacementsEvent.Operation.REPLACE);
     }
+
+    /**
+     * 试验物品 011 摆下来的那只盘子
+     *
+     * <p>尺寸就是外形：14 像素见方、1 像素厚（{@code 14/16 x 1/16 x 14/16}）。它是一张不会动、不走重力的
+     * 薄片，位置在摆下来那一刻由 {@code Experiment011Item} 按脚下那块方块的碰撞箱定好，所以
+     * {@code updateInterval} 给 20 就够：不动的东西只有「盘子上换了东西」这一件事要同步，
+     * 而那一条走的是 {@code SynchedEntityData}，与位置包无关
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<Experiment011PlateEntity>> EXPERIMENT_011_PLATE =
+            ENTITIES.register("experiment_011_plate", () -> EntityType.Builder.<Experiment011PlateEntity>of(
+                            Experiment011PlateEntity::new, MobCategory.MISC)
+                    .sized(14.0F / 16.0F, 1.0F / 16.0F)
+                    .clientTrackingRange(10)
+                    .updateInterval(20)
+                    .build("experiment_011_plate"));
 }

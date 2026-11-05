@@ -543,20 +543,21 @@ public final class ExperimentItemTests {
     @GameTest(template = "ddt_empty")
     public static void placeholdersFillEveryGapUpTo115(GameTestHelper helper) {
         SortedMap<Integer, DeferredItem<Item>> placeholders = ModExperimentItems.placeholders();
-        // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、007/017 两把 4/5 裸武器、008 与 020 两件食物、027 那支画点的笔、
+        // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、011 那只盘子、012 那只杯子、007/017 两把 4/5 裸武器、
+        // 008 与 020 两件食物、027 那支画点的笔、
         // 019 那丛植物、032/033 两支长矛、036~038 与 040~042 六件（039 号空着）、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
         // 051 拆解台、052 那颗方雷、057 那把制导飞刃、061/070/074 三块不明肉块、065 与 069 两台反建器、066 那本恶魂陷阱书、
         // 076 那个每刻换贴图的异常方块、055 那个充能的场、095 那支镇魂曲、104 那个食物、107 整块的红丝绒蛋糕、114 那块蛋糕、
         // 115 暮色森林那件
         helper.assertTrue(
-                placeholders.size() == 76,
-                "placeholders must cover the 76 free numbers of 1..115, got " + placeholders.size());
+                placeholders.size() == 74,
+                "placeholders must cover the 74 free numbers of 1..115, got " + placeholders.size());
         for (int number : new int[] {2, 6, 9, 16, 18, 34, 39, 44, 113}) {
             helper.assertTrue(placeholders.containsKey(number), "number " + number + " must have a placeholder item");
         }
         for (int number : new int[] {
-            1, 4, 7, 8, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55, 57, 61,
-            65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115
+            1, 4, 7, 8, 11, 12, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55,
+            57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115
         }) {
             helper.assertFalse(
                     placeholders.containsKey(number),

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/template_campfire",
+  "textures": {
+    "particle": "dawnduskterminal:block/campcarminitefire_log",
+    "log": "dawnduskterminal:block/campcarminitefire_log",
+    "lit_log": "dawnduskterminal:block/campcarminitefire_log_lit",
+    "fire": "dawnduskterminal:block/campcarminitefire_fire"
+  }
+}

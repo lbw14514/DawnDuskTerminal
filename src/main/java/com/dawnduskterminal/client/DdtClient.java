@@ -8,6 +8,7 @@ import com.dawnduskterminal.client.model.MountedTowerWoodModel;
 import com.dawnduskterminal.client.model.ScarletMolybdenumArmorModel;
 import com.dawnduskterminal.client.model.WroughtIronGlassModel;
 import com.dawnduskterminal.registry.ModBlockEntities;
+import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModEntities;
 import com.dawnduskterminal.registry.ModExperimentItems;
 import com.dawnduskterminal.registry.ModFluids;
@@ -38,6 +39,7 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.GrassColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
@@ -83,6 +85,7 @@ public final class DdtClient {
         modBus.addListener(LivingArmorRenderer::onRegisterRenderers);
         modBus.addListener(Experiment057BladeRenderer::onRegisterRenderers);
         modBus.addListener(ExpowheelRenderer::onRegisterRenderers);
+        modBus.addListener(Experiment011PlateRenderer::onRegisterRenderers);
         modBus.addListener(DdtClient::onRegisterEntityRenderers);
         modBus.addListener(DdtClient::onRegisterParticleProviders);
         modBus.addListener(DdtClient::registerMenuScreens);
@@ -356,6 +359,11 @@ public final class DdtClient {
     private static void onClientSetup(FMLClientSetupEvent event) {
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLUID.get(), RenderType.translucent());
         ItemBlockRenderTypes.setRenderLayer(ModFluids.PORTAL_FLOWING.get(), RenderType.translucent());
+        // 红篝火：原版把 minecraft:campfire / soul_campfire 以 cutout 写进 ItemBlockRenderTypes 的
+        // TYPE_BY_BLOCK 里，火舌那两张贴图正是靠这一条才有透明度。本方块的模型只是继承了原版模板，
+        // 渲染层却不在那张表里，不补这一行火舌就会落到 solid 上、透明像素变成不透明的黑块
+        ItemBlockRenderTypes.setRenderLayer(
+                ModBlocks.CAMP_CARMINITE_FIRE.get(), ChunkRenderTypeSet.of(RenderType.cutout()));
         // 加载 native 并跑启动探针 不要在第一次渲染高塔恶魂时才做文件 IO
         NativeMesh.preload();
     }
@@ -381,6 +389,8 @@ public final class DdtClient {
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_2_SUB.get(), PaintingRenderer::new);
         // 试验物品 076 的外观整个在这一边：每个面每 tick 抽一张贴图，见 Experiment076Renderer
         event.registerBlockEntityRenderer(ModBlockEntities.EXPERIMENT_076.get(), Experiment076Renderer::new);
+        // 红篝火火堆上那四格食材：自带的渲染器，照原版 CampfireRenderer 的摆法画
+        event.registerBlockEntityRenderer(ModBlockEntities.CAMP_CARMINITE_FIRE.get(), CampCarminiteFireRenderer::new);
     }
 
     /** 三种粒子共用一支实现，只差参数，见 {@link CarminiteParticle}；027 的红石点、043 的大火焰与 095 的音符各一支 */

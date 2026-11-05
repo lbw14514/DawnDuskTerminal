@@ -1,6 +1,7 @@
 package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.entity.CampCarminiteFireBlockEntity;
 import com.dawnduskterminal.block.entity.E115RegeneratorBlockEntity;
 import com.dawnduskterminal.block.entity.Experiment004BlockEntity;
 import com.dawnduskterminal.block.entity.Experiment051BlockEntity;
@@ -15,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * 方块实体类型。目前有试验物品 004 那台熔炉、051 那台机器、065 那台不让人打伤害的机器、069 那台让更新不处理的机器、
- * 076 那个没有数据、只为挂客户端渲染器的异常方块，以及 115 再生机那一格产物格加一个进度
+ * 076 那个没有数据、只为挂客户端渲染器的异常方块、115 再生机那一格产物格加一个进度，以及红篝火那四格食材
  */
 public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
@@ -60,6 +61,19 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("experiment_076", () -> BlockEntityType.Builder.of(
                             Experiment076BlockEntity::new, ModBlocks.EXPERIMENT_076.get())
                     .build(null));
+
+    /**
+     * 红篝火的方块实体：四格食材与烧烤进度，行为照抄原版 {@code CampfireBlockEntity}，见
+     * {@link CampCarminiteFireBlockEntity}
+     *
+     * <p>不能直接用原版那个类型：它的构造器把类型写死成 {@code BlockEntityType.CAMPFIRE}，
+     * 一构造就会因为「这个类型不认本方块」抛 {@code Invalid block entity minecraft:campfire}，
+     * 所以自带一份同样的数据，客户端那侧的渲染也跟着自带一份
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CampCarminiteFireBlockEntity>>
+            CAMP_CARMINITE_FIRE = BLOCK_ENTITIES.register("campcarminitefire", () -> BlockEntityType.Builder.of(
+                    CampCarminiteFireBlockEntity::new, ModBlocks.CAMP_CARMINITE_FIRE.get())
+            .build(null));
 
     private ModBlockEntities() {}
 

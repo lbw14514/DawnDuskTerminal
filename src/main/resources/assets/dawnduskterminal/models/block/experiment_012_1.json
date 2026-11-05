@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "dawnduskterminal:block/experiment_012",
+    "all": "dawnduskterminal:block/experiment_012"
+  },
+  "elements": [
+    {
+      "from": [6, 0, 6],
+      "to": [10, 6, 10],
+      "faces": {
+        "north": { "uv": [4, 5, 8, 11], "texture": "#all" },
+        "east": { "uv": [12, 5, 16, 11], "texture": "#all" },
+        "south": { "uv": [0, 5, 4, 11], "texture": "#all" },
+        "west": { "uv": [8, 5, 12, 11], "texture": "#all" },
+        "up": { "uv": [4, 1, 8, 5], "texture": "#all" },
+        "down": { "uv": [8, 1, 12, 5], "texture": "#all", "cullface": "down" }
+      }
+    },
+    {
+      "from": [6, 5, 6],
+      "to": [10, 5, 10],
+      "faces": {
+        "up": { "uv": [8, 1, 12, 5], "texture": "#all" }
+      }
+    }
+  ]
+}

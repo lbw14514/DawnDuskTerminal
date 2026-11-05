@@ -350,6 +350,7 @@
 - 001：可以当作合成台使用的方块，位于 `ModBlocks`。
 - 007 / 017：两件裸武器，近战伤害 4、攻速 5，共用 `meleeAttributes` 属性表，只挂属性不挂 tool tier。
 - 008：食物，5 点饥饿与 5 点饱和度。
+- 011 / 012：一只盘子与一只杯子，见下面「试验物品 011」与「试验物品 012」。
 - 019：一丛植物，见下面「试验物品 019」。
 - 020：食物，效果表在使用的那一刻随机生成，见下面「试验物品 020」。
 - 032 / 033：两支突刺长矛，行为在 `item/ThrustSpearItem`。
@@ -377,6 +378,38 @@
 试验物品栏通过 `withTabsBefore(dawnduskterminal:main)` 固定在主栏目之后。
 NeoForge 的 `CreativeModeTabRegistry` 对未声明 before/after 的栏目按注册名字母序排序，注册先后不参与，
 否则其他模组的栏目会插进本模组两个栏目之间。
+
+### 试验物品 011（盘子）
+
+盘子是一张 14 像素见方、1 像素厚的薄片，不是方块：
+
+- 实体 `entity/Experiment011PlateEntity`，碰撞箱 `14/16 x 1/16 x 14/16`，无重力、不会动。
+- 物品 `item/Experiment011Item` 只管摆：只认朝上的面，高度取脚下方块碰撞箱的 `bounds().maxY`，
+  所以半砖上摆 0.5、满方块上摆 1.0；那 1 像素的空间被别的方块占住时不摆。
+- 外形在 `client/Experiment011PlateRenderer`：贴图是本模组的 `textures/block/experment_011.png`
+  （文件名沿用源文件，比 experiment 少一个 i），盘面截中间 14x14，四个侧面只取一行像素。
+- 盘上摆的那一件存在同步数据 `DATA_DISPLAYED` 里，存档键为 `displayed`，只占一格。
+- 展示尺度统一为 12 像素：`BlockItem` 换成方块状态后按 0.75 缩放画小方块，
+  其余物品取模型 `particle` 贴图摊成一片 12x12、朝上的面片。所以任何物品都摆得上去，
+  有对应方块的摆成方块，没有的摆成它自己的图标。
+- 右键：手上有东西就摆上去，空手取回那一件，潜行空手收回盘子本身；左键砸掉连展示物一起掉。
+
+### 试验物品 012（杯子）
+
+`block/Experiment012Block` 继承 `BushBlock`，一格最多三只，多出来的是**横着错开摆**的：
+
+- 方块状态只有一个 `cups`，1~3。
+- 摆位照原版海泡菜那三份模型（`sea_pickle` / `two_sea_pickles` / `three_sea_pickles`）的 from 角：
+  一只在正中，两只走对角 (3,3) 与 (8,8)，三只是 (6,9)、(2,2)、(8,4)。
+  杯子都是 4x6x4、都坐在格子底面上、杯口一样高，三只脚印互不重叠，不往上摞。
+- 碰撞箱按摆位取并集，每只 4x4 高 6 像素。
+- 拿着杯子点已经摆下的杯子就是再加一只，靠 `canBeReplaced` 放开「同物品点自己」这条，
+  再由 `getStateForPlacement` 把 `cups` 加一。少了 `canBeReplaced`，点自己不会有任何反应。
+- 模型 `block/experiment_012_1/2/3` 就是同一只杯子按上面那几组坐标平移出来的，
+  三份都写 `"render_type": "minecraft:cutout"`。
+- 三份模型的贴图都是 `textures/block/experiment_012.png`（杯子的展开图：边带 5~11 行、顶面 1~5 行，
+  与海泡菜那份 UV 布局一致，所以坐标不用改）；物品图标另是 `textures/item/experiment_012.png` 一张。
+- 掉落按 `cups` 掉 1~3 个，由 `loot_table/blocks/experiment_012.json` 的 `block_state_property` 分档。
 
 ### 试验物品 019
 
@@ -1796,6 +1829,66 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 
 `item/GhastPaintingItem` 的摆放流程参照 `HangingEntityItem` 编写，一件物品只能放置它自己那一幅画，且没有配方。
 
+## 红篝火
+
+`block/CampCarminiteFireBlock` 是一堆压着砷铅铁火焰的红木头，模型继承原版篝火的
+`template_campfire` 与 `campfire_off`，只替换三张贴图。
+
+状态只有 `FACING`、`LIT` 与 `WATERLOGGED`，没有原版的 `SIGNAL_FIRE`（那一位只管蜂箱冒不冒信号烟）。
+本类**不继承** `CampfireBlock`：那一类的 `codec()` 写死了 `CampfireBlock::new`，子类换不掉（泛型不协变），
+方块编解码转一圈会变回原版篝火。
+代价是点燃与熄灭两条工具动作得分开接：点燃走 NeoForge `FIRESTARTER_LIGHT` 的默认实现，
+它只要求 `#minecraft:campfires` 标签加 `LIT`、`WATERLOGGED` 两个属性，本方块满足；
+熄灭走方块自己的 `getToolModifiedState`，因为 `SHOVEL_DOUSE` 的默认实现判的是 `instanceof CampfireBlock`。
+
+**它是一台篝火，能烤东西。** `block/entity/CampCarminiteFireBlockEntity` 自带原版篝火那整套数据：
+四格食材、逐格烧烤进度与总时长、点燃时 `cookTick`、熄灭时 `cooldownTick`、
+「这一份能不能烤」的配方查询、放食材、`CONTAINER` 组件、熄灭后重画客户端。
+不能直接继承原版 `CampfireBlockEntity`：它的构造器把类型写死成 `BlockEntityType.CAMPFIRE`，
+那个类型不认本方块，`BlockEntity` 构造时的校验会直接抛 `Invalid block entity`。
+客户端那四格食材由 `client/CampCarminiteFireRenderer` 画，摆法与朝向照原版 `CampfireRenderer`。
+火舌的透明度另有一条：1.21.1 的方块渲染层只认 `ItemBlockRenderTypes` 的 `TYPE_BY_BLOCK` 表，
+原版在那张表里给 `minecraft:campfire` 写了 `cutout`；本方块不在表里，
+所以客户端 setup 里补一条 `setRenderLayer(..., cutout)`，否则透明像素会变成不透明的黑块。
+
+`entityInside` 与「砷铅铁火焰」同一条：点着时接触 2 点伤害，伤害类型是本模组的 `carminite_fire`，不点火。
+粒子也是同款：`particle_carminite_ember` 每次三颗，撒在方块中间，竖直速度 0.2~0.25。
+它本来就是篝火，所以照原版那样每 tick 有十分之一的概率响一声 `block.campfire.crackle`；
+不抄原版的 `minecraft:lava` 火星，那属于明火。
+
+挖掉掉自己，走 `loot_table/blocks/campcarminitefire.json`，表里没有工具条件，空手也掉；
+火堆上还摆着的食材一起掉出来。
+方块挂在 `#minecraft:mineable/axe` 与 `#minecraft:campfires` 两个标签上。
+
+### 消耗度倒转
+
+`world/CampCarminiteFireAura` 按维度存一张「篝火在哪」的表，登记与判定照 `CubeField` 那一套：
+方块实体在区块载入/卸载时登记与撤登记，方块的 `onPlace` / `onRemove` 管摆下与挖掉，
+所以摆下那一 tick 就生效。
+判定只量现存的篝火，不扫 33³ 格，每条还会回头核那一格是不是点亮着的本方块。
+
+点亮的红篝火 16 格内的玩家受两条规则。
+
+- **小增量取反**：凡是增加消耗度、且增加量不大于 1 的行为，改成等量减少。
+  钩子是 `mixin/CampCarminiteFireExhaustionMixin`，打在 `Player#causeFoodExhaustion` 上。
+  原版玩家动作全都从这里进：挖掘 0.005、奔跑 0.1、跳跃 0.05 与 0.2、攻击 0.1 与 0.2、受伤 0.1、
+  饥饿效果与吃东西带的那点。
+- **大于 1 的增量一点也没变**：照旧加进消耗度，照旧按原版「大于 4 就扣一点」扣饥饿值或饱和度。
+  自然回血那两条（快速回血按饱和度算的那点、慢速回血的 6.0）走的是 `FoodData#addExhaustion`，
+  那里拿不到玩家、判不了距离，本来就不拦。
+- **见底就补**：消耗度见底时恢复 1 点**饥饿值**，饥饿值满了才补饱和度，然后把消耗度压回 4。
+  所以见底一次要再走完这 4 点才会补下一次。
+
+  先饥饿值是必须的，不是随手挑的顺序：原版回血的两道门都只看饥饿值，都在 `FoodData#tick` 里——
+  快速回血要 `饥饿值 >= 20 且 饱和度 > 0`，慢速回血要 `饥饿值 >= 18`。
+  饥饿值掉到 17 以下之后，补饱和度永远补不回这两道门，玩家看到的就是「怎么都不回血」。
+  之前那版先补饱和度，正好踩在这上面。
+
+结算有两条入口：取反把消耗度压到 0 时当场补一次（`CampCarminiteFireAura#absorb`）；
+玩家每 tick 那一下补「走过来时消耗度本来就是 0」那一种，
+路径是 `DdtServerEvents#onPlayerTick` → `CampCarminiteFireAura#tick`。
+服务器停下时气场表清空。
+
 ## 维度与晨昏线
 
 `registry/ModDimensions.CHRONO` 是维度的 `ResourceKey`。
@@ -1948,6 +2041,10 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 `BiomeColorsFoliageMixin` 是客户端 mixin，把树叶染色接入 `ChronoFoliageColors`。
 
 `ClientLevelTimeOfDayMixin` 与 `LevelRendererSkyAlignMixin` 是客户端 mixin，见「天空」。
+
+`PaintingVariantGuardMixin` 见「装饰画」。
+
+`CampCarminiteFireExhaustionMixin` 见「红篝火」。
 
 `ClientLevelSkyColorMixin` 是客户端 mixin，见「天空」。
 

@@ -13,6 +13,7 @@ import com.dawnduskterminal.registry.ModFluids;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.structure.StructureExclusions;
+import com.dawnduskterminal.world.CampCarminiteFireAura;
 import com.dawnduskterminal.world.ChronoLineState;
 import com.dawnduskterminal.world.Experiment065Field;
 import com.dawnduskterminal.world.Experiment069Field;
@@ -119,7 +120,7 @@ public final class DdtServerEvents {
         StringSpawner.tick(event.getServer());
     }
 
-    /** 服务器停下：把还在跑的喷火过程、恶魂陷阱场、095 与 055 的场、076 的反应与 065 / 069 两张场的场心表清干净，别留到下一次启动 */
+    /** 服务器停下：把还在跑的喷火过程、恶魂陷阱场、095 与 055 的场、076 的反应、065 / 069 两张场的场心表与红篝火的气场表清干净，别留到下一次启动 */
     public static void onServerStopped(ServerStoppedEvent event) {
         FireJetProcess.clear();
         GhastTrapProcess.clear();
@@ -128,6 +129,7 @@ public final class DdtServerEvents {
         Experiment076Reaction.clear();
         Experiment065Field.clear();
         Experiment069Field.clear();
+        CampCarminiteFireAura.clear();
     }
 
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -152,6 +154,9 @@ public final class DdtServerEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
+        // 红篝火 16 格内的消耗度：小增量取反由 CampCarminiteFireExhaustionMixin 当场做掉，
+        // 这里补「走过来的时候消耗度本来就是 0」那一种，见 CampCarminiteFireAura
+        CampCarminiteFireAura.tick(player);
         // 所有玩家的 tickCount 同相位，直接取模会让全服在同一刻一起扫 12 格
         // 用实体 id 错开相位，平均开销不变，但不再形成每 10 tick 一次的尖峰
         if ((player.tickCount + player.getId()) % 10 == 0) {

@@ -559,6 +559,36 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `eachItemPlacesItsOwnPainting` 验证贴着墙面放置后，实体类型、朝向、变体与包围盒均正确，物品数量减一；三幅画各放一次。
 
+### CampCarminiteFireTests
+
+`blockLooksAndLightsLikeACampfire` 验证三个状态位、点着时 15 级光、碰撞箱高 7 像素，
+以及方块在 `#minecraft:campfires` 中（打火石就靠这条标签）。
+
+`flintAndSteelLightsItAndShovelDousesIt` 验证打火石能点着、铲子能熄灭，两条都走 NeoForge 的工具动作。
+
+`waterExtinguishesIt` 验证灌水同时写下含水与熄灭，不是只记一个含水。
+
+`contactHurtsExactlyLikeCarminiteFire` 验证接触掉 2 点血、伤害类型是 `carminite_fire`、不点火；熄灭的篝火不掉血。
+
+`miningItDropsItself` 验证战利品表只掉一颗自身。
+
+`itCooksLikeAVanillaCampfire` 验证方块实体带着篝火那套四格食材：生猪肉能查得出生熟配方、
+放得进火堆、点着时挂着烧烤 ticker。
+
+`smallIncrementsAreInvertedWithinSixteenBlocks` 验证 16 格内 0.5 与 1.0 被取反、1.0001 仍算增加、16 格外照旧算增加。
+
+`largeIncrementsConsumeExactlyLikeVanilla` 验证 6.0 这样的大增量照旧算增加，
+原版那一 tick 也只扣 4 点、只掉一点饱和度。
+
+`healthStillRegeneratesNextToTheFire` 验证篝火边上受伤的玩家照样回血（60 tick 内实打实涨血）。
+
+`drainedExhaustionGrantsOneHungerPointThenRefillsToFour` 验证见底先补饥饿值（饥饿值满了才补饱和度），
+消耗度压回 4、走完这 4 点才补下一次；取反当场与每 tick 两条入口都验一遍。
+
+`unlitCampfireHasNoAura` 验证熄灭的篝火不生效。
+
+`assetsWiringIsComplete` 验证方块状态八格、两张方块模型与方块贴图、物品图标与自己那 16×16 贴图都在包里。
+
 ## 指令
 
 `/ddt` 需要权限等级 2。

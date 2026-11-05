@@ -5,6 +5,7 @@ import com.dawnduskterminal.block.SusCakeBlock;
 import com.dawnduskterminal.item.CanocanItem;
 import com.dawnduskterminal.item.CarminiteGhastMeatItem;
 import com.dawnduskterminal.item.CarminiteStaffItem;
+import com.dawnduskterminal.item.Experiment012Item;
 import com.dawnduskterminal.item.Experiment107Item;
 import com.dawnduskterminal.item.Experiment114Item;
 import com.dawnduskterminal.item.GhastPaintingItem;
@@ -229,6 +230,15 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> EXPERIMENT_019 =
             ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_019);
 
+    /**
+     * 试验物品 012：那只杯子的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_012}
+     *
+     * <p>拿着它点已经摆下的杯子就是再叠一只，这条在 {@link com.dawnduskterminal.block.Experiment012Block}
+     * 的 {@code canBeReplaced} 与 {@code getStateForPlacement} 上，物品这边不用另写
+     */
+    public static final DeferredItem<BlockItem> EXPERIMENT_012 = ITEMS.register(
+            "experiment_012", () -> new Experiment012Item(ModBlocks.EXPERIMENT_012.get(), new Item.Properties()));
+
     /** 试验物品 051：拆解台那台机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_051} */
     public static final DeferredItem<BlockItem> EXPERIMENT_051 =
             ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_051);
@@ -252,6 +262,10 @@ public final class ModItems {
     /** 试验物品 076：那个每个面每一刻都在换贴图的异常方块的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_076} */
     public static final DeferredItem<BlockItem> EXPERIMENT_076 =
             ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_076);
+
+    /** 红篝火：那堆压着砷铅铁火焰的红木头，放下来就是 {@link ModBlocks#CAMP_CARMINITE_FIRE} */
+    public static final DeferredItem<BlockItem> CAMP_CARMINITE_FIRE =
+            ITEMS.registerSimpleBlockItem(ModBlocks.CAMP_CARMINITE_FIRE);
 
     /**
      * 试验物品 104 一口的数值：10 与 0.6，也就是 10 点饥饿、饱食度 12.0，等于两块烤马铃薯
