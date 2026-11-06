@@ -6,6 +6,7 @@ import com.dawnduskterminal.registry.ModBlocks;
 import com.dawnduskterminal.registry.ModExperimentItems;
 import com.dawnduskterminal.registry.ModItems;
 import com.dawnduskterminal.world.CubeField;
+import com.dawnduskterminal.world.Experiment065Field;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
@@ -99,74 +100,80 @@ public final class Experiment065Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void attacksFromInsideDoNothing(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        placeField(level, helper.absolutePos(CENTRE));
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            placeField(level, helper.absolutePos(CENTRE));
 
-        Pig attacker = spawn(helper, CENTRE.offset(2, 0, 0));
-        Pig victimInside = spawn(helper, CENTRE.west(2));
-        helper.assertFalse(
-                victimInside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-                "an attack made from inside the field must not land, on a victim inside it");
-        helper.assertTrue(
-                victimInside.getHealth() == PIG_HEALTH,
-                "a cancelled hit must leave the health alone, the pig has " + victimInside.getHealth());
+            Pig attacker = spawn(helper, CENTRE.offset(2, 0, 0));
+            Pig victimInside = spawn(helper, CENTRE.west(2));
+            helper.assertFalse(
+                    victimInside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                    "an attack made from inside the field must not land, on a victim inside it");
+            helper.assertTrue(
+                    victimInside.getHealth() == PIG_HEALTH,
+                    "a cancelled hit must leave the health alone, the pig has " + victimInside.getHealth());
 
-        Pig victimOutside = spawn(helper, CENTRE.east(11));
-        helper.assertFalse(
-                victimOutside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-                "an attack made from inside the field must not land, on a victim outside it either");
-        helper.assertTrue(
-                victimOutside.getHealth() == PIG_HEALTH,
-                "a cancelled hit must leave the health alone, the pig has " + victimOutside.getHealth());
-        helper.succeed();
+            Pig victimOutside = spawn(helper, CENTRE.east(11));
+            helper.assertFalse(
+                    victimOutside.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                    "an attack made from inside the field must not land, on a victim outside it either");
+            helper.assertTrue(
+                    victimOutside.getHealth() == PIG_HEALTH,
+                    "a cancelled hit must leave the health alone, the pig has " + victimOutside.getHealth());
+            helper.succeed();
+        });
     }
 
     /** 场外打进来的照常：攻击者站在场外，受害人在场里，这一下要真打进去 */
     @GameTest(template = "ddt_empty")
     public static void attacksFromOutsideStillLand(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        placeField(level, helper.absolutePos(CENTRE));
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            placeField(level, helper.absolutePos(CENTRE));
 
-        Pig attacker = spawn(helper, CENTRE.east(9));
-        Pig victim = spawn(helper, VICTIM);
-        helper.assertTrue(
-                victim.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
-                "an attack made from outside the field must land, the field only nullifies what is made inside it");
-        helper.assertTrue(
-                Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
-                "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
-        helper.succeed();
+            Pig attacker = spawn(helper, CENTRE.east(9));
+            Pig victim = spawn(helper, VICTIM);
+            helper.assertTrue(
+                    victim.hurt(level.damageSources().mobAttack(attacker), STRIKE_DAMAGE),
+                    "an attack made from outside the field must land, the field only nullifies what is made inside it");
+            helper.assertTrue(
+                    Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
+                    "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
+            helper.succeed();
+        });
     }
 
     /** 场正好 17 格：三条轴各在 8 格处打不动、9 格处打得动 */
     @GameTest(template = "ddt_empty")
     public static void fieldIsExactlySeventeenBlocksWide(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        placeField(level, helper.absolutePos(CENTRE));
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            placeField(level, helper.absolutePos(CENTRE));
 
-        int[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-        String[] names = {"x", "y", "z"};
-        for (int axis = 0; axis < axes.length; axis++) {
-            int dx = axes[axis][0];
-            int dy = axes[axis][1];
-            int dz = axes[axis][2];
-            BlockPos edge = CENTRE.offset(dx * CubeField.RADIUS, dy * CubeField.RADIUS, dz * CubeField.RADIUS);
-            BlockPos beyond = CENTRE.offset(
-                    dx * (CubeField.RADIUS + 1), dy * (CubeField.RADIUS + 1), dz * (CubeField.RADIUS + 1));
+            int[][] axes = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+            String[] names = {"x", "y", "z"};
+            for (int axis = 0; axis < axes.length; axis++) {
+                int dx = axes[axis][0];
+                int dy = axes[axis][1];
+                int dz = axes[axis][2];
+                BlockPos edge = CENTRE.offset(dx * CubeField.RADIUS, dy * CubeField.RADIUS, dz * CubeField.RADIUS);
+                BlockPos beyond = CENTRE.offset(
+                        dx * (CubeField.RADIUS + 1), dy * (CubeField.RADIUS + 1), dz * (CubeField.RADIUS + 1));
 
-            Pig victimOnEdge = spawn(helper, VICTIM);
-            helper.assertFalse(
-                    victimOnEdge.hurt(level.damageSources().mobAttack(spawn(helper, edge)), STRIKE_DAMAGE),
-                    "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = " + CubeField.RADIUS
-                            + " must still be inside it");
+                Pig victimOnEdge = spawn(helper, VICTIM);
+                helper.assertFalse(
+                        victimOnEdge.hurt(level.damageSources().mobAttack(spawn(helper, edge)), STRIKE_DAMAGE),
+                        "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = " + CubeField.RADIUS
+                                + " must still be inside it");
 
-            Pig victimBeyond = spawn(helper, VICTIM);
-            helper.assertTrue(
-                    victimBeyond.hurt(level.damageSources().mobAttack(spawn(helper, beyond)), STRIKE_DAMAGE),
-                    "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = " + (CubeField.RADIUS + 1)
-                            + " must already be outside it");
-        }
-        helper.succeed();
+                Pig victimBeyond = spawn(helper, VICTIM);
+                helper.assertTrue(
+                        victimBeyond.hurt(level.damageSources().mobAttack(spawn(helper, beyond)), STRIKE_DAMAGE),
+                        "the field is " + CubeField.SIZE + " blocks wide, " + names[axis] + " = "
+                                + (CubeField.RADIUS + 1) + " must already be outside it");
+            }
+            helper.succeed();
+        });
     }
 
     /**
@@ -176,17 +183,19 @@ public final class Experiment065Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void environmentDamagePassesThrough(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        placeField(level, helper.absolutePos(CENTRE));
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            placeField(level, helper.absolutePos(CENTRE));
 
-        Pig victim = spawn(helper, VICTIM);
-        helper.assertTrue(
-                victim.hurt(level.damageSources().cactus(), STRIKE_DAMAGE),
-                "damage without a source entity must not be stopped by the field");
-        helper.assertTrue(
-                Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
-                "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
-        helper.succeed();
+            Pig victim = spawn(helper, VICTIM);
+            helper.assertTrue(
+                    victim.hurt(level.damageSources().cactus(), STRIKE_DAMAGE),
+                    "damage without a source entity must not be stopped by the field");
+            helper.assertTrue(
+                    Math.abs(victim.getHealth() - (PIG_HEALTH - STRIKE_DAMAGE)) < 1.0E-4F,
+                    "the pig must be down to " + (PIG_HEALTH - STRIKE_DAMAGE) + ", it has " + victim.getHealth());
+            helper.succeed();
+        });
     }
 
     /**
@@ -195,24 +204,26 @@ public final class Experiment065Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void projectilesAreJudgedWhereTheyAre(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        placeField(level, helper.absolutePos(CENTRE));
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            placeField(level, helper.absolutePos(CENTRE));
 
-        Arrow inside = helper.spawn(EntityType.ARROW, CENTRE.offset(2, 0, 0));
-        Pig shooterInside = spawn(helper, CENTRE.west(1));
-        Pig victimOutside = spawn(helper, CENTRE.east(11));
-        helper.assertFalse(
-                victimOutside.hurt(level.damageSources().arrow(inside, shooterInside), STRIKE_DAMAGE),
-                "an arrow sitting inside the field must not deal damage, wherever it is aimed");
+            Arrow inside = helper.spawn(EntityType.ARROW, CENTRE.offset(2, 0, 0));
+            Pig shooterInside = spawn(helper, CENTRE.west(1));
+            Pig victimOutside = spawn(helper, CENTRE.east(11));
+            helper.assertFalse(
+                    victimOutside.hurt(level.damageSources().arrow(inside, shooterInside), STRIKE_DAMAGE),
+                    "an arrow sitting inside the field must not deal damage, wherever it is aimed");
 
-        Arrow outside = helper.spawn(EntityType.ARROW, CENTRE.east(11));
-        Pig shooterAlsoInside = spawn(helper, CENTRE.west(2));
-        Pig victimAlsoOutside = spawn(helper, CENTRE.east(10));
-        helper.assertTrue(
-                victimAlsoOutside.hurt(level.damageSources().arrow(outside, shooterAlsoInside), STRIKE_DAMAGE),
-                "an arrow outside the field must land even when the shooter stands inside it, "
-                        + "the judgement is the projectile's own position");
-        helper.succeed();
+            Arrow outside = helper.spawn(EntityType.ARROW, CENTRE.east(11));
+            Pig shooterAlsoInside = spawn(helper, CENTRE.west(2));
+            Pig victimAlsoOutside = spawn(helper, CENTRE.east(10));
+            helper.assertTrue(
+                    victimAlsoOutside.hurt(level.damageSources().arrow(outside, shooterAlsoInside), STRIKE_DAMAGE),
+                    "an arrow outside the field must land even when the shooter stands inside it, "
+                            + "the judgement is the projectile's own position");
+            helper.succeed();
+        });
     }
 
     /**
@@ -220,23 +231,25 @@ public final class Experiment065Tests {
      */
     @GameTest(template = "ddt_empty")
     public static void breakingTheBlockTurnsTheFieldOff(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockPos centre = helper.absolutePos(CENTRE);
-        placeField(level, centre);
+        withField(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos centre = helper.absolutePos(CENTRE);
+            placeField(level, centre);
 
-        Pig victimOnField = spawn(helper, VICTIM);
-        helper.assertFalse(
-                victimOnField.hurt(
-                        level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
-                "the field must already work in the same tick the block was placed");
+            Pig victimOnField = spawn(helper, VICTIM);
+            helper.assertFalse(
+                    victimOnField.hurt(
+                            level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
+                    "the field must already work in the same tick the block was placed");
 
-        level.setBlockAndUpdate(centre, Blocks.AIR.defaultBlockState());
-        Pig victimAfterBreak = spawn(helper, VICTIM);
-        helper.assertTrue(
-                victimAfterBreak.hurt(
-                        level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
-                "breaking the block must turn the field off");
-        helper.succeed();
+            level.setBlockAndUpdate(centre, Blocks.AIR.defaultBlockState());
+            Pig victimAfterBreak = spawn(helper, VICTIM);
+            helper.assertTrue(
+                    victimAfterBreak.hurt(
+                            level.damageSources().mobAttack(spawn(helper, CENTRE.offset(3, 0, 0))), STRIKE_DAMAGE),
+                    "breaking the block must turn the field off");
+            helper.succeed();
+        });
     }
 
     /**
@@ -312,6 +325,29 @@ public final class Experiment065Tests {
     /** 摆一台 065，场心是 {@code pos} */
     private static void placeField(ServerLevel level, BlockPos pos) {
         level.setBlockAndUpdate(pos, ModBlocks.EXPERIMENT_065.get().defaultBlockState());
+    }
+
+    /**
+     * 跑一个用例，无论断言成功还是抛错，退场时都把这一台场拆掉
+     *
+     * <p>场是 17×17×17，而模板只有 16×16×16：场一定会探出自己这一格，压到隔壁用例的头上。
+     * gametest 的世界跨轮次持久化，方块不清就会一直留着，隔壁伤害类用例打出的伤害会被
+     * {@link Experiment065Field} 静默取消。这里用 {@code finally} 保证失败路径也清干净
+     */
+    private static void withField(GameTestHelper helper, Runnable body) {
+        try {
+            body.run();
+        } finally {
+            clearField(helper.getLevel(), helper.absolutePos(CENTRE));
+        }
+    }
+
+    /** 拆掉这一格的场：方块换回空气，场心从登记表里删掉 */
+    private static void clearField(ServerLevel level, BlockPos pos) {
+        if (level.getBlockState(pos).is(ModBlocks.EXPERIMENT_065.get())) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        Experiment065Field.untrack(level, pos);
     }
 
     private static Pig spawn(GameTestHelper helper, BlockPos pos) {

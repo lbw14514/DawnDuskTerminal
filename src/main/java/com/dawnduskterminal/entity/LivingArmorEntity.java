@@ -319,6 +319,10 @@ public class LivingArmorEntity extends Monster {
      * 挡住的那一下：只有盾牌声，没有受伤音，也不吃击退
      *
      * <ol>
+     *   <li>判据是 {@link #blockedThisHit}，不是 {@link #isBlocking}：前者是「这一下真的被盾挡下了」，
+     *       后者只是「副手有盾且没在出手窗口」（{@code hurt} 之前置好、每次结算后即清空，
+     *       见 {@link #hurt}）。背后打中、破盾那一下、斧头破盾之后都是「有盾但没挡住」，
+     *       拿 {@code isBlocking} 当判据会让普通受伤音永远不播</li>
      *   <li>原版 {@code LivingEntity#hurt} 里那句 {@code playHurtSound} 是无条件的
      *       （{@code hurt} 的 1240 行，整下挡掉也照播），所以照抄过来挡住时照样「嗷」一声</li>
      *   <li>盾牌声在这里<b>由服务端播</b>（发成 {@code ClientboundSoundPacket}，声音与字幕都出来）。
@@ -327,7 +331,7 @@ public class LivingArmorEntity extends Monster {
      */
     @Override
     protected void playHurtSound(DamageSource source) {
-        if (this.isBlocking()) {
+        if (this.blockedThisHit) {
             this.playSound(
                     SoundEvents.SHIELD_BLOCK, 1.0F, 0.8F + this.level().random.nextFloat() * 0.4F);
             return;
@@ -890,7 +894,9 @@ public class LivingArmorEntity extends Monster {
             }
             this.armor.getNavigation().stop();
             if (this.cooldown <= 0 && this.armor.hasLineOfSight(target)) {
-                this.armor.throwFlail(target);
+                // 走 attackTarget 而不是直接 throwFlail：出手那一下要把盾收起来（lowerShieldForAttack），
+                // 链锤分支与近战分支必须同一条路，否则骑士套扔链锤时盾还举着，见 LivingArmorEntity#attackTarget
+                this.armor.attackTarget(target);
                 this.cooldown = FLAIL_COOLDOWN;
             }
         }

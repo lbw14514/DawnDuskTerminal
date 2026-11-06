@@ -121,6 +121,10 @@ OpenYSM 自带一份分叉的 GeckoLib，包名在 `org.openysm.geckolib3` 与 `
 `ddt_empty` 模板里一个方块都没有，重新摆一遍模板清不掉它们。
 改完世界生成或测试互相打架时，删掉该目录重跑。
 
+场类用例尤其要注意：`CubeField` 的场是 17×17×17，而模板只有 16×16×16，场一定会探出自己这一格。
+用例之间只隔 7 到 8 格，一个没拆掉的场会把隔壁伤害类用例的伤害整片取消，表现为 `runGameTestServer` 里几条不相干的用例一起红。
+`gametest/Experiment065Tests` 用 `withField` 把拆场放在 `finally` 里，正常与失败路径都清干净，新增落场用例时照这个写法。
+
 首次构建会下载并反编译 Minecraft。
 
 若仅有资源文件发生改动，任务可能报告 UP-TO-DATE，此时须验证 jar 中的实际内容。

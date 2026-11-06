@@ -63,8 +63,11 @@ public class Experiment011PlateEntity extends Entity {
     /**
      * 右键：手上有东西就摆上去，空手就把东西拿回来，潜行空手则把盘子本身收走
      *
+     * <p>潜行优先于「拿回东西」：潜行空手永远是收盘子本身，盘子上有东西就先把它掉在脚下，
+     * 否则盘子上摆了东西时潜行分支永远到不了（原来是先判 displayed 非空）
+     *
      * <p>客户端只回 {@link InteractionResult#SUCCESS} 让手抬一下，真正的判断全在服务端；
-     * 摆不进去（盘子上已经有东西、手是空的）时回 {@link InteractionResult#PASS}，
+     * 摆不进去（盘子上已经有东西、手是空的且没潜行）时回 {@link InteractionResult#PASS}，
      * 让这次右键继续往下走，不至于把别的交互吃掉
      */
     @Override
@@ -75,16 +78,19 @@ public class Experiment011PlateEntity extends Entity {
         ItemStack held = player.getItemInHand(hand);
         ItemStack displayed = this.displayed();
         if (held.isEmpty()) {
+            if (player.isSecondaryUseActive()) {
+                if (!displayed.isEmpty()) {
+                    this.spawnAtLocation(displayed);
+                }
+                this.playSound(SoundEvents.ITEM_FRAME_BREAK, 0.8F, 1.0F);
+                this.give(player, new ItemStack(ModExperimentItems.EXPERIMENT_011.get()));
+                this.discard();
+                return InteractionResult.CONSUME;
+            }
             if (!displayed.isEmpty()) {
                 this.setDisplayed(ItemStack.EMPTY);
                 this.give(player, displayed);
                 this.playSound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.8F, 1.0F);
-                return InteractionResult.CONSUME;
-            }
-            if (player.isSecondaryUseActive()) {
-                this.playSound(SoundEvents.ITEM_FRAME_BREAK, 0.8F, 1.0F);
-                this.spawnAtLocation(new ItemStack(ModExperimentItems.EXPERIMENT_011.get()));
-                this.discard();
                 return InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
