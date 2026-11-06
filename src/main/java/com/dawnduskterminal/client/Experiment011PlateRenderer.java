@@ -5,23 +5,21 @@ import com.dawnduskterminal.entity.Experiment011PlateEntity;
 import com.dawnduskterminal.registry.ModEntities;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.model.data.ModelData;
 import org.joml.Matrix4f;
 
 /**
@@ -33,12 +31,9 @@ import org.joml.Matrix4f;
  * 把那张 16x16 的图中间 14x14 截下来当盘面（{@link #TOP_U0}..{@link #TOP_U1}），
  * 四个侧面只截一行像素当边，所以盘面的纹路与边是同一张图上的
  *
- * <p><b>盘子上那件</b>：物品能不能换成方块由 {@link #blockStateOf} 判——{@link BlockItem} 就摆成
- * 12 像素大小的小方块，别的物品就摊成一片 12 像素见方的面片。面片取的是这物品模型的
- * {@code particle} 贴图（{@code item/generated} 那张就是图标本身），与
- * {@code Experiment076Cube} 用的是同一套「从方块图集里取 sprite、自己在实体层画」的做法
- *
- * <p>面片只画朝上的那一面：盘子的东西是给人从上往下看的，底面贴着盘子，本来就看不见
+ * <p><b>盘子上那件</b>：一律画真模型。有对应方块的（{@link BlockItem}）交给方块渲染器画成 12 像素的小方块，
+ * 其余物品交给 {@link ItemRenderer#renderStatic}（{@code FIXED} 上下文），所以盾、剑、弓这些自带模型的
+ * 物品按自己的模型画，而不是拿一张贴图糊上去
  */
 public final class Experiment011PlateRenderer {
     /** 盘子六个面用的贴图：本模组自己的那张 16x16，写全 {@code textures/...png} 路径 */
@@ -46,9 +41,6 @@ public final class Experiment011PlateRenderer {
 
     /** 盘子的六个面画在实体裁切层：带背面剔除、写深度，透明像素照旧裁掉 */
     private static final RenderType PLATE_LAYER = RenderType.entityCutoutNoCull(TEXTURE);
-
-    /** 面片画的层：方块图集 + 裁切，与 {@link #PLATE_LAYER} 同一种写法，只是图集不同 */
-    private static final RenderType ITEM_LAYER = RenderType.entityCutoutNoCull(InventoryMenu.BLOCK_ATLAS);
 
     /** 盘子半宽：14 像素宽 → 0.4375 格 */
     private static final float HALF = 7.0F / 16.0F;
@@ -69,7 +61,7 @@ public final class Experiment011PlateRenderer {
 
     private static final float RIM_V1 = 1.0F / 16.0F;
 
-    /** 面片抬起来的那一点点：贴着盘面画会与盘面打架，抬 1/512 格看不出来又足够分开 */
+    /** 平躺在盘面上的物品抬起来的那一点点：与盘面同高会打架，抬 1/512 格看不出来又足够分开 */
     private static final float FACE_LIFT = 1.0F / 512.0F;
 
     private Experiment011PlateRenderer() {}
@@ -94,10 +86,12 @@ public final class Experiment011PlateRenderer {
 
     private static final class PlateRenderer extends EntityRenderer<Experiment011PlateEntity> {
         private final BlockRenderDispatcher blockRenderer;
+        private final ItemRenderer itemRenderer;
 
         private PlateRenderer(EntityRendererProvider.Context context) {
             super(context);
             this.blockRenderer = context.getBlockRenderDispatcher();
+            this.itemRenderer = context.getItemRenderer();
             // 1 像素厚的盘子底下那一圈影子：取小一号的半径，免得影子比盘子还宽
             this.shadowRadius = 0.4F;
             this.shadowStrength = 0.4F;
@@ -200,7 +194,25 @@ public final class Experiment011PlateRenderer {
                     RIM_V1);
         }
 
-        /** 盘子上摆的那一件：方块摆成小方块，其余摊成一片朝上的面片 */
+        /**
+         * 盘子上摆的那一件：两条路走的都是「真模型」，不是把一张贴图糊上去
+         *
+         * <p>- 有对应方块的（{@link BlockItem}）：方块状态交给 {@link BlockRenderDispatcher}，
+         * 摆成 12 像素的小方块，正坐在盘子中央
+         * <p>- 其余物品：交给 {@link ItemRenderer#renderStatic}（{@code ItemDisplayContext.FIXED}），
+         * 并且<b>照原版「朝上的物品展示框」那一套摆</b>：{@code ItemFrame} 朝上时
+         * {@code XRot = -90}、{@code YRot = 0}，渲染器再乘 {@code XP(-90)} 与 {@code YP(180)}，
+         * 于是物品的正面朝上、平躺在盘面上（见 {@code ItemFrameRenderer#render}）
+         *
+         * <p>两条路的原点约定不一样，别混：
+         *
+         * <ul>
+         *   <li>方块模型占 {@code [0,1]}，{@link BlockRenderDispatcher} 不会自己挪，
+         *       所以要 {@code translate(-0.5, 0, -0.5)} 把它搬到正中间</li>
+         *   <li>物品模型 {@link ItemRenderer#render} 内部已经 {@code translate(-0.5, -0.5, -0.5)}，
+         *       这里再挪一次就会偏半个方块、还埋进盘子一半 —— 物品这条路只缩放、只转向</li>
+         * </ul>
+         */
         private void drawDisplayed(
                 ItemStack stack,
                 Experiment011PlateEntity entity,
@@ -210,40 +222,26 @@ public final class Experiment011PlateRenderer {
             BlockState state = blockStateOf(stack);
             poseStack.pushPose();
             if (state != null) {
-                // 方块模型占 0..1，先把原点挪到方块中心，缩放之后再挪回来，于是 12 像素的小方块正好坐在盘子中间
                 poseStack.scale(DISPLAY, DISPLAY, DISPLAY);
                 poseStack.translate(-0.5F, 0.0F, -0.5F);
                 this.blockRenderer.renderSingleBlock(
                         state, poseStack, bufferSource, packedLight, OverlayTexture.NO_OVERLAY);
             } else {
-                TextureAtlasSprite sprite = particleSprite(stack, entity);
-                Matrix4f matrix = poseStack.last().pose();
-                float r = DISPLAY / 2.0F;
-                float y = FACE_LIFT;
-                quad(
-                        bufferSource.getBuffer(ITEM_LAYER),
-                        matrix,
-                        Direction.UP,
+                poseStack.translate(0.0F, FACE_LIFT, 0.0F);
+                poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
+                poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+                poseStack.scale(DISPLAY, DISPLAY, DISPLAY);
+                this.itemRenderer.renderStatic(
+                        stack,
+                        ItemDisplayContext.FIXED,
                         packedLight,
-                        new float[][] {{-r, y, r}, {r, y, r}, {r, y, -r}, {-r, y, -r}},
-                        sprite.getU0(),
-                        sprite.getU1(),
-                        sprite.getV0(),
-                        sprite.getV1());
+                        OverlayTexture.NO_OVERLAY,
+                        poseStack,
+                        bufferSource,
+                        entity.level(),
+                        entity.getId());
             }
             poseStack.popPose();
-        }
-
-        /**
-         * 物品图标的 sprite
-         *
-         * <p>{@code BakedModel#getParticleIcon} 给的就是这件物品模型里写的 {@code particle} 贴图；
-         * {@code item/generated} 那类模型的 particle 与 {@code layer0} 是同一张，所以拿到的就是图标本身。
-         * 每帧现取，换资源包之后不用清任何缓存
-         */
-        private static TextureAtlasSprite particleSprite(ItemStack stack, Experiment011PlateEntity entity) {
-            BakedModel model = Minecraft.getInstance().getItemRenderer().getModel(stack, entity.level(), null, 0);
-            return model.getParticleIcon(ModelData.EMPTY);
         }
 
         /**

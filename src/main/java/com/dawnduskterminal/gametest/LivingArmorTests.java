@@ -18,8 +18,12 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import twilightforest.init.TFItems;
@@ -125,37 +129,348 @@ public final class LivingArmorTests {
     }
 
     /**
-     * 盾牌挡下的那几条反馈：磨损量、斧头破盾、剑不破盾
+     * 副手有盾就算挡着，没有任何「举多久才生效」的门槛
      *
-     * <p>只验机器能验的那部分 —— 音效（`minecraft:item.shield.block`）与击退方向是听感与手感，
-     * 代码里对着原版抄的，测不了。能测的是「挡下要掉耐久、掉多少」与「斧头会把盾封 100 tick」，
-     * 这两条以前都是错的：耐久按伤害原样扣、破盾根本不存在
+     * <p>前两版把判定挂在「正在用物品」和「举够 5 tick」上，实战里都出现过盾举着却不挡；
+     * 现在门只剩「副手有没有盾、是不是被斧头封了」，所以一个 tick 都不用跑就挡得住
      */
     @GameTest(template = "ddt_empty")
-    public static void shieldBlockWearsAndAxesDisable(GameTestHelper helper) {
+    public static void shieldBlocksRightAway(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         clearLeftovers(helper);
-        LivingArmorEntity blocker = spawnImmobile(level, helper.absolutePos(new BlockPos(3, 4, 3)));
-        LivingArmorEntity attacker = spawnImmobile(level, helper.absolutePos(new BlockPos(3, 4, 5)));
-        blocker.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(TFItems.KNIGHTMETAL_SHIELD.get()));
-        attacker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
-        helper.assertTrue(blocker.hasShield(), "the blocker must hold twilightforest:knightmetal_shield");
+        LivingArmorEntity blocker = shieldBearer(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        Zombie brawler = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 5)));
+        helper.assertTrue(blocker.isBlocking(), "carrying the shield must be enough to count as blocking");
 
-        // 原版 LivingEntity#hurtCurrentlyUsedShield：挡下的伤害 >= 3 时扣 1 + 伤害取整
-        int before = blocker.getOffhandItem().getDamageValue();
-        blocker.blockWithShield(attacker.damageSources().mobAttack(attacker), 6.0F);
-        int wear = blocker.getOffhandItem().getDamageValue() - before;
+        float before = blocker.getHealth();
+        int wearBefore = blocker.getOffhandItem().getDamageValue();
+        blocker.hurt(level.damageSources().mobAttack(brawler), 6.0F);
+        helper.assertTrue(
+                blocker.getHealth() == before,
+                "a hit from the front must be blocked, health went " + before + " -> " + blocker.getHealth());
+        int wear = blocker.getOffhandItem().getDamageValue() - wearBefore;
         helper.assertTrue(wear == 7, "a blocked 6-damage hit must wear the shield by 1 + 6 = 7, got " + wear);
         helper.assertFalse(blocker.isShieldDisabled(), "a sword must not disable the shield");
+        blocker.discard();
+        brawler.discard();
+        helper.succeed();
+    }
 
-        attacker.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_AXE));
-        blocker.blockWithShield(attacker.damageSources().mobAttack(attacker), 6.0F);
+    /**
+     * 背后打过来挡不住：原版挡盾要挡在正面（{@code isDamageSourceBlocked} 里那条与视线方向的点积）
+     *
+     * <p>同一只举着盾的活盔甲，攻击者绕到它背后（北边，−Z）。脸朝南时视线是 +Z，
+     * 背后来的伤害方向与前半球相反，于是这一下照常生效
+     */
+    @GameTest(template = "ddt_empty")
+    public static void shieldDoesNotCoverTheBack(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        LivingArmorEntity blocker = shieldBearer(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        Zombie front = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 5)));
+        Zombie back = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 1)));
+        blocker.setTarget(front);
+        raiseShield(blocker);
+        helper.assertTrue(blocker.isBlocking(), "the blocker must be holding the shield up");
+
+        float health = blocker.getHealth();
+        blocker.hurt(level.damageSources().mobAttack(back), 6.0F);
+        helper.assertTrue(
+                blocker.getHealth() < health,
+                "a hit from behind must go through the shield, health went " + health + " -> " + blocker.getHealth());
+        blocker.discard();
+        front.discard();
+        back.discard();
+        helper.succeed();
+    }
+
+    /**
+     * 盾牌挡不住的东西照旧生效：斧头会破盾，{@code #minecraft:bypasses_shield} 里的伤害穿盾
+     *
+     * <p>破盾那一条照原版 {@code Player#blockUsingShield}：挡下之后问 {@code attacker.canDisableShield()}，
+     * 主手是斧类就把盾封 {@value LivingArmorEntity#SHIELD_DISABLED_TICKS} tick，并且把盾收掉。
+     * 穿盾那一条用铁砧砸下来的伤害（{@code minecraft:falling_anvil} 就在那张标签里），
+     * 它同样带着来向，所以挡住它的不可能是「方向不对」
+     */
+    @GameTest(template = "ddt_empty")
+    public static void axesDisableAndBypassingDamageGetsThrough(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        LivingArmorEntity blocker = shieldBearer(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        Zombie axeman = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 5)));
+        axeman.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_AXE));
+        blocker.setTarget(axeman);
+        raiseShield(blocker);
+        helper.assertTrue(blocker.isBlocking(), "the blocker must be holding the shield up");
+
+        float health = blocker.getHealth();
+        blocker.hurt(level.damageSources().mobAttack(axeman), 6.0F);
+        helper.assertTrue(blocker.getHealth() == health, "the axe hit itself must be blocked first");
         helper.assertTrue(
                 blocker.isShieldDisabled(),
                 "an axe must disable the shield for " + LivingArmorEntity.SHIELD_DISABLED_TICKS + " ticks");
+        helper.assertFalse(blocker.isBlocking(), "a disabled shield must be lowered");
+
+        // 穿盾：铁砧砸下来，方向对、盾也举着也不行（上一只的盾已经被斧头封了，换一只干净的）
         blocker.discard();
-        attacker.discard();
+        LivingArmorEntity second = shieldBearer(level, helper.absolutePos(new BlockPos(5, 4, 3)));
+        second.setTarget(axeman);
+        raiseShield(second);
+        helper.assertTrue(second.isBlocking(), "the second blocker must be holding the shield up");
+        float health2 = second.getHealth();
+        second.hurt(level.damageSources().anvil(axeman), 6.0F);
+        helper.assertTrue(
+                second.getHealth() < health2,
+                "falling_anvil bypasses shields, health went " + health2 + " -> " + second.getHealth());
+        second.discard();
+        axeman.discard();
         helper.succeed();
+    }
+
+    /** 把盾举到位：跑几 tick 让原版那 5 tick 的起手走完。手动推进，不等墙上时间 */
+    private static void raiseShield(LivingArmorEntity blocker) {
+        for (int i = 0; i < 8; i++) {
+            blocker.tick();
+        }
+    }
+
+    /**
+     * 空手一拳也要挡住：玩家那一拳的伤害源是 {@code playerAttack}、伤害只有 1 点
+     *
+     * <p>之前只测过 {@code mobAttack} 的 6 点伤害，「玩家」与「小伤害」这两条漏在外面：
+     * 伤害源换成 {@code playerAttack}、数值换成空手的 1 点，挡盾这条路不该有任何区别
+     */
+    @GameTest(template = "ddt_empty")
+    public static void shieldStopsABareHandedPunch(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        LivingArmorEntity blocker = shieldBearer(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        Zombie bystander = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 5)));
+        blocker.setTarget(bystander);
+        raiseShield(blocker);
+        helper.assertTrue(blocker.isBlocking(), "the blocker must be holding the shield up");
+
+        Player puncher = helper.makeMockPlayer(GameType.SURVIVAL);
+        puncher.moveTo(blocker.getX(), blocker.getY(), blocker.getZ() + 1.5D, 180.0F, 0.0F);
+        float health = blocker.getHealth();
+        // 原版空手：Player#attack 走的是 damageSources().playerAttack(this)，伤害 1 点
+        blocker.hurt(level.damageSources().playerAttack(puncher), 1.0F);
+        helper.assertTrue(
+                blocker.getHealth() == health,
+                "a blocking suit must stop a bare-handed punch, health went " + health + " -> " + blocker.getHealth());
+        blocker.discard();
+        bystander.discard();
+        puncher.discard();
+        helper.succeed();
+    }
+
+    /**
+     * AI 开着的时候也要挡住：照着游戏里那一遍来
+     *
+     * <p>前面几条用例都把 AI 关了、手动把盾举到位，验的是「举着的情况下挡不挡得住」。
+     * 这一条把 AI 打开，让目标、寻路、朝向、举盾全部自己跑 20 tick，然后<b>按它自己的视线方向</b>
+     * 站到正面打一拳 —— 失败信息里把 {@code isUsingItem} 与已举 tick 数一起打出来，
+     * 下次再坏能直接看出是「没举盾」还是「正面判错了」
+     */
+    @GameTest(template = "ddt_empty")
+    public static void shieldBlocksWithAiRunning(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        LivingArmorEntity blocker = spawnImmobile(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        blocker.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(TFItems.KNIGHTMETAL_SHIELD.get()));
+        // 诱饵摆在 8 格外：目标在举盾范围内，但 20 tick 内它跑不到近战距离（近战 3 格），
+        // 也就不会出手 —— 出手会收盾 8 tick，那是另一条用例
+        LivingArmorEntity bait = spawnImmobile(level, helper.absolutePos(new BlockPos(3, 4, 11)));
+        blocker.setTarget(bait);
+        for (int i = 0; i < 20; i++) {
+            blocker.tick();
+        }
+
+        Vec3 look = blocker.calculateViewVector(0.0F, blocker.getYHeadRot());
+        Player puncher = helper.makeMockPlayer(GameType.SURVIVAL);
+        puncher.moveTo(blocker.getX() + look.x * 1.5D, blocker.getY(), blocker.getZ() + look.z * 1.5D, 0.0F, 0.0F);
+        helper.assertTrue(
+                blocker.isBlocking(),
+                "an AI-driven suit with a threat nearby must be blocking (using=" + blocker.isUsingItem()
+                        + ", usedTicks=" + blocker.getTicksUsingItem() + ")");
+        float health = blocker.getHealth();
+        blocker.hurt(level.damageSources().playerAttack(puncher), 1.0F);
+        helper.assertTrue(
+                blocker.getHealth() == health,
+                "a punch from the direction the suit faces must be blocked, health went " + health + " -> "
+                        + blocker.getHealth());
+        blocker.discard();
+        bait.discard();
+        puncher.discard();
+        helper.succeed();
+    }
+
+    /**
+     * 出手那一下不能同时举着盾
+     *
+     * <p>挥击之前盾会收起来 {@value LivingArmorEntity#SHIELD_SWING_LOWER_TICKS} tick：
+     * 这一段里既不算挡着，姿势也放下来；过完这段才重新举
+     */
+    @GameTest(template = "ddt_empty")
+    public static void shieldIsLoweredWhileAttacking(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        LivingArmorEntity blocker = shieldBearer(level, helper.absolutePos(new BlockPos(3, 4, 3)));
+        Zombie bait = brawlerInFront(level, helper.absolutePos(new BlockPos(3, 4, 4)));
+        blocker.setTarget(bait);
+        helper.assertTrue(blocker.isBlocking(), "sanity: the shield must be up before it swings");
+
+        blocker.attackTarget(bait);
+        helper.assertFalse(blocker.isBlocking(), "a suit that just swung must not be blocking at the same time");
+
+        // 这一段里打进来就是实打实的伤
+        float health = blocker.getHealth();
+        blocker.hurt(level.damageSources().mobAttack(bait), 6.0F);
+        helper.assertTrue(
+                blocker.getHealth() < health,
+                "a hit taken during the swing must go through, health went " + health + " -> " + blocker.getHealth());
+
+        // 窗口过完，盾重新举起来
+        for (int i = 0; i < LivingArmorEntity.SHIELD_SWING_LOWER_TICKS; i++) {
+            blocker.tick();
+        }
+        helper.assertTrue(blocker.isBlocking(), "the shield must come back up after the swing");
+        blocker.discard();
+        bait.discard();
+        helper.succeed();
+    }
+
+    /**
+     * 移动与疾跑：疾跑比例、举盾时的输入缩放
+     *
+     * <p>生物的移动速度属性（0.3）与玩家的（0.1）不是同一把尺子，不能直接比数字；
+     * 能比的是<b>比例</b>：疾跑 +30%（`minecraft:sprinting`，与玩家同一条修饰符），
+     * 举盾时输入按 {@link LivingArmorEntity#GUARD_SPEED_FACTOR} 缩。绝对值那一段由
+     * {@link #guardSpeedIsTwentyPercentOfWalk} 实测位移来钉
+     */
+    @GameTest(template = "ddt_empty")
+    public static void speedMatchesThePlayer(GameTestHelper helper) {
+        clearLeftovers(helper);
+        LivingArmorEntity armor = spawnImmobile(helper.getLevel(), helper.absolutePos(new BlockPos(3, 4, 3)));
+        float walk = (float) armor.getAttributeValue(Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(Math.abs(walk - 0.3F) < 1.0E-6F, "base movement speed must stay 0.3, got " + walk);
+
+        armor.setSprintCharging(true);
+        float sprinting = (float) armor.getAttributeValue(Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(
+                Math.abs(sprinting - walk * 1.3F) < 1.0E-6F,
+                "sprinting must add exactly 30% like minecraft:sprinting, got " + sprinting);
+
+        armor.setSpeed(walk);
+        armor.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(TFItems.KNIGHTMETAL_SHIELD.get()));
+        helper.assertTrue(armor.isBlocking(), "sanity: carrying the shield must count as guarding");
+        armor.tick();
+        helper.assertFalse(armor.isSprintCharging(), "a guarding suit must not be sprint-charging");
+        helper.assertTrue(
+                Math.abs(armor.getSpeed() - walk * LivingArmorEntity.GUARD_SPEED_FACTOR) < 1.0E-6F,
+                "guarding must scale the movement input by " + LivingArmorEntity.GUARD_SPEED_FACTOR + ", got "
+                        + armor.getSpeed() + " from " + walk);
+        helper.assertTrue(
+                Math.abs(armor.getAttributeValue(Attributes.MOVEMENT_SPEED) - walk) < 1.0E-6F,
+                "the guard slowdown must not touch the attribute, got "
+                        + armor.getAttributeValue(Attributes.MOVEMENT_SPEED));
+
+        armor.attackTarget(armor);
+        helper.assertFalse(armor.isBlocking(), "a suit that just swung must not be blocking");
+        helper.assertTrue(
+                Math.abs(armor.getSpeed() - walk) < 1.0E-6F,
+                "the guard slowdown must be gone while swinging, got " + armor.getSpeed());
+
+        armor.discard();
+        helper.succeed();
+    }
+
+    /**
+     * 实测「寻路驱动」下的走速与举盾速度
+     *
+     * <p>前面那条 travel 用例是满输入，量出来的绝对值偏大；这里换成真寻路：目标摆在 16 格外，
+     * 让 AI 自己走过去，跑 40 tick 量位移 —— 与游戏里看到的移动同一条路
+     */
+    @GameTest(template = "ddt_empty")
+    public static void guardSpeedIsAboutTwentyPercentOfWalk(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        clearLeftovers(helper);
+        BlockPos from = helper.absolutePos(new BlockPos(2, 2, 3));
+        double walk = measureChaseSpeed(level, from, false);
+        double guard = measureChaseSpeed(level, from, true);
+        double ratio = walk == 0.0D ? Double.NaN : guard / walk;
+        helper.assertTrue(walk > 0.5D, "sanity: the chase measurement must see real movement, got " + walk);
+        // 玩家举盾时移动输入乘 0.2（LocalPlayer 695-699），实战里看到的就是两成速度
+        helper.assertTrue(
+                ratio > 0.15D && ratio < 0.25D,
+                "guard speed must be about 20% of the walk speed, measured walk=" + walk + " m/s, guard=" + guard
+                        + " m/s, ratio=" + ratio);
+        helper.succeed();
+    }
+
+    /** 铺一条走廊，目标摆在 16 格外，让 AI 自己追 40 tick，返回水平速度（格/秒） */
+    private static double measureChaseSpeed(ServerLevel level, BlockPos from, boolean shield) {
+        for (int dx = -2; dx <= 22; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                level.setBlockAndUpdate(from.offset(dx, -1, dz), Blocks.STONE.defaultBlockState());
+                level.setBlockAndUpdate(from.offset(dx, 0, dz), Blocks.AIR.defaultBlockState());
+                level.setBlockAndUpdate(from.offset(dx, 1, dz), Blocks.AIR.defaultBlockState());
+            }
+        }
+        LivingArmorEntity mob = ModEntities.LIVING_ARMOR.get().create(level);
+        if (mob == null) {
+            throw new IllegalStateException("living_armor could not be created");
+        }
+        mob.moveTo(from.getX() + 0.5D, from.getY(), from.getZ() + 0.5D, -90.0F, 0.0F);
+        mob.setPersistenceRequired();
+        if (shield) {
+            mob.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(TFItems.KNIGHTMETAL_SHIELD.get()));
+        }
+        level.addFreshEntity(mob);
+
+        Zombie bait = EntityType.ZOMBIE.create(level);
+        if (bait == null) {
+            throw new IllegalStateException("zombie could not be created");
+        }
+        bait.moveTo(from.getX() + 18.5D, from.getY(), from.getZ() + 0.5D, 0.0F, 0.0F);
+        bait.setNoAi(true);
+        bait.setInvulnerable(true);
+        level.addFreshEntity(bait);
+        mob.setTarget(bait);
+
+        double start = mob.getX();
+        for (int i = 0; i < 40; i++) {
+            mob.tick();
+        }
+        double measured = (mob.getX() - start) / 40.0D * 20.0D;
+        mob.discard();
+        bait.discard();
+        return measured;
+    }
+
+    /** 举着盾的活盔甲：副手骑士盾牌，脸朝南（+Z），并且站在场上 */
+    private static LivingArmorEntity shieldBearer(ServerLevel level, BlockPos pos) {
+        LivingArmorEntity blocker = spawnImmobile(level, pos);
+        blocker.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(TFItems.KNIGHTMETAL_SHIELD.get()));
+        // 关掉 AI：位置与朝向要钉死，盾牌那套判定是按脸的方向算的
+        blocker.setNoAi(true);
+        blocker.setYRot(0.0F);
+        blocker.setYHeadRot(0.0F);
+        return blocker;
+    }
+
+    /** 站在指定位置的一个假人：只当「攻击者」，用的是它的位置与手里那件武器 */
+    private static Zombie brawlerInFront(ServerLevel level, BlockPos pos) {
+        Zombie brawler = EntityType.ZOMBIE.create(level);
+        if (brawler == null) {
+            throw new IllegalStateException("zombie could not be created");
+        }
+        brawler.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        brawler.setNoGravity(true);
+        brawler.setNoAi(true);
+        brawler.setPersistenceRequired();
+        level.addFreshEntity(brawler);
+        return brawler;
     }
 
     /**

@@ -275,6 +275,44 @@
 `fn.*` 五个四元数函数用 JOML 按标准语义重建：包里没有 `functions/` 目录，定义无从取得。
 名字按小写登记，因为词法层会把标识符转成小写。
 
+### 活盔甲
+
+`entity/LivingArmorEntity` 是一只本体不可见的 Monster，穿一整套随机护甲、拿一件随机武器。
+
+**举盾只在两种时候发生**，其余时间一律收着：
+
+- 对手活着、距离不超过 `MELEE_REACH`（近战 3 格）、而且在自己头朝向的正面（点积 > 0）；
+- 或者 60 tick 内挨过打（远处射来的箭也算）。
+
+逃跑时目标被清空、正面也朝着逃跑方向，所以不会出现「背对着人举盾」。
+
+挡不挡得住交给原版 `LivingEntity#isDamageSourceBlocked`：只有正面来、不在
+`#minecraft:bypasses_shield` 里、且不是穿透箭的伤害挡得住。`isBlocking()` 被覆写成
+「副手有盾 + 没被斧头封 + 不在出手后的 8 tick 窗口里」，与物品使用状态解耦
+（那个状态每 tick 会被 `updatingUsingItem` 校验一次，中途被清掉时盾会静悄悄不挡）。
+
+挡下之后的反馈：`playHurtSound` 里按举盾状态改播 `item.shield.block`（原版 `hurt` 里那句
+`playHurtSound` 是无条件的，会照样播受伤音），`handleEntityEvent` 吞掉 entity event 29
+防止重复；`knockback` 在 `blockedThisHit` 窗口内直接返回；`hurtCurrentlyUsedShield` 按
+`Player` 那条磨耐久（≥3 伤害时 `1 + 伤害取整`）；`blockUsingShield` 按 `Player` 那条问
+`attacker.canDisableShield()`，斧头就把盾封 100 tick。
+
+移动上有两条限制：不能疾跑（`LocalPlayer` 730 行的疾跑条件里有 `!isUsingItem()`）；
+举盾时把 `getSpeed()` 乘 `GUARD_SPEED_FACTOR`，位置与玩家的 `input * 0.2F`
+（`LocalPlayer` 695–699）对应。**不能拿移动速度属性做这件事**：实测属性 0.3 → 4.73 格每秒、
+属性 0.06 只剩 0.05 格每秒，属性到实际位移之间不是线性的；改成缩 `getSpeed()` 之后，
+实测寻路追击时举盾速度是走速的 0.178（`gametest/LivingArmorTests#guardSpeedIsAboutTwentyPercentOfWalk`）。
+系数取 0.3 而不是 0.2，是因为「输入 → 位移」这一段本身也不是线性的。
+
+出手（近战、斧头、链锤）会先把盾收起来 `SHIELD_SWING_LOWER_TICKS` 个 tick：这一段既不挡、
+不减速、也不摆举盾姿势。
+
+客户端照着 `PlayerRenderer#getArmPose` 给 `ArmPose.BLOCK`，盾是立在胸前的。
+`gametest/LivingArmorTests` 钉住：有盾就算挡着（正面挡住、背面挡不住、盾牌掉耐久、
+斧头破盾、`falling_anvil` 穿盾、空手一拳也被挡）、出手 8 tick 内不挡、举盾掉速、
+以及 AI 全开时照样挡得住。
+
+
 ## 装备与武器
 
 ### 材质与套装
@@ -389,9 +427,14 @@ NeoForge 的 `CreativeModeTabRegistry` 对未声明 before/after 的栏目按注
 - 外形在 `client/Experiment011PlateRenderer`：贴图是本模组的 `textures/block/experment_011.png`
   （文件名沿用源文件，比 experiment 少一个 i），盘面截中间 14x14，四个侧面只取一行像素。
 - 盘上摆的那一件存在同步数据 `DATA_DISPLAYED` 里，存档键为 `displayed`，只占一格。
-- 展示尺度统一为 12 像素：`BlockItem` 换成方块状态后按 0.75 缩放画小方块，
-  其余物品取模型 `particle` 贴图摊成一片 12x12、朝上的面片。所以任何物品都摆得上去，
-  有对应方块的摆成方块，没有的摆成它自己的图标。
+- 展示尺度统一为 12 像素，而且画的是**真模型**：`BlockItem` 交给方块渲染器，摆成坐在盘子中央的小方块；
+  其余物品交给 `ItemRenderer#renderStatic`（`ItemDisplayContext.FIXED`），
+  并且照原版**朝上的物品展示框**摆：`XP(-90)` + `YP(180)`，于是物品正面朝上、平躺在盘面上。
+  所以盾（`builtin/entity` 的自定义渲染器）、剑、弓、旗帜都按自己的模型画，
+  不是拿一张 `particle` 贴图糊在盘子上。
+- 两条路的原点约定不同：方块模型占 `[0,1]`、方块渲染器不自己挪，所以要 `translate(-0.5, 0, -0.5)`；
+  物品模型在 `ItemRenderer#render` 内部已经 `translate(-0.5, -0.5, -0.5)` 过，
+  这里再挪一次就会偏半个方块、还埋进盘子里一半。
 - 右键：手上有东西就摆上去，空手取回那一件，潜行空手收回盘子本身；左键砸掉连展示物一起掉。
 
 ### 试验物品 012（杯子）

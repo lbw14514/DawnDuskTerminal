@@ -13,6 +13,10 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.UseAnim;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 /**
@@ -79,10 +83,53 @@ public final class LivingArmorRenderer {
         }
     }
 
-    /** 只算姿势、不画几何的人形骨架 */
+    /**
+     * 只算姿势、不画几何的人形骨架
+     *
+     * <p>举盾那一条姿势是照 {@code PlayerRenderer#getArmPose} 抄的：玩家把盾举起来时，
+     * {@code HumanoidModel} 会把那只手摆成 {@code ArmPose.BLOCK}（盾立在胸前）。原版这段写在
+     * {@code PlayerRenderer} 里，{@link LivingEntityRenderer} 这条路上没有，所以在这里补一层 ——
+     * 不补的话盾牌会一直垂在手边，看不出它正举着盾
+     */
     private static final class HollowModel extends HumanoidModel<LivingArmorEntity> {
         private HollowModel(ModelPart root) {
             super(root);
+        }
+
+        @Override
+        public void setupAnim(
+                LivingArmorEntity entity,
+                float limbSwing,
+                float limbSwingAmount,
+                float ageInTicks,
+                float netHeadYaw,
+                float headPitch) {
+            // 先定手型再让父类摆手：HumanoidModel#setupAnim 末尾才按 leftArmPose/rightArmPose 摆姿势
+            if (entity.getMainArm() == HumanoidArm.RIGHT) {
+                this.rightArmPose = armPose(entity, InteractionHand.MAIN_HAND);
+                this.leftArmPose = armPose(entity, InteractionHand.OFF_HAND);
+            } else {
+                this.rightArmPose = armPose(entity, InteractionHand.OFF_HAND);
+                this.leftArmPose = armPose(entity, InteractionHand.MAIN_HAND);
+            }
+            super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        }
+
+        /**
+         * 一只手该摆什么姿势：与原版玩家同一套判据 —— 这一栈正在被使用、而且使用动画是
+         * {@code BLOCK}（盾牌就是这个）时是举盾，否则手里有东西就是 {@code ITEM}
+         */
+        private static ArmPose armPose(LivingArmorEntity entity, InteractionHand hand) {
+            ItemStack stack = entity.getItemInHand(hand);
+            if (stack.isEmpty()) {
+                return ArmPose.EMPTY;
+            }
+            if (entity.getUsedItemHand() == hand
+                    && entity.getUseItemRemainingTicks() > 0
+                    && stack.getUseAnimation() == UseAnim.BLOCK) {
+                return ArmPose.BLOCK;
+            }
+            return ArmPose.ITEM;
         }
 
         @Override

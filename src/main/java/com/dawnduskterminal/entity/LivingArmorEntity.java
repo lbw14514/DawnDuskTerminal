@@ -1,15 +1,12 @@
 package com.dawnduskterminal.entity;
 
-import com.dawnduskterminal.DawnDuskTerminal;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -26,7 +23,6 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -41,6 +37,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -77,8 +74,9 @@ import twilightforest.init.TFSounds;
  * <h2>链锤与盾牌</h2>
  * 主手是链锤（{@code twilightforest:block_and_chain}）时不再近身，改成把链锤甩出去 —— 直接造一枚
  * 暮色森林自己的 {@link ChainBlock}，所以飞行、命中、回手、磨损全是链锤本身那一套，这里只负责瞄准与冷却。
- * 副手是骑士盾牌时受击有 {@value #SHIELD_BLOCK_CHANCE} 的概率挡下；挡下的音效、击退、磨损与
- * 「斧头破盾」全部照原版玩家挡盾那一套，逐条见 {@link #blockWithShield}
+ * 副手是骑士盾牌时，对手进到近战范围（正面）或自己刚挨过打的那段时间里会举盾（{@link #updateShield}），
+ * 挡不挡得住交给原版 {@code isDamageSourceBlocked}；磨损与斧头破盾照 {@code Player} 那两条写，
+ * 见 {@link #hurtCurrentlyUsedShield} 与 {@link #blockUsingShield}
  */
 public class LivingArmorEntity extends Monster {
     /**
@@ -108,24 +106,40 @@ public class LivingArmorEntity extends Monster {
     /** 两次投掷之间歇多久 */
     private static final int FLAIL_COOLDOWN = 30;
 
-    /** 副手是骑士盾牌时的抵挡概率 */
-    public static final float SHIELD_BLOCK_CHANCE = 0.6F;
-
     /**
-     * 斧头破盾之后封多久，与原版 {@code Player#disableShield} 的 100 tick 同一个值（5 秒）
+     * 出手之后盾收起来多少 tick
      *
-     * <p>这段时间里 {@value #SHIELD_BLOCK_CHANCE} 的抵挡完全不生效，也不是「减弱」，就是打不挡
+     * <p>出手的那一下不能同时举着盾，这里让它在挥击前后 {@value #SHIELD_SWING_LOWER_TICKS} tick 里
+     * 既不挡、也不摆举盾姿势
      */
+    public static final int SHIELD_SWING_LOWER_TICKS = 8;
+
+    /** 斧头破盾之后封多久，与原版 {@code Player#disableShield} 的 100 tick 同一个值（5 秒） */
     public static final int SHIELD_DISABLED_TICKS = 100;
 
-    /** 原版只在挡下的伤害不低于这个数时才扣盾牌耐久（{@code LivingEntity#hurtCurrentlyUsedShield}） */
-    private static final float MIN_SHIELD_DAMAGE = 3.0F;
+    /** 挨过一下之后盾牌至少再举多久（tick）：远处射来的箭，挨过一次之后才会举盾 */
+    public static final int SHIELD_HOLD_TICKS = 60;
 
-    /** 挡下之后自己被推开多远，原版 {@code blockedByShield} 写死的 0.5 */
-    private static final double SHIELD_KNOCKBACK = 0.5D;
+    /**
+     * 举盾时把移动输入缩到这个比例
+     *
+     * <p>玩家那一侧是 {@code input * 0.2F}（{@code LocalPlayer} 695–699），但生物的「输入 → 位移」
+     * 不是线性的：实测输入缩到 0.2 只剩 0.118 的位移比，反解出要取 0.3 才落在玩家举盾那两成上
+     * （见 {@code LivingArmorTests#guardSpeedIsTwentyPercentOfWalk}）
+     */
+    public static final float GUARD_SPEED_FACTOR = 0.3F;
 
     /** 斧头破盾剩下的 tick；{@code 0} 表示盾牌还能用。只在服务端有意义 */
     private int shieldDisabledTicks;
+
+    /** 「刚挨过打」的剩余 tick：这段时间里盾牌一直举着 */
+    private int shieldHoldTicks;
+
+    /** 出手之后还剩多少 tick 不举盾；{@code 0} 表示可以举 */
+    private int shieldDownTicks;
+
+    /** 当前这一下会不会被盾挡掉：只在 {@link #hurt} 调用 {@code super.hurt} 的那一小段里为真 */
+    private boolean blockedThisHit;
 
     /**
      * 疾跑：目标拉开的距离超过这个数就开始跑
@@ -133,18 +147,6 @@ public class LivingArmorEntity extends Monster {
      * <p>8 格是作者给的值；与近战距离 3 之间留出这段，就是「跑过去」与「贴脸」的分界
      */
     private static final double SPRINT_DISTANCE = 8.0D;
-
-    /** 疾跑的移动速度加成，与原版玩家 {@code effect.sprint} 的 +30% 同一个数 */
-    private static final double SPRINT_SPEED_BONUS = 0.3D;
-
-    /*
-     * 修饰符的 id 与实例都是静态常量：原版 Player 就是给 {@code effect.sprint} 建一条静态修饰符复用到所有玩家身上。
-     * 名字避开 effect.sprint，免得与玩家那条撞在一起
-     */
-    private static final ResourceLocation SPRINT_MODIFIER_ID = DawnDuskTerminal.id("living_armor_sprint");
-
-    private static final AttributeModifier SPRINT_MODIFIER = new AttributeModifier(
-            SPRINT_MODIFIER_ID, SPRINT_SPEED_BONUS, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
 
     /** 暴击倍率：与原版 {@code Player#attack} 的 1.5 一致 */
     private static final float CRIT_MULTIPLIER = 1.5F;
@@ -200,6 +202,16 @@ public class LivingArmorEntity extends Monster {
         if (!this.level().isClientSide()) {
             if (this.shieldDisabledTicks > 0) {
                 this.shieldDisabledTicks--;
+            }
+            if (this.shieldHoldTicks > 0) {
+                this.shieldHoldTicks--;
+            }
+            if (this.shieldDownTicks > 0) {
+                this.shieldDownTicks--;
+            }
+            this.updateShield();
+            if (this.isBlocking() && this.isSprintCharging()) {
+                this.setSprintCharging(false);
             }
             if (this.getTarget() == null && !this.isWounded()) {
                 this.setSprintCharging(false);
@@ -269,32 +281,28 @@ public class LivingArmorEntity extends Monster {
     }
 
     /**
-     * 受击：先算盾牌，再记仇
+     * 受击：盾牌判定交给原版，这里只补「挨了一下就举住盾」与记仇
      *
-     * <p>盾牌那一段：副手有骑士盾牌时有 {@value #SHIELD_BLOCK_CHANCE} 的概率整下挡掉。
-     * 生物不像玩家那样会 {@code startUsingItem} 举盾，所以原版那条「举着盾才吃盾牌判定」的路子在这里走不通，
-     * 判定只能自己写在 {@code hurt} 里。挡下之后这一下的伤害、击退、受击音全部不发生（返回 false 等于没挨打），
-     * 其余反馈见 {@link #blockWithShield}。不吃盾牌的伤害照旧生效：{@code DamageTypeTags.BYPASSES_SHIELD}
-     * 里那几条（原版是虚空伤害与穿盾的魔法伤害）连玩家举着盾也挡不住；被斧头破盾
-     * （{@link #isShieldDisabled}）的 100 tick 里也不挡
+     * <p>挡不挡得住由 {@code LivingEntity#hurt} 里那条原版分支判（{@link #isBlocking}
+     * 决定「算不算挡着」，{@code isDamageSourceBlocked} 决定方向与标签），这里不另写判定
      *
-     * <p>记仇那一段：<b>不管隔多远，谁打就钉谁</b>。原版 {@code HurtByTargetGoal} 本身不看距离
-     * （它只查 {@code getLastHurtByMob}），但它还要过一遍 {@code TargetingConditions}，而且在
-     * {@code Mob.serverAiStep} 里的执行顺序排在攻击目标之后 —— 远距离挨了一箭再「等下一 tick 的目标选择」
-     * 会慢一拍，这里直接钉死。半血以下不钉：那时候该做的是逃，不是冲上去
+     * <p>记仇那一段：<b>不管隔多远，谁打就钉谁</b>。原版 {@code HurtByTargetGoal} 还要过一遍
+     * {@code TargetingConditions}，而且在 {@code Mob.serverAiStep} 里的执行顺序排在攻击目标之后，
+     * 远距离挨了一箭再「等下一 tick 的目标选择」会慢一拍。半血以下不钉：那时候该做的是逃
      */
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (amount > 0.0F
-                && !this.level().isClientSide()
-                && this.hasShield()
-                && !this.isShieldDisabled()
-                && !source.is(DamageTypeTags.BYPASSES_SHIELD)
-                && this.getRandom().nextFloat() < SHIELD_BLOCK_CHANCE) {
-            this.blockWithShield(source, amount);
-            return false;
+        if (amount > 0.0F && !this.level().isClientSide()) {
+            this.shieldHoldTicks = SHIELD_HOLD_TICKS;
         }
-        boolean hurt = super.hurt(source, amount);
+        // 这一下会不会被盾挡掉，要在 super.hurt 之前问：挡盾分支在里面跑，出去就看不到了
+        this.blockedThisHit = amount > 0.0F && this.isDamageSourceBlocked(source);
+        boolean hurt;
+        try {
+            hurt = super.hurt(source, amount);
+        } finally {
+            this.blockedThisHit = false;
+        }
         if (hurt
                 && !this.level().isClientSide()
                 && !this.isWounded()
@@ -308,86 +316,213 @@ public class LivingArmorEntity extends Monster {
     }
 
     /**
-     * 挡下一击的全部反馈，逐条照原版玩家挡盾那一套
-     *
-     * <p>一条条对着 {@code LivingEntity#hurt} 的挡盾分支抄的：
+     * 挡住的那一下：只有盾牌声，没有受伤音，也不吃击退
      *
      * <ol>
-     *   <li>音效：{@code SoundEvents.SHIELD_BLOCK}（{@code minecraft:item.shield.block}），
-     *       原版由 entity event 29 播出，音量 1.0、音高 0.8 + 随机 0.4。
-     *       <b>不要用暮色森林那把 {@code TFSounds.SHIELD_BLOCK}</b> —— 那是「要塞护盾」的抵挡音，
-     *       底层 ogg 是僵尸敲铁门，与盾牌没有半点关系
-     *   <li>击退：原版 {@code blockedByShield} 推的是<b>举盾的一方</b>（{@code this.knockback}），
-     *       不是攻击者 —— 挡一下自己会往后滑半步
-     *   <li>磨损：原版只在挡下的伤害 ≥ 3 时扣耐久，扣 {@code 1 + 伤害取整}；
-     *       盾牌被这一下打碎时再补一声 {@code SoundEvents.SHIELD_BREAK}（音量 0.8，entity event 30 那一档）
-     *   <li>斧头破盾：原版在 {@code Player#blockUsingShield} 里问 {@code attacker.canDisableShield()}，
-     *       真就把盾封 {@value #SHIELD_DISABLED_TICKS} tick（5 秒）。判定按 NeoForge 的物品接口
-     *       {@code ItemStack#canDisableShield}，默认实现是「主手是斧类」—— 所以斧头、包括模组斧，
-     *       与骑士斧都算；剑不算
+     *   <li>原版 {@code LivingEntity#hurt} 里那句 {@code playHurtSound} 是无条件的
+     *       （{@code hurt} 的 1240 行，整下挡掉也照播），所以照抄过来挡住时照样「嗷」一声</li>
+     *   <li>盾牌声在这里<b>由服务端播</b>（发成 {@code ClientboundSoundPacket}，声音与字幕都出来）。
+     *       原版那条是广播 entity event 29 交给客户端，在这只生物上实测没有声音，见 {@link #handleEntityEvent}</li>
      * </ol>
-     *
-     * <p>抽成 public 是为了能直接测：走 {@link #hurt} 要先过 60% 的掷骰，测起来只能是概率性的
      */
-    public void blockWithShield(DamageSource source, float amount) {
-        ItemStack shield = this.getOffhandItem();
-        if (!(this.level() instanceof ServerLevel level)) {
+    @Override
+    protected void playHurtSound(DamageSource source) {
+        if (this.isBlocking()) {
+            this.playSound(
+                    SoundEvents.SHIELD_BLOCK, 1.0F, 0.8F + this.level().random.nextFloat() * 0.4F);
             return;
         }
-        LivingEntity attacker = source.getDirectEntity() instanceof LivingEntity living ? living : null;
-        boolean axe = attacker != null && attacker.getMainHandItem().canDisableShield(shield, this, attacker);
-        level.playSound(
-                null,
-                this.getX(),
-                this.getY(),
-                this.getZ(),
-                SoundEvents.SHIELD_BLOCK,
-                SoundSource.NEUTRAL,
-                1.0F,
-                0.8F + this.getRandom().nextFloat() * 0.4F);
-        if (attacker != null) {
-            this.knockback(0.5D, this.getX() - attacker.getX(), this.getZ() - attacker.getZ());
+        super.playHurtSound(source);
+    }
+
+    /**
+     * 接管 entity event 29：盾牌声已经由 {@link #playHurtSound} 在服务端播了，
+     * 这里把原版那条客户端播放掐掉，免得同一下出两声
+     */
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == 29) {
+            return;
         }
-        if (amount >= MIN_SHIELD_DAMAGE) {
-            shield.hurtAndBreak(1 + Mth.floor(amount), this, EquipmentSlot.OFFHAND);
-            if (shield.isEmpty()) {
-                level.playSound(
-                        null,
-                        this.getX(),
-                        this.getY(),
-                        this.getZ(),
-                        SoundEvents.SHIELD_BREAK,
-                        SoundSource.NEUTRAL,
-                        0.8F,
-                        0.8F + this.getRandom().nextFloat() * 0.4F);
-            }
+        super.handleEntityEvent(id);
+    }
+
+    /**
+     * 挡住的那一下不吃击退
+     *
+     * <p>原版 {@code LivingEntity#hurt} 的击退段（1213~1228 行）不看「有没有被盾挡住」，
+     * 被挡下的那一下照样走到 {@code knockback}。这里把「刚被盾挡下的那一下」吞掉：
+     * {@link #blockedThisHit} 在 {@link #hurt} 调用 {@code super.hurt} 之前置好，出来即清空
+     */
+    @Override
+    public void knockback(double strength, double x, double z) {
+        if (this.blockedThisHit) {
+            return;
         }
-        if (axe) {
+        super.knockback(strength, x, z);
+    }
+
+    /**
+     * 举盾 / 收盾：只管外观与朝向，挡不挡由 {@link #isBlocking} 决定
+     *
+     * <p>{@code startUsingItem} 让手臂把盾立在胸前（客户端读的是物品使用状态），
+     * {@link #faceThreat} 把头转向对手（原版按头的朝向判正反面）。
+     * 这两条都是「看起来像在举盾」的部分，与挡伤判定解耦
+     */
+    private void updateShield() {
+        if (this.shouldRaiseShield()) {
+            this.startUsingItem(InteractionHand.OFF_HAND);
+            this.faceThreat();
+        } else if (this.getUseItem().is(TFItems.KNIGHTMETAL_SHIELD.get())) {
+            this.stopUsingItem();
+        }
+    }
+
+    /**
+     * 该不该举着盾：只在两种时候举，别的时候一律收着
+     *
+     * <ol>
+     *   <li><b>对手就在正面的攻击范围里</b>：目标活着、距离不超过 {@link #MELEE_REACH}、
+     *       而且在自己头朝向的正前方。逃跑时目标被清空、正面也朝着逃跑方向，
+     *       所以不会出现「背对着人举盾」</li>
+     *   <li><b>刚挨过打</b>：{@value #SHIELD_HOLD_TICKS} tick 以内，远处射来的箭也算</li>
+     * </ol>
+     */
+    private boolean shouldRaiseShield() {
+        if (!this.hasShield() || this.isShieldDisabled() || this.shieldDownTicks > 0) {
+            return false;
+        }
+        if (this.shieldHoldTicks > 0) {
+            return true;
+        }
+        LivingEntity target = this.getTarget();
+        if (target == null || !target.isAlive()) {
+            return false;
+        }
+        if (this.distanceToSqr(target) > MELEE_REACH * MELEE_REACH) {
+            return false;
+        }
+        return this.isInFront(target);
+    }
+
+    /** {@code other} 是不是在这只生物头朝向的正前方（水平面上点积 &gt; 0） */
+    private boolean isInFront(LivingEntity other) {
+        Vec3 toOther = new Vec3(other.getX() - this.getX(), 0.0D, other.getZ() - this.getZ());
+        if (toOther.lengthSqr() < 1.0E-4D) {
+            return true;
+        }
+        Vec3 look = this.calculateViewVector(0.0F, this.getYHeadRot());
+        return look.dot(toOther.normalize()) > 0.0D;
+    }
+
+    /**
+     * 把头转向当前目标
+     *
+     * <p>原版判「正面」用的是头的朝向（{@code calculateViewVector(0, getYHeadRot())} 与来向的点积）。
+     * 生物的 {@code LookControl} 是渐变的，还会被别的目标、闲逛拽走，头没转过来的那几 tick 里
+     * 正面的攻击也会被当成侧面。举盾时直接把头定在对手身上
+     */
+    private void faceThreat() {
+        LivingEntity threat = this.getTarget();
+        if (threat == null || !threat.isAlive()) {
+            return;
+        }
+        double dx = threat.getX() - this.getX();
+        double dz = threat.getZ() - this.getZ();
+        if (dx * dx + dz * dz < 1.0E-4D) {
+            return;
+        }
+        this.setYHeadRot((float) (Math.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F);
+    }
+
+    /**
+     * 算不算「挡着」：副手有盾、并且没被斧头封住、也不是刚出手的那 8 tick
+     *
+     * <p>不要求「正在用物品」，也不要求举够几 tick —— 那两个状态在实战里都出现过
+     * 「盾看着举着、拳照样打进来」。正反面、{@code #minecraft:bypasses_shield}、穿透箭
+     * 仍然按原版 {@code isDamageSourceBlocked} 判
+     */
+    @Override
+    public boolean isBlocking() {
+        return this.hasShield() && !this.isShieldDisabled() && this.shieldDownTicks <= 0;
+    }
+
+    /**
+     * 举盾时把移动输入按 {@link #GUARD_SPEED_FACTOR} 缩
+     *
+     * <p>{@code MoveControl} 每 tick 按移动速度属性设好 {@code speed}，这里在它之上再乘一层，
+     * 于是 {@code travel} 拿到的就是被砍掉八成之后的值，与玩家举盾时的输入缩放等价。
+     * 不能用属性修饰符做这件事：实测属性 0.3 → 4.73 格每秒，属性 0.06 只剩 0.05 格每秒
+     */
+    @Override
+    public float getSpeed() {
+        float base = super.getSpeed();
+        return this.isBlocking() ? base * GUARD_SPEED_FACTOR : base;
+    }
+
+    /**
+     * 挡下时磨盾牌，照原版 {@code Player#hurtCurrentlyUsedShield}
+     *
+     * <p>{@code LivingEntity} 里这个方法是空的（普通生物本来不会举盾），所以磨损自己接：
+     * 挡下的伤害不低于 {@code ShieldItem.MINIMUM_DURABILITY_DAMAGE}（3）时扣 {@code 1 + 伤害取整}，
+     * 盾牌被打碎就把副手清空、收盾，再补一声 {@code SHIELD_BREAK}
+     */
+    @Override
+    protected void hurtCurrentlyUsedShield(float amount) {
+        if (this.level().isClientSide()) {
+            return;
+        }
+        ItemStack shield = this.getOffhandItem();
+        if (!shield.is(TFItems.KNIGHTMETAL_SHIELD.get()) || amount < ShieldItem.MINIMUM_DURABILITY_DAMAGE) {
+            return;
+        }
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        shield.hurtAndBreak(1 + Mth.floor(amount), serverLevel, this, broken -> {
+            this.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+            this.stopUsingItem();
+            this.playSound(
+                    SoundEvents.SHIELD_BREAK, 0.8F, 0.8F + this.getRandom().nextFloat() * 0.4F);
+        });
+    }
+
+    /** 挡下之后：先照原版把来犯者推开，再看对面那一手能不能破盾（{@code Player#blockUsingShield}） */
+    @Override
+    protected void blockUsingShield(LivingEntity attacker) {
+        super.blockUsingShield(attacker);
+        if (attacker.canDisableShield()) {
             this.disableShield();
         }
     }
 
-    /** 盾牌被斧头破掉之后的 100 tick 里不挡任何伤害 */
+    /** 盾牌被斧头破掉之后的 100 tick 里不举盾 */
     public boolean isShieldDisabled() {
         return this.shieldDisabledTicks > 0;
     }
 
-    /** 斧头破盾：封 {@value #SHIELD_DISABLED_TICKS} tick，并播一声盾牌碎裂（原版 entity event 30） */
+    /** 斧头破盾：封 {@value #SHIELD_DISABLED_TICKS} tick、收盾，并播一声盾牌碎裂 */
     public void disableShield() {
         if (this.level().isClientSide()) {
             return;
         }
         this.shieldDisabledTicks = SHIELD_DISABLED_TICKS;
-        if (this.level() instanceof ServerLevel level) {
-            level.playSound(
-                    null,
-                    this.getX(),
-                    this.getY(),
-                    this.getZ(),
-                    SoundEvents.SHIELD_BREAK,
-                    SoundSource.NEUTRAL,
-                    0.8F,
-                    0.8F + this.getRandom().nextFloat() * 0.4F);
+        this.stopUsingItem();
+        this.playSound(SoundEvents.SHIELD_BREAK, 0.8F, 0.8F + this.getRandom().nextFloat() * 0.4F);
+    }
+
+    /**
+     * 出手：把盾收起来 {@value #SHIELD_SWING_LOWER_TICKS} tick
+     *
+     * <p>挥击的那一下不能同时举着盾。收的既是判定（{@link #isBlocking}），也是姿势
+     */
+    private void lowerShieldForAttack() {
+        if (!this.hasShield()) {
+            return;
+        }
+        this.shieldDownTicks = SHIELD_SWING_LOWER_TICKS;
+        if (this.getUseItem().is(TFItems.KNIGHTMETAL_SHIELD.get())) {
+            this.stopUsingItem();
         }
     }
 
@@ -455,6 +590,7 @@ public class LivingArmorEntity extends Monster {
      * <p>近战自己算伤害而不是调 {@code Mob#doHurtTarget}，理由见 {@link #meleeAttack}
      */
     public void attackTarget(LivingEntity target) {
+        this.lowerShieldForAttack();
         if (this.hasFlail()) {
             this.throwFlail(target);
             return;
@@ -562,18 +698,14 @@ public class LivingArmorEntity extends Monster {
      * 只在状态真的变了时才动属性表：每 tick 摘挂修饰符会让属性脏标记一直亮着
      */
     public void setSprintCharging(boolean sprinting) {
-        if (this.sprintCharging == sprinting) {
+        // 举着盾不给疾跑：原版玩家开始疾跑的条件里有 !isUsingItem()（LocalPlayer 730 行）
+        boolean effective = sprinting && !this.isBlocking();
+        if (this.sprintCharging == effective) {
             return;
         }
-        this.sprintCharging = sprinting;
-        AttributeInstance speed = this.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (speed != null) {
-            speed.removeModifier(SPRINT_MODIFIER_ID);
-            if (sprinting) {
-                speed.addTransientModifier(SPRINT_MODIFIER);
-            }
-        }
-        this.setSprinting(sprinting);
+        this.sprintCharging = effective;
+        // 只调原版：它挂的就是 minecraft:sprinting（+30%），自己再挂一条会乘成 +69%
+        this.setSprinting(effective);
     }
 
     /** 半血以下：这条生物的行为从这一刻整体换档，见 {@code WoundedGoal} */
@@ -747,6 +879,7 @@ public class LivingArmorEntity extends Monster {
         }
 
         private void flail(LivingEntity target, double distance) {
+            this.armor.getLookControl().setLookAt(target, 30.0F, 30.0F);
             if (distance > FLAIL_RANGE) {
                 this.moveToward(target);
                 return;
@@ -763,6 +896,8 @@ public class LivingArmorEntity extends Monster {
         }
 
         private void melee(LivingEntity target, double distance) {
+            // 原版近战目标每 tick 都 setLookAt：头跟着对手转。挡盾判定按头的朝向算正面
+            this.armor.getLookControl().setLookAt(target, 30.0F, 30.0F);
             if (distance > MELEE_REACH) {
                 this.moveToward(target);
                 return;
@@ -785,6 +920,7 @@ public class LivingArmorEntity extends Monster {
          * 与刚起跳那一 tick 都不出手，看起来就是「跳起来、落下时劈下去」
          */
         private void axeCrit(LivingEntity target, double distance) {
+            this.armor.getLookControl().setLookAt(target, 30.0F, 30.0F);
             if (distance > MELEE_REACH) {
                 this.moveToward(target);
                 return;
