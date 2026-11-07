@@ -410,7 +410,13 @@
 
 008 的系数为 0.5。`FoodProperties` 存的是饱和度系数，点数 = 系数 × 饥饿 × 2。
 
-剩余空号按 `experiment_%03d` 补成占位物品，贴图统一借用 `experiment_temp.png`。
+剩余空号分两档。
+已经有自己那张图标的不算占位，登记在 `ModExperimentItems.TEXTURED`，各自注册成普通物品。
+判据是 `models/item/experiment_%03d.json` 的 `layer0` 指向自己的贴图。
+真正还借 `experiment_temp.png` 的才是占位，由 `ModExperimentItems.PLACEHOLDERS` 补出。
+两张表加起来一共 73 个号，即 32 个有贴图的加 41 个占位，用 `simpleItems()` 取。
+`gametest/ExperimentItemTests#placeholderTableMatchesTheIcons` 把两张表与 115 份模型逐号对上，
+换了某个号的图标却忘了写进 `TEXTURED` 会直接红。
 
 创造栏按序号升序排列，其中 115 从暮色森林的注册表取，未安装时跳过。
 试验物品栏通过 `withTabsBefore(dawnduskterminal:main)` 固定在主栏目之后。
@@ -1846,8 +1852,12 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 
 ## 装饰画
 
-三幅画：`painting_ghast_1`（3 格宽 2 格高）、`painting_ghast_2`（2 格宽 3 格高）与
-`painting_ghast_2_sub`（1 格宽 2 格高）。
+十幅画，尺寸从 1 格宽 2 格高（`painting_ghast_2_sub`）到 6 格宽 4 格高（`painting_ghast_9`）。
+其余八幅是 `painting_ghast_1`（3x2）、`painting_ghast_2`（2x3）、`painting_ghast_3`（3x2）、
+`painting_ghast_4` 到 `painting_ghast_8`（各 2x3）。
+宽高的来源是贴图像素除以 32：96x64 是 3x2，64x96 是 2x3，192x128 是 6x4。
+画名只写在语言文件里（`painting_ghast_3` 是 Drop，往下依次是 Ragdoll、Bakery、Butchess、Maze、Onesama、Feuer），
+与注册 ID 无关。
 变体属于数据包注册表，条目位于 `data/dawnduskterminal/painting_variant/`；
 `registry/ModPaintingVariants` 只放置指向它们的 `ResourceKey`，并把每一幅与它唯一对应的那件物品绑成一条 `Kind`，
 尺寸不在 Java 侧重复声明。
@@ -1861,13 +1871,13 @@ thirdperson 为 [-80,260,-40] / [-80,-280,40] 与 -1,-2,2.5 的位移，firstper
 而该图集只声明了 `block/` 与 `item/` 两个目录源，`textures/entity/` 下的图不会被收录，
 模型因此会渲染成紫黑格子（`Missing textures in model ...`）。
 
-`entity/GhastPaintingEntity` 是独立的实体类型，三幅画各占一个，都不共用 `minecraft:painting`。
+`entity/GhastPaintingEntity` 是独立的实体类型，十幅画各占一个，都不共用 `minecraft:painting`。
 实体类型名与变体名相同（`ModEntities#painting`），种类由注册时的 factory lambda 带进构造。
 原版画物品只从 `#minecraft:painting_variant/placeable` 中挑变体，而本模组的变体不进该标签，所以原版物品放不了它们；
 实体又把 `setVariant` 固定为自己的变体，敲碎后掉落的是自己那件物品，中键选取得到的也是它。
 
 `mixin/PaintingVariantGuardMixin` 堵的是手工修改这条旁路：原版画实体上的 `setVariant`
-遇到这三幅画中任意一幅的变体时直接忽略。
+遇到本模组任意一幅画的变体时直接忽略。
 所以无论用 `/summon` 指定变体，还是改旧存档里的 NBT，都拿不到本模组的画。
 
 `item/GhastPaintingItem` 的摆放流程参照 `HangingEntityItem` 编写，一件物品只能放置它自己那一幅画，且没有配方。

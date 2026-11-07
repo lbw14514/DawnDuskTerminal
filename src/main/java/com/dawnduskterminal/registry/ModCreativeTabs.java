@@ -29,6 +29,13 @@ public final class ModCreativeTabs {
                         accept(output, ModItems.PAINTING_GHAST_1.get());
                         accept(output, ModItems.PAINTING_GHAST_2.get());
                         accept(output, ModItems.PAINTING_GHAST_2_SUB.get());
+                        accept(output, ModItems.PAINTING_GHAST_3.get());
+                        accept(output, ModItems.PAINTING_GHAST_4.get());
+                        accept(output, ModItems.PAINTING_GHAST_5.get());
+                        accept(output, ModItems.PAINTING_GHAST_6.get());
+                        accept(output, ModItems.PAINTING_GHAST_7.get());
+                        accept(output, ModItems.PAINTING_GHAST_8.get());
+                        accept(output, ModItems.PAINTING_GHAST_9.get());
                         accept(output, ModItems.CAMP_CARMINITE_FIRE.get());
                         accept(output, ModItems.ENCASED_DUST.get());
                         accept(output, ModItems.CANOCAN.get());
@@ -119,7 +126,8 @@ public final class ModCreativeTabs {
      * 036~038 与 040~042 是高塔工具与简单物品（039 号空着），046 是权杖，051 是拆解台那台机器，057 是那把制导飞刃，065 是压出「打不出伤害」的场的机器，
      * 066 是那本恶魂陷阱书，069 是压出「更新不处理」的场的机器，061/070/074 是三块不明肉块，055 是那个充能的场，095 是那支镇魂曲，
      * 104 是那个食物，107 是整块的红丝绒蛋糕，114 是能吃能摆的那一块，
-     * 其余空号是 {@link ModExperimentItems#placeholders()} 补的占位物品
+     * 其余空号是 {@link ModExperimentItems#simpleItems()} 补的：已经有自己贴图的那批，加上图标还借
+     * {@code experiment_temp} 的真占位
      *
      * <p>图标用暮色森林的试验物品 115，没装暮色森林时退化成试验物品 046
      *
@@ -136,7 +144,7 @@ public final class ModCreativeTabs {
                         SortedMap<Integer, ItemLike> sequence = new TreeMap<>();
                         sequence.put(1, ModItems.EXPERIMENT_001.get());
                         sequence.put(4, ModItems.EXPERIMENT_004.get());
-                        ModExperimentItems.placeholders().forEach((number, item) -> sequence.put(number, item.get()));
+                        ModExperimentItems.simpleItems().forEach((number, item) -> sequence.put(number, item.get()));
                         sequence.put(7, ModExperimentItems.EXPERIMENT_007.get());
                         sequence.put(8, ModExperimentItems.EXPERIMENT_008.get());
                         sequence.put(11, ModExperimentItems.EXPERIMENT_011.get());
@@ -164,6 +172,7 @@ public final class ModCreativeTabs {
                         sequence.put(52, ModItems.EXPERIMENT_052.get());
                         sequence.put(55, ModExperimentItems.EXPERIMENT_055.get());
                         sequence.put(57, ModExperimentItems.EXPERIMENT_057.get());
+                        sequence.put(59, ModItems.EXPERIMENT_059.get());
                         sequence.put(61, ModExperimentItems.EXPERIMENT_061.get());
                         sequence.put(65, ModItems.EXPERIMENT_065.get());
                         sequence.put(66, ModExperimentItems.EXPERIMENT_066.get());

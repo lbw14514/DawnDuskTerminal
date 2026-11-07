@@ -1,9 +1,11 @@
 package com.dawnduskterminal.client;
 
 import com.dawnduskterminal.DawnDuskTerminal;
+import com.dawnduskterminal.block.Experiment059Block;
 import com.dawnduskterminal.client.animation.YsmEntityReload;
 import com.dawnduskterminal.client.model.CountertopModel;
 import com.dawnduskterminal.client.model.ExperimentArmorModel;
+import com.dawnduskterminal.client.model.LoopTileModel;
 import com.dawnduskterminal.client.model.MountedTowerWoodModel;
 import com.dawnduskterminal.client.model.ScarletMolybdenumArmorModel;
 import com.dawnduskterminal.client.model.WroughtIronGlassModel;
@@ -18,6 +20,7 @@ import com.dawnduskterminal.registry.ModParticles;
 import com.dawnduskterminal.registry.ModScorchingTwilight;
 import com.dawnduskterminal.registry.ModTerrainBlocks;
 import com.dawnduskterminal.world.ChronoLineState;
+import java.util.function.ToIntBiFunction;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
@@ -29,6 +32,8 @@ import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
@@ -225,6 +230,7 @@ public final class DdtClient {
         wrapCountertop(event, "stripped_dark_log_countertop");
         wrapGlassCtm(event, "wrought_iron_glass");
         wrapGlassTrapdoorCtm(event, "wrought_iron_glass_trapdoor");
+        wrapLoopTile(event, "experiment_059", Experiment059Block::tileAt);
     }
 
     private static void wrapCtm(ModelEvent.ModifyBakingResult event, String name) {
@@ -290,6 +296,26 @@ public final class DdtClient {
                         location.id().equals(id) && !location.variant().equals(ModelResourceLocation.INVENTORY_VARIANT)
                                 ? new WroughtIronGlassModel(model)
                                 : model);
+    }
+
+    /**
+     * 「按坐标取图组某一格」的模型替换：只换方块那一处，键是 {@code #}（无变体）
+     *
+     * <p>图组那张图按约定叫 {@code block/<id>_loop}。物品图标不走这条：
+     * {@code models/item/<id>.json} 是 {@code item/generated} 加那张 16x16 的单图，
+     * 没有 3x3 图组可裁，所以这里也不能去包 {@code #inventory}
+     *
+     * <p>哪一格由方块自己算：{@code tiles} 要坐标，也要面的朝向，于是六个面各按自己的平面铺 3x3，
+     * 包装器只负责把格子号换成 UV
+     */
+    private static void wrapLoopTile(
+            ModelEvent.ModifyBakingResult event, String name, ToIntBiFunction<BlockPos, Direction> tiles) {
+        ModelResourceLocation blockLoc = new ModelResourceLocation(DawnDuskTerminal.id(name), "");
+        BakedModel original = event.getModels().get(blockLoc);
+        if (original != null) {
+            event.getModels()
+                    .put(blockLoc, new LoopTileModel(original, DawnDuskTerminal.id("block/" + name + "_loop"), tiles));
+        }
     }
 
     private static void registerBlockColors(RegisterColorHandlersEvent.Block event) {
@@ -376,7 +402,7 @@ public final class DdtClient {
      * 拿到 null 后直接空指针崩客户端
      *
      * <p>原版画的渲染器认的是 Painting 而不是具体实体类型，按变体宽高切分贴图、按面光源着色、背板
-     * 全是它算的，直接复用，三幅恶魂画都挂在它上面；它从 PaintingTextureManager（atlas minecraft:paintings）取
+     * 全是它算的，直接复用，十幅画都挂在它上面；它从 PaintingTextureManager（atlas minecraft:paintings）取
      * asset_id 对应的 sprite，所以贴图必须放 textures/painting/ 下
      */
     private static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -387,6 +413,13 @@ public final class DdtClient {
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_1.get(), PaintingRenderer::new);
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_2.get(), PaintingRenderer::new);
         event.registerEntityRenderer(ModEntities.GHAST_PAINTING_2_SUB.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_3.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_4.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_5.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_6.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_7.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_8.get(), PaintingRenderer::new);
+        event.registerEntityRenderer(ModEntities.GHAST_PAINTING_9.get(), PaintingRenderer::new);
         // 试验物品 076 的外观整个在这一边：每个面每 tick 抽一张贴图，见 Experiment076Renderer
         event.registerBlockEntityRenderer(ModBlockEntities.EXPERIMENT_076.get(), Experiment076Renderer::new);
         // 红篝火火堆上那四格食材：自带的渲染器，照原版 CampfireRenderer 的摆法画

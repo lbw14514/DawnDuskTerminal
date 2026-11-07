@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "all": "dawnduskterminal:block/experiment_059_loop",
+    "particle": "dawnduskterminal:block/experiment_059"
+  }
+}

@@ -16,9 +16,11 @@ import com.dawnduskterminal.item.ThrustSpearItem;
 import com.dawnduskterminal.item.UnknownMeatItem;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -383,6 +385,8 @@ public final class ModExperimentItems {
      * 051 是拆解台那台机器（方块在
      * {@link ModBlocks#EXPERIMENT_051}、物品在 {@link ModItems#EXPERIMENT_051}），
      * 052 是那颗方雷（方块在 {@link ModBlocks#EXPERIMENT_052}、物品在 {@link ModItems#EXPERIMENT_052}），
+     * 059 是那张铂催化网格（方块在 {@link ModBlocks#EXPERIMENT_059}、物品在
+     * {@link ModItems#EXPERIMENT_059}），
      * 065 是那台压出「打不出伤害」的场的机器（方块在 {@link ModBlocks#EXPERIMENT_065}、
      * 物品在 {@link ModItems#EXPERIMENT_065}），
      * 069 是那台压出「更新不处理」的场的机器（方块在 {@link ModBlocks#EXPERIMENT_069}、
@@ -399,32 +403,106 @@ public final class ModExperimentItems {
      * {@link ModItems#EXPERIMENT_114}），107 是整块的红丝绒蛋糕（在 {@link ModItems#EXPERIMENT_107}，
      * 方块仍是七种可疑蛋糕里的 {@code sus_redvelvet_cake}），115 是暮色森林自带的试验物品
      *
-     * <p>剩下的空号全部补成占位简单物品，贴图统一借 {@code experiment_temp.png}
+     * <p>剩下的空号里，凡是有自己那张图标的都算 {@link #TEXTURED}；
+     * 真正的占位（{@link #PLACEHOLDERS}）只包含图标还借 {@code experiment_temp.png} 的那些
      */
     private static final Set<Integer> TAKEN = Set.of(
             1, 4, 7, 8, 11, 12, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55,
-            57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
-
-    private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
+            57, 59, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115);
 
     /**
-     * 115 以内的空号，按序号升序
+     * 已经有自己那张图标的试验物品：贴图与物品模型各有一份，只差行为
+     *
+     * <p>这批号<b>不是占位</b>。占位的定义是「图标还借 {@code experiment_temp.png}」
+     * （见 {@code docs/architecture.md}），所以它们各自注册成普通物品——描述行按
+     * {@link #DESCRIPTIONS} 补——与 {@link #TAKEN} 一样不进占位表
+     *
+     * <p>判据是模型文件：{@code models/item/experiment_%03d.json} 的 {@code layer0} 指自己的贴图就算数。
+     * {@code gametest/ExperimentItemTests#placeholderTableMatchesTheIcons} 把这张表与 115 份模型逐号对上，
+     * 以后谁把某个号的图标从 {@code experiment_temp} 换成自己的、却没写进这张表，那条断言就会红
+     */
+    private static final Set<Integer> TEXTURED = Set.of(
+            3, 5, 6, 9, 13, 15, 16, 18, 21, 22, 23, 24, 28, 29, 35, 58, 60, 64, 68, 72, 73, 75, 77, 79, 82, 85, 88, 90,
+            100, 105, 110, 113);
+
+    /** {@link #TEXTURED} 里有描述行的那些：序号 → 语言键 */
+    private static final Map<Integer, String> DESCRIPTIONS = Map.of(
+            3, "item.dawnduskterminal.experiment_003.desc",
+            15, "item.dawnduskterminal.experiment_015.desc",
+            60, "item.dawnduskterminal.experiment_060.desc");
+
+    /** 已经有自己贴图的那批，按序号升序 */
+    private static final SortedMap<Integer, DeferredItem<Item>> TEXTURED_ITEMS = registerTextured();
+
+    /** 真正的占位：既没有行为、图标还借 {@code experiment_temp.png} 的空号 */
+    private static final SortedMap<Integer, DeferredItem<Item>> PLACEHOLDERS = registerPlaceholders();
+
+    /** 上面两张表合起来：所有没有行为的试验物品，按序号升序。创造栏按这张表摆 */
+    private static final SortedMap<Integer, DeferredItem<Item>> SIMPLE_ITEMS = mergeSimpleItems();
+
+    /**
+     * 已经有自己贴图的那批，按序号升序
      *
      * <p>注册名由序号补零到三位拼出来，所以这里不存在手写 ID 与序号对不上的可能
+     */
+    public static SortedMap<Integer, DeferredItem<Item>> textured() {
+        return TEXTURED_ITEMS;
+    }
+
+    /**
+     * 真正的占位（图标还借 {@code experiment_temp.png} 的空号），按序号升序
+     *
+     * <p>有贴图的号不在这里，见 {@link #textured()}；两张表合起来是 {@link #simpleItems()}
      */
     public static SortedMap<Integer, DeferredItem<Item>> placeholders() {
         return PLACEHOLDERS;
     }
 
+    /** 所有没有行为的试验物品：有自己贴图的 + 占位，按序号升序。创造栏按这张表摆 */
+    public static SortedMap<Integer, DeferredItem<Item>> simpleItems() {
+        return SIMPLE_ITEMS;
+    }
+
+    /** 有自己贴图的那批注册成普通物品，{@link #DESCRIPTIONS} 里有号就补一行描述 */
+    private static SortedMap<Integer, DeferredItem<Item>> registerTextured() {
+        SortedMap<Integer, DeferredItem<Item>> map = new TreeMap<>();
+        for (int number : new TreeSet<>(TEXTURED)) {
+            String id = "experiment_%03d".formatted(number);
+            String description = DESCRIPTIONS.get(number);
+            if (description == null) {
+                map.put(number, ITEMS.registerSimpleItem(id, new Item.Properties()));
+                continue;
+            }
+            map.put(number, ITEMS.register(id, () -> new Item(new Item.Properties()) {
+                @Override
+                public void appendHoverText(
+                        ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+                    super.appendHoverText(stack, context, tooltip, flag);
+                    describe(tooltip, description);
+                }
+            }));
+        }
+        return Collections.unmodifiableSortedMap(map);
+    }
+
+    /** 剩下的空号：既没被占、也没有自己的贴图，图标统一借 {@code experiment_temp.png} */
     private static SortedMap<Integer, DeferredItem<Item>> registerPlaceholders() {
         SortedMap<Integer, DeferredItem<Item>> map = new TreeMap<>();
         for (int number = 1; number <= LAST_NUMBER; number++) {
-            if (TAKEN.contains(number)) {
+            if (TAKEN.contains(number) || TEXTURED.contains(number)) {
                 continue;
             }
             String id = "experiment_%03d".formatted(number);
             map.put(number, ITEMS.registerSimpleItem(id, new Item.Properties()));
         }
+        return Collections.unmodifiableSortedMap(map);
+    }
+
+    /** 两张表并起来：编号唯一，所以直接铺进去就是一个按序号排好的表 */
+    private static SortedMap<Integer, DeferredItem<Item>> mergeSimpleItems() {
+        SortedMap<Integer, DeferredItem<Item>> map = new TreeMap<>();
+        map.putAll(TEXTURED_ITEMS);
+        map.putAll(PLACEHOLDERS);
         return Collections.unmodifiableSortedMap(map);
     }
 

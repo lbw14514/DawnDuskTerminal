@@ -9,6 +9,7 @@ import com.dawnduskterminal.block.Experiment012Block;
 import com.dawnduskterminal.block.Experiment019Block;
 import com.dawnduskterminal.block.Experiment051Block;
 import com.dawnduskterminal.block.Experiment052Block;
+import com.dawnduskterminal.block.Experiment059Block;
 import com.dawnduskterminal.block.Experiment065Block;
 import com.dawnduskterminal.block.Experiment069Block;
 import com.dawnduskterminal.block.Experiment076Block;
@@ -271,6 +272,33 @@ public final class ModBlocks {
                     .strength(3.5F)
                     .sound(SoundType.STONE)
                     .lightLevel(state -> state.getValue(Experiment052Block.ACTIVE) ? 15 : 0));
+
+    /**
+     * 试验物品 059：铂催化网格，一块能摆在场地里的金属网，行为与格子选取在 {@link Experiment059Block}
+     *
+     * <p>属性是两边的拼合。渲染那一半照原版玻璃（{@link TransparentBlock} 那三个方法由方块类继承下来）：
+     * {@code noOcclusion} 让邻面照画，四条 {@code false} 的判定让这张网不当红石导体、不闷死实体、
+     * 不挡视线，也不在它顶上刷怪——原版玻璃那八行里除音效与硬度之外的就是这四条。
+     * 挖掘与音效那一半照原版铁栅栏：{@code requiresCorrectToolForDrops}、5.0 硬度、6.0 爆炸抗性、
+     * {@code METAL} 音效，进 {@code #minecraft:mineable/pickaxe}，但<b>不</b>进
+     * {@code #minecraft:needs_iron_tool}，木镐也挖得动
+     *
+     * <p>地图色取 {@code METAL}：贴图是那张蓝灰的钢色网，与石类那一档的灰分得开。
+     * 挖掉掉自己，走 {@code data/dawnduskterminal/loot_table/blocks/experiment_059.json}
+     */
+    public static final DeferredBlock<Experiment059Block> EXPERIMENT_059 = BLOCKS.registerBlock(
+            "experiment_059",
+            Experiment059Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .isValidSpawn((state, level, pos, type) -> false)
+                    .isRedstoneConductor((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false)
+                    .isViewBlocking((state, level, pos) -> false));
 
     /**
      * 试验物品 065：反建器那一档里更高级的一台，压出一张 17×17×17 的「打不出伤害」场

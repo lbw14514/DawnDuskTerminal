@@ -31,15 +31,37 @@ public final class ModPaintingVariants {
     /** 1 格宽 2 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_2_sub.png */
     public static final Kind GHAST_2_SUB = new Kind("painting_ghast_2_sub", ModItems.PAINTING_GHAST_2_SUB);
 
-    /** 全部三幅，{@code PaintingVariantGuardMixin} 与测试照这张表走 */
-    public static final List<Kind> ALL = List.of(GHAST_1, GHAST_2, GHAST_2_SUB);
+    /** 3 格宽 2 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_3.png，名字是 Drop */
+    public static final Kind GHAST_3 = new Kind("painting_ghast_3", ModItems.PAINTING_GHAST_3);
+
+    /** 2 格宽 3 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_4.png，名字是 Ragdoll */
+    public static final Kind GHAST_4 = new Kind("painting_ghast_4", ModItems.PAINTING_GHAST_4);
+
+    /** 2 格宽 3 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_5.png，名字是 Bakery */
+    public static final Kind GHAST_5 = new Kind("painting_ghast_5", ModItems.PAINTING_GHAST_5);
+
+    /** 2 格宽 3 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_6.png，名字是 Butchess */
+    public static final Kind GHAST_6 = new Kind("painting_ghast_6", ModItems.PAINTING_GHAST_6);
+
+    /** 2 格宽 3 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_7.png，名字是 Maze */
+    public static final Kind GHAST_7 = new Kind("painting_ghast_7", ModItems.PAINTING_GHAST_7);
+
+    /** 2 格宽 3 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_8.png，名字是 Onesama */
+    public static final Kind GHAST_8 = new Kind("painting_ghast_8", ModItems.PAINTING_GHAST_8);
+
+    /** 6 格宽 4 格高，贴图 assets/dawnduskterminal/textures/painting/painting_ghast_9.png，名字是 Feuer */
+    public static final Kind GHAST_9 = new Kind("painting_ghast_9", ModItems.PAINTING_GHAST_9);
+
+    /** 全部十幅，{@code PaintingVariantGuardMixin} 与测试照这张表走 */
+    public static final List<Kind> ALL =
+            List.of(GHAST_1, GHAST_2, GHAST_2_SUB, GHAST_3, GHAST_4, GHAST_5, GHAST_6, GHAST_7, GHAST_8, GHAST_9);
 
     /** 服务端与客户端都能调：变体跟着数据包同步，两边查同一张表 */
     public static Holder<PaintingVariant> holder(RegistryAccess registries, Kind kind) {
         return registries.registryOrThrow(Registries.PAINTING_VARIANT).getHolderOrThrow(kind.variant());
     }
 
-    /** 这个键是不是本模组三幅画之一：原版画实体靠它把外来变体拒之门外 */
+    /** 这个键是不是本模组的画之一：原版画实体靠它把外来变体拒之门外 */
     public static boolean isModVariant(ResourceKey<PaintingVariant> key) {
         return ALL.stream().anyMatch(kind -> kind.variant().equals(key));
     }

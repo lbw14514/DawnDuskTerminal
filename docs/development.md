@@ -543,7 +543,7 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 ### PaintingTests
 
-三幅画照同一张表（`PaintingTests.SPECS`）逐条验，新增一幅加一行即可。
+十幅画照同一张表（`PaintingTests.SPECS`）逐条验，新增一幅加一行即可。
 
 `variantsMatchTheirTextures` 验证每幅画的宽高与 JSON 一致，`asset_id` 指向同名的贴图。
 
@@ -557,7 +557,8 @@ Windows DLL 只依赖 UCRT 与 `kernel32.dll`，不需要 `libwinpthread-1.dll` 
 
 `vanillaPaintingRefusesTheVariants` 验证原版画实体拒绝这些变体（`PaintingVariantGuardMixin`）。
 
-`eachItemPlacesItsOwnPainting` 验证贴着墙面放置后，实体类型、朝向、变体与包围盒均正确，物品数量减一；三幅画各放一次。
+`eachItemPlacesItsOwnPainting` 验证贴着墙面放置后，实体类型、朝向、变体与包围盒均正确，物品数量减一。
+十幅画轮流用同一处墙面各放一次，验完清掉再放下一幅。
 
 ### CampCarminiteFireTests
 
@@ -677,6 +678,8 @@ feature 引用与 `neoforge:remove_features` 的 ID 必须真实存在，否则�
 `assets/dawnduskterminal/textures/item/` 与 `assets/dawnduskterminal/models/item/` 中，
 一幅画对应 `entity/GhastPaintingEntity` 的一个实体类型、`item/GhastPaintingItem` 的一件物品，
 三者的配对写在 `registry/ModPaintingVariants` 的 `Kind` 上，实体与物品都从它取值。
+宽高只写在变体 JSON 里，贴图像素与格数的比例是 32 像素一格。
+物品图标另放一份到 `textures/item/`，按长边等比缩进 96x96 的透明画布。
 
 新增流体放置在 `registry/ModFluids` 或 `registry/ModScorchingTwilight` 中。
 

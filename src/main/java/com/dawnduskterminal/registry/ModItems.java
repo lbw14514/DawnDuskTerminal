@@ -2,6 +2,7 @@ package com.dawnduskterminal.registry;
 
 import com.dawnduskterminal.DawnDuskTerminal;
 import com.dawnduskterminal.block.SusCakeBlock;
+import com.dawnduskterminal.entity.GhastPaintingEntity;
 import com.dawnduskterminal.item.CanocanItem;
 import com.dawnduskterminal.item.CarminiteGhastMeatItem;
 import com.dawnduskterminal.item.CarminiteStaffItem;
@@ -15,17 +16,25 @@ import com.dawnduskterminal.item.StringSpawnEggItem;
 import com.dawnduskterminal.item.SusCakeItem;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -44,23 +53,50 @@ public final class ModItems {
             "snow_queen_trophy",
             new Item.Properties().rarity(Rarity.RARE).fireResistant().stacksTo(1));
 
-    /** 恶魂画 #1（3x2）的物品形态。没有配方，也不会跟原版画物品互通，见 {@link GhastPaintingItem} */
-    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_1 = ITEMS.register(
-            "painting_ghast_1",
-            () -> new GhastPaintingItem(
-                    new Item.Properties(), ModEntities.GHAST_PAINTING_1, ModPaintingVariants.GHAST_1));
+    /**
+     * 十幅装饰画的物品形态，一幅一件，各自只会放出自己那一幅，见 {@link GhastPaintingItem}
+     *
+     * <p>没有配方，也不会跟原版画物品互通：原版物品只从 {@code #minecraft:painting_variant/placeable}
+     * 里挑变体，这里的变体都不进那个标签
+     */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_1 =
+            painting("painting_ghast_1", () -> ModEntities.GHAST_PAINTING_1, () -> ModPaintingVariants.GHAST_1);
 
     /** 恶魂画 #2（2x3）的物品形态 */
-    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2 = ITEMS.register(
-            "painting_ghast_2",
-            () -> new GhastPaintingItem(
-                    new Item.Properties(), ModEntities.GHAST_PAINTING_2, ModPaintingVariants.GHAST_2));
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2 =
+            painting("painting_ghast_2", () -> ModEntities.GHAST_PAINTING_2, () -> ModPaintingVariants.GHAST_2);
 
     /** 恶魂画 #2 的副幅（1x2）的物品形态 */
-    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2_SUB = ITEMS.register(
-            "painting_ghast_2_sub",
-            () -> new GhastPaintingItem(
-                    new Item.Properties(), ModEntities.GHAST_PAINTING_2_SUB, ModPaintingVariants.GHAST_2_SUB));
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_2_SUB = painting(
+            "painting_ghast_2_sub", () -> ModEntities.GHAST_PAINTING_2_SUB, () -> ModPaintingVariants.GHAST_2_SUB);
+
+    /** 恶魂画 #3（3x2，名字 Drop）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_3 =
+            painting("painting_ghast_3", () -> ModEntities.GHAST_PAINTING_3, () -> ModPaintingVariants.GHAST_3);
+
+    /** 恶魂画 #4（2x3，名字 Ragdoll）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_4 =
+            painting("painting_ghast_4", () -> ModEntities.GHAST_PAINTING_4, () -> ModPaintingVariants.GHAST_4);
+
+    /** 恶魂画 #5（2x3，名字 Bakery）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_5 =
+            painting("painting_ghast_5", () -> ModEntities.GHAST_PAINTING_5, () -> ModPaintingVariants.GHAST_5);
+
+    /** 恶魂画 #6（2x3，名字 Butchess）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_6 =
+            painting("painting_ghast_6", () -> ModEntities.GHAST_PAINTING_6, () -> ModPaintingVariants.GHAST_6);
+
+    /** 恶魂画 #7（2x3，名字 Maze）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_7 =
+            painting("painting_ghast_7", () -> ModEntities.GHAST_PAINTING_7, () -> ModPaintingVariants.GHAST_7);
+
+    /** 恶魂画 #8（2x3，名字 Onesama）的物品形态 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_8 =
+            painting("painting_ghast_8", () -> ModEntities.GHAST_PAINTING_8, () -> ModPaintingVariants.GHAST_8);
+
+    /** 恶魂画 #9（6x4，名字 Feuer）的物品形态，十幅里最大的一幅 */
+    public static final DeferredItem<GhastPaintingItem> PAINTING_GHAST_9 =
+            painting("painting_ghast_9", () -> ModEntities.GHAST_PAINTING_9, () -> ModPaintingVariants.GHAST_9);
 
     public static final DeferredItem<CanocanItem> CANOCAN =
             ITEMS.register("canocan", () -> new CanocanItem(new Item.Properties()));
@@ -251,6 +287,24 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> EXPERIMENT_052 =
             ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_052);
 
+    /**
+     * 试验物品 059：铂催化网格的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_059}
+     *
+     * <p>描述行「铂催化网格」走 {@code item.dawnduskterminal.experiment_059.desc}：名字仍旧是
+     * 「试验物品059」，与其它带描述的那几件一致（057 是回转之书、061 是失败的肉块、
+     * 066 是恶魂陷阱）。方块自己那一份 {@code block.dawnduskterminal.experiment_059} 只管名字
+     */
+    public static final DeferredItem<BlockItem> EXPERIMENT_059 = ITEMS.register(
+            "experiment_059", () -> new BlockItem(ModBlocks.EXPERIMENT_059.get(), new Item.Properties()) {
+                @Override
+                public void appendHoverText(
+                        ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+                    super.appendHoverText(stack, context, tooltip, flag);
+                    tooltip.add(Component.translatable("item.dawnduskterminal.experiment_059.desc")
+                            .withStyle(ChatFormatting.GRAY));
+                }
+            });
+
     /** 试验物品 065：那台让人打不出伤害的机器的物品形态，放下来就是 {@link ModBlocks#EXPERIMENT_065} */
     public static final DeferredItem<BlockItem> EXPERIMENT_065 =
             ITEMS.registerSimpleBlockItem(ModBlocks.EXPERIMENT_065);
@@ -364,6 +418,21 @@ public final class ModItems {
             "experiment_107",
             () -> new Experiment107Item(
                     ModBlocks.susCakes().get(RED_VELVET_CAKE).get(), new Item.Properties()));
+
+    /**
+     * 一幅画的物品形态：注册名、实体类型与变体三处一路传下去，免得三张表各写一份而走岔
+     *
+     * <p>后两个参数用 {@link Supplier} 而不是直接传值：物品注册跑在实体类型之前，
+     * 这一句若是当场取 {@code ModEntities} 与 {@code ModPaintingVariants} 的字段，
+     * 就会把这两个类在 {@code ModItems} 的静态初始化中途拉起来，
+     * 而它们反过来读 {@code ModItems.PAINTING_*}，那时还都是 null
+     */
+    private static DeferredItem<GhastPaintingItem> painting(
+            String name,
+            Supplier<DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>>> type,
+            Supplier<ModPaintingVariants.Kind> kind) {
+        return ITEMS.register(name, () -> new GhastPaintingItem(new Item.Properties(), type.get(), kind.get()));
+    }
 
     private static DeferredItem<ScarletMolybdArmorItem> armor(String name, ArmorItem.Type type) {
         return ITEMS.register(

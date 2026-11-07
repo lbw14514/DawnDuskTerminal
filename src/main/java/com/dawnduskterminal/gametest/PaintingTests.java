@@ -12,6 +12,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.gametest.framework.GameTestSequence;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -32,22 +33,29 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * 三幅恶魂画的规格与互不通用
+ * 十幅画的规格与互不通用
  *
  * <p>画能不能被原版物品放下只取决于一个事实：原版 {@code Painting#create} 从
  * {@code #minecraft:painting_variant/placeable} 这个标签里挑变体。所以「原版放不出我们的画」
  * 直接断言成「我们的变体不在那个标签里」，比摆一面墙去撞随机数可靠
  *
- * <p>三幅画一律照 {@link #SPECS} 这张表走，新增一幅只需要加一行
+ * <p>十幅画一律照 {@link #SPECS} 这张表走，新增一幅只需要加一行
  */
 @GameTestHolder("dawnduskterminal")
 @PrefixGameTestTemplate(false)
 public final class PaintingTests {
-    /** 三幅画与它们在数据包里写的宽高（{@code data/dawnduskterminal/painting_variant/*.json}） */
+    /** 十幅画与它们在数据包里写的宽高（{@code data/dawnduskterminal/painting_variant/*.json}） */
     private static final List<Spec> SPECS = List.of(
             new Spec(ModPaintingVariants.GHAST_1, 3, 2),
             new Spec(ModPaintingVariants.GHAST_2, 2, 3),
-            new Spec(ModPaintingVariants.GHAST_2_SUB, 1, 2));
+            new Spec(ModPaintingVariants.GHAST_2_SUB, 1, 2),
+            new Spec(ModPaintingVariants.GHAST_3, 3, 2),
+            new Spec(ModPaintingVariants.GHAST_4, 2, 3),
+            new Spec(ModPaintingVariants.GHAST_5, 2, 3),
+            new Spec(ModPaintingVariants.GHAST_6, 2, 3),
+            new Spec(ModPaintingVariants.GHAST_7, 2, 3),
+            new Spec(ModPaintingVariants.GHAST_8, 2, 3),
+            new Spec(ModPaintingVariants.GHAST_9, 6, 4));
 
     /** 一幅画的期望值：种类与 JSON 里那一对宽高 */
     private record Spec(ModPaintingVariants.Kind kind, int width, int height) {
@@ -55,6 +63,12 @@ public final class PaintingTests {
             return this.kind.variant().location().toString();
         }
     }
+
+    /**
+     * 摆放测试的锚点：墙面正中那一格（结构是 16 格见方，墙铺在 z=3）。
+     * 放在正中是为了让六格宽四格高的 {@code painting_feuer} 四个方向都落在墙内
+     */
+    private static final BlockPos WALL_ANCHOR = new BlockPos(8, 7, 3);
 
     @GameTest(template = "ddt_empty")
     public static void variantsMatchTheirTextures(GameTestHelper helper) {
@@ -88,7 +102,7 @@ public final class PaintingTests {
         helper.succeed();
     }
 
-    /** 一件物品只对应一幅画，三件两两不同 */
+    /** 一件物品只对应一幅画，十件两两不同 */
     @GameTest(template = "ddt_empty")
     public static void itemsAreBoundToOnePainting(GameTestHelper helper) {
         Set<Item> seen = new HashSet<>();
@@ -153,41 +167,37 @@ public final class PaintingTests {
     }
 
     /**
-     * 建一面墙，三幅画各在一处贴着墙面放一次：实体必须是自己那个类型、自己的变体、自己的宽高，
+     * 建一整面墙，十幅画轮流贴着墙面放一次：实体必须是自己那个类型、自己的变体、自己的宽高，
      * 朝向南，物品减一
      *
-     * <p>三处锚点相距五格，互相不进对方的搜索框，所以每一处都断言「正好一幅」
+     * <p>一次只放一幅，验完就清掉再放下一幅：16 格见方的测试结构里并排放不下十幅画，
+     * 而锚点只要在墙正中，六格宽四格高的 {@code painting_feuer} 也挂得下
      *
      * <p>放下之后不立刻数：实体所在的区块段要先进入可查询状态才看得见
      * （测试环境的区块刻会掉队，见 {@code GameTestChunkWaitMixin}），
-     * 所以摆放走一步，计数放进逐 tick 重试的等待里
+     * 所以摆放走一步，计数放进逐 tick 重试的等待里；清掉之后同样等它真的消失
      */
-    @GameTest(template = "ddt_empty", timeoutTicks = 200)
+    @GameTest(template = "ddt_empty", timeoutTicks = 400)
     public static void eachItemPlacesItsOwnPainting(GameTestHelper helper) {
         for (int x = 1; x <= 15; x++) {
-            for (int y = 1; y <= 5; y++) {
+            for (int y = 1; y <= 15; y++) {
                 helper.setBlock(new BlockPos(x, y, 3), Blocks.STONE);
             }
         }
 
-        int[] anchors = {3, 8, 13};
-        helper.startSequence()
-                .thenExecute(() -> {
-                    for (int i = 0; i < SPECS.size(); i++) {
-                        place(helper, SPECS.get(i), anchors[i]);
-                    }
-                })
-                .thenWaitUntil(() -> {
-                    for (int i = 0; i < SPECS.size(); i++) {
-                        assertPlaced(helper, SPECS.get(i), anchors[i]);
-                    }
-                })
-                .thenSucceed();
+        GameTestSequence sequence = helper.startSequence();
+        for (Spec spec : SPECS) {
+            sequence = sequence.thenExecute(() -> place(helper, spec))
+                    .thenWaitUntil(() -> assertPlaced(helper, spec))
+                    .thenExecute(() -> discardPlaced(helper))
+                    .thenWaitUntil(() -> assertNonePlaced(helper, spec));
+        }
+        sequence.thenSucceed();
     }
 
     /** 用这一幅画自己的物品贴着墙面放一次，断言动作被消费、物品减一 */
-    private static void place(GameTestHelper helper, Spec spec, int anchorX) {
-        BlockPos clickedAbs = helper.absolutePos(new BlockPos(anchorX, 2, 3));
+    private static void place(GameTestHelper helper, Spec spec) {
+        BlockPos clickedAbs = helper.absolutePos(WALL_ANCHOR);
         ItemStack stack = new ItemStack(spec.kind().item().get());
         UseOnContext context = new UseOnContext(
                 helper.getLevel(),
@@ -203,11 +213,8 @@ public final class PaintingTests {
     }
 
     /** 这一处正好一幅画，且种类、朝向、变体、包围盒都对得上 */
-    private static void assertPlaced(GameTestHelper helper, Spec spec, int anchorX) {
-        BlockPos anchorAbs = helper.absolutePos(new BlockPos(anchorX, 2, 3)).relative(Direction.SOUTH);
-        List<GhastPaintingEntity> placed = helper.getLevel()
-                .getEntitiesOfClass(
-                        GhastPaintingEntity.class, AABB.ofSize(Vec3.atCenterOf(anchorAbs), 4.0D, 4.0D, 4.0D));
+    private static void assertPlaced(GameTestHelper helper, Spec spec) {
+        List<GhastPaintingEntity> placed = placed(helper);
         helper.assertTrue(
                 placed.size() == 1, "expected exactly one painting for " + spec.name() + ", got " + placed.size());
 
@@ -228,6 +235,25 @@ public final class PaintingTests {
                 painting.getBoundingBox().getYsize() == (double) spec.height(),
                 spec.name() + " must be " + spec.height() + " blocks tall, got "
                         + painting.getBoundingBox().getYsize());
+    }
+
+    /** 验完把这幅画清掉，好让下一幅用同一处墙面 */
+    private static void discardPlaced(GameTestHelper helper) {
+        placed(helper).forEach(GhastPaintingEntity::discard);
+    }
+
+    private static void assertNonePlaced(GameTestHelper helper, Spec spec) {
+        List<GhastPaintingEntity> placed = placed(helper);
+        helper.assertTrue(
+                placed.isEmpty(), "the " + spec.name() + " of the previous step must be gone, got " + placed.size());
+    }
+
+    /** 墙面那一处附近的画：搜索框给到八格，六格宽四格高的画中心也落得进来 */
+    private static List<GhastPaintingEntity> placed(GameTestHelper helper) {
+        BlockPos anchorAbs = helper.absolutePos(WALL_ANCHOR).relative(Direction.SOUTH);
+        return helper.getLevel()
+                .getEntitiesOfClass(
+                        GhastPaintingEntity.class, AABB.ofSize(Vec3.atCenterOf(anchorAbs), 8.0D, 8.0D, 8.0D));
     }
 
     /**

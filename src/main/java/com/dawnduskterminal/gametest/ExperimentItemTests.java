@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +19,8 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
@@ -44,6 +47,7 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -324,9 +328,9 @@ public final class ExperimentItemTests {
     @GameTest(template = "ddt_empty")
     public static void experiment016CraftsExperiment013(GameTestHelper helper) {
         ItemStack from016 =
-                new ItemStack(ModExperimentItems.placeholders().get(16).get());
+                new ItemStack(ModExperimentItems.simpleItems().get(16).get());
         ItemStack expected =
-                new ItemStack(ModExperimentItems.placeholders().get(13).get());
+                new ItemStack(ModExperimentItems.simpleItems().get(13).get());
         CraftingInput input = CraftingInput.of(
                 2,
                 2,
@@ -540,48 +544,130 @@ public final class ExperimentItemTests {
         helper.succeed();
     }
 
+    /**
+     * 1..115 的分档：占位的定义是「图标还借 {@code experiment_temp.png}」，有自己贴图的不算占位
+     *
+     * <p>三张表要互补：{@code TAKEN}（有行为）+ 有自己贴图的那批 + 占位 = 1..115，谁也不能同时落两处。
+     * 占位一共 41 个——不是「115 减去被占的号」那么简单，因为 32 个号早就有自己的贴图与模型了
+     */
     @GameTest(template = "ddt_empty")
-    public static void placeholdersFillEveryGapUpTo115(GameTestHelper helper) {
+    public static void placeholdersOnlyCoverTheBlankIcons(GameTestHelper helper) {
         SortedMap<Integer, DeferredItem<Item>> placeholders = ModExperimentItems.placeholders();
-        // 1..115 共 115 个号，被占的是 001 方块、004 熔炉机器、011 那只盘子、012 那只杯子、007/017 两把 4/5 裸武器、
-        // 008 与 020 两件食物、027 那支画点的笔、
-        // 019 那丛植物、032/033 两支长矛、036~038 与 040~042 六件（039 号空着）、043 那台喷火器、045 那面盾、046 权杖、047~050 那套护甲、
-        // 051 拆解台、052 那颗方雷、057 那把制导飞刃、061/070/074 三块不明肉块、065 与 069 两台反建器、066 那本恶魂陷阱书、
-        // 076 那个每刻换贴图的异常方块、055 那个充能的场、095 那支镇魂曲、104 那个食物、107 整块的红丝绒蛋糕、114 那块蛋糕、
-        // 115 暮色森林那件
+        SortedMap<Integer, DeferredItem<Item>> textured = ModExperimentItems.textured();
+        // 图标还是 experiment_temp 的那 41 个号
         helper.assertTrue(
-                placeholders.size() == 74,
-                "placeholders must cover the 74 free numbers of 1..115, got " + placeholders.size());
-        for (int number : new int[] {2, 6, 9, 16, 18, 34, 39, 44, 113}) {
+                placeholders.size() == 41,
+                "only the numbers whose icon still borrows experiment_temp count as placeholders, expected 41, got "
+                        + placeholders.size());
+        // 已经有自己贴图的 32 个号
+        helper.assertTrue(
+                textured.size() == 32, "32 numbers already own their icon, expected 32, got " + textured.size());
+        helper.assertTrue(
+                ModExperimentItems.simpleItems().size() == placeholders.size() + textured.size(),
+                "simpleItems() must be exactly the two tables put together, got "
+                        + ModExperimentItems.simpleItems().size());
+
+        for (int number : new int[] {2, 34, 39, 44, 53, 96, 112}) {
             helper.assertTrue(placeholders.containsKey(number), "number " + number + " must have a placeholder item");
         }
-        for (int number : new int[] {
-            1, 4, 7, 8, 11, 12, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55,
-            57, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115
-        }) {
+        for (int number :
+                new int[] {3, 5, 6, 13, 15, 16, 18, 21, 35, 58, 60, 64, 68, 72, 73, 75, 77, 79, 82, 85, 90, 100, 113}) {
             helper.assertFalse(
                     placeholders.containsKey(number),
-                    "number " + number + " is taken and must not get a placeholder item");
+                    "number " + number + " already owns its icon, it must not be a placeholder any more");
+            helper.assertTrue(textured.containsKey(number), "number " + number + " must be in the textured table");
+        }
+        // 被占的号两边都不许出现
+        for (int number : new int[] {
+            1, 4, 7, 8, 11, 12, 17, 19, 20, 27, 32, 33, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 48, 49, 50, 51, 52, 55,
+            57, 59, 61, 65, 66, 69, 70, 74, 76, 95, 104, 107, 114, 115
+        }) {
+            helper.assertFalse(
+                    placeholders.containsKey(number), "number " + number + " is taken and must not be a placeholder");
+            helper.assertFalse(
+                    textured.containsKey(number),
+                    "number " + number + " is taken and must not be in the textured table");
         }
         // 注册名必须就是补零三位的序号，不然补出来的是个对不上号的空壳
-        placeholders.forEach((number, holder) -> helper.assertTrue(
-                holder.getId().getPath().equals("experiment_%03d".formatted(number)),
-                "placeholder for " + number + " registered as " + holder.getId()));
+        for (SortedMap<Integer, DeferredItem<Item>> table :
+                List.of(placeholders, textured, ModExperimentItems.simpleItems())) {
+            table.forEach((number, holder) -> helper.assertTrue(
+                    holder.getId().getPath().equals("experiment_%03d".formatted(number)),
+                    "number " + number + " registered as " + holder.getId()));
+        }
+        helper.succeed();
+    }
+
+    /**
+     * 三张表与 115 份物品模型逐号对上：{@code layer0} 指 {@code experiment_temp} 的必须是占位，
+     * 指自己贴图的必须不是占位，被占的号两边都不在
+     *
+     * <p>这条是给「把某个号的图标换掉」这件事兜底的：换了模型却忘了写进 {@code TEXTURED}，
+     * 代码里它还是占位，创造栏与占位统计都会悄悄偏一格
+     */
+    @GameTest(template = "ddt_empty", batch = "ddt059_assets")
+    public static void placeholderTableMatchesTheIcons(GameTestHelper helper) {
+        int placeholders = 0;
+        int textured = 0;
+        int taken = 0;
+        for (int number = 1; number <= 115; number++) {
+            String id = "experiment_%03d".formatted(number);
+            // 046 与 115 没有物品模型：前者是权杖的自有模型，后者是暮色森林那件
+            if (number == 46 || number == 115) {
+                taken++;
+                continue;
+            }
+            JsonObject model = readJson(helper, "/assets/dawnduskterminal/models/item/" + id + ".json");
+            // 方块物品（001、004、012、019、051、052、059、065、069、076、114）的模型里没有 textures，
+            // 直接 parent 到方块模型，那种当然也不算「借模板」
+            JsonObject textures = model.getAsJsonObject("textures");
+            String layer0 = textures != null && textures.has("layer0")
+                    ? textures.get("layer0").getAsString()
+                    : "";
+            boolean borrowsTemplate = layer0.equals("dawnduskterminal:item/experiment_temp");
+            boolean isPlaceholder = ModExperimentItems.placeholders().containsKey(number);
+            boolean isTextured = ModExperimentItems.textured().containsKey(number);
+            helper.assertFalse(
+                    isPlaceholder && isTextured, "number " + number + " cannot be both placeholder and textured");
+            if (borrowsTemplate) {
+                helper.assertTrue(
+                        isPlaceholder,
+                        "number " + number
+                                + " still borrows experiment_temp, so the code must list it as a placeholder");
+                placeholders++;
+            } else {
+                helper.assertFalse(
+                        isPlaceholder,
+                        "number " + number + " has its own icon (" + layer0 + "), so it must not stay a placeholder");
+                if (isTextured) {
+                    textured++;
+                } else {
+                    taken++;
+                }
+            }
+        }
+        helper.assertTrue(placeholders == 41, "41 numbers still borrow experiment_temp, got " + placeholders);
+        helper.assertTrue(textured == 32, "32 numbers own their icon but have no behaviour, got " + textured);
+        helper.assertTrue(taken == 42, "42 numbers are taken, got " + taken);
         helper.succeed();
     }
 
     /**
      * 试验物品 003 是熔炉里的铜矿：烧出原版铜锭，走的是 {@code recipe/experiment_003_smelting.json}
      *
-     * <p>它本身仍是占位空壳（没有名字之外的用途），所以这条配方就是它存在的全部意义，
+     * <p>它有自己的贴图（模型 {@code item/experiment_003}），但没有行为，所以登记在
+     * {@code textured()} 而不是占位表里；这条配方就是它存在的全部意义，
      * 断言走 {@code RecipeManager} 而不是查文件，配方写错路径或写错物品名都会红
      */
     @GameTest(template = "ddt_empty")
     public static void experiment003SmeltsIntoCopperIngot(GameTestHelper helper) {
-        ItemStack input = new ItemStack(ModExperimentItems.placeholders().get(3).get());
+        ItemStack input = new ItemStack(ModExperimentItems.textured().get(3).get());
         helper.assertTrue(
-                input.is(ModExperimentItems.placeholders().get(3).get()),
-                "number 3 must resolve to a placeholder item");
+                input.is(ModExperimentItems.textured().get(3).get()),
+                "number 3 must resolve to the textured experiment_003");
+        helper.assertFalse(
+                ModExperimentItems.placeholders().containsKey(3),
+                "number 3 owns its icon, it must not be a placeholder any more");
         var smelting = helper.getLevel()
                 .getRecipeManager()
                 .getRecipeFor(RecipeType.SMELTING, new SingleRecipeInput(input), helper.getLevel());
@@ -628,6 +714,50 @@ public final class ExperimentItemTests {
                 zombie.getDeltaMovement().lengthSqr() < 1.0E-6,
                 "the prick must not knock the zombie back, got " + zombie.getDeltaMovement());
         helper.succeed();
+    }
+
+    /**
+     * 被点了名的那几个号各自挂着那行描述：059 铂催化网格、060 金探针、015 银胶带、003 铜卡尺
+     *
+     * <p>校验方式是<b>真的悬停一次</b>：调 {@code appendHoverText} 把 tooltip 收集出来，
+     * 看里面有没有那条翻译键。服务端没有译文，{@code getString()} 拿到的是键本身，所以比的是
+     * {@code TranslatableContents#getKey()}。少写一行 {@code appendHoverText}、或者语言文件缺一条，
+     * 这条就红
+     */
+    @GameTest(template = "ddt_empty")
+    public static void describedNumbersCarryTheirLine(GameTestHelper helper) {
+        for (String id : new String[] {"experiment_003", "experiment_015", "experiment_059", "experiment_060"}) {
+            String key = "item.dawnduskterminal." + id + ".desc";
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse("dawnduskterminal:" + id));
+            helper.assertFalse(
+                    item == Items.AIR, "dawnduskterminal:" + id + " must be registered, otherwise nothing to hover");
+            helper.assertTrue(hasTooltipKey(item, key), id + " must carry the tooltip line " + key);
+            for (String lang : new String[] {"en_us", "zh_cn"}) {
+                JsonObject words = readJson(helper, "/assets/dawnduskterminal/lang/" + lang + ".json");
+                helper.assertTrue(
+                        words.has(key), lang + " must translate " + key + ", otherwise the hover shows a raw key");
+                // 名字那一档：普通物品取 item.<id>，方块物品取 block.<id>（059 是后者），
+                // 所以问物品自己「你的名字键是什么」，别写死前缀
+                helper.assertTrue(
+                        words.has(item.getDescriptionId()),
+                        lang + " must name " + id + " (key " + item.getDescriptionId() + ")");
+            }
+        }
+        helper.succeed();
+    }
+
+    /** 这一栈的 tooltip 里有没有那条翻译键（服务端比键，不比译文） */
+    private static boolean hasTooltipKey(Item item, String key) {
+        ItemStack stack = new ItemStack(item);
+        List<Component> tooltip = new ArrayList<>();
+        item.appendHoverText(stack, Item.TooltipContext.EMPTY, tooltip, TooltipFlag.NORMAL);
+        for (Component line : tooltip) {
+            if (line.getContents() instanceof TranslatableContents contents
+                    && contents.getKey().equals(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void assertTagged(GameTestHelper helper, Item item, TagKey<Item> tag, String tagName) {

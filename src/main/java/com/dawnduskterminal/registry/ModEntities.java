@@ -154,11 +154,11 @@ public final class ModEntities {
                     .build("ghast_elite"));
 
     /**
-     * 恶魂画：三幅画各占一个实体类型，各自只认自己那一幅变体，见 {@link GhastPaintingEntity}
+     * 恶魂画：一幅画一个实体类型，各自只认自己那一幅变体，见 {@link GhastPaintingEntity}
      *
      * <p>尺寸与 updateInterval 照抄原版画：画不会移动，{@code sized} 只是占位，
      * 真正的包围盒由 {@code Painting#calculateBoundingBox} 按变体在 JSON 里写的宽高算出来
-     * （{@code painting_ghast_1} 是 3x2，{@code painting_ghast_2} 是 2x3，{@code painting_ghast_2_sub} 是 1x2）；
+     * （{@code data/dawnduskterminal/painting_variant/} 下的条目，从 1x2 到 6x4）；
      * updateInterval 拉到 {@link Integer#MAX_VALUE} 是原版的做法，非初始同步不发位置包
      */
     public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_1 =
@@ -169,6 +169,27 @@ public final class ModEntities {
 
     public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_2_SUB =
             painting(ModPaintingVariants.GHAST_2_SUB);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_3 =
+            painting(ModPaintingVariants.GHAST_3);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_4 =
+            painting(ModPaintingVariants.GHAST_4);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_5 =
+            painting(ModPaintingVariants.GHAST_5);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_6 =
+            painting(ModPaintingVariants.GHAST_6);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_7 =
+            painting(ModPaintingVariants.GHAST_7);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_8 =
+            painting(ModPaintingVariants.GHAST_8);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GhastPaintingEntity>> GHAST_PAINTING_9 =
+            painting(ModPaintingVariants.GHAST_9);
 
     /**
      * 「活盔甲」。碰撞箱照玩家取 0.6 x 1.8、眼高 1.62：它走起来就是一具玩家尺寸的空盔甲，

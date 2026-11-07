@@ -15,10 +15,10 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 
 /**
- * 恶魂画：三种尺寸共用这一个类，每幅画自己的种类由 {@link ModPaintingVariants.Kind} 带进来
+ * 恶魂画：十幅画共用这一个类，每幅画自己的种类由 {@link ModPaintingVariants.Kind} 带进来
  *
- * <p>三种尺寸是 {@code painting_ghast_1}（3x2）、{@code painting_ghast_2}（2x3）与
- * {@code painting_ghast_2_sub}（1x2），各占一个实体类型、各配一件物品；尺寸本身只写在
+ * <p>尺寸从 1x2 到 6x4 都有（{@code painting_ghast_2_sub} 最小，{@code painting_feuer} 最大），
+ * 各占一个实体类型、各配一件物品；尺寸本身只写在
  * {@code data/dawnduskterminal/painting_variant/} 的 JSON 里
  *
  * <p>和 {@code minecraft:painting} 是两条互不相干的实体类型，互换的三种路子都堵死了：
