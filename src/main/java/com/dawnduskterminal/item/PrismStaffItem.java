@@ -62,7 +62,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * {@code sendParticles} 只发给调用点 32 格内的玩家，打满 64 格时开枪的人自己看不到终点。服务端只发一个
  * {@link PrismBeamPayload}（起点、主射线终点、各分射线终点，外加各自终点尘团要用的方块状态 id），
  * 位置与颜色由各客户端自己算，见 {@link com.dawnduskterminal.client.PrismBeamParticles}；
- * 紫水晶那一声仍在服务端放，主射线那一下另外给使用者补一发 notification
+ * 紫水晶那一声仍在服务端放，主射线那一下只在终点超出 {@value #SOUND_RADIUS} 格时另外给使用者补一发 notification
  */
 public class PrismStaffItem extends Item {
     /** 耐久 */
@@ -99,6 +99,14 @@ public class PrismStaffItem extends Item {
 
     /** 终点粒子包发多远：主射线 64 格再加最多 16 格分射线，留一圈余量 */
     public static final double PARTICLE_RADIUS = 96.0D;
+
+    /**
+     * 原版世界音效的传播半径：{@code Level#playSound} 只送给这个距离内的玩家
+     *
+     * <p>主射线终点在这一圈里时开枪的人已经听到了世界那一声，不用再补 {@code notification}，
+     * 否则 16 格内会同时收到两条（世界音 + 只发给自己的音），叠成一团
+     */
+    private static final double SOUND_RADIUS = 16.0D;
 
     /** 实体判定用的容差：与投掷物一样把包围盒胀开一点，擦边也算命中 */
     private static final double HIT_MARGIN = 0.3D;
@@ -157,7 +165,7 @@ public class PrismStaffItem extends Item {
         if (hit.entity() != null) {
             hit.entity().hurt(level.damageSources().indirectMagic(player, player), BEAM_DAMAGE);
         }
-        impactSound(level, hit.end(), player, 1.0F, true);
+        impactSound(level, hit.end(), player, 1.0F, from.distanceTo(hit.end()) > SOUND_RADIUS);
         PrismBeamPayload.Ray main = new PrismBeamPayload.Ray(hit.end(), particleStateId(hit.block()));
 
         List<PrismBeamPayload.Ray> splits = connected ? split(level, player, hit.end(), hit.entity()) : List.of();
@@ -295,8 +303,9 @@ public class PrismStaffItem extends Item {
     }
 
     /**
-     * 终点那一声：世界音效只走原版的 16 格传播半径，打满 64 格时开枪的人自己听不到，
-     * 所以主射线那一下再单独给使用者补一声（{@code notification}，只发给这一个人）
+     * 终点那一声：世界音效只走原版的 {@value #SOUND_RADIUS} 格传播半径，打满 64 格时开枪的人自己听不到，
+     * 所以主射线那一下在超出这个半径时再单独给使用者补一声（{@code notification}，只发给这一个人）；
+     * 半径以内世界那一声已经送到，不再补，免得两条叠在一起
      */
     private static void impactSound(ServerLevel level, Vec3 pos, Player caster, float volume, boolean notifyCaster) {
         level.playSound(null, pos.x, pos.y, pos.z, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, volume, 1.0F);

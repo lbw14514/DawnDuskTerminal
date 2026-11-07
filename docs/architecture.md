@@ -291,8 +291,9 @@
 「副手有盾 + 没被斧头封 + 不在出手后的 8 tick 窗口里」，与物品使用状态解耦
 （那个状态每 tick 会被 `updatingUsingItem` 校验一次，中途被清掉时盾会静悄悄不挡）。
 
-挡下之后的反馈：`playHurtSound` 里按举盾状态改播 `item.shield.block`（原版 `hurt` 里那句
-`playHurtSound` 是无条件的，会照样播受伤音），`handleEntityEvent` 吞掉 entity event 29
+挡下之后的反馈：`playHurtSound` 里按 `blockedThisHit`（这一下真的被盾挡下）改播 `item.shield.block`
+（原版 `hurt` 里那句 `playHurtSound` 是无条件的，会照样播受伤音；背后挨打、破盾那一下、斧头破盾之后
+都是「有盾但没挡住」，照旧播受伤音），`handleEntityEvent` 吞掉 entity event 29
 防止重复；`knockback` 在 `blockedThisHit` 窗口内直接返回；`hurtCurrentlyUsedShield` 按
 `Player` 那条磨耐久（≥3 伤害时 `1 + 伤害取整`）；`blockUsingShield` 按 `Player` 那条问
 `attacker.canDisableShield()`，斧头就把盾封 100 tick。
